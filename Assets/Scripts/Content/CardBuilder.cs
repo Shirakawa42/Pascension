@@ -55,9 +55,18 @@ namespace Pascension.Content
         public CardBuilder Keyword(Keyword keyword) { _def.Keywords.Add(keyword); return this; }
         public CardBuilder ExilesAfterResolve() { _def.ExileAfterResolve = true; return this; }
 
-        public CardBuilder TapAbility(string description, IEffect effect, TargetSpec target = null)
+        /// <summary>Mana-ability rule: the card's ONLY effect is gaining AP — it bypasses the
+        /// stack and cannot be responded to. See the cards skill for the qualifying list.</summary>
+        public CardBuilder ManaAbility() { _def.IsManaAbility = true; return this; }
+
+        public CardBuilder TapAbility(string description, IEffect effect, TargetSpec target = null, bool manaAbility = false)
         {
-            _def.ActivatedAbilities.Add(new ActivatedAbility(description, effect) { TapCost = true, Target = target });
+            _def.ActivatedAbilities.Add(new ActivatedAbility(description, effect)
+            {
+                TapCost = true,
+                Target = target,
+                ManaAbility = manaAbility
+            });
             return this;
         }
 

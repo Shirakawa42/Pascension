@@ -19,6 +19,9 @@ namespace Pascension.Engine.Effects
         public TargetSpec Target;
         /// <summary>Extra legality condition (e.g. Trade needs a card in hand to discard).</summary>
         public Func<GameState, PlayerState, bool> UsableIf;
+        /// <summary>Mana-ability rule: pure-AP ability — resolves immediately, never stacks,
+        /// cannot be responded to (Cloth Armor / Tower Shield / Dragonscale taps).</summary>
+        public bool ManaAbility;
         public IEffect Effect;
 
         public ActivatedAbility(string description, IEffect effect, TargetSpec target = null)

@@ -57,6 +57,9 @@ namespace Pascension.Game.Presentation
                 case MarketRefilledEvent mr:
                     return mr.InstanceId >= 0 ? $"Market reveals {CardName(mr.DefId)}." : null;
 
+                case CardPlayedEvent cp:
+                    return $"{Name(snap, viewerIndex, cp.PlayerIndex)} {Verb(viewerIndex, cp.PlayerIndex, "play")} {CardName(cp.DefId)}.";
+
                 case StackPushedEvent sp:
                     return sp.DefId != null
                         ? $"{Name(snap, viewerIndex, sp.ControllerIndex)} {Verb(viewerIndex, sp.ControllerIndex, "play")} {CardName(sp.DefId)}."

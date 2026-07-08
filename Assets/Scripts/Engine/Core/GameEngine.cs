@@ -336,6 +336,17 @@ namespace Pascension.Engine.Core
                 case PlayCardAction play:
                 {
                     var card = p.Hand.Find(c => c.InstanceId == play.CardInstanceId);
+                    if (card.Def.IsManaAbility)
+                    {
+                        // Mana-ability rule: pure-AP cards never use the stack and cannot be
+                        // responded to. The effect resolves via the internal queue (pump step 3),
+                        // before any priority window opens.
+                        Api.Emit(new CardPlayedEvent { PlayerIndex = p.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+                        Api.MoveCard(card, ZoneType.PlayedThisTurn, p.Index);
+                        Api.QueueInternal(card.Def.SpellEffect, p.Index, card, $"Play {card.Def.Name}");
+                        ResetPriority();
+                        return;
+                    }
                     if (card.Def.SpellTarget != null)
                     {
                         Api.QueueInternal(new ChooseTargetsAndCastEffect(card), p.Index, card, $"Play {card.Def.Name}");
@@ -403,7 +414,12 @@ namespace Pascension.Engine.Core
                     if (ability.TapCost) Api.Tap(source);
                     if (ability.ApCost > 0) Api.GainAp(p, -ability.ApCost);
                     string desc = $"{source.Def.Name}: {ability.Description}";
-                    if (ability.Target != null)
+                    if (ability.ManaAbility)
+                    {
+                        // Mana-ability rule: resolves immediately, never stacks, no responses.
+                        Api.QueueInternal(ability.Effect, p.Index, source, desc);
+                    }
+                    else if (ability.Target != null)
                         Api.QueueInternal(new ChooseTargetsAndActivateEffect(ability, source, desc), p.Index, source, desc);
                     else
                         Api.PushAbility(StackItemKind.Ability, source, p.Index, ability.Effect, null, desc);

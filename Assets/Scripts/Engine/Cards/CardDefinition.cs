@@ -31,6 +31,9 @@ namespace Pascension.Engine.Cards
         public TargetSpec SpellTarget;
         /// <summary>Exile instead of going to PlayedThisTurn after resolving (Time Warp).</summary>
         public bool ExileAfterResolve;
+        /// <summary>Mana-ability rule: this card's only effect is gaining AP — playing it
+        /// bypasses the stack entirely and cannot be responded to (like MTG mana abilities).</summary>
+        public bool IsManaAbility;
 
         public List<Keyword> Keywords = new();
         public List<ActivatedAbility> ActivatedAbilities = new();

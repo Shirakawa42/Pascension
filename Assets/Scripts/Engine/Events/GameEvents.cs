@@ -117,6 +117,15 @@ namespace Pascension.Engine.Events
         public string DefId;
     }
 
+    /// <summary>A card was played WITHOUT using the stack (mana-ability rule: pure-AP cards).
+    /// Stacked plays are announced by StackPushedEvent instead. Always public.</summary>
+    public sealed class CardPlayedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public int InstanceId;
+        public string DefId;
+    }
+
     public sealed class StackPushedEvent : GameEvent
     {
         public int StackItemId;
