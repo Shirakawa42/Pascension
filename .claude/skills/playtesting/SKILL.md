@@ -31,4 +31,15 @@ F:/Unity/editors/6000.3.7f1/Editor/Unity.exe -batchmode -projectPath f:/Unity/pr
 4. Hero ability numbers.
 
 ## Workflow
-1. Change one knob. 2. Re-run sims (≥50 seeds). 3. Compare `SimStats` (rounds, level timing, win rates, top-bought cards). 4. Record the change + numbers in the commit message. 5. Update cards skill if card data changed.
+1. Change one knob. 2. Re-run sims (≥50 seeds). 3. Compare stats (rounds, level timing, win rates, top-bought cards). 4. Record the change + numbers in the commit message. 5. Update cards skill if card data changed.
+
+## Fast headless loop (no Unity)
+```
+cd Tools/EngineVerify
+dotnet test --nologo --filter Balance --logger "console;verbosity=detailed"
+```
+
+## Baseline (2026-07-08, initial content, 10 seeds × 4 HeuristicBots)
+- 7/10 games reached a boss kill within 60 rounds; winning games took **26-33 rounds** (target 15-25 → pacing is a bit slow; candidate knobs: cheaper movement cards, softer XP curve tail, boss HP 18).
+- **Seat 0 / Ignis over-wins** (6/7 wins): part turn-order, part damage-hero advantage at boss burst. Revisit after real UI playtests: consider Kindle +1 only pre-L6, boss HP scaling per attempt, or stronger stagger compensation.
+- Bots always reach position 50 and level 6-10 — economy and race loops function.

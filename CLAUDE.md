@@ -45,9 +45,11 @@ Pascension.Engine.Tests  Assets/Tests/EngineTests/  edit-mode NUnit tests
 - Commit per milestone or coherent unit of work; never commit `Library/`.
 
 ## Verification
-- Engine: run edit-mode tests (Unity Test Runner via MCP, or `Unity.exe -batchmode -runTests -testPlatform EditMode -projectPath .` when the editor is closed).
-- Balance: headless sims — see playtesting skill.
-- UI: Unity MCP play mode + screenshots.
+- **Fastest (no Unity needed)**: `cd Tools/EngineVerify && dotnet test --nologo` — compiles Engine/Content/Bots/Net-Host + runs the full NUnit suite headless (mirrors the Unity asmdefs). Keep it green.
+- Engine in Unity: Test Runner via MCP, or `Unity.exe -batchmode -runTests -testPlatform EditMode -projectPath .` when the editor is closed.
+- Balance: headless sims — see playtesting skill (`--filter Balance`).
+- UI: Unity MCP play mode + screenshots. Scenes are built programmatically: menu `Pascension/Setup/Build All Scenes` (+ `Build Lobby Scene`).
+- Art: `Tools/art_manifest.json` is exported via `dotnet test --filter ExportArtManifest`; generation via the editor window (Pascension/Card Art Generator) or `scratchpad generate_art.ps1`-style API loop. ComfyUI must be running (see card-art skill).
 - Unity MCP: configured in `.mcp.json` (uvx → `mcpforunityserver==10.0.0`); the in-editor bridge is the `com.coplaydev.unity-mcp` package (Window > MCP for Unity).
 
 ## Decisions log (user-approved, 2026-07-08)
