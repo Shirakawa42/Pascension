@@ -155,10 +155,12 @@ namespace Pascension.Game.UI
             UiFactory.Place(_stagedLabel.rectTransform, new Vector2(0.5f, 1f), Vector2.zero, new Vector2(140f, 32f));
             _stagedRoot.gameObject.SetActive(false);
 
-            // Large hover preview so small card text is always readable (created last = on top).
+            // Large hover preview so small card text is always readable (created last =
+            // on top). Fixed spot: top-left, just right of the play-history bar.
             _preview = CardViewFactory.Create(uiRoot, Theme, 1.3f);
-            _preview.Rect.anchorMin = _preview.Rect.anchorMax = new Vector2(0.5f, 0.5f);
-            _preview.Rect.pivot = new Vector2(0.5f, 0.5f);
+            _preview.Rect.anchorMin = _preview.Rect.anchorMax = new Vector2(0f, 1f);
+            _preview.Rect.pivot = new Vector2(0f, 1f);
+            _preview.Rect.anchoredPosition = new Vector2(118f, -12f);
             _preview.SetRaycastable(false);
             _preview.Group.blocksRaycasts = false;
             _preview.Group.interactable = false;
@@ -384,9 +386,6 @@ namespace Pascension.Game.UI
                 if (string.IsNullOrEmpty(card.DefId)) return; // hidden card / card back
                 _previewSourceId = key;
                 _preview.BindDef(card.DefId);
-                // Show on the opposite side of the hovered card so it never covers it.
-                float sideX = transform.InverseTransformPoint(card.transform.position).x;
-                _preview.Rect.anchoredPosition = new Vector2(sideX > 0f ? -430f : 430f, 30f);
                 _preview.gameObject.SetActive(true);
                 _preview.Rect.SetAsLastSibling();
             }
@@ -1224,7 +1223,12 @@ namespace Pascension.Game.UI
             int tierIndex = (int)mr.Tier - 1;
             yield return Fly(null, Market.PileLabelRect(tierIndex), Market.SlotRect(tierIndex, mr.SlotIndex),
                 0.35f, 0.5f, 0.2f);
-            Market.SetSlotHidden(tierIndex, mr.SlotIndex, false);
+            // Bind + show this slot NOW — the full market render waits for the drain, and
+            // slots start inactive, so refills would otherwise all pop in at the end.
+            var s = View.Snapshot;
+            var row = s != null ? s.MarketRows[tierIndex] : null;
+            var snap = row != null && mr.SlotIndex >= 0 && mr.SlotIndex < row.Length ? row[mr.SlotIndex] : null;
+            Market.RevealSlot(tierIndex, mr.SlotIndex, snap, s != null ? s.Players[s.ViewerIndex].Level : 1);
         }
 
         private IEnumerator PlayImpact(DamageMarkedEvent dm)

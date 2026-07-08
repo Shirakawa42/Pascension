@@ -28,6 +28,11 @@ namespace Pascension.Game.View
         private Image[][] _slotFrames;
         private TextMeshProUGUI[] _pileCounts;
         private TextMeshProUGUI[] _lockLabels;
+        // Slot views are persistent — overlapping Punch/Flash tweens would capture an
+        // already-tweened state as "base" and ratchet. Restore before restarting.
+        private Coroutine[][] _slotPunch;
+        private Coroutine[][] _slotFlash;
+        private Color[][] _slotFlashBase;
         private GameRules _rules;
         private bool _built;
 
@@ -44,6 +49,9 @@ namespace Pascension.Game.View
             _slotFrames = new Image[3][];
             _pileCounts = new TextMeshProUGUI[3];
             _lockLabels = new TextMeshProUGUI[3];
+            _slotPunch = new Coroutine[3][];
+            _slotFlash = new Coroutine[3][];
+            _slotFlashBase = new Color[3][];
 
             for (int t = 0; t < 3; t++)
             {
@@ -70,6 +78,9 @@ namespace Pascension.Game.View
 
                 _slots[t] = new CardView[5];
                 _slotFrames[t] = new Image[5];
+                _slotPunch[t] = new Coroutine[5];
+                _slotFlash[t] = new Coroutine[5];
+                _slotFlashBase[t] = new Color[5];
                 for (int s = 0; s < 5; s++)
                 {
                     float x = 150f + s * SlotSpacing;
@@ -168,18 +179,53 @@ namespace Pascension.Game.View
             return _slots[tierIndex][slotIndex];
         }
 
+        /// <summary>Bind + show a slot the moment its refill flight lands — the full
+        /// Render only happens on queue drain, so without this every refill would pop in
+        /// at once at the end of the batch. Applies the locked-tier grey immediately so
+        /// the card doesn't flash vivid and dim at the drain.</summary>
+        public void RevealSlot(int tierIndex, int slotIndex, CardSnap snap, int viewerLevel)
+        {
+            var card = Slot(tierIndex, slotIndex);
+            if (card == null) return;
+            if (snap == null)
+            {
+                SetSlotHidden(tierIndex, slotIndex, false);
+                return;
+            }
+            card.Bind(snap);
+            card.gameObject.SetActive(true);
+
+            int requirement = tierIndex == 1 ? _rules.AdvancedLevelRequirement
+                : tierIndex == 2 ? _rules.EliteLevelRequirement : 0;
+            bool isMonster = snap.DefId != null &&
+                             Engine.Cards.CardDatabase.TryGet(snap.DefId, out var def) &&
+                             def.IsMonster;
+            card.SetGreyed(viewerLevel < requirement && !isMonster);
+
+            PunchSlot(tierIndex, slotIndex);
+        }
+
         public void FlashSlot(int tierIndex, int slotIndex, Color color)
         {
             var card = Slot(tierIndex, slotIndex);
-            if (card != null && card.gameObject.activeSelf && isActiveAndEnabled)
-                StartCoroutine(Presentation.Tween.Flash(card.Frame, color));
+            if (card == null || !card.gameObject.activeSelf || !isActiveAndEnabled) return;
+            if (_slotFlash[tierIndex][slotIndex] != null)
+            {
+                StopCoroutine(_slotFlash[tierIndex][slotIndex]);
+                card.Frame.color = _slotFlashBase[tierIndex][slotIndex];
+            }
+            _slotFlashBase[tierIndex][slotIndex] = card.Frame.color;
+            _slotFlash[tierIndex][slotIndex] = StartCoroutine(Presentation.Tween.Flash(card.Frame, color));
         }
 
         public void PunchSlot(int tierIndex, int slotIndex)
         {
             var card = Slot(tierIndex, slotIndex);
-            if (card != null && card.gameObject.activeSelf && isActiveAndEnabled)
-                StartCoroutine(Presentation.Tween.Punch(card.transform));
+            if (card == null || !card.gameObject.activeSelf || !isActiveAndEnabled) return;
+            if (_slotPunch[tierIndex][slotIndex] != null)
+                StopCoroutine(_slotPunch[tierIndex][slotIndex]);
+            card.transform.localScale = Vector3.one * CardScale;
+            _slotPunch[tierIndex][slotIndex] = StartCoroutine(Presentation.Tween.Punch(card.transform));
         }
     }
 }

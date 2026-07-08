@@ -27,6 +27,12 @@ namespace Pascension.Game.View
         private TextMeshProUGUI _badgeText;
         private TextMeshProUGUI _title;
         private int _lastCount = -1;
+        // Punch/Flash capture their start state as "base" — overlapping calls on this
+        // persistent widget would ratchet the badge bigger forever. Restore before restart.
+        private Coroutine _pulseCo;
+        private Coroutine _flashCo;
+        private Vector3 _badgeBaseScale = Vector3.one;
+        private Color _stackTopBase;
 
         /// <summary>Flight-animation anchor (the pile's visual center).</summary>
         public RectTransform AnchorRect => Container;
@@ -73,6 +79,8 @@ namespace Pascension.Game.View
                 _topCard.Group.blocksRaycasts = false;
                 _topCard.gameObject.SetActive(false);
             }
+
+            _stackTopBase = BackColor(2);
 
             // Count badge.
             _badge = UiFactory.CreateImage("Badge", Container, Theme.Circle, UiPalette.Gold);
@@ -128,14 +136,28 @@ namespace Pascension.Game.View
             _lastCount = count;
         }
 
-        /// <summary>Badge punch + brief glow — call when the pile receives cards.</summary>
+        /// <summary>Badge punch + brief glow — call when the pile receives cards.
+        /// Safe to spam: the previous tween is stopped and its base state restored first.</summary>
         public void Pulse()
         {
             if (!isActiveAndEnabled) return;
-            StartCoroutine(Presentation.Tween.Punch(_badge.transform, 0.35f, 0.3f));
+            if (_pulseCo != null)
+            {
+                StopCoroutine(_pulseCo);
+                _badge.transform.localScale = _badgeBaseScale;
+            }
+            _pulseCo = StartCoroutine(Presentation.Tween.Punch(_badge.transform, 0.35f, 0.3f));
+
             var top = _stack[_stack.Length - 1];
             if (top.gameObject.activeSelf)
-                StartCoroutine(Presentation.Tween.Flash(top, UiPalette.Gold, 0.4f));
+            {
+                if (_flashCo != null)
+                {
+                    StopCoroutine(_flashCo);
+                    top.color = _stackTopBase;
+                }
+                _flashCo = StartCoroutine(Presentation.Tween.Flash(top, UiPalette.Gold, 0.4f));
+            }
         }
     }
 }

@@ -28,9 +28,9 @@ namespace Pascension.Game.View
         private const float HoverScale = 1.05f;
         private const float HoverRaise = 96f;
         /// <summary>Container-local Y above which a released drag means "play it".
-        /// Kept well above the fan/hover/reorder band (~250) so horizontal reordering
-        /// can never accidentally cross into a play.</summary>
-        private const float PlayLineY = 450f;
+        /// Kept above the fan/hover/reorder band (~250 + hover raise) so horizontal
+        /// reordering can never accidentally cross into a play.</summary>
+        private const float PlayLineY = 390f;
 
         private readonly List<CardView> _cards = new List<CardView>();
         private readonly Dictionary<int, Pose> _posesById = new Dictionary<int, Pose>();
@@ -50,53 +50,90 @@ namespace Pascension.Game.View
 
         // ------------------------------------------------------------------ rendering
 
-        /// <summary>Rebuild from a snapshot. hiddenIds = cards whose draw-flight hasn't
-        /// landed yet (rendered invisible, revealed by RevealCard).</summary>
+        /// <summary>Diff-update from a snapshot: existing views — including an active
+        /// drag — stay alive; removed cards are destroyed; new cards are created (hidden
+        /// if their draw-flight hasn't landed, revealed by RevealCard). Snapshots stream
+        /// in constantly during play chains, so a rebuild here must NEVER reset a drag
+        /// or the fan poses.</summary>
         public void Render(List<CardSnap> hand, HashSet<int> playableIds, HashSet<int> hiddenIds = null)
         {
-            if (_draggingId >= 0)
-                UiLog.Log("Hand", $"render interrupted an active drag of #{_draggingId} — drag dropped");
-            Clear(); // resets _draggingId: the dragged view is destroyed with the rest
             if (hand == null) return;
-
             _playable = playableIds ?? new HashSet<int>();
-
-            // Persistent visual order: keep known ids in their user-arranged order,
-            // append newly drawn ids on the right.
-            var inHand = new HashSet<int>();
-            foreach (var snap in hand) inHand.Add(snap.InstanceId);
-            _order.RemoveAll(id => !inHand.Contains(id));
-            foreach (var snap in hand)
-                if (!_order.Contains(snap.InstanceId))
-                    _order.Add(snap.InstanceId);
 
             var byId = new Dictionary<int, CardSnap>();
             foreach (var snap in hand) byId[snap.InstanceId] = snap;
 
+            // Persistent visual order: keep known ids in their user-arranged order,
+            // append newly drawn ids on the right.
+            _order.RemoveAll(id => !byId.ContainsKey(id));
+            foreach (var snap in hand)
+                if (!_order.Contains(snap.InstanceId))
+                    _order.Add(snap.InstanceId);
+
+            bool wasEmpty = _cards.Count == 0;
+            bool changed = false;
+
+            // Destroy views for cards that left the hand.
+            for (int i = _cards.Count - 1; i >= 0; i--)
+            {
+                var view = _cards[i];
+                if (view != null && byId.ContainsKey(view.InstanceId)) continue;
+                if (view != null)
+                {
+                    if (view.InstanceId == _draggingId)
+                    {
+                        UiLog.Log("Hand", $"dragged card #{_draggingId} left the hand — drag dropped");
+                        _draggingId = -1;
+                    }
+                    Destroy(view.gameObject);
+                }
+                _cards.RemoveAt(i);
+                changed = true;
+            }
+
+            // Create views for newly arrived cards.
+            var have = new HashSet<int>();
+            foreach (var view in _cards) have.Add(view.InstanceId);
             foreach (int id in _order)
             {
+                if (have.Contains(id)) continue;
                 var card = CardViewFactory.Create(Container, Theme, CardScale);
                 card.Bind(byId[id]);
-
-                bool playable = _playable.Contains(id);
-                card.SetGreyed(!playable);
-
                 if (hiddenIds != null && hiddenIds.Contains(id) && card.Group != null)
                 {
                     card.Group.alpha = 0f;
                     card.Group.blocksRaycasts = false;
                 }
-
                 var drag = card.gameObject.AddComponent<HandCardDrag>();
                 drag.Bind(this, card);
-
                 card.Hovered += OnCardHovered;
                 _cards.Add(card);
+                changed = true;
             }
 
-            ApplyPoses(instant: true);
+            _cards.Sort((a, b) => _order.IndexOf(a.InstanceId).CompareTo(_order.IndexOf(b.InstanceId)));
+
+            foreach (var view in _cards)
+            {
+                if (view == null) continue;
+                if (view.InstanceId != _draggingId)
+                    view.SetGreyed(!_playable.Contains(view.InstanceId));
+                // Reveal safety: only draw-hidden views have blocksRaycasts off. Once a
+                // card is no longer marked hidden it must be visible (RefreshAll clears
+                // pending reveals; a still-running RevealCard pop also converges to 1).
+                if (view.Group != null && !view.Group.blocksRaycasts &&
+                    (hiddenIds == null || !hiddenIds.Contains(view.InstanceId)))
+                {
+                    view.Group.alpha = 1f;
+                    view.Group.blocksRaycasts = true;
+                }
+            }
+
+            // Untouched hands keep their poses (and any hover lift / active drag).
+            if (changed)
+                ApplyPoses(instant: wasEmpty || !isActiveAndEnabled);
             ApplyPulse();
-            UiLog.Log("Hand", $"render: {_cards.Count} cards, playable={_playable.Count}, hidden={(hiddenIds?.Count ?? 0)}");
+            UiLog.Log("Hand", $"render: {_cards.Count} cards, playable={_playable.Count}, hidden={(hiddenIds?.Count ?? 0)}, changed={changed}");
         }
 
         /// <summary>Fade+pop a card in as its draw-flight lands.</summary>
@@ -164,10 +201,11 @@ namespace Pascension.Game.View
                     RotationZ = -offset * 3.5f
                 };
                 _posesById[card.InstanceId] = pose;
-                card.transform.SetSiblingIndex(i);
 
                 if (card.InstanceId == _draggingId)
-                    continue; // the dragged card follows the pointer
+                    continue; // the dragged card follows the pointer and stays on top
+
+                card.transform.SetSiblingIndex(i);
 
                 if (instant || !isActiveAndEnabled)
                 {
@@ -247,6 +285,14 @@ namespace Pascension.Game.View
 
         internal bool IsPlayable(int instanceId) => _playable.Contains(instanceId);
 
+        /// <summary>Double-clicking a playable card plays it (drag remains the primary path).</summary>
+        internal void RequestDoubleClickPlay(CardView card)
+        {
+            if (card == null || !_playable.Contains(card.InstanceId)) return;
+            UiLog.Log("Play", $"double-click play #{card.InstanceId} ({card.DefId})");
+            PlayRequested?.Invoke(card.InstanceId);
+        }
+
         // ------------------------------------------------------------------ misc
 
         /// <summary>Pulse-glow a set of cards (response window: playable instants).</summary>
@@ -320,14 +366,5 @@ namespace Pascension.Game.View
             }
         }
 
-        private void Clear()
-        {
-            foreach (var card in _cards)
-                if (card != null)
-                    Destroy(card.gameObject);
-            _cards.Clear();
-            _posesById.Clear();
-            _draggingId = -1;
-        }
     }
 }

@@ -6,10 +6,10 @@ namespace Pascension.Game.View
     /// <summary>
     /// Drag surface for a hand card: converts pointer positions into the hand
     /// container's local space and forwards begin/drag/end to the HandView, which owns
-    /// the fan/reorder/play-line logic.
+    /// the fan/reorder/play-line logic. Double-click plays the card directly.
     /// </summary>
     public sealed class HandCardDrag : MonoBehaviour,
-        IBeginDragHandler, IDragHandler, IEndDragHandler
+        IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
         private HandView _hand;
         private CardView _card;
@@ -18,6 +18,14 @@ namespace Pascension.Game.View
         {
             _hand = hand;
             _card = card;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (_hand == null || _card == null) return;
+            if (eventData.button != PointerEventData.InputButton.Left || eventData.dragging) return;
+            if (eventData.clickCount >= 2)
+                _hand.RequestDoubleClickPlay(_card);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
