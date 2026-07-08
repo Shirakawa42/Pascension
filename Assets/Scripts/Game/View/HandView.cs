@@ -66,6 +66,28 @@ namespace Pascension.Game.View
             ApplyPulse();
         }
 
+        /// <summary>Hide the real card while an animation proxy represents it (restored by
+        /// the next Render). Returns the card's rect for flight/showcase sourcing.</summary>
+        public RectTransform HideCard(int instanceId)
+        {
+            foreach (var card in _cards)
+                if (card != null && card.InstanceId == instanceId)
+                {
+                    if (card.Group != null) card.Group.alpha = 0f;
+                    return card.Rect;
+                }
+            return null;
+        }
+
+        /// <summary>Rect of a hand card (null when not present).</summary>
+        public RectTransform CardRect(int instanceId)
+        {
+            foreach (var card in _cards)
+                if (card != null && card.InstanceId == instanceId)
+                    return card.Rect;
+            return null;
+        }
+
         /// <summary>Pulse-glow a set of cards (response window: playable instants).</summary>
         public void SetPulse(HashSet<int> instanceIds)
         {

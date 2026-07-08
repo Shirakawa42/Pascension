@@ -47,6 +47,10 @@ namespace Pascension.Game.UI
         public PileWidget ExilePile;
         public PlayHistoryBar History;
         public OpponentDetailModal OpponentDetail;
+        public FlightLayer Flights;
+        public GlowBurstLayer Bursts;
+        public FloatingNumberLayer Floats;
+        public CardShowcase Showcase;
 
         public ClientGameView View { get; } = new ClientGameView();
 
@@ -84,6 +88,10 @@ namespace Pascension.Game.UI
             Toast.Init(Theme);
             CardList.Init(Theme);
             if (History != null) History.Init(Theme);
+            if (Flights != null) Flights.Init(Theme);
+            if (Bursts != null) Bursts.Init(Theme);
+            if (Floats != null) Floats.Init(Theme);
+            if (Showcase != null) Showcase.Init(Theme, Bursts);
             if (DrawPile != null) DrawPile.Init(Theme, "Draw", faceDown: true);
             if (PlayedPile != null) PlayedPile.Init(Theme, "Played", faceDown: false);
             if (DiscardPile != null) DiscardPile.Init(Theme, "Discard", faceDown: false);
@@ -648,6 +656,45 @@ namespace Pascension.Game.UI
 
         // ------------------------------------------------------------------ event playback
 
+        // ------------------------------------------------------------------ event presentation
+
+        /// <summary>Destination of the most recent buy (Express Delivery sends it to hand).</summary>
+        private ZoneType _lastBuyDestination = ZoneType.Discard;
+
+        private bool IsViewer(int playerIndex) => playerIndex == View.LocalPlayerIndex;
+
+        /// <summary>Flight anchor for a zone. All opponent-owned zones route to their sheet.</summary>
+        private RectTransform AnchorFor(ZoneType zone, int owner)
+        {
+            if (owner >= 0 && !IsViewer(owner))
+                return SheetAnchor(owner, View.LocalPlayerIndex) ?? PlayerSheet.Container;
+            switch (zone)
+            {
+                case ZoneType.Deck: return DrawPile != null ? DrawPile.AnchorRect : PlayerSheet.Container;
+                case ZoneType.Hand: return Hand.Container;
+                case ZoneType.Discard: return DiscardPile != null ? DiscardPile.AnchorRect : PlayerSheet.Container;
+                case ZoneType.Exile: return ExilePile != null ? ExilePile.AnchorRect : PlayerSheet.Container;
+                case ZoneType.PlayedThisTurn: return PlayedPile != null ? PlayedPile.AnchorRect : PlayerSheet.Container;
+                default: return PlayerSheet.Container;
+            }
+        }
+
+        /// <summary>Floating number over an anchor; silently skipped before the anchor exists.</summary>
+        private void SpawnFloat(RectTransform anchor, string text, Color color, float size)
+        {
+            if (anchor == null || Floats == null) return;
+            Floats.Spawn(Floats.ToLocal(anchor), text, color, size);
+        }
+
+        private PileWidget PileFor(ZoneType zone) => zone switch
+        {
+            ZoneType.Deck => DrawPile,
+            ZoneType.Discard => DiscardPile,
+            ZoneType.Exile => ExilePile,
+            ZoneType.PlayedThisTurn => PlayedPile,
+            _ => null
+        };
+
         private IEnumerator PlayEvent(GameEvent e)
         {
             string line = EventText.Describe(e, View.Snapshot, View.LocalPlayerIndex);
@@ -659,42 +706,88 @@ namespace Pascension.Game.UI
                 case TurnStartedEvent ts:
                     Toast.ShowBanner(EventText.Name(View.Snapshot, View.LocalPlayerIndex, ts.PlayerIndex) +
                                      (ts.PlayerIndex == View.LocalPlayerIndex ? "r turn" : "'s turn"));
-                    return Queue.Wait(0.55f);
+                    return Queue.Wait(0.5f);
 
-                case CoalescedDrawEvent:
-                    return Queue.Wait(0.25f);
+                case CoalescedDrawEvent cd:
+                    return PlayDraw(cd.PlayerIndex, cd.Count);
 
-                case CardDrawnEvent:
-                    return Queue.Wait(0.12f);
+                case CardDrawnEvent drawn:
+                    return PlayDraw(drawn.PlayerIndex, 1);
+
+                case CardPlayedEvent played: // mana ability — off-stack play
+                    return PlayShowcase(played.DefId, played.PlayerIndex, played.InstanceId,
+                        AnchorFor(ZoneType.PlayedThisTurn, played.PlayerIndex));
+
+                case StackPushedEvent sp when sp.Kind == "Spell" && sp.DefId != null:
+                    return PlayShowcase(sp.DefId, sp.ControllerIndex, sp.SourceInstanceId,
+                        StackPanel.Container);
+
+                case StackPushedEvent:
+                    return Queue.Wait(0.3f);
+
+                case CardMovedEvent cm:
+                    return PlayCardMoved(cm);
+
+                case DeckShuffledEvent ds:
+                    return PlayReshuffle(ds.PlayerIndex);
+
+                case CardBoughtEvent buy:
+                    return PlayBuy(buy);
+
+                case MarketRefilledEvent mr when mr.InstanceId >= 0:
+                    Market.SetSlotHidden((int)mr.Tier - 1, mr.SlotIndex, true);
+                    return PlayRefill(mr);
 
                 case PlayerMovedEvent moved:
                     return PlayMove(moved);
 
+                case InnReachedEvent inn:
+                    Bursts.Burst(Bursts.ToLocal(Board.NodeRect(inn.InnStep)), UiPalette.Gold, 14, 220f);
+                    return Queue.Wait(0.3f);
+
                 case DamageMarkedEvent dm:
-                    if (dm.Target.Kind == TargetKind.MonsterSlot)
-                        Market.FlashSlot(dm.Target.A - 1, dm.Target.B, UiPalette.Danger);
-                    else if (dm.Target.Kind == TargetKind.Boss)
-                        Board.FlashBoss();
-                    return Queue.Wait(0.4f);
+                    return PlayImpact(dm);
 
                 case MonsterDiedEvent md:
+                {
                     Market.FlashSlot((int)md.Tier - 1, md.SlotIndex, UiPalette.Gold);
+                    var slot = Market.SlotRect((int)md.Tier - 1, md.SlotIndex);
+                    Bursts.Burst(Bursts.ToLocal(slot), UiPalette.Gold, 18, 300f);
                     return Queue.Wait(0.45f);
+                }
 
-                case CardBoughtEvent buy:
-                    Market.PunchSlot((int)buy.Tier - 1, buy.SlotIndex);
-                    return Queue.Wait(0.3f);
+                case ApChangedEvent ap when ap.Delta > 0:
+                    SpawnFloat(IsViewer(ap.PlayerIndex)
+                            ? PlayerSheet.ApCrystalRect : SheetAnchor(ap.PlayerIndex, View.LocalPlayerIndex),
+                        $"+{ap.Delta} AP", UiPalette.Gold, 26f);
+                    return null;
 
-                case StackPushedEvent:
-                    return Queue.Wait(0.35f);
+                case DamagePoolChangedEvent dp when dp.Delta > 0:
+                    SpawnFloat(IsViewer(dp.PlayerIndex)
+                            ? PlayerSheet.DamageCrystalRect : SheetAnchor(dp.PlayerIndex, View.LocalPlayerIndex),
+                        $"+{dp.Delta} DMG", UiPalette.WoundedRed, 26f);
+                    return null;
+
+                case XpGainedEvent xp:
+                    SpawnFloat(IsViewer(xp.PlayerIndex)
+                            ? PlayerSheet.XpBarRect : SheetAnchor(xp.PlayerIndex, View.LocalPlayerIndex),
+                        $"+{xp.Amount} XP", UiPalette.HealthyGreen, 26f);
+                    return Queue.Wait(0.1f);
+
+                case LeveledUpEvent lu:
+                {
+                    var anchor = IsViewer(lu.PlayerIndex)
+                        ? PlayerSheet.Container : SheetAnchor(lu.PlayerIndex, View.LocalPlayerIndex);
+                    Bursts.Burst(Bursts.ToLocal(anchor), UiPalette.Gold, 22, 340f);
+                    Toast.ShowBanner($"{EventText.Name(View.Snapshot, View.LocalPlayerIndex, lu.PlayerIndex)} — Level {lu.NewLevel}!");
+                    return Queue.Wait(0.4f);
+                }
 
                 case SpellCounteredEvent:
-                case StackFizzledEvent:
-                    return Queue.Wait(0.3f);
+                    Bursts.Burst(Bursts.ToLocal(StackPanel.Container), UiPalette.TargetBlue, 16, 300f);
+                    return Queue.Wait(0.4f);
 
-                case LeveledUpEvent:
-                case XpGainedEvent:
-                case InnReachedEvent:
+                case StackFizzledEvent:
                     return Queue.Wait(0.25f);
 
                 case ExtraTurnEvent:
@@ -711,6 +804,143 @@ namespace Pascension.Game.UI
         {
             yield return Board.AnimatePawn(moved.PlayerIndex, moved.FromStep, moved.ToStep, Queue);
             yield return Queue.Wait(0.1f);
+        }
+
+        private IEnumerator PlayDraw(int playerIndex, int count)
+        {
+            if (IsViewer(playerIndex))
+            {
+                var from = Flights.ToLocal(AnchorFor(ZoneType.Deck, playerIndex));
+                var to = Flights.ToLocal(Hand.Container) + new Vector2(0f, 60f);
+                DrawPile?.Pulse();
+                yield return Flights.FlyMany(Queue, null, count, from, to, 0.5f, 0.8f, 0.28f, faceDown: true, stagger: 0.07f);
+            }
+            else
+            {
+                // A quick card-back pop over the opponent's sheet.
+                var sheet = SheetAnchor(playerIndex, View.LocalPlayerIndex);
+                var at = Flights.ToLocal(sheet);
+                yield return Flights.Fly(Queue, null, at, at + new Vector2(0f, 46f), 0.28f, 0.36f, 0.22f, faceDown: true);
+            }
+        }
+
+        private IEnumerator PlayShowcase(string defId, int playerIndex, int sourceInstanceId, RectTransform dest)
+        {
+            Vector2 from;
+            if (IsViewer(playerIndex))
+            {
+                var handRect = Hand.HideCard(sourceInstanceId);
+                from = Showcase.ToLocal(handRect != null ? handRect : Hand.Container);
+            }
+            else
+            {
+                from = Showcase.ToLocal(SheetAnchor(playerIndex, View.LocalPlayerIndex));
+            }
+            History?.Push(defId, playerIndex);
+            yield return Showcase.Play(Queue, defId, playerIndex, from, Showcase.ToLocal(dest));
+        }
+
+        private IEnumerator PlayCardMoved(CardMovedEvent cm)
+        {
+            bool viewerOwned = IsViewer(cm.OwnerIndex);
+
+            switch (cm.From, cm.To)
+            {
+                case (ZoneType.Hand, ZoneType.Stack):
+                    if (viewerOwned) Hand.HideCard(cm.InstanceId);
+                    return null; // the StackPushed showcase carries the visual
+
+                case (ZoneType.Hand, ZoneType.PlayedThisTurn):
+                    return null; // CardPlayedEvent (mana ability) owns this
+
+                case (ZoneType.MarketRow, _):
+                    _lastBuyDestination = cm.To; // CardBought (with slot coords) owns the flight
+                    return null;
+
+                case (_, ZoneType.Pile):
+                    return Fly(cm.DefId, AnchorFor(cm.From, cm.OwnerIndex), Market.PileLabelRect(1), 0.5f, 0.35f, 0.22f);
+            }
+
+            // Same-anchor flights (opponent zone → opponent zone) have nothing to show.
+            var fromRect = cm.From == ZoneType.Stack ? StackPanel.Container : AnchorFor(cm.From, cm.OwnerIndex);
+            var toRect = AnchorFor(cm.To, cm.OwnerIndex);
+            if (fromRect == toRect)
+                return null;
+
+            float duration = cm.From == ZoneType.Hand && cm.To == ZoneType.Discard ? 0.16f : 0.24f;
+            var tint = cm.To == ZoneType.Exile ? (Color?)UiPalette.Gold : null;
+            PileFor(cm.To)?.Pulse();
+            if (viewerOwned && cm.From == ZoneType.Hand)
+                Hand.HideCard(cm.InstanceId);
+            return Fly(cm.DefId, fromRect, toRect, 0.6f, 0.4f, duration, tint);
+        }
+
+        private IEnumerator Fly(string defId, RectTransform from, RectTransform to,
+            float fromScale, float toScale, float duration, Color? tint = null)
+        {
+            yield return Flights.Fly(Queue, defId, Flights.ToLocal(from), Flights.ToLocal(to),
+                fromScale, toScale, duration, faceDown: defId == null, tint: tint);
+        }
+
+        private IEnumerator PlayReshuffle(int playerIndex)
+        {
+            if (!IsViewer(playerIndex))
+                yield break;
+            var from = Flights.ToLocal(DiscardPile != null ? DiscardPile.AnchorRect : PlayerSheet.Container);
+            var to = Flights.ToLocal(DrawPile != null ? DrawPile.AnchorRect : PlayerSheet.Container);
+            DiscardPile?.Pulse();
+            yield return Flights.FlyMany(Queue, null, 4, from, to, 0.5f, 0.5f, 0.3f, faceDown: true, stagger: 0.06f);
+            DrawPile?.Pulse();
+        }
+
+        private IEnumerator PlayBuy(CardBoughtEvent buy)
+        {
+            int tierIndex = (int)buy.Tier - 1;
+            Market.PunchSlot(tierIndex, buy.SlotIndex);
+            Market.SetSlotHidden(tierIndex, buy.SlotIndex, true);
+            var slotRect = Market.SlotRect(tierIndex, buy.SlotIndex);
+            if (buy.CostPaid > 0)
+                Floats.Spawn(Floats.ToLocal(slotRect), $"-{buy.CostPaid} AP", UiPalette.Gold, 26f);
+
+            var destZone = IsViewer(buy.PlayerIndex) && _lastBuyDestination == ZoneType.Hand
+                ? ZoneType.Hand : ZoneType.Discard;
+            _lastBuyDestination = ZoneType.Discard;
+            var dest = AnchorFor(destZone, buy.PlayerIndex);
+            PileFor(destZone)?.Pulse();
+            yield return Fly(buy.DefId, slotRect, dest, 0.5f, 0.4f, 0.3f);
+        }
+
+        private IEnumerator PlayRefill(MarketRefilledEvent mr)
+        {
+            int tierIndex = (int)mr.Tier - 1;
+            yield return Fly(null, Market.PileLabelRect(tierIndex), Market.SlotRect(tierIndex, mr.SlotIndex),
+                0.35f, 0.5f, 0.2f);
+            Market.SetSlotHidden(tierIndex, mr.SlotIndex, false);
+        }
+
+        private IEnumerator PlayImpact(DamageMarkedEvent dm)
+        {
+            RectTransform target = null;
+            if (dm.Target.Kind == TargetKind.MonsterSlot)
+            {
+                Market.FlashSlot(dm.Target.A - 1, dm.Target.B, UiPalette.Danger);
+                target = Market.SlotRect(dm.Target.A - 1, dm.Target.B);
+            }
+            else if (dm.Target.Kind == TargetKind.Boss)
+            {
+                Board.FlashBoss();
+                target = Board.BossRect;
+            }
+
+            if (target != null)
+            {
+                var local = Bursts.ToLocal(target);
+                var attacker = SheetAnchor(dm.ByPlayerIndex, View.LocalPlayerIndex) ?? PlayerSheet.Container;
+                var dir = (local - Bursts.ToLocal(attacker)).normalized;
+                Bursts.Burst(local, UiPalette.WoundedRed, 14, 320f, dir);
+                Floats.Spawn(Floats.ToLocal(target), $"-{dm.Amount}", UiPalette.WoundedRed, 34f);
+            }
+            return Queue.Wait(0.45f);
         }
     }
 }

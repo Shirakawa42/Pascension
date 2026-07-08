@@ -339,6 +339,21 @@ namespace Pascension.Game.EditorSupport
             actionBar.anchoredPosition = new Vector2(-234f, 416f);
             actionBar.sizeDelta = new Vector2(210f, 58f);
 
+            // --- FX overlay: flights + bursts + floating numbers (one stretched layer) ---
+            var fxRect = UiFactory.CreateRect("FxLayer", canvasRoot);
+            UiFactory.Stretch(fxRect);
+            var flights = fxRect.gameObject.AddComponent<FlightLayer>();
+            flights.Container = fxRect;
+            var bursts = fxRect.gameObject.AddComponent<GlowBurstLayer>();
+            bursts.Container = fxRect;
+            var floats = fxRect.gameObject.AddComponent<FloatingNumberLayer>();
+            floats.Container = fxRect;
+
+            // --- played-card showcase (above flights, below prompts) ---
+            var showcase = CreateView<CardShowcase>("Showcase", canvasRoot, out var showcaseRect);
+            UiFactory.Stretch(showcaseRect);
+            showcase.Container = showcaseRect;
+
             // --- response window (above the hand) ---
             var response = CreateOverlayView<ResponseWindowView>("ResponseWindow", canvasRoot, out var responseContainer);
             UiFactory.Place(responseContainer, new Vector2(0.5f, 0f), new Vector2(60f, 316f), new Vector2(640f, 96f));
@@ -397,6 +412,10 @@ namespace Pascension.Game.EditorSupport
             screen.ExilePile = exilePile;
             screen.History = history;
             screen.OpponentDetail = opponentDetail;
+            screen.Flights = flights;
+            screen.Bursts = bursts;
+            screen.Floats = floats;
+            screen.Showcase = showcase;
 
             var bootstrapGo = new GameObject("GameRoot");
             var bootstrap = bootstrapGo.AddComponent<GameBootstrap>();

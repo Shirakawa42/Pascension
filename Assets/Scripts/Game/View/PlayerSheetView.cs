@@ -205,6 +205,11 @@ namespace Pascension.Game.View
         public RectTransform EquipmentRect(int index) =>
             index >= 0 && index < 3 && _equipment[index] != null ? _equipment[index].Rect : Container;
 
+        /// <summary>Floating-number anchors.</summary>
+        public RectTransform ApCrystalRect => _apDisc != null ? _apDisc.rectTransform : Container;
+        public RectTransform DamageCrystalRect => _damageDisc != null ? _damageDisc.rectTransform : Container;
+        public RectTransform XpBarRect => _xpFill != null ? (RectTransform)_xpFill.rectTransform.parent : Container;
+
         // ------------------------------------------------------------------ rendering
 
         public void Render(PlayerSnap me, HashSet<int> activatableEquipment,

@@ -28,6 +28,10 @@ namespace Pascension.Game.Presentation
 
         public bool IsIdle => !_playing && _batches.Count == 0;
 
+        /// <summary>True while the current batch is being fast-forwarded (per-frame
+        /// animations should snap to their end state when this flips on).</summary>
+        public bool FastForwarding => _fastForward;
+
         public void Enqueue(List<GameEvent> batch)
         {
             if (batch == null || batch.Count == 0) return;

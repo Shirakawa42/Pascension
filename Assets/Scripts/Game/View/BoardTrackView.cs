@@ -109,6 +109,7 @@ namespace Pascension.Game.View
             _bossCard = CardViewFactory.Create(Container, Theme, 0.55f);
             _bossCard.Rect.anchoredPosition = bossAnchor;
             _bossCard.Clicked += _ => BossClicked?.Invoke();
+            _bossCard.gameObject.SetActive(false); // bound (and shown) by the first Render
 
             _bossHp = UiFactory.CreateText(Theme, "BossHp", Container, "", 24f,
                 UiPalette.Danger, TextAlignmentOptions.Center, FontStyles.Bold);
@@ -208,6 +209,14 @@ namespace Pascension.Game.View
 
         /// <summary>Anchor rect of the boss card (for stack-target arrows). Null before Init.</summary>
         public RectTransform BossRect => _built && _bossCard != null ? _bossCard.Rect : null;
+
+        /// <summary>Rect of a step node (burst anchor). Falls back to the boss for the final step.</summary>
+        public RectTransform NodeRect(int step)
+        {
+            if (!_built || step < 0 || step >= _nodeImages.Length) return BossRect;
+            var node = _nodeImages[step];
+            return node != null ? node.rectTransform : BossRect;
+        }
 
         public void SetBossGlow(bool on, Color color)
         {
