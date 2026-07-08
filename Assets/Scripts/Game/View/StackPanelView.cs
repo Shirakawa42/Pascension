@@ -23,7 +23,7 @@ namespace Pascension.Game.View
         public event Action<int> ItemClicked;
 
         private const float HiddenX = 340f;
-        private const float ShownX = -6f;
+        private const float ShownX = -234f;
 
         private bool _built;
         private RectTransform _content;

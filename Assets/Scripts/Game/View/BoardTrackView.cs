@@ -27,9 +27,7 @@ namespace Pascension.Game.View
         /// <summary>Raised when the boss card is clicked.</summary>
         public event Action BossClicked;
 
-        private const float HalfW = 912f;
-        private const float HalfH = 494f;
-        private const float CornerRadius = 72f;
+        // (Path geometry lives in Evaluate — a serpentine in the right-edge strip.)
 
         private GameRules _rules;
         private Vector2[] _nodePos;
@@ -44,8 +42,8 @@ namespace Pascension.Game.View
 
         private static readonly Vector2[] PawnOffsets =
         {
-            new Vector2(-12f, 12f), new Vector2(12f, 12f),
-            new Vector2(-12f, -12f), new Vector2(12f, -12f)
+            new Vector2(-10f, 10f), new Vector2(10f, 10f),
+            new Vector2(-10f, -10f), new Vector2(10f, -10f)
         };
 
         public void Init(UiTheme theme, GameRules rules)
@@ -61,7 +59,7 @@ namespace Pascension.Game.View
             _nodeButtons = new Button[steps + 1];
 
             for (int i = 0; i <= steps; i++)
-                _nodePos[i] = Evaluate((float)i / steps);
+                _nodePos[i] = Evaluate((float)i / steps, steps);
 
             var innSteps = new HashSet<int>(rules.InnSteps);
 
@@ -71,7 +69,7 @@ namespace Pascension.Game.View
                 bool isBoss = i == steps;
                 if (isBoss) continue; // the boss card marks the final step
 
-                float size = inn ? 46f : i == 0 ? 38f : 26f;
+                float size = inn ? 38f : i == 0 ? 32f : 24f;
                 var node = UiFactory.CreateImage($"Node{i}", Container, Theme.Circle,
                     inn ? UiPalette.GoldDim : UiPalette.PanelLight, raycast: true);
                 UiFactory.Place(node.rectTransform, new Vector2(0.5f, 0.5f), _nodePos[i], new Vector2(size, size));
@@ -106,16 +104,16 @@ namespace Pascension.Game.View
                 }
             }
 
-            // Boss at the final step, top-center.
-            var bossAnchor = _nodePos[steps] + new Vector2(0f, -86f);
-            _bossCard = CardViewFactory.Create(Container, Theme, 0.52f);
+            // Boss at the top of the right strip; the final step's pawns stand at its feet.
+            var bossAnchor = new Vector2(825f, 330f);
+            _bossCard = CardViewFactory.Create(Container, Theme, 0.55f);
             _bossCard.Rect.anchoredPosition = bossAnchor;
             _bossCard.Clicked += _ => BossClicked?.Invoke();
 
             _bossHp = UiFactory.CreateText(Theme, "BossHp", Container, "", 24f,
                 UiPalette.Danger, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(_bossHp.rectTransform, new Vector2(0.5f, 0.5f),
-                bossAnchor + new Vector2(96f, 40f), new Vector2(120f, 30f));
+                new Vector2(825f, 428f), new Vector2(160f, 30f));
         }
 
         // ------------------------------------------------------------------ rendering
@@ -225,45 +223,21 @@ namespace Pascension.Game.View
         // ------------------------------------------------------------------ path
 
         /// <summary>
-        /// Rounded-rect path: t=0 bottom-center → right along the bottom edge → up the
-        /// right side → left along the top edge → t=1 top-center (boss).
+        /// Vertical serpentine in the right-edge strip: steps snake bottom→top in rows of
+        /// five (even rows left→right, odd rows right→left); the final step sits above
+        /// the last row, under the boss card.
         /// </summary>
-        private static Vector2 Evaluate(float t)
+        private static Vector2 Evaluate(float t, int steps)
         {
-            float r = CornerRadius;
-            float bottomRun = HalfW - r;
-            float arc = r * Mathf.PI * 0.5f;
-            float rightRun = 2f * HalfH - 2f * r;
-            float topRun = HalfW - r;
-            float total = bottomRun + arc + rightRun + arc + topRun;
+            int i = Mathf.RoundToInt(Mathf.Clamp01(t) * steps);
+            if (i >= steps)
+                return new Vector2(825f, 240f); // final step: pawns stand at the boss's feet
 
-            float d = Mathf.Clamp01(t) * total;
-
-            if (d <= bottomRun)
-                return new Vector2(d, -HalfH);
-            d -= bottomRun;
-
-            if (d <= arc)
-            {
-                float a = d / arc * Mathf.PI * 0.5f; // 0..90°
-                var center = new Vector2(HalfW - r, -HalfH + r);
-                return center + new Vector2(Mathf.Sin(a) * r, -Mathf.Cos(a) * r);
-            }
-            d -= arc;
-
-            if (d <= rightRun)
-                return new Vector2(HalfW, -HalfH + r + d);
-            d -= rightRun;
-
-            if (d <= arc)
-            {
-                float a = d / arc * Mathf.PI * 0.5f;
-                var center = new Vector2(HalfW - r, HalfH - r);
-                return center + new Vector2(Mathf.Cos(a) * r, Mathf.Sin(a) * r);
-            }
-            d -= arc;
-
-            return new Vector2(HalfW - r - d, HalfH);
+            int row = i / 5;
+            int col = i % 5;
+            float x = row % 2 == 0 ? 745f + col * 40f : 905f - col * 40f;
+            float y = -480f + row * 78f;
+            return new Vector2(x, y);
         }
     }
 }

@@ -23,6 +23,13 @@ namespace Pascension.Game.View
 
         public CardArtIndex ArtIndex;
 
+        [Header("Icons (optional — wired once generated; UI degrades gracefully when null)")]
+        public TMP_SpriteAsset Icons;
+        public Sprite IconDmg;
+        public Sprite IconAp;
+        public Sprite IconXp;
+        public Sprite IconStep;
+
         public Sprite Art(string id) => ArtIndex != null ? ArtIndex.GetSprite(id) : null;
     }
 }

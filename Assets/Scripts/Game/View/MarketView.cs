@@ -20,9 +20,9 @@ namespace Pascension.Game.View
 
         public event Action<int, int> SlotClicked;
 
-        private const float CardScale = 0.6f;
-        private const float SlotSpacing = 152f;
-        private const float RowSpacing = 198f;
+        private const float CardScale = 0.5f;
+        private const float SlotSpacing = 122f;
+        private const float RowSpacing = 166f;
 
         private CardView[][] _slots;
         private Image[][] _slotFrames;
@@ -50,29 +50,29 @@ namespace Pascension.Game.View
                 // Row order top→bottom: Elite, Advanced, Basic.
                 float y = (t - 1) * RowSpacing;
 
-                var label = UiFactory.CreateText(Theme, $"TierLabel{t}", Container, TierNames[t], 19f,
+                var label = UiFactory.CreateText(Theme, $"TierLabel{t}", Container, TierNames[t], 18f,
                     UiPalette.WithAlpha(UiPalette.TierColor((CardTier)(t + 1)), 0.95f),
                     TextAlignmentOptions.MidlineRight, FontStyles.Bold);
-                UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(-16f, y + 46f), new Vector2(168f, 26f));
-                label.characterSpacing = 3f;
+                UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(-46f, y + 46f), new Vector2(180f, 26f));
+                label.characterSpacing = 2f;
                 label.enableWordWrapping = false;
                 label.overflowMode = TextOverflowModes.Overflow;
 
                 var pile = UiFactory.CreateText(Theme, $"PileCount{t}", Container, "×0", 17f,
                     UiPalette.TextDim, TextAlignmentOptions.MidlineRight);
-                UiFactory.Place(pile.rectTransform, new Vector2(0f, 0.5f), new Vector2(4f, y + 20f), new Vector2(108f, 22f));
+                UiFactory.Place(pile.rectTransform, new Vector2(0f, 0.5f), new Vector2(-46f, y + 20f), new Vector2(180f, 22f));
                 _pileCounts[t] = pile;
 
                 var lockLabel = UiFactory.CreateText(Theme, $"Lock{t}", Container, "", 15f,
                     UiPalette.Danger, TextAlignmentOptions.MidlineRight, FontStyles.Bold);
-                UiFactory.Place(lockLabel.rectTransform, new Vector2(0f, 0.5f), new Vector2(4f, y - 6f), new Vector2(108f, 22f));
+                UiFactory.Place(lockLabel.rectTransform, new Vector2(0f, 0.5f), new Vector2(-46f, y - 6f), new Vector2(180f, 22f));
                 _lockLabels[t] = lockLabel;
 
                 _slots[t] = new CardView[5];
                 _slotFrames[t] = new Image[5];
                 for (int s = 0; s < 5; s++)
                 {
-                    float x = 195f + s * SlotSpacing;
+                    float x = 150f + s * SlotSpacing;
 
                     var frame = UiFactory.CreateImage($"Slot{t}_{s}", Container, Theme.Rounded,
                         UiPalette.WithAlpha(UiPalette.PanelLight, 0.35f));
@@ -96,6 +96,22 @@ namespace Pascension.Game.View
         {
             if (!_built || tierIndex < 0 || tierIndex > 2 || slotIndex < 0 || slotIndex > 4) return null;
             return _slotFrames[tierIndex][slotIndex].rectTransform;
+        }
+
+        /// <summary>Anchor rect of a tier's face-down pile label (refill-flight source).</summary>
+        public RectTransform PileLabelRect(int tierIndex)
+        {
+            if (!_built || tierIndex < 0 || tierIndex > 2) return null;
+            return _pileCounts[tierIndex].rectTransform;
+        }
+
+        /// <summary>Hide a slot's card view while a flight animates it (cleared by Render).</summary>
+        public void SetSlotHidden(int tierIndex, int slotIndex, bool hidden)
+        {
+            if (!_built || tierIndex < 0 || tierIndex > 2 || slotIndex < 0 || slotIndex > 4) return;
+            var card = _slots[tierIndex][slotIndex];
+            if (card != null && card.Group != null)
+                card.Group.alpha = hidden ? 0f : 1f;
         }
 
         public void Render(ClientSnapshot snap, int viewerLevel,

@@ -174,6 +174,13 @@ namespace Pascension.Game.View
 
         // ------------------------------------------------------------------ pointer
 
+        /// <summary>Configure this view as a bare hover-preview proxy: sets DefId only,
+        /// without binding any visuals (safe on a factory-less CardView).</summary>
+        public void SetPreviewDef(string defId) => DefId = defId;
+
+        /// <summary>Raise the global hover feed for this view (used by proxy hover sources).</summary>
+        public void RaiseHover(bool entered) => AnyHovered?.Invoke(this, entered);
+
         public void OnPointerClick(PointerEventData eventData) => Clicked?.Invoke(this);
 
         public void OnPointerEnter(PointerEventData eventData)

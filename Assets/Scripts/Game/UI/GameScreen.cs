@@ -41,6 +41,11 @@ namespace Pascension.Game.UI
         public CardListModal CardList;
         [Tooltip("Container for the persistent END TURN / PASS button (built at runtime).")]
         public RectTransform ActionBar;
+        public PileWidget DrawPile;
+        public PileWidget PlayedPile;
+        public PileWidget DiscardPile;
+        public PileWidget ExilePile;
+        public PlayHistoryBar History;
 
         public ClientGameView View { get; } = new ClientGameView();
 
@@ -77,6 +82,11 @@ namespace Pascension.Game.UI
             GameOver.Init(Theme);
             Toast.Init(Theme);
             CardList.Init(Theme);
+            if (History != null) History.Init(Theme);
+            if (DrawPile != null) DrawPile.Clicked += () => ShowPile("Draw pile (alphabetical, order hidden)", Me()?.Deck);
+            if (PlayedPile != null) PlayedPile.Clicked += () => ShowPile("Played this turn", Me()?.PlayedThisTurn);
+            if (DiscardPile != null) DiscardPile.Clicked += () => ShowPile("Discard pile", Me()?.Discard);
+            if (ExilePile != null) ExilePile.Clicked += () => ShowPile("Exile", Me()?.Exile);
 
             session.SnapshotReceived += OnSnapshot;
             session.EventsReceived += OnEvents;
@@ -139,6 +149,44 @@ namespace Pascension.Game.UI
         }
 
         private void OnDestroy() => CardView.AnyHovered -= OnAnyCardHovered;
+
+        private PlayerSnap Me()
+        {
+            var s = View.Snapshot;
+            return s != null ? s.Players[s.ViewerIndex] : null;
+        }
+
+        private void RenderPiles(PlayerSnap me)
+        {
+            if (me == null) return;
+            DrawPile?.Render(me.DeckCount, null);
+            PlayedPile?.Render(me.PlayedThisTurn.Count, LastOf(me.PlayedThisTurn));
+            DiscardPile?.Render(me.Discard.Count, LastOf(me.Discard));
+            ExilePile?.Render(me.Exile.Count, LastOf(me.Exile));
+        }
+
+        private static CardSnap LastOf(List<CardSnap> list) =>
+            list != null && list.Count > 0 ? list[list.Count - 1] : null;
+
+        private void ShowPile(string title, List<CardSnap> cards)
+        {
+            if (cards == null) return;
+            CardList.Show($"{title} — {cards.Count}", SortedByName(cards));
+        }
+
+        /// <summary>Alphabetical browse order for every pile (hides draw order by design).</summary>
+        private static List<CardSnap> SortedByName(IEnumerable<CardSnap> cards)
+        {
+            var sorted = new List<CardSnap>(cards);
+            sorted.Sort((a, b) =>
+            {
+                string an = Engine.Cards.CardDatabase.TryGet(a.DefId ?? "", out var ad) ? ad.Name : a.DefId ?? "";
+                string bn = Engine.Cards.CardDatabase.TryGet(b.DefId ?? "", out var bd) ? bd.Name : b.DefId ?? "";
+                int byName = string.CompareOrdinal(an, bn);
+                return byName != 0 ? byName : a.InstanceId.CompareTo(b.InstanceId);
+            });
+            return sorted;
+        }
 
         private string _previewSourceId;
 
@@ -364,6 +412,7 @@ namespace Pascension.Game.UI
             StackPanel.Render(s, targetableStack);
             RenderOpponents(s);
             RenderStackArrows(s);
+            RenderPiles(me);
             UpdateMoveButtons(legalMoveSteps);
 
             // ---- response window (no timer — players take as long as they need) ----
