@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c02971d9d08b3e4a92e4f022727e5c8, type: 3}
+  m_Name: CardArtIndex
+  m_EditorClassIdentifier: Pascension.Game::Pascension.Game.View.CardArtIndex
+  entries:
+  - id: adrenaline_shot
+    sprite: {fileID: 21300000, guid: def83d1613f44cc4d9d1fb9089b56f8f, type: 3}
+  - id: arcane_library
+    sprite: {fileID: 21300000, guid: e36bc2ab4f216de4291ee8b8c56e705b, type: 3}
+  - id: ban
+    sprite: {fileID: 21300000, guid: a34807328e6b96b4cb78f2240876a2e6, type: 3}
+  - id: blink
+    sprite: {fileID: 21300000, guid: f9210e71696bf4e4bae0fa067c75be12, type: 3}
+  - id: cataclysm
+    sprite: {fileID: 21300000, guid: 4d70fc021506ba548afe217339a4e7b6, type: 3}
+  - id: clarity
+    sprite: {fileID: 21300000, guid: a9af5443940f1894eac08e79bedaba03, type: 3}
+  - id: cloth_armor
+    sprite: {fileID: 21300000, guid: 6020cad784e47d24ebcfcf42572ebe66, type: 3}
+  - id: counterspell
+    sprite: {fileID: 21300000, guid: 11a3d45b568fb954c85b387f33b4bcc6, type: 3}
+  - id: divine_shield
+    sprite: {fileID: 21300000, guid: 0a16712a990be4b449f87f066265647e, type: 3}
+  - id: dragon
+    sprite: {fileID: 21300000, guid: 6b9ff9e74bcf6704da31b3459e6f6c05, type: 3}
+  - id: dragonscale_armor
+    sprite: {fileID: 21300000, guid: 9e3dd9aa3f36a7f45ba153819e07b955, type: 3}
+  - id: excalibur
+    sprite: {fileID: 21300000, guid: 0f4a2d4aa966c574b97022e6b8ef4884, type: 3}
+  - id: fireball
+    sprite: {fileID: 21300000, guid: 746eb74201dce24469f0af4080600880, type: 3}
+  - id: firestorm
+    sprite: {fileID: 21300000, guid: 11272bddd16178b4087adaf218d8992f, type: 3}
+  - id: fireworks
+    sprite: {fileID: 21300000, guid: 60511e4e9164d1343bfe6756affd7417, type: 3}
+  - id: fire_bolt
+    sprite: {fileID: 21300000, guid: 18d270567da41314891f194e2f2b1d1f, type: 3}
+  - id: goblin
+    sprite: {fileID: 21300000, guid: 860895266e457d74e86617cc1960c1ea, type: 3}
+  - id: hobgoblin
+    sprite: {fileID: 21300000, guid: 107ba5a7a67daaa48885fb3ca9a6ba06, type: 3}
+  - id: lich
+    sprite: {fileID: 21300000, guid: 89d80a2aed6b6104e97a64c66b21caa0, type: 3}
+  - id: longsword
+    sprite: {fileID: 21300000, guid: 920e746cd1700d4418a6a068406fec9b, type: 3}
+  - id: loot_goblin
+    sprite: {fileID: 21300000, guid: 4e2248aabb5d2bf4b815e98f4d879267, type: 3}
+  - id: lucky_charm
+    sprite: {fileID: 21300000, guid: 9886e37d662bbdf43aa4698ac8f02ce7, type: 3}
+  - id: merchant_stall
+    sprite: {fileID: 21300000, guid: 30753e957e8ee204e9cde8077ee0b4e8, type: 3}
+  - id: meteor
+    sprite: {fileID: 21300000, guid: f92f54925d0b3c544bde4a62451ce0f4, type: 3}
+  - id: mimic
+    sprite: {fileID: 21300000, guid: f2f983aadfc1eea40b0dafb09dc20f07, type: 3}
+  - id: mind_steal
+    sprite: {fileID: 21300000, guid: ad300a8c5b7c65947900b87f7713bdd9, type: 3}
+  - id: move
+    sprite: {fileID: 21300000, guid: 9bf85c818b8b6aa4686e6af56e630056, type: 3}
+  - id: ogre
+    sprite: {fileID: 21300000, guid: 5f259c2ba10c3b249977e813185ae100, type: 3}
+  - id: philosophers_stone
+    sprite: {fileID: 21300000, guid: 2e7b7dae943a77f43be4fa4140697402, type: 3}
+  - id: portal_stone
+    sprite: {fileID: 21300000, guid: a68bb201ebf6b9644be26ec481b320d8, type: 3}
+  - id: protective_barrier
+    sprite: {fileID: 21300000, guid: 502e6c3c8285f3d4bbd7e6523872453a, type: 3}
+  - id: pyroblast
+    sprite: {fileID: 21300000, guid: fb89fccf6c565234ea3b17c02cc19cfb, type: 3}
+  - id: random_bullshit_go
+    sprite: {fileID: 21300000, guid: 9fa8a5786a4461f4191be8a13b36fdeb, type: 3}
+  - id: redbull
+    sprite: {fileID: 21300000, guid: fc640063d1612394d890b92436746ab4, type: 3}
+  - id: reflexes
+    sprite: {fileID: 21300000, guid: 8b56a5779b0e5a94896ff718aa80e901, type: 3}
+  - id: run
+    sprite: {fileID: 21300000, guid: f6089b8374909cb44981486799cd6492, type: 3}
+  - id: sabotage
+    sprite: {fileID: 21300000, guid: f3be63ec0fa85744f9f3d163ec08df26, type: 3}
+  - id: short_sword
+    sprite: {fileID: 21300000, guid: 4cc32f0c7eb50ac488b1510a920b4368, type: 3}
+  - id: sprint
+    sprite: {fileID: 21300000, guid: cf9eb8caeb5e3094d9ef0d862c8d0a6d, type: 3}
+  - id: stone_totem
+    sprite: {fileID: 21300000, guid: 61c555ad52e683049bcdafb0d762a14e, type: 3}
+  - id: the_gatekeeper
+    sprite: {fileID: 21300000, guid: 6a7c4f694c66125448ed212eb4bd6881, type: 3}
+  - id: throne_of_ambition
+    sprite: {fileID: 21300000, guid: dceeab59c4b57974582a144be22fe665, type: 3}
+  - id: time_warp
+    sprite: {fileID: 21300000, guid: b888bfb30dac054498b3da3e71b4744d, type: 3}
+  - id: tower_shield
+    sprite: {fileID: 21300000, guid: 17f2e98cb3e85d947a5adaf7ad5ec69e, type: 3}
+  - id: travelers_map
+    sprite: {fileID: 21300000, guid: f845168efc091fc46b1fca86e1d0bb06, type: 3}
+  - id: treasure_golem
+    sprite: {fileID: 21300000, guid: c553f83e85223c34b8e5ec7ba2248ccb, type: 3}
+  - id: war_banner
+    sprite: {fileID: 21300000, guid: c75631371e07b5746b9f2ad3bd20ddf5, type: 3}
+  - id: cornelius
+    sprite: {fileID: 21300000, guid: 022e4aee9234f734b97a8b44bb45c779, type: 3}
+  - id: ignis
+    sprite: {fileID: 21300000, guid: 6f23bb062217854489e6d8fc6b1f7dac, type: 3}
+  - id: nyx
+    sprite: {fileID: 21300000, guid: 150732b292bf0a6458ff197640b1214e, type: 3}
+  - id: wren
+    sprite: {fileID: 21300000, guid: da186265b36de8a4d87646bc45599d2a, type: 3}

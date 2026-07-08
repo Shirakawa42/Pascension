@@ -181,8 +181,8 @@ namespace Pascension.Game.UI
 
             // Opponent configuration.
             var oppLabel = UiFactory.CreateText(Theme, "OppLabel", panel.transform, "OPPONENTS", 20f,
-                UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
-            UiFactory.Place(oppLabel.rectTransform, new Vector2(0.5f, 0f), new Vector2(-320f, 244f), new Vector2(240f, 26f));
+                UiPalette.TextDim, TextAlignmentOptions.Left, FontStyles.Bold);
+            UiFactory.Place(oppLabel.rectTransform, new Vector2(0.5f, 0f), new Vector2(-370f, 284f), new Vector2(300f, 26f));
 
             for (int c = 1; c <= 3; c++)
             {

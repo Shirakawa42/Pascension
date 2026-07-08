@@ -32,9 +32,8 @@ namespace Pascension.Game.EditorSupport
 
         public static void BuildAllScenes()
         {
-            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                return;
-
+            // No prompts: this runs headless via MCP. Unsaved changes in the currently
+            // open scene are discarded when the new scenes are created below.
             if (!EnsureTmpEssentials())
                 return;
 
@@ -70,9 +69,8 @@ namespace Pascension.Game.EditorSupport
             if (Resources.Load<TMP_Settings>("TMP Settings") != null)
                 return true;
 
-            EditorUtility.DisplayDialog("TextMeshPro essentials imported",
-                "TMP Essential Resources were just imported. Run 'Pascension/Setup/Build All Scenes' once more.",
-                "OK");
+            Debug.LogWarning("[Pascension] TMP Essential Resources were just imported — " +
+                             "run 'Pascension/Setup/Build All Scenes' once more.");
             return false;
         }
 

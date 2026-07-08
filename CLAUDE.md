@@ -54,15 +54,23 @@ Pascension.Engine.Tests  Assets/Tests/EngineTests/  edit-mode NUnit tests
 
 ## Current status (2026-07-08) & next-session checklist
 
-**Done & verified headless (37/37 NUnit tests green via Tools/EngineVerify):** full rules engine, all 42 cards + 4 heroes + boss, RandomBot/HeuristicBot + balance sims, EngineJson/snapshots/masking, GameHost/LocalSession/BotSeat/AsyncBotSeat, Ollama bot (prompt builder + fallback tested; live Ollama untested). **Done, generated:** all 53 art assets (Assets/Art/…). **Written but NOT yet compiled by Unity** (no Unity MCP this session): the whole UI layer (Assets/Scripts/Game), netcode (Assets/Scripts/Net minus Host/), editor tooling (SceneBuilder, NetSceneBuilder, ArtPipeline). Agents' open questions live in `Assets/Scripts/Game/NOTES.md`, `Assets/Scripts/Net/NOTES.md`, `Assets/Scripts/Bots/Ollama/NOTES.md`, `Assets/Scripts/Editor/ArtPipeline/NOTES.md`.
+**Compiles & runs in Unity 6000.3.7f1; solo game verified playable end-to-end via MCP.** 37/37 edit-mode tests green (also headless via `Tools/EngineVerify`). Scenes built (MainMenu, Game, Lobby), art index has 51 sprites, all 53 art assets present. Verified by driving the real menu→hero-select→game flow: playing cards, buying (Haggle discount applied), END TURN, bot takes its turn, round advances — zero runtime errors. Screenshots confirm the board, market (full-art cards + monster HP badges), character sheets, hand fan, and boss all render correctly.
+
+**Bugs found & fixed this session:**
+- `CastEffects.cs`: `BuildTargetDecision`/`ExtractTargets`/`DescribeTarget` were `internal` but called cross-assembly from Content → made `public`.
+- **`runInBackground: 0` → `1`** (ProjectSettings): the player loop froze whenever the Game view lost focus, so `GameBootstrap.Start()` never ran after a scene load. Genuinely correct for a networked game too (no freeze on alt-tab). This was the one blocking bug.
+- Removed blocking editor modal dialogs from `SceneConstruction.cs` and `NetSceneBuilder.cs` (they hung headless menu-item runs).
+- Cosmetics: market tier label "ADVANCED" no longer wraps (`MarketView.cs`); "OPPONENTS" label no longer overlaps bot config (`MainMenu.cs`).
+
+**Ollama bot**: logic tested (prompt builder + snapshot fallback); live Ollama at :11434 still untested end-to-end.
 
 Next session, in order:
-1. Focus the Unity editor → let it resolve packages (NGO 2.13, LitMotion, MPPM, Newtonsoft) and compile; fix compile errors (expect a handful in Game/Net — they were written blind). Unity MCP should connect via `.mcp.json` after a session restart.
-2. Run the edit-mode test suite in Unity (should mirror the green headless run).
-3. Menu: `Pascension/Setup/Build All Scenes`, then `Pascension/Setup/Build Lobby Scene`, then `Pascension/Rebuild Card Art Index`.
-4. Play MainMenu → solo game vs bots end-to-end; screenshot review; iterate on look & feel.
-5. Multiplayer smoke test via MPPM (host + 1 virtual client).
-6. TODO not yet built: audio (AudioManager + CC0 SFX/music pack), help/tutorial overlay, balance tuning (see playtesting skill baseline), Unity Relay for internet play, effective-HP display on buffed monsters (snapshot lacks modifier data — add `EffectiveHp` to CardSnap).
+1. Multiplayer smoke test via MPPM (host + 1 virtual client) — the net layer compiled but its runtime path is unexercised.
+2. Live-test the Ollama bot (needs Ollama running at 127.0.0.1:11434 with a model installed).
+3. Not yet built: audio (AudioManager + CC0 SFX/music pack), help/tutorial overlay, Unity Relay for internet play, effective-HP display on buffed monsters (snapshot lacks modifier data — add `EffectiveHp` to CardSnap).
+4. Balance tuning (see playtesting skill baseline: games run ~26-33 rounds, seat-0/Ignis over-wins).
+
+MCP note: the Unity MCP server is HTTP streamable on port **8090** (not the default). `.mcp.json` points at `http://127.0.0.1:8090/mcp`. Under MCP control the Game view is unfocused, so set `Application.runInBackground = true` at runtime if frames stall (now the default via ProjectSettings). `execute_code` runs as a method body (no `using`/local-functions); screenshots via Camera.Render→ReadPixels (see scratchpad `shot.cs`), not `ScreenCapture.CaptureScreenshot`.
 
 Key integration contract: networked play sets `Pascension.Net.SessionProvider.Current` before Game-scene `Start()`; `GameBootstrap` prefers it and only builds the solo host when it's null. The host's `GameHost.Start()` is deferred to `HostMatchStarter`'s first `Update` so UI binding always precedes the first broadcast.
 

@@ -50,11 +50,13 @@ namespace Pascension.Game.View
                 // Row order top→bottom: Elite, Advanced, Basic.
                 float y = (t - 1) * RowSpacing;
 
-                var label = UiFactory.CreateText(Theme, $"TierLabel{t}", Container, TierNames[t], 20f,
+                var label = UiFactory.CreateText(Theme, $"TierLabel{t}", Container, TierNames[t], 19f,
                     UiPalette.WithAlpha(UiPalette.TierColor((CardTier)(t + 1)), 0.95f),
                     TextAlignmentOptions.MidlineRight, FontStyles.Bold);
-                UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(4f, y + 46f), new Vector2(108f, 26f));
-                label.characterSpacing = 6f;
+                UiFactory.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(-16f, y + 46f), new Vector2(168f, 26f));
+                label.characterSpacing = 3f;
+                label.enableWordWrapping = false;
+                label.overflowMode = TextOverflowModes.Overflow;
 
                 var pile = UiFactory.CreateText(Theme, $"PileCount{t}", Container, "×0", 17f,
                     UiPalette.TextDim, TextAlignmentOptions.MidlineRight);

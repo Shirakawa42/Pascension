@@ -31,19 +31,9 @@ namespace Pascension.Editor
         [MenuItem("Pascension/Setup/Build Lobby Scene")]
         public static void BuildLobbyScene()
         {
+            // No prompts: runs headless via MCP. Always rebuilds; unsaved changes in the
+            // open scene are discarded when the new empty scene is created.
             EnsureBridgePrefab();
-
-            if (File.Exists(LobbyScenePath) &&
-                !EditorUtility.DisplayDialog("Rebuild Lobby scene?",
-                    LobbyScenePath + " already exists. Rebuild it from scratch?",
-                    "Rebuild", "Keep existing"))
-            {
-                EnsureBuildSettings();
-                return;
-            }
-
-            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                return;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 

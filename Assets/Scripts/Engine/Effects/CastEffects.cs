@@ -31,7 +31,7 @@ namespace Pascension.Engine.Effects
             item.TargetSpec = spec;
         }
 
-        internal static DecisionRequest BuildTargetDecision(EffectContext ctx, TargetSpec spec, List<TargetRef> options)
+        public static DecisionRequest BuildTargetDecision(EffectContext ctx, TargetSpec spec, List<TargetRef> options)
         {
             var req = new DecisionRequest
             {
@@ -47,7 +47,7 @@ namespace Pascension.Engine.Effects
             return req;
         }
 
-        internal static List<TargetRef> ExtractTargets(DecisionAnswer answer, DecisionRequest req)
+        public static List<TargetRef> ExtractTargets(DecisionAnswer answer, DecisionRequest req)
         {
             var targets = new List<TargetRef>();
             foreach (int optionId in answer.ChosenOptionIds)
@@ -59,7 +59,7 @@ namespace Pascension.Engine.Effects
             return targets;
         }
 
-        internal static string DescribeTarget(EffectContext ctx, TargetRef target)
+        public static string DescribeTarget(EffectContext ctx, TargetRef target)
         {
             switch (target.Kind)
             {
