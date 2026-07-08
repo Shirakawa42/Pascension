@@ -36,3 +36,6 @@ crashlytics-build.properties
 
 # Generated MCP state
 Library/MCPForUnity/
+[Bb]in/
+Tools/**/obj/
+Tools/**/bin/
