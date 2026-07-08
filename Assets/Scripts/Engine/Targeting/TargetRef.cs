@@ -30,6 +30,9 @@ namespace Pascension.Engine.Targeting
             B = b;
         }
 
+        /// <summary>Reconstruction from serialized data — prefer the named factories in code.</summary>
+        public static TargetRef FromRaw(TargetKind kind, int a, int b) => new(kind, a, b);
+
         public static TargetRef Monster(int tier, int slot) => new(TargetKind.MonsterSlot, tier, slot);
         public static TargetRef TheBoss() => new(TargetKind.Boss, 0);
         public static TargetRef PlayerAt(int index) => new(TargetKind.Player, index);
