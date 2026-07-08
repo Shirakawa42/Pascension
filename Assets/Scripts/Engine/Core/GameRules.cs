@@ -18,8 +18,9 @@ namespace Pascension.Engine.Core
         public int BossHp = 20;
         public int MarketRowSize = 5;
 
-        /// <summary>Response-window timer, seconds. Enforced by the host (GameHost), not the engine.</summary>
-        public int ResponseTimerSeconds = 25;
+        /// <summary>Response-window timer, seconds. 0 = disabled: players may take any
+        /// amount of time (the game's default). Enforced by the host (GameHost) when set.</summary>
+        public int ResponseTimerSeconds = 0;
 
         /// <summary>Round-1 compensation: [playerIndex] → (bonus AP, bonus opening cards).</summary>
         public (int ap, int cards)[] StaggeredStart = { (0, 0), (1, 0), (1, 1), (1, 1) };

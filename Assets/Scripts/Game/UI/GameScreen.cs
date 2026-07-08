@@ -55,6 +55,8 @@ namespace Pascension.Game.UI
         private UnityEngine.UI.Button _turnButton;
         private TMPro.TextMeshProUGUI _turnLabel;
         private RectTransform _moveRow;
+        private StackArrows _stackArrows;
+        private CardView _preview;
 
         // ------------------------------------------------------------------ binding
 
@@ -83,6 +85,22 @@ namespace Pascension.Game.UI
 
             Queue.EventPlayer = PlayEvent;
             Queue.Drained += RefreshAll;
+
+            // Stack-target arrows: above the table views, below the response window.
+            // (ResponseWindow.Container is a nested rect — use the canvas-level root's index.)
+            var responseRoot = transform.Find("ResponseWindow");
+            _stackArrows = StackArrows.Create(transform, Theme,
+                responseRoot != null ? responseRoot.GetSiblingIndex() : transform.childCount - 1);
+
+            // Large hover preview so small card text is always readable (created last = on top).
+            _preview = CardViewFactory.Create(transform, Theme, 1.3f);
+            _preview.Rect.anchorMin = _preview.Rect.anchorMax = new Vector2(0.5f, 0.5f);
+            _preview.Rect.pivot = new Vector2(0.5f, 0.5f);
+            _preview.SetRaycastable(false);
+            _preview.Group.blocksRaycasts = false;
+            _preview.Group.interactable = false;
+            _preview.gameObject.SetActive(false);
+            CardView.AnyHovered += OnAnyCardHovered;
 
             Hand.CardClicked += OnHandCardClicked;
             Market.SlotClicked += OnMarketSlotClicked;
@@ -118,6 +136,75 @@ namespace Pascension.Game.UI
                 moveLayout.childForceExpandWidth = false;
                 moveLayout.childForceExpandHeight = false;
             }
+        }
+
+        private void OnDestroy() => CardView.AnyHovered -= OnAnyCardHovered;
+
+        private string _previewSourceId;
+
+        private void OnAnyCardHovered(CardView card, bool entered)
+        {
+            if (_preview == null || card == _preview) return;
+            string key = card.GetInstanceID().ToString();
+            if (entered)
+            {
+                if (string.IsNullOrEmpty(card.DefId)) return; // hidden card / card back
+                _previewSourceId = key;
+                _preview.BindDef(card.DefId);
+                // Show on the opposite side of the hovered card so it never covers it.
+                float sideX = transform.InverseTransformPoint(card.transform.position).x;
+                _preview.Rect.anchoredPosition = new Vector2(sideX > 0f ? -430f : 430f, 30f);
+                _preview.gameObject.SetActive(true);
+                _preview.Rect.SetAsLastSibling();
+            }
+            else if (_previewSourceId == key)
+            {
+                _previewSourceId = null;
+                _preview.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>Arrows from each stack item's controller to its targets — everyone sees
+        /// exactly what is being attacked/targeted while responses are possible.</summary>
+        private void RenderStackArrows(ClientSnapshot s)
+        {
+            if (_stackArrows == null) return;
+            var entries = new List<StackArrows.Entry>();
+            foreach (var item in s.Stack)
+            {
+                if (item.Targets == null || item.Targets.Count == 0) continue;
+                var from = SheetAnchor(item.ControllerIndex, s.ViewerIndex);
+                if (from == null) continue;
+                foreach (var t in item.Targets)
+                {
+                    RectTransform to = null;
+                    switch (t.Kind)
+                    {
+                        case TargetKind.MonsterSlot: to = Market.SlotRect(t.A - 1, t.B); break;
+                        case TargetKind.Boss: to = Board.BossRect; break;
+                        case TargetKind.Player: to = SheetAnchor(t.A, s.ViewerIndex); break;
+                    }
+                    if (to == null) continue;
+                    var color = item.Kind == "DamageAssignment" ? UiPalette.Danger : UiPalette.TargetBlue;
+                    entries.Add(new StackArrows.Entry(ArrowLocal(from), ArrowLocal(to), color));
+                }
+            }
+            _stackArrows.Render(entries);
+        }
+
+        private RectTransform SheetAnchor(int playerIndex, int viewerIndex)
+        {
+            if (playerIndex == viewerIndex) return PlayerSheet.Container;
+            for (int i = 0; i < _opponentIndices.Count; i++)
+                if (_opponentIndices[i] == playerIndex)
+                    return (RectTransform)_opponentSheets[i].transform;
+            return null;
+        }
+
+        private Vector2 ArrowLocal(RectTransform rt)
+        {
+            var world = rt.TransformPoint(rt.rect.center);
+            return _stackArrows.Container.InverseTransformPoint(world);
         }
 
         private void UpdateMoveButtons(List<int> legalSteps)
@@ -276,13 +363,14 @@ namespace Pascension.Game.UI
             PlayerSheet.Render(me, equipActivatable, heroActive, heroUltimate);
             StackPanel.Render(s, targetableStack);
             RenderOpponents(s);
+            RenderStackArrows(s);
             UpdateMoveButtons(legalMoveSteps);
 
-            // ---- response window ----
+            // ---- response window (no timer — players take as long as they need) ----
             if (localPriority && s.Stack.Count > 0)
             {
                 if (!ResponseWindow.IsShown)
-                    ResponseWindow.Show(_rules != null ? _rules.ResponseTimerSeconds : 25f);
+                    ResponseWindow.Show();
                 Hand.SetPulse(playable);
             }
             else

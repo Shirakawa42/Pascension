@@ -207,6 +207,9 @@ namespace Pascension.Game.View
             _pawnAnimating[playerIndex] = false;
         }
 
+        /// <summary>Anchor rect of the boss card (for stack-target arrows). Null before Init.</summary>
+        public RectTransform BossRect => _built && _bossCard != null ? _bossCard.Rect : null;
+
         public void SetBossGlow(bool on, Color color)
         {
             if (_built && _bossCard != null)

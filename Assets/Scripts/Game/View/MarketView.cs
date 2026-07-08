@@ -91,6 +91,13 @@ namespace Pascension.Game.View
             }
         }
 
+        /// <summary>Anchor rect of a market slot (for stack-target arrows). Null before Init.</summary>
+        public RectTransform SlotRect(int tierIndex, int slotIndex)
+        {
+            if (!_built || tierIndex < 0 || tierIndex > 2 || slotIndex < 0 || slotIndex > 4) return null;
+            return _slotFrames[tierIndex][slotIndex].rectTransform;
+        }
+
         public void Render(ClientSnapshot snap, int viewerLevel,
             HashSet<(int, int)> buyable, HashSet<(int, int)> attackable, HashSet<(int, int)> targetable)
         {

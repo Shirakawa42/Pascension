@@ -32,6 +32,7 @@ namespace Pascension.Game.View
         private TextMeshProUGUI _portraitInitial;
         private TextMeshProUGUI _nameText;
         private TextMeshProUGUI _heroText;
+        private TextMeshProUGUI _passiveText;
         private TextMeshProUGUI _levelText;
         private Image _xpFill;
         private TextMeshProUGUI _xpText;
@@ -57,6 +58,10 @@ namespace Pascension.Game.View
             _rules = rules;
             if (_built) return;
             _built = true;
+
+            // Grow past the scene-authored 262px so the hero passive block fits between
+            // the identity rows (top-anchored) and the equipment slots (bottom-anchored).
+            Container.sizeDelta = new Vector2(Container.sizeDelta.x, 306f);
 
             var panel = UiFactory.CreatePanel(Theme, "Sheet", Container);
             UiFactory.Stretch(panel.rectTransform);
@@ -94,6 +99,14 @@ namespace Pascension.Game.View
                 UiPalette.TextDim, TextAlignmentOptions.MidlineLeft);
             UiFactory.Place(_xpText.rectTransform, new Vector2(0f, 1f), new Vector2(298f, -84f), new Vector2(90f, 14f));
 
+            // ---- hero passive(s) ----
+            _passiveText = UiFactory.CreateText(Theme, "Passives", panel.transform, "", 12f,
+                UiPalette.TextDim, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+            UiFactory.Place(_passiveText.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -102f), new Vector2(492f, 48f));
+            _passiveText.enableAutoSizing = true;
+            _passiveText.fontSizeMin = 9f;
+            _passiveText.fontSizeMax = 12f;
+
             // ---- AP / damage crystals ----
             _apText = BuildCrystal(panel.transform, "Ap", new Vector2(-116f, -14f), UiPalette.Gold, "AP");
             _damageText = BuildCrystal(panel.transform, "Damage", new Vector2(-42f, -14f), UiPalette.Danger, "DMG");
@@ -112,6 +125,7 @@ namespace Pascension.Game.View
                 var card = CardViewFactory.Create(panel.transform, Theme, 0.34f);
                 card.Rect.anchorMin = card.Rect.anchorMax = card.Rect.pivot = new Vector2(0f, 0f);
                 card.Rect.anchoredPosition = new Vector2(x + 1f, 45f);
+                card.RotateWhenTapped = false; // tapped shows as greyed; rotating would leave the slot
                 card.Clicked += v => { if (v.InstanceId >= 0) EquipmentClicked?.Invoke(v.InstanceId); };
                 card.gameObject.SetActive(false);
                 _equipment[i] = card;
@@ -208,6 +222,7 @@ namespace Pascension.Game.View
 
             _nameText.text = me.Name;
             _heroText.text = hero != null ? hero.Name : me.HeroId;
+            _passiveText.text = PassiveSummary(hero, me.Level);
             _levelText.text = "Lv " + me.Level;
 
             var portrait = Theme.Art(me.HeroId);
@@ -270,6 +285,21 @@ namespace Pascension.Game.View
             RenderHeroButton(_ultimateButton, _ultimateNote, hero?.Ultimate,
                 hero != null ? hero.UltimateUnlockLevel : 9, me.Level, me.HeroUltimateUsed, heroUltimateLegal);
         }
+
+        /// <summary>All hero passives; not-yet-unlocked ones are prefixed with their level.</summary>
+        private static string PassiveSummary(HeroDefinition hero, int level)
+        {
+            if (hero == null) return "";
+            var parts = new List<string>();
+            foreach (var (minLevel, ability) in hero.PassiveStatics)
+                parts.Add(Describe(ability.Description, minLevel, level));
+            foreach (var (minLevel, ability) in hero.PassiveTriggers)
+                parts.Add(Describe(ability.Description, minLevel, level));
+            return parts.Count == 0 ? "" : "Passive — " + string.Join("  ·  ", parts);
+        }
+
+        private static string Describe(string description, int minLevel, int level) =>
+            level >= minLevel ? description : $"(unlocks L{minLevel}) {description}";
 
         private void RebuildRelics(PlayerSnap me)
         {

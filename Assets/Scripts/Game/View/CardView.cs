@@ -42,8 +42,15 @@ namespace Pascension.Game.View
         public string DefId { get; private set; }
         public bool Tapped { get; private set; }
 
+        /// <summary>False for mini-cards in tight slots (equipment): tapped shows as
+        /// greyed instead of rotating out of the slot's bounds.</summary>
+        public bool RotateWhenTapped = true;
+
         public event Action<CardView> Clicked;
         public event Action<CardView, bool> Hovered;
+
+        /// <summary>Global hover feed — drives the large card preview.</summary>
+        public static event Action<CardView, bool> AnyHovered;
 
         public RectTransform Rect => (RectTransform)transform;
 
@@ -126,7 +133,7 @@ namespace Pascension.Game.View
         public void SetTapped(bool tapped)
         {
             Tapped = tapped;
-            transform.localRotation = Quaternion.Euler(0f, 0f, tapped ? -90f : 0f);
+            transform.localRotation = Quaternion.Euler(0f, 0f, tapped && RotateWhenTapped ? -90f : 0f);
         }
 
         public void SetMarkedDamage(int amount)
@@ -168,7 +175,19 @@ namespace Pascension.Game.View
         // ------------------------------------------------------------------ pointer
 
         public void OnPointerClick(PointerEventData eventData) => Clicked?.Invoke(this);
-        public void OnPointerEnter(PointerEventData eventData) => Hovered?.Invoke(this, true);
-        public void OnPointerExit(PointerEventData eventData) => Hovered?.Invoke(this, false);
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            Hovered?.Invoke(this, true);
+            AnyHovered?.Invoke(this, true);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            Hovered?.Invoke(this, false);
+            AnyHovered?.Invoke(this, false);
+        }
+
+        private void OnDisable() => AnyHovered?.Invoke(this, false);
     }
 }

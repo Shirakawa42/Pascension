@@ -98,7 +98,7 @@ namespace Pascension.Game.View
                 UiPalette.TextMain, TextAlignmentOptions.TopLeft);
             UiFactory.Stretch(rules.rectTransform, 8, 6, 8, 22);
             rules.enableAutoSizing = true;
-            rules.fontSizeMin = 9f;
+            rules.fontSizeMin = 11f;
             rules.fontSizeMax = 16f;
             view.RulesText = rules;
 
