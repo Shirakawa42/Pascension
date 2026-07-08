@@ -1,0 +1,20 @@
+{
+    "name": "Pascension.Editor",
+    "rootNamespace": "Pascension.Editor",
+    "references": [
+        "Pascension.Engine",
+        "Pascension.Content",
+        "Pascension.Game"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

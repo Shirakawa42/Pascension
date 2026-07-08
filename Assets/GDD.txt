@@ -1,0 +1,57 @@
+GDD board game ascension-like game:
+
+The game is a competitive deck building game.
+
+Game:
+- solo or online game with up to 4 players (2-4 players), host based multiplayer (no server), but the game must be playable with bots to play solo, with different bot behaviors, an algorithm based bot, and if ollama is available, a LLM based bot. configurable in settings (llm from installed llms, with thinking or not). We can add as many bots as we want, if any type, no need for a difficulty setting for now.
+- start with a default deck of 10 cards
+- each player incarn a unique hero with different abilities unlocked with levels
+- 10 levels, everyone start at level 1
+- the main ressources are the action points and damages
+- you start with 5 cards in hand, and you draw 5 at the end of your turn (like in the ascension board game), you shuffle your discard pile when you can't draw enough, cards played this turn are not yet in the discard pile, cards bought goes to the discard pile
+- there is a board with 50 steps, an Inn every 10 steps, a boss on step 50. the first player to reach the end and kill the boss wins the game.
+- cards in hand are free to play but may have additional costs
+- each hero has 3 equipment slots that can be filled with equipment cards: weapon, armor, trinket. equipment is permanent unless stated by an effect
+- there is 3 rows of cards you can buy, basic, advanced and elite cards. each row is permanently displaying 5 cards, buying a card refill it with a new one of the same tier. advanced cards require the level >=4 to be bought, elite cards require the level >=8.
+- cards types are equipment, relics, instant, monster, nothing
+	- equipment: can be equiped in a compatible equipment slot, if an equipment is replaced, exile the replaced equipment
+	- relics: a permanent that can be placed in front of the player to have an effect permanently, you can have any number of relics at once
+	- instant: a card that can be used in response to any card even during another player's turn
+	- monster: monsters cannot be bought, they need to be killed instead, killing them grant their reward and then get exiled
+	- nothing: a card that can be played only during your turn normally
+- same stack system as magic the gathering, and compatible magic rules should apply to this game (stack, player priority, and maybe other rules)
+- cards in hand you don't play during your turn are discarded at the end of the turn before drawing the new cards
+- action points can be used to buy cards or move on the board (1 step per point)
+- unused action points are lost at the end of your turn
+- phases are: untap -> main -> end -> draw 5
+- like in magic, an effect on the stack is either a spell (if using a card) or an ability (effect from a permanent, but a permanent is still a spell when played)
+
+Keywords:
+- ethereal: if this card is not played at the end of your turn, exile it
+
+Cards:
+Default:
+- "Move": +1 action point
+- "Redbull": lvl 1-4: +2 action points, lvl 5-9: +3 action points, lvl 10: +5 action points
+- "Fire bolt": +1 damage
+- "Pyroblast": lvl 1-4: +2 damages, lvl 5-9: +3 damages, lvl 10: +5 damages
+Default deck: 7 "Move", 1 "Fire bolt", 1 "Redbull", 1 "Pyroblast"
+
+Basic:
+- "Run": cost 2: +2 action points
+- "Ban": cost 3: ethereal, exile a card from your hand
+- "Protective Barrier": instant: cost 3: target monster get +3 HP until end of turn, draw a card
+- "Clarity": cost 3: draw 2 cards
+- "Fireball": cost 2: +2 damages
+- "Goblin": HP 2: reward 1XP
+- "Hobgoblin: HP 4": reward 2XP and draw a card
+- "Short sword": equipment weapon: cost 4: tap it to deal 1 damage
+- "Cloth armor": equipment armor: cost 4: tap it to get 1 action point
+- "Stone totem": equipment trinket: cost 3: killing a monster grant +1 XP
+
+Advanced:
+- "Random bullshit go": instant: cost 5: exile cards from the top of the advanced pile until you exile 2 instants cards different than this one, you may cast them, the place the cards exiled this way at the bottom of the advanced pile in any order.
+- "Counterspell": instant: cost 5: counter target spell
+
+Elite:
+-

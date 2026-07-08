@@ -1,0 +1,20 @@
+{
+    "name": "Pascension.Net",
+    "rootNamespace": "Pascension.Net",
+    "references": [
+        "Pascension.Engine",
+        "Pascension.Content",
+        "Pascension.Bots",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "UnityMCP": {
+      "command": "C:\\Users\\Shira\\.local\\bin\\uvx.exe",
+      "args": ["--from", "mcpforunityserver==10.0.0", "mcp-for-unity"]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+    "name": "Pascension.Game",
+    "rootNamespace": "Pascension.Game",
+    "references": [
+        "Pascension.Engine",
+        "Pascension.Content",
+        "Pascension.Bots",
+        "Pascension.Net",
+        "Unity.Netcode.Runtime",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem",
+        "LitMotion",
+        "LitMotion.Animation"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

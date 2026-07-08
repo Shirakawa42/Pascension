@@ -1,0 +1,16 @@
+{
+    "name": "Pascension.Content",
+    "rootNamespace": "Pascension.Content",
+    "references": [
+        "Pascension.Engine"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
