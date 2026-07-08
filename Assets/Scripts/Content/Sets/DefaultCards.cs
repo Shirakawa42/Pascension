@@ -9,13 +9,13 @@ namespace Pascension.Content.Sets
     {
         public static void Register()
         {
-            Card("move", "Move").DefaultTier().Action().ManaAbility()
+            Card("move", "Move").DefaultTier().Action()
                 .OnResolve(new GainApEffect(1))
                 .Text("+1 action point.")
                 .Art("worn leather traveling boots striding along a winding dirt road, rolling green hills, morning light, sense of motion, adventure begins")
                 .Register();
 
-            Card("redbull", "Redbull").DefaultTier().Action().ManaAbility()
+            Card("redbull", "Redbull").DefaultTier().Action()
                 .OnResolve(new GainApEffect(new LevelScaledValue(2, 3, 5)))
                 .Text("Lvl 1-4: +2 action points.\nLvl 5-9: +3 action points.\nLvl 10: +5 action points.")
                 .Art("a crackling crimson energy drink in an ornate potion bottle, red lightning arcing around it, wings of red energy sprouting from the glass, dark tavern table")

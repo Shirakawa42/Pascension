@@ -106,7 +106,7 @@ namespace Pascension.Game.View
             // ---- hero passives ----
             _passiveText = UiFactory.CreateText(Theme, "Passives", panel.transform, "", 12f,
                 UiPalette.TextDim, TextAlignmentOptions.TopLeft, FontStyles.Italic);
-            UiFactory.Place(_passiveText.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -142f), new Vector2(372f, 100f));
+            UiFactory.Place(_passiveText.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -164f), new Vector2(282f, 78f));
             _passiveText.enableAutoSizing = true;
             _passiveText.fontSizeMin = 9f;
             _passiveText.fontSizeMax = 13f;

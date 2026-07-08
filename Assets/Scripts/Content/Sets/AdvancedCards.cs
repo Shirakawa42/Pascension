@@ -24,7 +24,7 @@ namespace Pascension.Content.Sets
                 .Art("a chaotic wizard hurling a handful of glowing random scrolls and cards into the air, confetti of sparks, wild grin, exploding magical slot machine behind")
                 .Register();
 
-            Card("sprint", "Sprint").Advanced().Cost(5).Action().ManaAbility()
+            Card("sprint", "Sprint").Advanced().Cost(5).Action()
                 .OnResolve(new GainApEffect(4))
                 .Text("+4 action points.")
                 .Art("a blur of a runner breaking into superhuman speed, afterimages trailing, wind lines, cobblestone road cracking under the push-off")
@@ -68,7 +68,7 @@ namespace Pascension.Content.Sets
                 .Register();
 
             Card("tower_shield", "Tower Shield").Advanced().Cost(6).Equipment(EquipSlot.Armor)
-                .TapAbility("Tap: +2 action points", new GainApEffect(2), manaAbility: true)
+                .TapAbility("Tap: +2 action points", new GainApEffect(2))
                 .Text("Tap: +2 action points.")
                 .Art("a massive rectangular tower shield planted in the ground, battle-worn steel with a golden lion emblem, arrows embedded, battlefield dawn")
                 .Register();

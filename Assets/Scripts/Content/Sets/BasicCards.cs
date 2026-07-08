@@ -11,7 +11,7 @@ namespace Pascension.Content.Sets
     {
         public static void Register()
         {
-            Card("run", "Run").Basic().Cost(2).Action().ManaAbility()
+            Card("run", "Run").Basic().Cost(2).Action()
                 .OnResolve(new GainApEffect(2))
                 .Text("+2 action points.")
                 .Art("a young adventurer sprinting down a forest trail, cloak streaming behind, dust kicked up, dynamic low angle, midday sun through the trees")
@@ -52,7 +52,7 @@ namespace Pascension.Content.Sets
                 .Register();
 
             Card("cloth_armor", "Cloth Armor").Basic().Cost(4).Equipment(EquipSlot.Armor)
-                .TapAbility("Tap: +1 action point", new GainApEffect(1), manaAbility: true)
+                .TapAbility("Tap: +1 action point", new GainApEffect(1))
                 .Text("Tap: +1 action point.")
                 .Art("a padded cloth gambeson armor on a wooden stand, humble but well-stitched, warm candlelight in a tailor's shop")
                 .Register();

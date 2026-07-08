@@ -74,6 +74,20 @@ namespace Pascension.Game.UI
         /// <summary>Showcase source position captured at drag-release (own plays).</summary>
         private Vector2? _pendingShowcaseFrom;
 
+        // ---- speculative play queue -----------------------------------------------------
+        // During your own main phase you can play cards as fast as you like: each play is
+        // queued locally (invisible to opponents) and submitted one by one — a card's
+        // effect only applies, and it is only revealed, once the previous play validated
+        // (resolved with no response). If anyone responds, the queue rolls back to hand.
+        private readonly List<int> _stagedPlays = new List<int>();
+        /// <summary>Drag-release showcase origin for each staged card.</summary>
+        private readonly Dictionary<int, Vector2> _stagedFrom = new Dictionary<int, Vector2>();
+        /// <summary>Local submits cascade synchronously (snapshot arrives inside
+        /// SubmitAction) — this keeps the pump from re-entering itself mid-submit.</summary>
+        private bool _pumping;
+        private RectTransform _stagedRoot;
+        private TMPro.TextMeshProUGUI _stagedLabel;
+
         // ------------------------------------------------------------------ binding
 
         public void Bind(ISession session, GameRules rules)
@@ -126,6 +140,20 @@ namespace Pascension.Game.UI
             var responseRoot = uiRoot.Find("ResponseWindow");
             _stackArrows = StackArrows.Create(uiRoot, Theme,
                 responseRoot != null ? responseRoot.GetSiblingIndex() : uiRoot.childCount - 1);
+
+            // Speculative-play queue widget (above the played pile; local-only, so no
+            // SceneConstruction entry). Clicking it takes every queued card back.
+            _stagedRoot = UiFactory.CreateRect("StagedQueue", uiRoot);
+            UiFactory.Place(_stagedRoot, new Vector2(0f, 0f), new Vector2(424f, 414f), new Vector2(140f, 156f));
+            var stagedHit = _stagedRoot.gameObject.AddComponent<UnityEngine.UI.Image>();
+            stagedHit.color = new Color(0f, 0f, 0f, 0.001f);
+            var stagedBtn = _stagedRoot.gameObject.AddComponent<UnityEngine.UI.Button>();
+            stagedBtn.targetGraphic = stagedHit;
+            stagedBtn.onClick.AddListener(() => RollbackStaged("Queued cards returned to your hand."));
+            _stagedLabel = UiFactory.CreateText(Theme, "Label", _stagedRoot, "", 11f, UiPalette.GoldDim,
+                TMPro.TextAlignmentOptions.Center, TMPro.FontStyles.Bold);
+            UiFactory.Place(_stagedLabel.rectTransform, new Vector2(0.5f, 1f), Vector2.zero, new Vector2(140f, 32f));
+            _stagedRoot.gameObject.SetActive(false);
 
             // Large hover preview so small card text is always readable (created last = on top).
             _preview = CardViewFactory.Create(uiRoot, Theme, 1.3f);
@@ -211,6 +239,138 @@ namespace Pascension.Game.UI
                 return byName != 0 ? byName : a.InstanceId.CompareTo(b.InstanceId);
             });
             return sorted;
+        }
+
+        // ------------------------------------------------------------------ speculative queue
+
+        private static bool StackHasOpponentItem(ClientSnapshot s)
+        {
+            foreach (var item in s.Stack)
+                if (item.ControllerIndex != s.ViewerIndex)
+                    return true;
+            return false;
+        }
+
+        /// <summary>True while the local player may freely chain plays: their own main
+        /// phase with nothing foreign on the stack (own unvalidated plays don't count).</summary>
+        private bool InChainContext(ClientSnapshot s) =>
+            !s.GameOver && s.TurnPlayerIndex == s.ViewerIndex && s.Phase == Phase.Main &&
+            !StackHasOpponentItem(s);
+
+        /// <summary>Hand as rendered: staged cards have visually left the fan already.</summary>
+        private List<CardSnap> FilterStaged(List<CardSnap> hand) =>
+            _stagedPlays.Count == 0 ? hand : hand.FindAll(c => !_stagedPlays.Contains(c.InstanceId));
+
+        /// <summary>Advance the queue: submit the head once the stack is clear, auto-pass
+        /// our own priority while a play awaits validation, and roll everything back the
+        /// moment somebody responds. Loops because each submit may resolve the whole world
+        /// synchronously — it keeps acting until the queue empties or others must act.</summary>
+        private void PumpStagedPlays()
+        {
+            if (_pumping) return;
+            _pumping = true;
+            try
+            {
+                for (int guard = 0; guard < 64 && _stagedPlays.Count > 0; guard++)
+                {
+                    var s = View.Snapshot;
+                    if (s == null) return;
+
+                    if (StackHasOpponentItem(s))
+                    {
+                        RollbackStaged("A player responded — queued cards returned to your hand.");
+                        return;
+                    }
+                    if (s.GameOver || s.TurnPlayerIndex != s.ViewerIndex || s.Phase != Phase.Main)
+                    {
+                        RollbackStaged("Queued cards returned to your hand.");
+                        return;
+                    }
+
+                    var pending = s.Pending;
+                    if (pending == null || pending.Kind != PendingInputKind.Priority ||
+                        pending.PlayerIndex != s.ViewerIndex)
+                        return; // others are deciding whether to respond — resume on a later snapshot
+
+                    int seqBefore = s.EventSeq;
+                    if (s.Stack.Count > 0)
+                    {
+                        // Our previous play is still validating — pass our window to move it along.
+                        UiLog.Log("Stage", "auto-pass own priority (play awaiting validation)");
+                        if (!TrySubmit<PassPriorityAction>(_ => true))
+                            return;
+                    }
+                    else
+                    {
+                        // Remove BEFORE submitting: the submit cascades snapshots synchronously.
+                        int id = _stagedPlays[0];
+                        _stagedPlays.RemoveAt(0);
+                        _pendingShowcaseFrom = _stagedFrom.TryGetValue(id, out var from) ? from : (Vector2?)null;
+                        _stagedFrom.Remove(id);
+                        if (!TrySubmit<PlayCardAction>(a => a.CardInstanceId == id))
+                        {
+                            _pendingShowcaseFrom = null;
+                            _stagedPlays.Insert(0, id);
+                            RollbackStaged("A queued card can't be played anymore — cards returned to your hand.");
+                            return;
+                        }
+                        UiLog.Log("Stage", $"submitted queued #{id}, {_stagedPlays.Count} left");
+                        RenderStaged();
+                    }
+
+                    // Networked sessions apply asynchronously — wait for the next snapshot.
+                    if (View.Snapshot == null || View.Snapshot.EventSeq == seqBefore)
+                        return;
+                }
+            }
+            finally
+            {
+                _pumping = false;
+            }
+        }
+
+        private void RollbackStaged(string reason)
+        {
+            if (_stagedPlays.Count == 0) return;
+            UiLog.Log("Stage", $"ROLLBACK {_stagedPlays.Count} queued play(s): {reason}");
+            _stagedPlays.Clear();
+            _stagedFrom.Clear();
+            RenderStaged();
+            Toast.Show(reason);
+            Log.Append($"<i>{reason}</i>");
+            RefreshHandLive(); // staged cards are still in the snapshot hand — they re-fan
+        }
+
+        private void RenderStaged()
+        {
+            if (_stagedRoot == null) return;
+            for (int i = _stagedRoot.childCount - 1; i >= 0; i--)
+            {
+                var child = _stagedRoot.GetChild(i);
+                if (_stagedLabel == null || child != _stagedLabel.transform)
+                    Destroy(child.gameObject);
+            }
+            bool any = _stagedPlays.Count > 0;
+            _stagedRoot.gameObject.SetActive(any);
+            if (!any) return;
+
+            _stagedLabel.text = $"QUEUED {_stagedPlays.Count}\n<size=9>click to take back</size>";
+            var me = Me();
+            int shown = Mathf.Min(_stagedPlays.Count, 5);
+            for (int i = 0; i < shown; i++)
+            {
+                int id = _stagedPlays[i];
+                var snap = me?.Hand.Find(c => c.InstanceId == id);
+                var mini = CardViewFactory.Create(_stagedRoot, Theme, 0.34f);
+                if (snap != null) mini.Bind(snap);
+                else mini.BindDef(null);
+                mini.SetRaycastable(false);
+                if (mini.Group != null) mini.Group.blocksRaycasts = false;
+                mini.Rect.anchorMin = mini.Rect.anchorMax = new Vector2(0f, 0f);
+                mini.Rect.pivot = new Vector2(0f, 0f);
+                mini.Rect.anchoredPosition = new Vector2(6f + i * 14f, 6f + i * 6f);
+            }
+            _stagedLabel.transform.SetAsLastSibling();
         }
 
         private string _previewSourceId;
@@ -318,6 +478,17 @@ namespace Pascension.Game.UI
 
         private void OnEvents(List<GameEvent> batch)
         {
+            // A response can resolve entirely inside one host submit (fast-pass skips our
+            // window when we hold no instants) — the transient stack state never reaches a
+            // snapshot, so detect opponents' plays from the events and roll back here.
+            if (_stagedPlays.Count > 0)
+                foreach (var e in batch)
+                    if (e is StackPushedEvent pushed && pushed.ControllerIndex != View.LocalPlayerIndex)
+                    {
+                        RollbackStaged("A player responded — queued cards returned to your hand.");
+                        break;
+                    }
+
             // Own draws render hidden until their flight lands (revealed one by one).
             int draws = 0;
             foreach (var e in batch)
@@ -349,8 +520,13 @@ namespace Pascension.Game.UI
                 foreach (var action in pending.LegalActions)
                     if (action is PlayCardAction play)
                         playable.Add(play.CardInstanceId);
+            if (InChainContext(s)) // any card can be queued — validity enforced on submit
+                foreach (var c in me.Hand)
+                    playable.Add(c.InstanceId);
 
-            Hand.Render(me.Hand, playable, _pendingReveal);
+            Hand.Render(FilterStaged(me.Hand), playable, _pendingReveal);
+            RenderPiles(me); // pile counts track every change immediately
+            PumpStagedPlays();
 
             if (_turnButton != null)
             {
@@ -477,7 +653,10 @@ namespace Pascension.Game.UI
             // ---- render everything from the snapshot ----
             // Queue is idle here: any not-yet-revealed draw is shown immediately (safety).
             _pendingReveal.Clear();
-            Hand.Render(me.Hand, playable, _pendingReveal);
+            if (InChainContext(s)) // any card can be queued — validity enforced on submit
+                foreach (var c in me.Hand)
+                    playable.Add(c.InstanceId);
+            Hand.Render(FilterStaged(me.Hand), playable, _pendingReveal);
             Market.Render(s, me.Level, buyable, attackable, targetableSlots);
             Board.Render(s, reachable);
             Board.SetBossGlow(bossTargetable || bossAttackable,
@@ -490,7 +669,10 @@ namespace Pascension.Game.UI
             UpdateMoveButtons(legalMoveSteps);
 
             // ---- response window (no timer — players take as long as they need) ----
-            if (localPriority && s.Stack.Count > 0)
+            // Only your OPPONENTS' stack items ask you for a response; your own
+            // unvalidated plays auto-pass below (full control keeps the window).
+            bool oppOnStack = StackHasOpponentItem(s);
+            if (localPriority && s.Stack.Count > 0 && (oppOnStack || _fullControl))
             {
                 if (!ResponseWindow.IsShown)
                     ResponseWindow.Show();
@@ -526,8 +708,11 @@ namespace Pascension.Game.UI
                 DecisionModal.Hide();
             }
 
-            // ---- auto-pass safety net (host fast-pass covers non-full-control seats) ----
-            if (localPriority && onlyPass && !_fullControl && _lastAutoPassSeq != s.EventSeq)
+            // ---- auto-pass: nothing else to do, or only our own plays are validating
+            // (the staged-queue pump owns passing while cards are queued) ----
+            bool ownChainWaiting = s.Stack.Count > 0 && !oppOnStack;
+            if (localPriority && (onlyPass || ownChainWaiting) && !_fullControl &&
+                _stagedPlays.Count == 0 && _lastAutoPassSeq != s.EventSeq)
             {
                 _lastAutoPassSeq = s.EventSeq;
                 TrySubmit<PassPriorityAction>(_ => true);
@@ -577,13 +762,29 @@ namespace Pascension.Game.UI
 
         // ------------------------------------------------------------------ click handlers
 
-        /// <summary>Drag-released above the play line: submit, remove from the fan
-        /// immediately, and remember the release position for the showcase.</summary>
+        /// <summary>Drag-released above the play line. Own main phase: queue the play
+        /// locally (speculative — hidden from opponents until the previous play
+        /// validates). Response context: submit immediately.</summary>
         private void OnHandPlayRequested(int instanceId)
         {
-            if (View.Snapshot == null) return;
+            var s = View.Snapshot;
+            if (s == null) return;
             var rect = Hand.CardRect(instanceId);
-            _pendingShowcaseFrom = rect != null && Showcase != null ? Showcase.ToLocal(rect) : (Vector2?)null;
+            var from = rect != null && Showcase != null ? Showcase.ToLocal(rect) : (Vector2?)null;
+
+            if (InChainContext(s))
+            {
+                if (_stagedPlays.Contains(instanceId)) return; // already queued
+                _stagedPlays.Add(instanceId);
+                if (from.HasValue) _stagedFrom[instanceId] = from.Value;
+                Hand.RemoveCardOptimistic(instanceId);
+                UiLog.Log("Stage", $"queued #{instanceId} (position {_stagedPlays.Count})");
+                RenderStaged();
+                PumpStagedPlays();
+                return;
+            }
+
+            _pendingShowcaseFrom = from;
             if (TrySubmit<PlayCardAction>(a => a.CardInstanceId == instanceId))
             {
                 UiLog.Log("Play", $"submit accepted for #{instanceId} — optimistic hand removal");
@@ -686,7 +887,16 @@ namespace Pascension.Game.UI
             }
         }
 
-        private void OnPassClicked() => TrySubmit<PassPriorityAction>(_ => true);
+        private void OnPassClicked()
+        {
+            // Never end the turn out from under queued plays — take them back instead.
+            if (_stagedPlays.Count > 0)
+            {
+                RollbackStaged("Queued cards returned to your hand.");
+                return;
+            }
+            TrySubmit<PassPriorityAction>(_ => true);
+        }
 
         // ------------------------------------------------------------------ submission
 

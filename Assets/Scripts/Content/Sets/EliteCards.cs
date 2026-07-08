@@ -61,7 +61,7 @@ namespace Pascension.Content.Sets
                 .Register();
 
             Card("dragonscale_armor", "Dragonscale Armor").Elite().Cost(10).Equipment(EquipSlot.Armor)
-                .TapAbility("Tap: +3 action points", new GainApEffect(3), manaAbility: true)
+                .TapAbility("Tap: +3 action points", new GainApEffect(3))
                 .Text("Tap: +3 action points.")
                 .Art("a masterwork cuirass forged from overlapping crimson dragon scales, each scale shimmering with inner fire, displayed on an obsidian stand")
                 .Register();

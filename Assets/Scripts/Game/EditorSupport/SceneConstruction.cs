@@ -215,8 +215,8 @@ namespace Pascension.Game.EditorSupport
                 // Subtle warm glow so the flat backdrop reads as intentional.
                 var glow = UiFactory.CreateImage("Glow", canvasRoot, theme.Soft,
                     UiPalette.WithAlpha(new Color(0.35f, 0.26f, 0.16f), 0.35f));
-                UiFactory.Place((RectTransform)glow.transform, new Vector2(0.5f, 0.5f), new Vector2(60f, 40f),
-                    new Vector2(1400f, 900f));
+                UiFactory.Place((RectTransform)glow.transform, new Vector2(0.5f, 0.5f), new Vector2(-10f, 40f),
+                    new Vector2(1260f, 900f));
             }
             return background;
         }
@@ -267,7 +267,21 @@ namespace Pascension.Game.EditorSupport
             uiRoot.gameObject.AddComponent<RectMask2D>();
             canvasRoot = uiRoot;
 
-            // --- board track (full-screen, behind everything else) ---
+            // --- map sidebar: a dedicated right panel the hero map lives on ---
+            var sidebar = UiFactory.CreatePanel(theme, "MapSidebar", canvasRoot,
+                UiPalette.WithAlpha(UiPalette.Panel, 0.92f));
+            var sidebarRect = sidebar.rectTransform;
+            sidebarRect.anchorMin = new Vector2(1f, 0.5f);
+            sidebarRect.anchorMax = new Vector2(1f, 0.5f);
+            sidebarRect.pivot = new Vector2(1f, 0.5f);
+            sidebarRect.anchoredPosition = new Vector2(-8f, 0f);
+            sidebarRect.sizeDelta = new Vector2(252f, 1064f);
+            var sidebarTitle = UiFactory.CreateText(theme, "Title", sidebar.transform, "THE ROAD", 15f,
+                UiPalette.GoldDim, TMPro.TextAlignmentOptions.Center, TMPro.FontStyles.Bold);
+            sidebarTitle.characterSpacing = 4f;
+            UiFactory.Place(sidebarTitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -6f), new Vector2(240f, 20f));
+
+            // --- board track (nodes drawn inside the sidebar strip) ---
             var board = CreateView<BoardTrackView>("Board", canvasRoot, out var boardRect);
             UiFactory.Stretch(boardRect);
             board.Container = boardRect;
@@ -307,9 +321,9 @@ namespace Pascension.Game.EditorSupport
             var playedPile = BuildPile(canvasRoot, theme, "PlayedPile", "Played", faceDown: false,
                 new Vector2(0f, 0f), new Vector2(424f, 214f));
             var discardPile = BuildPile(canvasRoot, theme, "DiscardPile", "Discard", faceDown: false,
-                new Vector2(1f, 0f), new Vector2(-234f, 12f));
+                new Vector2(1f, 0f), new Vector2(-268f, 12f));
             var exilePile = BuildPile(canvasRoot, theme, "ExilePile", "Exile", faceDown: false,
-                new Vector2(1f, 0f), new Vector2(-234f, 214f));
+                new Vector2(1f, 0f), new Vector2(-268f, 214f));
 
             // --- play-history bar (left edge; populated at runtime) ---
             var history = CreateView<PlayHistoryBar>("HistoryBar", canvasRoot, out var historyRect);
@@ -353,7 +367,7 @@ namespace Pascension.Game.EditorSupport
             actionBar.anchorMin = new Vector2(1f, 0f);
             actionBar.anchorMax = new Vector2(1f, 0f);
             actionBar.pivot = new Vector2(1f, 0f);
-            actionBar.anchoredPosition = new Vector2(-234f, 416f);
+            actionBar.anchoredPosition = new Vector2(-268f, 416f);
             actionBar.sizeDelta = new Vector2(210f, 58f);
 
             // --- FX overlay: flights + bursts + floating numbers (one stretched layer) ---

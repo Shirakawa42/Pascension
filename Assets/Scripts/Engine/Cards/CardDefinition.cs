@@ -31,8 +31,10 @@ namespace Pascension.Engine.Cards
         public TargetSpec SpellTarget;
         /// <summary>Exile instead of going to PlayedThisTurn after resolving (Time Warp).</summary>
         public bool ExileAfterResolve;
-        /// <summary>Mana-ability rule: this card's only effect is gaining AP — playing it
-        /// bypasses the stack entirely and cannot be responded to (like MTG mana abilities).</summary>
+        /// <summary>Rare explicit opt-out: playing this card bypasses the stack and cannot be
+        /// responded to. Default rule is that EVERYTHING is respondable — a card setting this
+        /// MUST say "can't be responded to" in its rules text (registry-invariant tested).
+        /// No current card uses it.</summary>
         public bool IsManaAbility;
 
         public List<Keyword> Keywords = new();
