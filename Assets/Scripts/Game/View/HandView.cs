@@ -115,18 +115,16 @@ namespace Pascension.Game.View
 
             foreach (var view in _cards)
             {
-                if (view == null) continue;
-                if (view.InstanceId != _draggingId)
-                    view.SetGreyed(!_playable.Contains(view.InstanceId));
-                // Reveal safety: only draw-hidden views have blocksRaycasts off. Once a
-                // card is no longer marked hidden it must be visible (RefreshAll clears
-                // pending reveals; a still-running RevealCard pop also converges to 1).
-                if (view.Group != null && !view.Group.blocksRaycasts &&
-                    (hiddenIds == null || !hiddenIds.Contains(view.InstanceId)))
-                {
-                    view.Group.alpha = 1f;
+                if (view == null || view.InstanceId == _draggingId) continue;
+                // Draw-flight pending: keep alpha 0 — SetGreyed writes the SAME CanvasGroup
+                // alpha, so touching it here would un-hide the card before its flight lands.
+                if (hiddenIds != null && hiddenIds.Contains(view.InstanceId)) continue;
+                // Reveal safety: only draw-hidden views have blocksRaycasts off; once no
+                // longer marked hidden the card must show (RefreshAll clears pending
+                // reveals; a still-running RevealCard pop converges to the same state).
+                if (view.Group != null && !view.Group.blocksRaycasts)
                     view.Group.blocksRaycasts = true;
-                }
+                view.SetGreyed(!_playable.Contains(view.InstanceId));
             }
 
             // Untouched hands keep their poses (and any hover lift / active drag).
@@ -154,17 +152,20 @@ namespace Pascension.Game.View
             float t = 0f;
             const float duration = 0.14f;
             var baseScale = Vector3.one * CardScale;
+            // Converge to the greyed-aware alpha (SetGreyed's 0.45/1), not a hard 1 —
+            // an unplayable card must land dimmed.
+            float target = _playable.Contains(card.InstanceId) ? 1f : 0.45f;
             while (t < duration && card != null && card.Group != null)
             {
                 t += Time.deltaTime;
                 float x = Mathf.Clamp01(t / duration);
-                card.Group.alpha = x;
+                card.Group.alpha = x * target;
                 card.transform.localScale = baseScale * (1f + 0.12f * Mathf.Sin(x * Mathf.PI));
                 yield return null;
             }
             if (card != null && card.Group != null)
             {
-                card.Group.alpha = 1f;
+                card.Group.alpha = target;
                 card.transform.localScale = baseScale;
             }
         }
@@ -217,6 +218,14 @@ namespace Pascension.Game.View
                     StartCoroutine(Tween.Move(card.Rect, pose.Position, 0.14f));
                     StartCoroutine(Tween.RotateZ(card.transform, pose.RotationZ, 0.14f));
                 }
+            }
+
+            // SetSiblingIndex on later cards displaces the dragged card downward —
+            // re-assert its top z-order for every caller (Render, optimistic remove, reorder).
+            if (_draggingId >= 0)
+            {
+                var dragged = Find(_draggingId);
+                if (dragged != null) dragged.transform.SetAsLastSibling();
             }
         }
 

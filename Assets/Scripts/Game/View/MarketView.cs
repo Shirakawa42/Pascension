@@ -181,28 +181,56 @@ namespace Pascension.Game.View
 
         /// <summary>Bind + show a slot the moment its refill flight lands — the full
         /// Render only happens on queue drain, so without this every refill would pop in
-        /// at once at the end of the batch. Applies the locked-tier grey immediately so
-        /// the card doesn't flash vivid and dim at the drain.</summary>
+        /// at once at the end of the batch.</summary>
         public void RevealSlot(int tierIndex, int slotIndex, CardSnap snap, int viewerLevel)
         {
             var card = Slot(tierIndex, slotIndex);
             if (card == null) return;
             if (snap == null)
             {
-                SetSlotHidden(tierIndex, slotIndex, false);
+                // Nothing occupies the slot — deactivate rather than resurrect whatever
+                // stale card the view was last bound to.
+                card.gameObject.SetActive(false);
                 return;
             }
             card.Bind(snap);
             card.gameObject.SetActive(true);
+            ApplyRevealState(card, tierIndex, snap.DefId, viewerLevel);
+            PunchSlot(tierIndex, slotIndex);
+        }
 
+        /// <summary>Reveal from the refill event's own identity — used when the live
+        /// snapshot has already moved past this refill (the card was bought/killed later
+        /// in the same batch). The timeline still shows this card arriving; the later
+        /// queued events (or the drain render) take it from there.</summary>
+        public void RevealSlotDef(int tierIndex, int slotIndex, string defId, int viewerLevel)
+        {
+            var card = Slot(tierIndex, slotIndex);
+            if (card == null) return;
+            if (string.IsNullOrEmpty(defId))
+            {
+                card.gameObject.SetActive(false);
+                return;
+            }
+            card.BindDef(defId);
+            card.gameObject.SetActive(true);
+            ApplyRevealState(card, tierIndex, defId, viewerLevel);
+            PunchSlot(tierIndex, slotIndex);
+        }
+
+        /// <summary>State for a just-revealed card: never inherit the previous occupant's
+        /// glow; locked tiers read as unavailable (monsters stay vivid; SetGreyed also
+        /// restores the alpha that SetSlotHidden zeroed). The drain render recomputes the
+        /// real glow/grey afterwards.</summary>
+        private void ApplyRevealState(CardView card, int tierIndex, string defId, int viewerLevel)
+        {
+            card.SetGlow(false);
             int requirement = tierIndex == 1 ? _rules.AdvancedLevelRequirement
                 : tierIndex == 2 ? _rules.EliteLevelRequirement : 0;
-            bool isMonster = snap.DefId != null &&
-                             Engine.Cards.CardDatabase.TryGet(snap.DefId, out var def) &&
+            bool isMonster = defId != null &&
+                             Engine.Cards.CardDatabase.TryGet(defId, out var def) &&
                              def.IsMonster;
             card.SetGreyed(viewerLevel < requirement && !isMonster);
-
-            PunchSlot(tierIndex, slotIndex);
         }
 
         public void FlashSlot(int tierIndex, int slotIndex, Color color)

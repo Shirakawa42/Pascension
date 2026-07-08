@@ -1226,9 +1226,15 @@ namespace Pascension.Game.UI
             // Bind + show this slot NOW — the full market render waits for the drain, and
             // slots start inactive, so refills would otherwise all pop in at the end.
             var s = View.Snapshot;
+            int viewerLevel = s != null ? s.Players[s.ViewerIndex].Level : 1;
             var row = s != null ? s.MarketRows[tierIndex] : null;
             var snap = row != null && mr.SlotIndex >= 0 && mr.SlotIndex < row.Length ? row[mr.SlotIndex] : null;
-            Market.RevealSlot(tierIndex, mr.SlotIndex, snap, s != null ? s.Players[s.ViewerIndex].Level : 1);
+            if (snap != null && snap.InstanceId == mr.InstanceId)
+                Market.RevealSlot(tierIndex, mr.SlotIndex, snap, viewerLevel);
+            else
+                // The live snapshot moved past this refill (card bought/killed later in
+                // the batch, or replaced) — show the EVENT's card, not the future state.
+                Market.RevealSlotDef(tierIndex, mr.SlotIndex, mr.DefId, viewerLevel);
         }
 
         private IEnumerator PlayImpact(DamageMarkedEvent dm)
