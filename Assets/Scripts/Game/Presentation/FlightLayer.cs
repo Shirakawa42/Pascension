@@ -38,8 +38,13 @@ namespace Pascension.Game.Presentation
             float fromScale, float toScale, float duration, bool faceDown = false, Color? tint = null)
         {
             var proxy = Rent();
-            if (proxy == null) yield break;
+            if (proxy == null)
+            {
+                UiLog.Log("Flight", $"pool exhausted — skipping flight for {defId ?? "back"}");
+                yield break;
+            }
 
+            UiLog.Log("Flight", $"{(faceDown ? "back" : defId)} {from} -> {to} ({duration:0.00}s)");
             proxy.BindDef(faceDown ? null : defId);
             proxy.Rect.anchoredPosition = from;
             proxy.Rect.localScale = Vector3.one * fromScale;

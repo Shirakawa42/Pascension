@@ -51,6 +51,8 @@ namespace Pascension.Game.UI
         public GlowBurstLayer Bursts;
         public FloatingNumberLayer Floats;
         public CardShowcase Showcase;
+        [Tooltip("Fixed 1920x1080 16:9 root all UI lives under (letterboxed by the scaler).")]
+        public RectTransform UiRootRect;
 
         public ClientGameView View { get; } = new ClientGameView();
 
@@ -67,6 +69,10 @@ namespace Pascension.Game.UI
         private RectTransform _moveRow;
         private StackArrows _stackArrows;
         private CardView _preview;
+        /// <summary>Drawn cards whose draw-flight hasn't landed yet (rendered hidden).</summary>
+        private readonly HashSet<int> _pendingReveal = new HashSet<int>();
+        /// <summary>Showcase source position captured at drag-release (own plays).</summary>
+        private Vector2? _pendingShowcaseFrom;
 
         // ------------------------------------------------------------------ binding
 
@@ -116,12 +122,13 @@ namespace Pascension.Game.UI
 
             // Stack-target arrows: above the table views, below the response window.
             // (ResponseWindow.Container is a nested rect — use the canvas-level root's index.)
-            var responseRoot = transform.Find("ResponseWindow");
-            _stackArrows = StackArrows.Create(transform, Theme,
-                responseRoot != null ? responseRoot.GetSiblingIndex() : transform.childCount - 1);
+            Transform uiRoot = UiRootRect != null ? UiRootRect : transform;
+            var responseRoot = uiRoot.Find("ResponseWindow");
+            _stackArrows = StackArrows.Create(uiRoot, Theme,
+                responseRoot != null ? responseRoot.GetSiblingIndex() : uiRoot.childCount - 1);
 
             // Large hover preview so small card text is always readable (created last = on top).
-            _preview = CardViewFactory.Create(transform, Theme, 1.3f);
+            _preview = CardViewFactory.Create(uiRoot, Theme, 1.3f);
             _preview.Rect.anchorMin = _preview.Rect.anchorMax = new Vector2(0.5f, 0.5f);
             _preview.Rect.pivot = new Vector2(0.5f, 0.5f);
             _preview.SetRaycastable(false);
@@ -130,7 +137,7 @@ namespace Pascension.Game.UI
             _preview.gameObject.SetActive(false);
             CardView.AnyHovered += OnAnyCardHovered;
 
-            Hand.CardClicked += OnHandCardClicked;
+            Hand.PlayRequested += OnHandPlayRequested;
             Market.SlotClicked += OnMarketSlotClicked;
             Board.NodeClicked += OnNodeClicked;
             Board.BossClicked += OnBossClicked;
@@ -304,11 +311,58 @@ namespace Pascension.Game.UI
         private void OnSnapshot(ClientSnapshot snapshot)
         {
             View.Apply(snapshot);
+            RefreshHandLive();
             if (Queue == null || Queue.IsIdle)
                 RefreshAll();
         }
 
-        private void OnEvents(List<GameEvent> batch) => Queue.Enqueue(batch);
+        private void OnEvents(List<GameEvent> batch)
+        {
+            // Own draws render hidden until their flight lands (revealed one by one).
+            int draws = 0;
+            foreach (var e in batch)
+                if (e is CardDrawnEvent drawn && drawn.PlayerIndex == View.LocalPlayerIndex)
+                {
+                    _pendingReveal.Add(drawn.InstanceId);
+                    draws++;
+                }
+            UiLog.Log("Queue", $"batch of {batch.Count} events enqueued ({draws} own draws pending reveal)");
+            Queue.Enqueue(batch);
+        }
+
+        /// <summary>Instant, animation-independent refresh: the hand re-fans and play
+        /// affordances update the moment a snapshot arrives — cards can be played while
+        /// other animations are still running (responses/decisions still wait for drain).</summary>
+        private void RefreshHandLive()
+        {
+            var s = View.Snapshot;
+            if (s == null) return;
+            var me = s.Players[s.ViewerIndex];
+            var pending = s.Pending;
+
+            var playable = new HashSet<int>();
+            bool localPriority = pending != null &&
+                                 pending.Kind == PendingInputKind.Priority &&
+                                 pending.PlayerIndex == s.ViewerIndex &&
+                                 pending.LegalActions != null;
+            if (localPriority)
+                foreach (var action in pending.LegalActions)
+                    if (action is PlayCardAction play)
+                        playable.Add(play.CardInstanceId);
+
+            Hand.Render(me.Hand, playable, _pendingReveal);
+
+            if (_turnButton != null)
+            {
+                bool myMainPhase = localPriority && s.TurnPlayerIndex == s.ViewerIndex &&
+                                   s.Phase == Phase.Main && s.Stack.Count == 0;
+                _turnButton.interactable = localPriority;
+                _turnLabel.text = !localPriority ? "WAITING..."
+                    : myMainPhase ? "END TURN"
+                    : "PASS";
+            }
+            UiLog.Log("Live", $"hand refresh: {me.Hand.Count} cards, playable={playable.Count}, pendingReveal={_pendingReveal.Count}, queueIdle={Queue == null || Queue.IsIdle}");
+        }
 
         private void OnInputRequested(PendingSnap pending)
         {
@@ -421,7 +475,9 @@ namespace Pascension.Game.UI
             }
 
             // ---- render everything from the snapshot ----
-            Hand.Render(me.Hand, playable);
+            // Queue is idle here: any not-yet-revealed draw is shown immediately (safety).
+            _pendingReveal.Clear();
+            Hand.Render(me.Hand, playable, _pendingReveal);
             Market.Render(s, me.Level, buyable, attackable, targetableSlots);
             Board.Render(s, reachable);
             Board.SetBossGlow(bossTargetable || bossAttackable,
@@ -521,11 +577,25 @@ namespace Pascension.Game.UI
 
         // ------------------------------------------------------------------ click handlers
 
-        private void OnHandCardClicked(int instanceId)
+        /// <summary>Drag-released above the play line: submit, remove from the fan
+        /// immediately, and remember the release position for the showcase.</summary>
+        private void OnHandPlayRequested(int instanceId)
         {
             if (View.Snapshot == null) return;
-            if (!TrySubmit<PlayCardAction>(a => a.CardInstanceId == instanceId))
+            var rect = Hand.CardRect(instanceId);
+            _pendingShowcaseFrom = rect != null && Showcase != null ? Showcase.ToLocal(rect) : (Vector2?)null;
+            if (TrySubmit<PlayCardAction>(a => a.CardInstanceId == instanceId))
+            {
+                UiLog.Log("Play", $"submit accepted for #{instanceId} — optimistic hand removal");
+                Hand.RemoveCardOptimistic(instanceId);
+            }
+            else
+            {
+                UiLog.Log("Play", $"submit REJECTED for #{instanceId}");
+                _pendingShowcaseFrom = null;
                 Toast.Show("You can't play that right now.");
+                RefreshHandLive();
+            }
         }
 
         private void OnMarketSlotClicked(int tierIndex, int slotIndex)
@@ -713,10 +783,10 @@ namespace Pascension.Game.UI
                     return Queue.Wait(0.5f);
 
                 case CoalescedDrawEvent cd:
-                    return PlayDraw(cd.PlayerIndex, cd.Count);
+                    return PlayDraw(cd.PlayerIndex, cd.InstanceIds);
 
                 case CardDrawnEvent drawn:
-                    return PlayDraw(drawn.PlayerIndex, 1);
+                    return PlayDraw(drawn.PlayerIndex, new List<int> { drawn.InstanceId });
 
                 case CardPlayedEvent played: // mana ability — off-stack play
                     return PlayShowcase(played.DefId, played.PlayerIndex, played.InstanceId,
@@ -810,14 +880,26 @@ namespace Pascension.Game.UI
             yield return Queue.Wait(0.1f);
         }
 
-        private IEnumerator PlayDraw(int playerIndex, int count)
+        private IEnumerator PlayDraw(int playerIndex, List<int> instanceIds)
         {
             if (IsViewer(playerIndex))
             {
                 var from = Flights.ToLocal(AnchorFor(ZoneType.Deck, playerIndex));
-                var to = Flights.ToLocal(Hand.Container) + new Vector2(0f, 60f);
                 DrawPile?.Pulse();
-                yield return Flights.FlyMany(Queue, null, count, from, to, 0.5f, 0.8f, 0.28f, faceDown: true, stagger: 0.07f);
+                UiLog.Log("Draw", $"animating {instanceIds.Count} own draw(s): {string.Join(",", instanceIds)}");
+                for (int i = 0; i < instanceIds.Count; i++)
+                {
+                    // The hidden card is already in the fan — fly straight to its pose.
+                    int id = instanceIds[i];
+                    var target = Hand.CardRect(id);
+                    var to = target != null
+                        ? Flights.ToLocal(target)
+                        : Flights.ToLocal(Hand.Container) + new Vector2(0f, 60f);
+                    StartCoroutine(FlightThenReveal(id, from, to));
+                    if (i < instanceIds.Count - 1)
+                        yield return Queue.Wait(0.09f);
+                }
+                yield return Queue.Wait(0.3f);
             }
             else
             {
@@ -828,18 +910,31 @@ namespace Pascension.Game.UI
             }
         }
 
+        /// <summary>One draw flight; the real (hidden) hand card pops in the moment it lands.</summary>
+        private IEnumerator FlightThenReveal(int instanceId, Vector2 from, Vector2 to)
+        {
+            yield return Flights.Fly(Queue, null, from, to, 0.5f, 0.8f, 0.26f, faceDown: true);
+            _pendingReveal.Remove(instanceId);
+            Hand.RevealCard(instanceId);
+        }
+
         private IEnumerator PlayShowcase(string defId, int playerIndex, int sourceInstanceId, RectTransform dest)
         {
             Vector2 from;
             if (IsViewer(playerIndex))
             {
+                // Prefer the drag-release position; the real card left the fan already
+                // (optimistic removal), so hide is just a fallback for non-drag paths.
                 var handRect = Hand.HideCard(sourceInstanceId);
-                from = Showcase.ToLocal(handRect != null ? handRect : Hand.Container);
+                from = _pendingShowcaseFrom
+                       ?? (handRect != null ? Showcase.ToLocal(handRect) : Showcase.ToLocal(Hand.Container));
+                _pendingShowcaseFrom = null;
             }
             else
             {
                 from = Showcase.ToLocal(SheetAnchor(playerIndex, View.LocalPlayerIndex));
             }
+            UiLog.Log("Showcase", $"{defId} by P{playerIndex}");
             History?.Push(defId, playerIndex);
             yield return Showcase.Play(Queue, defId, playerIndex, from, Showcase.ToLocal(dest));
         }

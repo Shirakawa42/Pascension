@@ -60,6 +60,13 @@ Rules changes: **mana abilities** (pure-AP plays/taps bypass the stack — see c
 Key components: `Game/Presentation/{FlightLayer,GlowBurstLayer,FloatingNumberLayer,PresentationQueue}`, `Game/View/{CardShowcase,PlayHistoryBar,PileWidget,OpponentDetailModal}`, `GameScreen.PlayEvent` (single animation dispatcher — pace ONLY via `Queue.Wait`/`FastForwarding`). Icons: `Pascension/Setup/Build Icon Sprite Asset` (TMP m_Version reflection fix); AP icon used raw render + luminance-keyed alpha (rembg soft-mask pattern).
 Gotcha: view Init() must run at RUNTIME (GameScreen.Bind), never in SceneConstruction — private refs don't survive scene serialization.
 
+## Interaction model (2026-07-08, third pass — all verified live via logs + screenshots)
+
+- **Drag-to-play (StS style)**: `HandCardDrag` → `HandView` — drag a hand card above `PlayLineY=450` (container-local) and release to play; below that, horizontal drags REORDER the fan with a realtime gap (visual order persists in `_order`, client-side only). Click-to-play was removed. The play line must stay well above the hover/reorder band (a 330 line caused accidental plays — verified via UiLog).
+- **Live hand pipeline**: `GameScreen.RefreshHandLive()` runs on EVERY snapshot (not drain-gated) — the hand re-fans instantly on plays (optimistic `RemoveCardOptimistic`) and play affordances work DURING animations; responses/decisions still wait for drain. Drawn cards render hidden (`_pendingReveal`) and pop in one-by-one as each draw-flight lands (`FlightThenReveal`; `CoalescedDrawEvent.InstanceIds`).
+- **16:9 lock**: canvas scaler = Expand; all game UI lives under a fixed 1920×1080 `UiRoot` with **RectMask2D** (clips parked panels on ultrawide). Battery-verified at 4:3 / 16:9 / 21:9 via ScreenSpaceCamera render trick (scratchpad `shot_wh.cs`). Runtime-created UI (StackArrows, preview) must parent to `GameScreen.UiRootRect`, not the canvas.
+- **UiLog**: verbose `[UI:Area]` console logging (Hand/Drag/Play/Draw/Flight/Showcase/Queue/Live) — grep `read_console` to verify sequencing in automated tests. Toggle `UiLog.Enabled`.
+
 ## Current status (2026-07-08) & next-session checklist
 
 **Compiles & runs in Unity 6000.3.7f1; solo game verified playable end-to-end via MCP.** 37/37 edit-mode tests green (also headless via `Tools/EngineVerify`). Scenes built (MainMenu, Game, Lobby), art index has 51 sprites, all 53 art assets present. Verified by driving the real menu→hero-select→game flow: playing cards, buying (Haggle discount applied), END TURN, bot takes its turn, round advances — zero runtime errors. Screenshots confirm the board, market (full-art cards + monster HP badges), character sheets, hand fan, and boss all render correctly.

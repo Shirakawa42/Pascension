@@ -172,7 +172,7 @@ namespace Pascension.Game.EditorSupport
             var scaler = go.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 
             go.AddComponent<GraphicRaycaster>();
 
@@ -256,6 +256,16 @@ namespace Pascension.Game.EditorSupport
             var canvasRoot = canvas.transform;
 
             BuildBackground(canvasRoot, theme, tryKeyart: false);
+
+            // 16:9 lock: the playfield lives in a fixed 1920x1080 root, centered; the
+            // Expand scaler letterboxes it (background fills any extra screen space).
+            var uiRoot = UiFactory.CreateRect("UiRoot", canvasRoot);
+            uiRoot.anchorMin = uiRoot.anchorMax = uiRoot.pivot = new Vector2(0.5f, 0.5f);
+            uiRoot.sizeDelta = new Vector2(1920f, 1080f);
+            // Hard 16:9 guarantee: clip everything outside the playfield (also hides
+            // parked-off-screen panels on ultrawide monitors).
+            uiRoot.gameObject.AddComponent<RectMask2D>();
+            canvasRoot = uiRoot;
 
             // --- board track (full-screen, behind everything else) ---
             var board = CreateView<BoardTrackView>("Board", canvasRoot, out var boardRect);
@@ -423,6 +433,7 @@ namespace Pascension.Game.EditorSupport
             screen.Bursts = bursts;
             screen.Floats = floats;
             screen.Showcase = showcase;
+            screen.UiRootRect = uiRoot;
 
             var bootstrapGo = new GameObject("GameRoot");
             var bootstrap = bootstrapGo.AddComponent<GameBootstrap>();

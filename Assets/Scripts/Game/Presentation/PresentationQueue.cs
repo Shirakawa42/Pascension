@@ -105,7 +105,10 @@ namespace Pascension.Game.Presentation
                         count++;
                     if (count > 1)
                     {
-                        result.Add(new CoalescedDrawEvent { PlayerIndex = first.PlayerIndex, Count = count });
+                        var coalesced = new CoalescedDrawEvent { PlayerIndex = first.PlayerIndex, Count = count };
+                        for (int k = 0; k < count; k++)
+                            coalesced.InstanceIds.Add(((CardDrawnEvent)batch[i + k]).InstanceId);
+                        result.Add(coalesced);
                         i += count;
                         continue;
                     }
