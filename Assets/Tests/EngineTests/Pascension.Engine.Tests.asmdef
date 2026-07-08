@@ -6,7 +6,8 @@
         "UnityEditor.TestRunner",
         "Pascension.Engine",
         "Pascension.Content",
-        "Pascension.Bots"
+        "Pascension.Bots",
+        "Pascension.Net"
     ],
     "includePlatforms": [
         "Editor"

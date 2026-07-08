@@ -52,5 +52,19 @@ Pascension.Engine.Tests  Assets/Tests/EngineTests/  edit-mode NUnit tests
 - Art: `Tools/art_manifest.json` is exported via `dotnet test --filter ExportArtManifest`; generation via the editor window (Pascension/Card Art Generator) or `scratchpad generate_art.ps1`-style API loop. ComfyUI must be running (see card-art skill).
 - Unity MCP: configured in `.mcp.json` (uvx → `mcpforunityserver==10.0.0`); the in-editor bridge is the `com.coplaydev.unity-mcp` package (Window > MCP for Unity).
 
+## Current status (2026-07-08) & next-session checklist
+
+**Done & verified headless (37/37 NUnit tests green via Tools/EngineVerify):** full rules engine, all 42 cards + 4 heroes + boss, RandomBot/HeuristicBot + balance sims, EngineJson/snapshots/masking, GameHost/LocalSession/BotSeat/AsyncBotSeat, Ollama bot (prompt builder + fallback tested; live Ollama untested). **Done, generated:** all 53 art assets (Assets/Art/…). **Written but NOT yet compiled by Unity** (no Unity MCP this session): the whole UI layer (Assets/Scripts/Game), netcode (Assets/Scripts/Net minus Host/), editor tooling (SceneBuilder, NetSceneBuilder, ArtPipeline). Agents' open questions live in `Assets/Scripts/Game/NOTES.md`, `Assets/Scripts/Net/NOTES.md`, `Assets/Scripts/Bots/Ollama/NOTES.md`, `Assets/Scripts/Editor/ArtPipeline/NOTES.md`.
+
+Next session, in order:
+1. Focus the Unity editor → let it resolve packages (NGO 2.13, LitMotion, MPPM, Newtonsoft) and compile; fix compile errors (expect a handful in Game/Net — they were written blind). Unity MCP should connect via `.mcp.json` after a session restart.
+2. Run the edit-mode test suite in Unity (should mirror the green headless run).
+3. Menu: `Pascension/Setup/Build All Scenes`, then `Pascension/Setup/Build Lobby Scene`, then `Pascension/Rebuild Card Art Index`.
+4. Play MainMenu → solo game vs bots end-to-end; screenshot review; iterate on look & feel.
+5. Multiplayer smoke test via MPPM (host + 1 virtual client).
+6. TODO not yet built: audio (AudioManager + CC0 SFX/music pack), help/tutorial overlay, balance tuning (see playtesting skill baseline), Unity Relay for internet play, effective-HP display on buffed monsters (snapshot lacks modifier data — add `EffectiveHp` to CardSnap).
+
+Key integration contract: networked play sets `Pascension.Net.SessionProvider.Current` before Game-scene `Start()`; `GameBootstrap` prefers it and only builds the solo host when it's null. The host's `GameHost.Start()` is deferred to `HostMatchStarter`'s first `Update` so UI binding always precedes the first broadcast.
+
 ## Decisions log (user-approved, 2026-07-08)
 No player HP (PvP via effects only) · monsters live in market rows, their damage resets each turn · XP from kills/effects only, curve 2,2,3,3,4,4,5,5,6 · boss burst race on step 50 · inns 10/20/30/40 = choose 1 of {+2 XP, draw 2, exile ≤2 from discard} + move-back checkpoint · 4 heroes (Ignis/Wren/Cornelius/Nyx; passive L1, active L3, upgrade L6, ult L9) · NGO host mode LAN first · Arena-style auto-pass priority + 25s response timer + full-control toggle · single-screen 2D tabletop · painterly-anime full-art cards (Anima via ComfyUI) · staggered start (P2 +1 AP; P3/P4 +1 AP +1 card) · target 30-45 min · basic CC0 audio · title "Pascension".
