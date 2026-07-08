@@ -150,6 +150,7 @@ namespace Pascension.Game.View
                 _bossCard.Bind(snap.Boss);
                 int remaining = Mathf.Max(0, snap.BossHp - snap.Boss.MarkedDamage);
                 _bossHp.text = $"{remaining} HP";
+                _bossHp.color = remaining < snap.BossHp ? UiPalette.WoundedRed : Color.white;
             }
             else
             {

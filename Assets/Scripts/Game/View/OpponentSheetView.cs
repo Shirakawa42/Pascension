@@ -14,6 +14,9 @@ namespace Pascension.Game.View
     {
         public UiTheme Theme;
 
+        /// <summary>Whole-sheet click → opponent detail modal.</summary>
+        public event System.Action Clicked;
+
         private Image _panel;
         private Image _portrait;
         private TextMeshProUGUI _initial;
@@ -33,6 +36,11 @@ namespace Pascension.Game.View
 
             view._panel = UiFactory.CreatePanel(theme, "Panel", root, UiPalette.WithAlpha(UiPalette.Panel, 0.95f));
             UiFactory.Stretch(view._panel.rectTransform);
+            view._panel.raycastTarget = true;
+            var clickButton = view._panel.gameObject.AddComponent<Button>();
+            clickButton.targetGraphic = view._panel;
+            clickButton.transition = Selectable.Transition.None;
+            clickButton.onClick.AddListener(() => view.Clicked?.Invoke());
             view._turnOutline = view._panel.gameObject.AddComponent<Outline>();
             view._turnOutline.effectColor = UiPalette.Gold;
             view._turnOutline.effectDistance = new Vector2(2f, -2f);

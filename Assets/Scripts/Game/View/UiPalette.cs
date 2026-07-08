@@ -18,6 +18,13 @@ namespace Pascension.Game.View
         public static readonly Color Good = Rgb(0x3E, 0x8E, 0x5A);
         public static readonly Color TargetBlue = Rgb(0x4F, 0xA3, 0xD1);
 
+        /// <summary>Buffed-monster HP / bright positive number on dark backgrounds.</summary>
+        public static readonly Color HealthyGreen = Rgb(0x6F, 0xDF, 0x8F);
+        /// <summary>Damaged/debuffed HP or increased cost — readable on dark AND gold.</summary>
+        public static readonly Color WoundedRed = Rgb(0xE8, 0x45, 0x45);
+        /// <summary>Discounted cost on the gold disc (dark enough for contrast).</summary>
+        public static readonly Color DiscountGreen = Rgb(0x1E, 0x6B, 0x3A);
+
         public static readonly Color TierDefault = Rgb(0x8A, 0x8A, 0x8A);
         public static readonly Color TierBasic = Rgb(0x5A, 0x7D, 0x9A);
         public static readonly Color TierAdvanced = Rgb(0x8B, 0x5C, 0xF6);

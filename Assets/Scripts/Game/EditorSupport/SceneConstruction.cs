@@ -359,6 +359,10 @@ namespace Pascension.Game.EditorSupport
             UiFactory.Stretch(decisionContainer);
             decision.Container = decisionContainer;
 
+            var opponentDetail = CreateOverlayView<OpponentDetailModal>("OpponentDetailModal", canvasRoot, out var oppDetailContainer);
+            UiFactory.Stretch(oppDetailContainer);
+            opponentDetail.Container = oppDetailContainer;
+
             var cardList = CreateOverlayView<CardListModal>("CardListModal", canvasRoot, out var cardListContainer);
             UiFactory.Stretch(cardListContainer);
             cardList.Container = cardListContainer;
@@ -392,6 +396,7 @@ namespace Pascension.Game.EditorSupport
             screen.DiscardPile = discardPile;
             screen.ExilePile = exilePile;
             screen.History = history;
+            screen.OpponentDetail = opponentDetail;
 
             var bootstrapGo = new GameObject("GameRoot");
             var bootstrap = bootstrapGo.AddComponent<GameBootstrap>();
@@ -405,12 +410,13 @@ namespace Pascension.Game.EditorSupport
         private static PileWidget BuildPile(Transform canvasRoot, UiTheme theme, string goName,
             string title, bool faceDown, Vector2 anchor, Vector2 pos)
         {
+            // Container only — GameScreen.Bind calls Init at runtime (private view refs
+            // don't survive scene serialization, same as every other view).
             var pile = CreateView<PileWidget>(goName, canvasRoot, out var rect);
             rect.anchorMin = rect.anchorMax = rect.pivot = anchor;
             rect.anchoredPosition = pos;
             rect.sizeDelta = new Vector2(140f, 190f);
             pile.Container = rect;
-            pile.Init(theme, title, faceDown);
             return pile;
         }
 

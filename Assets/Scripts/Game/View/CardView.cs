@@ -70,6 +70,32 @@ namespace Pascension.Game.View
             ApplyDef(snap.DefId);
             SetTapped(snap.Tapped);
             SetMarkedDamage(snap.MarkedDamage);
+            ApplyLiveNumbers(snap);
+        }
+
+        /// <summary>Show CURRENT values from the snapshot: monsters display effective HP
+        /// minus damage (green above base / red below / white equal); market cards display
+        /// the viewer's effective buy cost (green cheaper / red pricier).</summary>
+        private void ApplyLiveNumbers(CardSnap snap)
+        {
+            if (string.IsNullOrEmpty(snap.DefId) || !CardDatabase.TryGet(snap.DefId, out var def))
+                return;
+
+            if (def.IsMonster && snap.EffectiveHp > 0)
+            {
+                int current = snap.EffectiveHp - snap.MarkedDamage;
+                HpText.text = current.ToString();
+                HpText.color = current > def.MonsterHp ? UiPalette.HealthyGreen
+                    : current < def.MonsterHp ? UiPalette.WoundedRed
+                    : Color.white;
+            }
+            else if (!def.IsMonster && snap.EffectiveCost >= 0)
+            {
+                CostText.text = snap.EffectiveCost.ToString();
+                CostText.color = snap.EffectiveCost < def.Cost ? UiPalette.DiscountGreen
+                    : snap.EffectiveCost > def.Cost ? UiPalette.WoundedRed
+                    : UiPalette.Background;
+            }
         }
 
         public void BindDef(string defId, int instanceId = -1)

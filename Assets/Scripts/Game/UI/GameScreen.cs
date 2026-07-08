@@ -46,6 +46,7 @@ namespace Pascension.Game.UI
         public PileWidget DiscardPile;
         public PileWidget ExilePile;
         public PlayHistoryBar History;
+        public OpponentDetailModal OpponentDetail;
 
         public ClientGameView View { get; } = new ClientGameView();
 
@@ -83,6 +84,15 @@ namespace Pascension.Game.UI
             Toast.Init(Theme);
             CardList.Init(Theme);
             if (History != null) History.Init(Theme);
+            if (DrawPile != null) DrawPile.Init(Theme, "Draw", faceDown: true);
+            if (PlayedPile != null) PlayedPile.Init(Theme, "Played", faceDown: false);
+            if (DiscardPile != null) DiscardPile.Init(Theme, "Discard", faceDown: false);
+            if (ExilePile != null) ExilePile.Init(Theme, "Exile", faceDown: false);
+            if (OpponentDetail != null)
+            {
+                OpponentDetail.Init(Theme);
+                OpponentDetail.BrowseRequested += (title, cards) => CardList.Show(title, SortedByName(cards));
+            }
             if (DrawPile != null) DrawPile.Clicked += () => ShowPile("Draw pile (alphabetical, order hidden)", Me()?.Deck);
             if (PlayedPile != null) PlayedPile.Clicked += () => ShowPile("Played this turn", Me()?.PlayedThisTurn);
             if (DiscardPile != null) DiscardPile.Clicked += () => ShowPile("Discard pile", Me()?.Discard);
@@ -482,7 +492,15 @@ namespace Pascension.Game.UI
                 for (int i = 0; i < s.Players.Count; i++)
                 {
                     if (i == s.ViewerIndex) continue;
-                    _opponentSheets.Add(OpponentSheetView.Create(OpponentsBar, Theme, i));
+                    var sheet = OpponentSheetView.Create(OpponentsBar, Theme, i);
+                    int playerIndex = i;
+                    sheet.Clicked += () =>
+                    {
+                        var snap = View.Snapshot;
+                        if (snap != null && OpponentDetail != null)
+                            OpponentDetail.Show(snap.Players[playerIndex], _rules);
+                    };
+                    _opponentSheets.Add(sheet);
                     _opponentIndices.Add(i);
                 }
             }
