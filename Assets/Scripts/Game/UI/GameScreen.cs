@@ -679,6 +679,10 @@ namespace Pascension.Game.UI
             }
         }
 
+        /// <summary>Inline TMP sprite tag when icons exist, else a text fallback.</summary>
+        private string IconTag(string name, string fallback) =>
+            Theme != null && Theme.Icons != null ? $"<sprite name=\"{name}\">" : fallback;
+
         /// <summary>Floating number over an anchor; silently skipped before the anchor exists.</summary>
         private void SpawnFloat(RectTransform anchor, string text, Color color, float size)
         {
@@ -759,19 +763,19 @@ namespace Pascension.Game.UI
                 case ApChangedEvent ap when ap.Delta > 0:
                     SpawnFloat(IsViewer(ap.PlayerIndex)
                             ? PlayerSheet.ApCrystalRect : SheetAnchor(ap.PlayerIndex, View.LocalPlayerIndex),
-                        $"+{ap.Delta} AP", UiPalette.Gold, 26f);
+                        $"+{ap.Delta} {IconTag("ap", "AP")}", UiPalette.Gold, 26f);
                     return null;
 
                 case DamagePoolChangedEvent dp when dp.Delta > 0:
                     SpawnFloat(IsViewer(dp.PlayerIndex)
                             ? PlayerSheet.DamageCrystalRect : SheetAnchor(dp.PlayerIndex, View.LocalPlayerIndex),
-                        $"+{dp.Delta} DMG", UiPalette.WoundedRed, 26f);
+                        $"+{dp.Delta} {IconTag("dmg", "DMG")}", UiPalette.WoundedRed, 26f);
                     return null;
 
                 case XpGainedEvent xp:
                     SpawnFloat(IsViewer(xp.PlayerIndex)
                             ? PlayerSheet.XpBarRect : SheetAnchor(xp.PlayerIndex, View.LocalPlayerIndex),
-                        $"+{xp.Amount} XP", UiPalette.HealthyGreen, 26f);
+                        $"+{xp.Amount} {IconTag("xp", "XP")}", UiPalette.HealthyGreen, 26f);
                     return Queue.Wait(0.1f);
 
                 case LeveledUpEvent lu:
@@ -900,7 +904,7 @@ namespace Pascension.Game.UI
             Market.SetSlotHidden(tierIndex, buy.SlotIndex, true);
             var slotRect = Market.SlotRect(tierIndex, buy.SlotIndex);
             if (buy.CostPaid > 0)
-                Floats.Spawn(Floats.ToLocal(slotRect), $"-{buy.CostPaid} AP", UiPalette.Gold, 26f);
+                Floats.Spawn(Floats.ToLocal(slotRect), $"-{buy.CostPaid} {IconTag("ap", "AP")}", UiPalette.Gold, 26f);
 
             var destZone = IsViewer(buy.PlayerIndex) && _lastBuyDestination == ZoneType.Hand
                 ? ZoneType.Hand : ZoneType.Discard;
@@ -938,7 +942,7 @@ namespace Pascension.Game.UI
                 var attacker = SheetAnchor(dm.ByPlayerIndex, View.LocalPlayerIndex) ?? PlayerSheet.Container;
                 var dir = (local - Bursts.ToLocal(attacker)).normalized;
                 Bursts.Burst(local, UiPalette.WoundedRed, 14, 320f, dir);
-                Floats.Spawn(Floats.ToLocal(target), $"-{dm.Amount}", UiPalette.WoundedRed, 34f);
+                Floats.Spawn(Floats.ToLocal(target), $"-{dm.Amount} {IconTag("dmg", "")}", UiPalette.WoundedRed, 34f);
             }
             return Queue.Wait(0.45f);
         }

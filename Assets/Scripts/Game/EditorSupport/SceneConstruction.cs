@@ -183,6 +183,13 @@ namespace Pascension.Game.EditorSupport
             theme.Font = TMP_Settings.defaultFontAsset;
             theme.ArtIndex = artIndex;
 
+            // Icons are optional — the UI degrades to text labels when absent.
+            theme.Icons = AssetDatabase.LoadAssetAtPath<TMPro.TMP_SpriteAsset>("Assets/Art/Icons/PascensionIcons.asset");
+            theme.IconDmg = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Icons/icon_dmg.png");
+            theme.IconAp = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Icons/icon_ap.png");
+            theme.IconXp = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Icons/icon_xp.png");
+            theme.IconStep = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Icons/icon_step.png");
+
             return (canvas, theme);
         }
 
