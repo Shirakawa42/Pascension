@@ -116,6 +116,13 @@ namespace Pascension.Engine.Core
         /// <summary>Detach a card from wherever it currently is. Market row slots become empty (no auto-refill).</summary>
         public void RemoveFromCurrentZone(CardInstance card)
         {
+            // Market-owned cards (owner -1) sitting in the shared exile (e.g. cards exiled by
+            // Random Bullshit Go that are about to be cast or bottomed).
+            if (card.Owner < 0 && card.Zone == ZoneType.Exile)
+            {
+                State.MarketExile.Remove(card);
+                return;
+            }
             switch (card.Zone)
             {
                 case ZoneType.Deck: State.Players[card.Owner].Deck.Remove(card); break;

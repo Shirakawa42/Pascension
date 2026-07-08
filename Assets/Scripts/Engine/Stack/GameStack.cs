@@ -35,6 +35,8 @@ namespace Pascension.Engine.Stack
         public bool Countered;
         /// <summary>Cast without paying costs (e.g. by Random Bullshit Go).</summary>
         public bool IsFree;
+        /// <summary>Exile this spell's card after resolution regardless of its definition (spell copies).</summary>
+        public bool ExileAfterResolve;
         public string Description = "";
 
         public bool IsCounterable => Kind == StackItemKind.Spell;

@@ -21,10 +21,11 @@ namespace Pascension.Engine.Effects
         public Func<GameState, PlayerState, bool> UsableIf;
         public IEffect Effect;
 
-        public ActivatedAbility(string description, IEffect effect)
+        public ActivatedAbility(string description, IEffect effect, TargetSpec target = null)
         {
             Description = description;
             Effect = effect;
+            Target = target;
         }
     }
 }

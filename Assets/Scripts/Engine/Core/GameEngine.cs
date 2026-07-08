@@ -83,7 +83,8 @@ namespace Pascension.Engine.Core
             // Decks.
             foreach (var p in State.Players)
             {
-                foreach (var (defId, copies) in config.DefaultDeck)
+                var deckSpec = config.Players[p.Index].DeckOverride ?? config.DefaultDeck;
+                foreach (var (defId, copies) in deckSpec)
                     for (int c = 0; c < copies; c++)
                         p.Deck.Add(NewCard(defId, p.Index, ZoneType.Deck));
                 State.Rng.Shuffle(p.Deck);
@@ -270,6 +271,7 @@ namespace Pascension.Engine.Core
 
                 case ActivateAbilityAction act:
                 {
+                    if (!sorceryTiming) return "Abilities are used during your main phase with an empty stack";
                     CardInstance source = null;
                     foreach (var c in p.Permanents())
                         if (c.InstanceId == act.SourceInstanceId)
@@ -289,7 +291,7 @@ namespace Pascension.Engine.Core
 
                 case UseHeroAbilityAction heroAct:
                 {
-                    if (!isTurn) return "Hero abilities are used on your own turn";
+                    if (!sorceryTiming) return "Hero abilities are used during your main phase with an empty stack";
                     var hero = p.Hero;
                     var ability = heroAct.Ultimate ? hero.Ultimate : hero.Active;
                     int unlock = heroAct.Ultimate ? hero.UltimateUnlockLevel : hero.ActiveUnlockLevel;
@@ -697,7 +699,7 @@ namespace Pascension.Engine.Core
                         break;
                     default:
                         ctx.Api.MoveCard(card,
-                            def.ExileAfterResolve ? ZoneType.Exile : ZoneType.PlayedThisTurn,
+                            def.ExileAfterResolve || _item.ExileAfterResolve ? ZoneType.Exile : ZoneType.PlayedThisTurn,
                             _item.ControllerIndex);
                         break;
                 }

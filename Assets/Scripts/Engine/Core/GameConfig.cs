@@ -7,6 +7,8 @@ namespace Pascension.Engine.Core
         public string Name = "Player";
         public string HeroId;
         public bool FullControl;
+        /// <summary>Test hook: overrides GameConfig.DefaultDeck for this player when set.</summary>
+        public List<(string defId, int copies)> DeckOverride;
     }
 
     /// <summary>(defId, copies) entries describing a market pile's composition.</summary>

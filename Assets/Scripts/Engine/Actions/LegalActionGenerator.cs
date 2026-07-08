@@ -80,7 +80,8 @@ namespace Pascension.Engine.Actions
                 }
             }
 
-            // --- Activated abilities on permanents (instant speed) ---
+            // --- Activated abilities on permanents (sorcery timing: own main, empty stack) ---
+            if (sorceryTiming)
             foreach (var source in p.Permanents())
             {
                 var abilities = source.Def.ActivatedAbilities;
@@ -96,8 +97,8 @@ namespace Pascension.Engine.Actions
                 }
             }
 
-            // --- Hero active / ultimate (own turn only) ---
-            if (isTurn && state.Phase != Phase.Untap)
+            // --- Hero active / ultimate (sorcery timing) ---
+            if (sorceryTiming)
             {
                 var hero = p.Hero;
                 if (hero.Active != null && p.Level >= hero.ActiveUnlockLevel && !p.HeroActiveUsedThisTurn &&

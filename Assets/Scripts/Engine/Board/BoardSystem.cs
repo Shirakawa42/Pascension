@@ -18,8 +18,9 @@ namespace Pascension.Engine.Board
             return paidSteps + bonus;
         }
 
-        /// <summary>Move forward (AP already paid by the caller). Queues inn rewards for newly reached inns.</summary>
-        public static void MoveForward(GameApi api, PlayerState p, int totalSteps)
+        /// <summary>Move forward (AP already paid by the caller). Queues inn rewards for newly reached inns.
+        /// countsAsMove=false for free moves from abilities/relics (they don't consume Pathfinder's "first move").</summary>
+        public static void MoveForward(GameApi api, PlayerState p, int totalSteps, bool countsAsMove = true)
         {
             int from = p.Position;
             int to = from + totalSteps;
@@ -27,7 +28,7 @@ namespace Pascension.Engine.Board
             if (to == from) return;
 
             p.Position = to;
-            p.MovesThisTurn++;
+            if (countsAsMove) p.MovesThisTurn++;
             api.Emit(new PlayerMovedEvent { PlayerIndex = p.Index, FromStep = from, ToStep = to });
 
             foreach (int inn in api.State.Rules.InnSteps)
