@@ -12,6 +12,10 @@ namespace Pascension.Engine.Serialization
         public string DefId;
         public bool Tapped;
         public int MarkedDamage;
+        /// <summary>Monsters/boss: HP after continuous modifiers (0 for non-monsters).</summary>
+        public int EffectiveHp;
+        /// <summary>Market rows only: the VIEWER's buy cost after discounts (-1 elsewhere).</summary>
+        public int EffectiveCost = -1;
     }
 
     public sealed class PlayerSnap
@@ -31,6 +35,9 @@ namespace Pascension.Engine.Serialization
 
         public int DeckCount;
         public int HandCount;
+        /// <summary>Deck CONTENTS, sorted alphabetically so the draw order stays hidden.
+        /// Populated for every player (deliberate full transparency — see decisions log).</summary>
+        public List<CardSnap> Deck = new();
         /// <summary>Populated only for the viewer's own seat.</summary>
         public List<CardSnap> Hand = new();
         /// <summary>Discard/exile/played/relics/equipment are open information.</summary>
@@ -90,6 +97,8 @@ namespace Pascension.Engine.Serialization
         public static ClientSnapshot Build(GameEngine engine, int viewerIndex)
         {
             var state = engine.State;
+            var api = engine.Api;
+            var viewer = state.Players[viewerIndex];
             var snap = new ClientSnapshot
             {
                 ViewerIndex = viewerIndex,
@@ -124,6 +133,18 @@ namespace Pascension.Engine.Serialization
                 if (p.Index == viewerIndex)
                     foreach (var c in p.Hand)
                         ps.Hand.Add(Snap(c, true));
+
+                // Deck contents are public for everyone; alphabetical sort hides the order.
+                foreach (var c in p.Deck)
+                    ps.Deck.Add(Snap(c, true));
+                ps.Deck.Sort((a, b) =>
+                {
+                    int byName = string.CompareOrdinal(
+                        Cards.CardDatabase.Get(a.DefId).Name, Cards.CardDatabase.Get(b.DefId).Name);
+                    if (byName != 0) return byName;
+                    int byDef = string.CompareOrdinal(a.DefId, b.DefId);
+                    return byDef != 0 ? byDef : a.InstanceId.CompareTo(b.InstanceId);
+                });
                 foreach (var c in p.Discard) ps.Discard.Add(Snap(c, true));
                 foreach (var c in p.Exile) ps.Exile.Add(Snap(c, true));
                 foreach (var c in p.PlayedThisTurn) ps.PlayedThisTurn.Add(Snap(c, true));
@@ -139,11 +160,22 @@ namespace Pascension.Engine.Serialization
                 var row = state.Market.Rows[t];
                 snap.MarketRows[t] = new CardSnap[row.Length];
                 for (int s = 0; s < row.Length; s++)
-                    snap.MarketRows[t][s] = row[s] == null ? null : Snap(row[s], true);
+                {
+                    if (row[s] == null) continue;
+                    var cs = Snap(row[s], true);
+                    if (row[s].Def.IsMonster)
+                        cs.EffectiveHp = api.EffectiveMonsterHp(row[s]);
+                    else
+                        cs.EffectiveCost = api.GetBuyCost(viewer, row[s].Def);
+                    snap.MarketRows[t][s] = cs;
+                }
             }
 
             if (state.Boss != null)
+            {
                 snap.Boss = Snap(state.Boss, true);
+                snap.Boss.EffectiveHp = state.Rules.BossHp;
+            }
 
             foreach (var item in state.Stack.Items)
             {

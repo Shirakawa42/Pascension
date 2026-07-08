@@ -524,7 +524,7 @@ namespace Pascension.Game.UI
             switch (zone)
             {
                 case "Deck":
-                    CardList.Show($"Deck — {me.DeckCount} cards (hidden)", null);
+                    CardList.Show($"Deck — {me.DeckCount} cards (alphabetical, order hidden)", me.Deck);
                     break;
                 case "Discard":
                     CardList.Show("Discard", me.Discard);
