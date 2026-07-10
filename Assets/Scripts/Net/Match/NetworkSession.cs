@@ -21,6 +21,14 @@ namespace Pascension.Net
         public event Action<List<GameEvent>> EventsReceived;
         public event Action<PendingSnap> InputRequested;
         public event Action<string> ActionRejected;
+        public event Action<PauseInfo> PauseChanged;
+
+        /// <summary>Latest pause state — lets a UI that binds after the RPC catch up.</summary>
+        public PauseInfo CurrentPause { get; private set; }
+
+        /// <summary>The host's game rules, populated in place during resync (the UI holds
+        /// this reference from bind time, so in-place mutation keeps it correct).</summary>
+        public Engine.Core.GameRules Rules { get; } = new Engine.Core.GameRules();
 
         private GameNetBridge _bridge;
 
@@ -119,5 +127,21 @@ namespace Pascension.Net
         }
 
         internal void HandleRejected(string error) => ActionRejected?.Invoke(error);
+
+        internal void HandleRules(byte[] rulesJson)
+        {
+            Newtonsoft.Json.JsonConvert.PopulateObject(Encoding.UTF8.GetString(rulesJson), Rules);
+        }
+
+        internal void HandlePauseChanged(byte[] pauseJson)
+        {
+            var info = EngineJson.Deserialize<PauseInfo>(Encoding.UTF8.GetString(pauseJson));
+            if (info == null) return;
+            info.CanKick = false; // only the host may kick, whatever the wire says
+            if (string.IsNullOrEmpty(info.JoinCode))
+                info.JoinCode = NetLauncher.LastJoinCode;
+            CurrentPause = info;
+            PauseChanged?.Invoke(info);
+        }
     }
 }

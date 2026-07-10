@@ -33,8 +33,12 @@ namespace Pascension.Net
         public event Action<List<GameEvent>> EventsReceived;
         public event Action<PendingSnap> InputRequested;
         public event Action<string> ActionRejected;
+        public event Action<PauseInfo> PauseChanged;
 
         public void SubmitAction(PlayerAction action) => _host.Submit(LocalPlayerIndex, action);
+
+        /// <summary>Host-side orchestrator pushes pause state to the host's own UI.</summary>
+        public void RaisePause(PauseInfo info) => PauseChanged?.Invoke(info);
 
         // ---- IHostSeat (host side) ----
         public int PlayerIndex { get; }

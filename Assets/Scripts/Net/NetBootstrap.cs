@@ -39,7 +39,8 @@ namespace Pascension.Net
             return _instance._networkManager;
         }
 
-        /// <summary>listenAddress non-null → hosting (bind address); null → joining.</summary>
+        /// <summary>listenAddress non-null → hosting (bind address); null → joining.
+        /// Direct-IP/LAN path — the join-code UI uses <see cref="ConfigureRelay"/>.</summary>
         public static void ConfigureTransport(string address, ushort port, string listenAddress)
         {
             EnsureInitialized();
@@ -47,6 +48,13 @@ namespace Pascension.Net
                 _instance._transport.SetConnectionData(address, port, listenAddress);
             else
                 _instance._transport.SetConnectionData(address, port);
+        }
+
+        /// <summary>Route all traffic through a Unity Relay allocation (host and client).</summary>
+        public static void ConfigureRelay(Unity.Networking.Transport.Relay.RelayServerData data)
+        {
+            EnsureInitialized();
+            _instance._transport.SetRelayServerData(data);
         }
 
         private void Initialize()

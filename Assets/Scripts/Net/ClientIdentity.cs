@@ -57,6 +57,23 @@ namespace Pascension.Net
             }
         }
 
+        /// <summary>
+        /// Unity Services authentication profile. Anonymous sign-ins are cached per
+        /// profile — MPPM virtual players share the machine, so each needs its own
+        /// profile or their sign-ins collide. Same dataPath salt as the GUID.
+        /// </summary>
+        public static string AuthProfile
+        {
+            get
+            {
+#if UNITY_EDITOR
+                return "vp_" + StableHash(Application.dataPath);
+#else
+                return "default";
+#endif
+            }
+        }
+
         /// <summary>FNV-1a — string.GetHashCode is not stable across runtimes/processes.</summary>
         private static uint StableHash(string s)
         {

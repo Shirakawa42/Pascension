@@ -39,6 +39,13 @@ namespace Pascension.Net
 
         public event Action<int, string> SeatActionRejected;
 
+        /// <summary>
+        /// While paused (a remote human disconnected mid-game) the world freezes:
+        /// submits are rejected, async submissions queue up, bots hold, timers stop.
+        /// The orchestrator (HostMatchStarter) pauses/unpauses around disconnects.
+        /// </summary>
+        public bool Paused { get; private set; }
+
         public GameHost(GameConfig config)
         {
             Engine = new GameEngine(config);
@@ -61,9 +68,16 @@ namespace Pascension.Net
             RouteInput();
         }
 
+        public void SetPaused(bool paused) => Paused = paused;
+
         /// <summary>Submit an action on behalf of a seat (UI, remote client, or bot callback).</summary>
         public void Submit(int playerIndex, PlayerAction action)
         {
+            if (Paused)
+            {
+                SeatActionRejected?.Invoke(playerIndex, "The game is paused");
+                return;
+            }
             action.PlayerIndex = playerIndex;
             var result = Engine.Submit(action);
             if (!result.Accepted)
@@ -83,6 +97,8 @@ namespace Pascension.Net
         /// <summary>Drive timers and async submissions. Call every frame (or in a loop headless).</summary>
         public void Tick(float deltaSeconds)
         {
+            if (Paused) return; // async submissions stay queued and apply on the first unpaused tick
+
             while (_asyncSubmissions.TryDequeue(out var queued))
             {
                 var pending = Engine.PendingInput;
@@ -121,6 +137,23 @@ namespace Pascension.Net
 
         /// <summary>Full masked snapshot for one seat (join/reconnect).</summary>
         public ClientSnapshot SnapshotFor(int playerIndex) => SnapshotBuilder.Build(Engine, playerIndex);
+
+        /// <summary>
+        /// Swap a seat's occupant mid-game (host kicks a disconnected player → bot).
+        /// The new seat gets a fresh snapshot (no stale event flood) and, if the engine
+        /// is currently waiting on this seat, the pending input is re-issued to it.
+        /// </summary>
+        public void ReplaceSeat(int playerIndex, IHostSeat seat, bool isHuman)
+        {
+            _seats[playerIndex] = seat;
+            _isHuman[playerIndex] = isHuman;
+            _lastSeq[playerIndex] = Engine.Log.Count;
+            seat.DeliverSnapshot(SnapshotFor(playerIndex));
+
+            var pending = Engine.PendingInput;
+            if (pending != null && pending.PlayerIndex == playerIndex)
+                RouteInput();
+        }
 
         private void Broadcast()
         {
@@ -187,6 +220,7 @@ namespace Pascension.Net
         public void Tick(float deltaSeconds)
         {
             if (_pending == null || _host == null) return;
+            if (_host.Paused) return; // never clear _pending into a gated Submit — hold until unpaused
             var enginePending = _host.Engine.PendingInput;
             if (enginePending == null || enginePending.PlayerIndex != PlayerIndex)
             {

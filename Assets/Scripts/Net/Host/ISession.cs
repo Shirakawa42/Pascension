@@ -27,5 +27,8 @@ namespace Pascension.Net
         void SubmitAction(PlayerAction action);
 
         event Action<string> ActionRejected;
+
+        /// <summary>Match froze (a player disconnected) or resumed. Never fires in solo.</summary>
+        event Action<PauseInfo> PauseChanged;
     }
 }
