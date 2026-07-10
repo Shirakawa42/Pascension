@@ -90,15 +90,34 @@ namespace Pascension.Net
                 SessionProvider.Current = _localSession;
 
             _host.SeatActionRejected += OnSeatActionRejected;
-
-            SpawnBridge();
             ReconnectService.Activate(this);
-            // GameHost.Start() is deferred to the first Update so it runs AFTER every
-            // scene object's Start() — the UI must be bound to the session before the
-            // initial snapshot/input broadcast or it would miss them.
+
+            // Bridge spawn + GameHost.Start() wait until NGO reports the Game-scene load
+            // COMPLETED for every connected client. Spawning while the scene event is
+            // still open loses the object for synchronizing clients (their scene payload
+            // was already built) and their targeted RPCs then time out as deferred
+            // messages. Also guarantees the UI is bound before the first broadcast.
+            manager.SceneManager.OnLoadEventCompleted += OnLoadEventCompleted;
+            _forceStartAt = Time.time + SceneSyncTimeoutSeconds;
         }
 
+        /// <summary>Failsafe: start even if the completion callback never fires (a client
+        /// that stalls mid-load is handled by the normal reconnect/pause path).</summary>
+        private const float SceneSyncTimeoutSeconds = 10f;
+
         private bool _hostStarted;
+        private bool _sceneReady;
+        private float _forceStartAt;
+
+        private void OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode mode,
+            List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+        {
+            if (sceneName != NetLauncher.GameSceneName) return;
+            _sceneReady = true;
+            var manager = NetworkManager.Singleton;
+            if (manager != null)
+                manager.SceneManager.OnLoadEventCompleted -= OnLoadEventCompleted;
+        }
 
         private void SpawnBridge()
         {
@@ -119,7 +138,10 @@ namespace Pascension.Net
             if (_host == null) return;
             if (!_hostStarted)
             {
+                if (!_sceneReady && Time.time < _forceStartAt)
+                    return;
                 _hostStarted = true;
+                SpawnBridge();
                 _host.Start();
                 // A client may have died during the scene transition — pause immediately.
                 RecomputePause();
@@ -133,6 +155,9 @@ namespace Pascension.Net
         private void OnDestroy()
         {
             ReconnectService.Deactivate(this);
+            var manager = NetworkManager.Singleton;
+            if (manager != null && manager.SceneManager != null)
+                manager.SceneManager.OnLoadEventCompleted -= OnLoadEventCompleted;
             if (_host != null)
                 _host.SeatActionRejected -= OnSeatActionRejected;
             if (_clientSession != null)
