@@ -10,6 +10,12 @@ namespace Pascension.Game
     /// </summary>
     public static class MatchSetup
     {
+        /// <summary>Which game the next solo match runs ("pascension" | "shards").</summary>
+        public static string GameId = "pascension";
+
+        /// <summary>DLC bitmask for games that have toggleable expansions.</summary>
+        public static int DlcFlags;
+
         public static string PlayerHeroId = "ignis";
         public static string PlayerName = "You";
         public static List<OpponentSetup> Opponents = new List<OpponentSetup>();

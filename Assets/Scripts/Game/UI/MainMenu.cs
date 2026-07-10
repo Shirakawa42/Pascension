@@ -21,8 +21,11 @@ namespace Pascension.Game.UI
         public RectTransform Root;
 
         private RectTransform _homePanel;
+        private RectTransform _gameSelectPanel;
         private RectTransform _soloPanel;
         private RectTransform _settingsPanel;
+        /// <summary>True while the game-select panel routes to multiplayer (else solo).</summary>
+        private bool _selectForMultiplayer;
 
         private IReadOnlyList<HeroDefinition> _heroes;
         private int _selectedHero;
@@ -49,6 +52,7 @@ namespace Pascension.Game.UI
             }
 
             BuildHome();
+            BuildGameSelect();
             BuildSolo();
             BuildSettings();
             ShowPanel(_homePanel);
@@ -77,12 +81,19 @@ namespace Pascension.Game.UI
             UiFactory.Place(subtitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -215f), new Vector2(900f, 30f));
 
             float y = -40f;
-            var solo = MenuButton(_homePanel, "SOLO GAME", ref y);
-            solo.onClick.AddListener(() => ShowPanel(_soloPanel));
+            var solo = MenuButton(_homePanel, "NEW GAME", ref y);
+            solo.onClick.AddListener(() =>
+            {
+                _selectForMultiplayer = false;
+                ShowPanel(_gameSelectPanel);
+            });
 
             var multi = MenuButton(_homePanel, "MULTIPLAYER", ref y);
             multi.onClick.AddListener(() =>
-                UnityEngine.SceneManagement.SceneManager.LoadScene(Pascension.Net.NetLauncher.LobbySceneName));
+            {
+                _selectForMultiplayer = true;
+                ShowPanel(_gameSelectPanel);
+            });
 
             var settings = MenuButton(_homePanel, "SETTINGS", ref y);
             settings.onClick.AddListener(() => ShowPanel(_settingsPanel));
@@ -97,6 +108,62 @@ namespace Pascension.Game.UI
             UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, y), new Vector2(380f, 64f));
             y -= 84f;
             return button;
+        }
+
+        // ------------------------------------------------------------------ game select
+
+        private void BuildGameSelect()
+        {
+            _gameSelectPanel = UiFactory.CreateRect("GameSelectPanel", Parent);
+            UiFactory.Stretch(_gameSelectPanel);
+
+            var title = UiFactory.CreateText(Theme, "Title", _gameSelectPanel, "CHOOSE A GAME", 44f,
+                UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
+            title.characterSpacing = 6f;
+            UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -120f), new Vector2(800f, 56f));
+
+            var modules = Pascension.Net.GameCatalog.All;
+            float x = -(modules.Count - 1) * 240f;
+            foreach (var module in modules)
+            {
+                var banner = UiFactory.CreateButton(Theme, "Game_" + module.GameId, _gameSelectPanel,
+                    module.DisplayName.ToUpperInvariant(), 30f,
+                    module.Playable ? UiPalette.Gold : UiPalette.PanelLight, UiPalette.Background);
+                UiFactory.Place((RectTransform)banner.transform, new Vector2(0.5f, 0.5f),
+                    new Vector2(x, 20f), new Vector2(420f, 220f));
+                banner.interactable = module.Playable;
+                string gameId = module.GameId;
+                banner.onClick.AddListener(() => OnGameChosen(gameId));
+
+                if (!module.Playable)
+                {
+                    var soon = UiFactory.CreateText(Theme, "Soon", banner.transform, "coming soon", 16f,
+                        UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Italic);
+                    UiFactory.Place(soon.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 18f), new Vector2(300f, 22f));
+                }
+                x += 480f;
+            }
+
+            var back = UiFactory.CreateButton(Theme, "Back", _gameSelectPanel, "BACK", 20f);
+            UiFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(220f, 54f));
+            back.onClick.AddListener(() => ShowPanel(_homePanel));
+        }
+
+        private void OnGameChosen(string gameId)
+        {
+            MatchSetup.GameId = gameId;
+            MatchSetup.DlcFlags = 0;
+            if (_selectForMultiplayer)
+            {
+                // The lobby host picks the game there too; preselect for convenience.
+                UnityEngine.SceneManagement.SceneManager.LoadScene(Pascension.Net.NetLauncher.LobbySceneName);
+                return;
+            }
+
+            if (gameId == "pascension")
+                ShowPanel(_soloPanel);
+            else
+                ShowPanel(_gameSelectPanel); // per-game solo panels register in later milestones
         }
 
         // ------------------------------------------------------------------ solo setup

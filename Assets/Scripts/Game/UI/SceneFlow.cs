@@ -14,6 +14,9 @@ namespace Pascension.Game.UI
 
         public static void LoadGame() => SceneManager.LoadScene(GameScene);
 
+        /// <summary>Load a specific game's table scene (two-game split).</summary>
+        public static void LoadGame(string sceneName) => SceneManager.LoadScene(sceneName);
+
         public static void LoadMenu() => SceneManager.LoadScene(MenuScene);
     }
 }

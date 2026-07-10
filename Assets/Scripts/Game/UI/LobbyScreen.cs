@@ -34,6 +34,10 @@ namespace Pascension.Game.UI
 
         private GameObject _lobbyPanel;
         private TextMeshProUGUI _codeLabel;
+        private TextMeshProUGUI _gameLabel;
+        private Button _gameButton;
+        private RectTransform _dlcRow;
+        private string _dlcRowBuiltFor; // gameId the DLC checkboxes were built for
         private Button _copyButton;
         private Button _readyButton;
         private TextMeshProUGUI _readyLabel;
@@ -95,6 +99,7 @@ namespace Pascension.Game.UI
         private void RefreshLobby(NetworkManager manager, LobbyNetBehaviour lobby)
         {
             _codeLabel.text = "GAME ID:  <color=#E8C15A>" + (NetLauncher.CurrentJoinCode ?? "LAN") + "</color>";
+            RefreshGameRow(manager, lobby);
 
             var state = lobby.State;
             bool isHost = manager.IsHost;
@@ -153,9 +158,11 @@ namespace Pascension.Game.UI
                 _lobbyStatus.text = "Waiting for the host to start…";
         }
 
-        private static string NextHero(string current)
+        private string NextHero(string current)
         {
-            var heroes = HeroDatabase.All;
+            var lobby = LobbyNetBehaviour.Instance;
+            var module = GameCatalog.Get(lobby != null ? lobby.State.GameId : GameCatalog.DefaultGameId);
+            var heroes = module.CharactersFor(lobby != null ? lobby.State.DlcFlags : 0);
             if (heroes.Count == 0) return current;
             for (int i = 0; i < heroes.Count; i++)
                 if (heroes[i].Id == current)
@@ -163,17 +170,12 @@ namespace Pascension.Game.UI
             return heroes[0].Id;
         }
 
-        private static string HeroDisplayName(string heroId)
+        private string HeroDisplayName(string heroId)
         {
             if (string.IsNullOrEmpty(heroId)) return "—";
-            try
-            {
-                return HeroDatabase.Get(heroId).Name;
-            }
-            catch (KeyNotFoundException)
-            {
-                return heroId;
-            }
+            var lobby = LobbyNetBehaviour.Instance;
+            var module = GameCatalog.Get(lobby != null ? lobby.State.GameId : GameCatalog.DefaultGameId);
+            return module.CharacterDisplayName(heroId);
         }
 
         // ------------------------------------------------------------------ handlers
@@ -301,6 +303,72 @@ namespace Pascension.Game.UI
             SceneManager.LoadScene(NetLauncher.LobbySceneName); // back to the offline connect panel
         }
 
+        private void OnGameCycleClicked()
+        {
+            var manager = NetworkManager.Singleton;
+            var lobby = LobbyNetBehaviour.Instance;
+            if (manager == null || !manager.IsHost || lobby == null) return;
+            var all = GameCatalog.All;
+            int index = 0;
+            for (int i = 0; i < all.Count; i++)
+                if (all[i].GameId == lobby.State.GameId)
+                    index = i;
+            for (int step = 1; step <= all.Count; step++)
+            {
+                var next = all[(index + step) % all.Count];
+                if (!next.Playable) continue;
+                lobby.HostSetGame(next.GameId);
+                return;
+            }
+        }
+
+        private void RefreshGameRow(NetworkManager manager, LobbyNetBehaviour lobby)
+        {
+            var module = GameCatalog.Get(lobby.State.GameId);
+            bool isHost = manager.IsHost;
+            _gameButton.interactable = isHost && GameCatalog.All.Count > 1;
+            _gameLabel.text = module.DisplayName.ToUpperInvariant();
+
+            // Rebuild the DLC checkboxes when the game changes.
+            if (_dlcRowBuiltFor != module.GameId)
+            {
+                _dlcRowBuiltFor = module.GameId;
+                for (int i = _dlcRow.childCount - 1; i >= 0; i--)
+                    Destroy(_dlcRow.GetChild(i).gameObject);
+                float x = 0f;
+                foreach (var dlc in module.DlcOptions)
+                {
+                    var toggle = UiFactory.CreateToggle(Theme, "Dlc_" + dlc.Flag, _dlcRow, dlc.Name);
+                    var rt = (RectTransform)toggle.transform;
+                    rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 0.5f);
+                    rt.anchoredPosition = new Vector2(x, 0f);
+                    rt.sizeDelta = new Vector2(180f, 28f);
+                    int flag = dlc.Flag;
+                    toggle.onValueChanged.AddListener(on =>
+                    {
+                        var l = LobbyNetBehaviour.Instance;
+                        var m = NetworkManager.Singleton;
+                        if (l == null || m == null || !m.IsHost) return;
+                        int flags = l.State.DlcFlags;
+                        l.HostSetDlc(on ? flags | flag : flags & ~flag);
+                    });
+                    x += 190f;
+                }
+            }
+
+            // Sync checkbox states + host-only interactivity.
+            int current = lobby.State.DlcFlags;
+            for (int i = 0; i < _dlcRow.childCount; i++)
+            {
+                var toggle = _dlcRow.GetChild(i).GetComponent<UnityEngine.UI.Toggle>();
+                if (toggle == null) continue;
+                string name = _dlcRow.GetChild(i).name; // "Dlc_<flag>"
+                if (int.TryParse(name.Substring(4), out int flag))
+                    toggle.SetIsOnWithoutNotify((current & flag) != 0);
+                toggle.interactable = isHost;
+            }
+        }
+
         // ------------------------------------------------------------------ construction
 
         private void BuildConnectPanel()
@@ -389,6 +457,15 @@ namespace Pascension.Game.UI
                 "friends join from the menu with this ID", 14f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Italic);
             UiFactory.Place(share.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -106f), new Vector2(500f, 20f));
+
+            // Game + DLC row: the host cycles the game and toggles DLCs; clients see labels.
+            _gameButton = UiFactory.CreateButton(Theme, "GameButton", panel.transform, "", 16f);
+            UiFactory.Place((RectTransform)_gameButton.transform, new Vector2(0f, 1f), new Vector2(40f, -74f), new Vector2(240f, 40f));
+            _gameButton.onClick.AddListener(OnGameCycleClicked);
+            _gameLabel = UiFactory.ButtonLabel(_gameButton);
+
+            _dlcRow = UiFactory.CreateRect("DlcRow", panel.transform);
+            UiFactory.Place(_dlcRow, new Vector2(0f, 1f), new Vector2(40f, -118f), new Vector2(400f, 30f));
 
             for (int i = 0; i < _rows.Length; i++)
                 _rows[i] = BuildSlotRow(panel.transform, i);
