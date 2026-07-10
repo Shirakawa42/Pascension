@@ -189,18 +189,7 @@ namespace Pascension.Engine.Events
     {
     }
 
-    public sealed class DecisionRequestedEvent : GameEvent
-    {
-        public int PlayerIndex;
-        public int DecisionId;
-        public string Title;
-    }
-
-    public sealed class DecisionMadeEvent : GameEvent
-    {
-        public int PlayerIndex;
-        public int DecisionId;
-    }
+    // DecisionRequestedEvent / DecisionMadeEvent live in Pascension.Core (game-neutral).
 
     public sealed class ExtraTurnEvent : GameEvent
     {

@@ -27,7 +27,7 @@ namespace Pascension.Engine.Serialization
                 typeof(SubmitDecisionAction),
                 typeof(ConcedeAction)
             },
-            new[] { typeof(CardDrawnEvent).Assembly });
+            new[] { typeof(CardDrawnEvent).Assembly, typeof(GameEvent).Assembly });
 
         public static string SerializeAction(PlayerAction action) => Wire.SerializeAction(action);
         public static PlayerAction DeserializeAction(string json) => Wire.DeserializeAction(json);

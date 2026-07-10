@@ -8,7 +8,8 @@
         "Pascension.Engine",
         "Pascension.Content",
         "Pascension.Bots",
-        "Pascension.Net"
+        "Pascension.Net",
+        "Shards.Engine"
     ],
     "includePlatforms": [
         "Editor"
