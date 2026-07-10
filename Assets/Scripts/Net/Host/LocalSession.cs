@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Pascension.Core;
 using Pascension.Engine.Actions;
 using Pascension.Engine.Events;
 using Pascension.Engine.Serialization;
@@ -29,7 +30,7 @@ namespace Pascension.Net
 
         // ---- ISession (UI side) ----
         public int LocalPlayerIndex { get; }
-        public event Action<ClientSnapshot> SnapshotReceived;
+        public event Action<SnapshotBase> SnapshotReceived;
         public event Action<List<GameEvent>> EventsReceived;
         public event Action<PendingSnap> InputRequested;
         public event Action<string> ActionRejected;
@@ -43,7 +44,7 @@ namespace Pascension.Net
         // ---- IHostSeat (host side) ----
         public int PlayerIndex { get; }
         public void DeliverEvents(List<GameEvent> filteredEvents) => EventsReceived?.Invoke(filteredEvents);
-        public void DeliverSnapshot(ClientSnapshot snapshot) => SnapshotReceived?.Invoke(snapshot);
+        public void DeliverSnapshot(SnapshotBase snapshot) => SnapshotReceived?.Invoke(snapshot);
         public void OnInputRequested(PendingSnap pending) => InputRequested?.Invoke(pending);
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Pascension.Bots.Ollama;
+using Pascension.Core;
 using Pascension.Engine.Events;
 using Pascension.Engine.Serialization;
 
@@ -27,10 +28,10 @@ namespace Pascension.Net
         }
 
         public void DeliverEvents(List<GameEvent> filteredEvents) { }
-        public void DeliverSnapshot(ClientSnapshot snapshot) { }
+        public void DeliverSnapshot(SnapshotBase snapshot) { }
 
         public void OnInputRequested(PendingSnap pending) =>
-            _agent.RequestInput(_host.SnapshotFor(PlayerIndex), pending,
+            _agent.RequestInput((ClientSnapshot)_host.SnapshotFor(PlayerIndex), pending,
                 action => _host.SubmitAsync(PlayerIndex, action));
     }
 }

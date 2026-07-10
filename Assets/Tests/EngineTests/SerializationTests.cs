@@ -63,13 +63,14 @@ namespace Pascension.Engine.Tests
         public void GameHost_RunsASoloGameWithSeats()
         {
             var config = TestGames.StandardConfig(players: 3, seed: 11);
-            var host = new GameHost(config);
+            var adapter = new PascensionEngineAdapter(config);
+            var host = new GameHost(adapter, 3, config.Rules.ResponseTimerSeconds);
 
             // Seat 0 is a "human" driven through LocalSession; seats 1-2 are instant bots.
             var session = new LocalSession(host, 0);
             host.AttachSeat(session, isHuman: true);
-            var bot1 = new BotSeat(1, new HeuristicBot(101), thinkDelaySeconds: 0f);
-            var bot2 = new BotSeat(2, new HeuristicBot(102), thinkDelaySeconds: 0f);
+            var bot1 = new BotSeat(1, new SyncAgentBot(new HeuristicBot(101), adapter.Inner), thinkDelaySeconds: 0f);
+            var bot2 = new BotSeat(2, new SyncAgentBot(new HeuristicBot(102), adapter.Inner), thinkDelaySeconds: 0f);
             bot1.Bind(host);
             bot2.Bind(host);
             host.AttachSeat(bot1, isHuman: false);
@@ -86,10 +87,10 @@ namespace Pascension.Engine.Tests
                     session.SubmitAction(new SubmitDecisionAction
                     {
                         PlayerIndex = 0,
-                        Answer = humanAgent.ChooseDecision(host.Engine, pending.Decision)
+                        Answer = humanAgent.ChooseDecision(adapter.Inner, pending.Decision)
                     });
                 else
-                    session.SubmitAction(humanAgent.ChooseAction(host.Engine, new PendingInput
+                    session.SubmitAction(humanAgent.ChooseAction(adapter.Inner, new PendingInput
                     {
                         Kind = pending.Kind,
                         PlayerIndex = 0,
@@ -99,7 +100,7 @@ namespace Pascension.Engine.Tests
 
             host.Start();
             // Bots act on ticks; the human acts via the event handler above.
-            for (int i = 0; i < 200000 && !host.Engine.State.GameOver && host.Engine.State.Round <= 40; i++)
+            for (int i = 0; i < 200000 && !adapter.Inner.State.GameOver && adapter.Inner.State.Round <= 40; i++)
             {
                 host.Tick(0.1f);
                 bot1.Tick(0.1f);
@@ -108,7 +109,7 @@ namespace Pascension.Engine.Tests
 
             Assert.Greater(snapshots, 10, "Session received snapshots");
             Assert.Greater(inputRequests, 10, "Session received input requests");
-            Assert.IsTrue(host.Engine.State.GameOver || host.Engine.State.Round > 40,
+            Assert.IsTrue(adapter.Inner.State.GameOver || adapter.Inner.State.Round > 40,
                 "Game progressed to completion or the cap");
         }
     }

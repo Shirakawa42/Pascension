@@ -13,14 +13,22 @@ namespace Pascension.Net
         /// <summary>True from the moment the host commits to starting until shutdown/new lobby.</summary>
         public static bool MatchRunning;
 
-        /// <summary>Built by LobbyNetBehaviour.HostStartGame via ContentRegistry.StandardConfig.</summary>
-        public static GameConfig Config;
+        /// <summary>Which game the running/starting match belongs to.</summary>
+        public static string GameId = GameCatalog.DefaultGameId;
+
+        /// <summary>DLC bitmask chosen in the lobby.</summary>
+        public static int DlcFlags;
+
+        /// <summary>The module-built, game-shaped config (opaque to the net layer).</summary>
+        public static object Config;
 
         public static List<SeatAssignment> Seats = new();
 
         public static void ResetForLobby()
         {
             MatchRunning = false;
+            GameId = GameCatalog.DefaultGameId;
+            DlcFlags = 0;
             Config = null;
             Seats.Clear();
         }

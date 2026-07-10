@@ -3,6 +3,7 @@ using Pascension.Bots;
 using Pascension.Content;
 using Pascension.Engine.Core;
 using Pascension.Engine.Heroes;
+using Pascension.Engine.Serialization;
 using Pascension.Game.UI;
 using Pascension.Net;
 using UnityEngine;
@@ -39,10 +40,10 @@ namespace Pascension.Game
                 {
                     // Host: the lobby-built config's rules. Client: the NetworkSession's
                     // rules object (populated in place by the host's resync).
-                    var rules = SessionProvider.Current is NetworkSession ns ? ns.Rules
-                        : NetLobbyData.Config != null ? NetLobbyData.Config.Rules
-                        : new GameRules();
-                    Screen.Bind(SessionProvider.Current, rules);
+                    var rules = SessionProvider.Current is NetworkSession ns ? ns.Rules as GameRules
+                        : NetLobbyData.Config is GameConfig cfg ? cfg.Rules
+                        : null;
+                    Screen.Bind(SessionProvider.Current, rules ?? new GameRules());
                 }
                 else
                     Debug.LogError("GameBootstrap: no GameScreen assigned — run Pascension/Setup/Build All Scenes.");
@@ -73,8 +74,9 @@ namespace Pascension.Game
             }
 
             var config = ContentRegistry.StandardConfig(MatchSetup.Seed, players);
+            var adapter = new PascensionEngineAdapter(config);
 
-            Host = new GameHost(config);
+            Host = new GameHost(adapter, players.Count, config.Rules.ResponseTimerSeconds);
             Session = new LocalSession(Host, 0);
             Host.AttachSeat(Session, isHuman: true);
 
@@ -85,7 +87,7 @@ namespace Pascension.Game
                 ISyncAgent agent = opp.Bot == BotKind.Random
                     ? new RandomBot(botSeed)
                     : (ISyncAgent)new HeuristicBot(botSeed);
-                var seat = new BotSeat(i, agent, BotThinkDelay);
+                var seat = new BotSeat(i, new SyncAgentBot(agent, adapter.Inner), BotThinkDelay);
                 seat.Bind(Host);
                 Host.AttachSeat(seat, isHuman: false);
                 _botSeats.Add(seat);

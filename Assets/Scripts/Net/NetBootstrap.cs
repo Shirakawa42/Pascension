@@ -212,7 +212,7 @@ namespace Pascension.Net
         {
             if (_networkManager == null || !_networkManager.IsListening)
                 return;
-            if (scene.name != NetLauncher.GameSceneName)
+            if (!GameCatalog.IsGameScene(scene.name))
                 return;
             if (FindFirstObjectByType<HostMatchStarter>() != null)
                 return;

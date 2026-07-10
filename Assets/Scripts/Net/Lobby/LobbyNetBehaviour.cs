@@ -150,24 +150,16 @@ namespace Pascension.Net
             };
         }
 
-        private static string DefaultHeroFor(int index)
-        {
-            var heroes = HeroDatabase.All;
-            return heroes.Count == 0 ? null : heroes[index % heroes.Count].Id;
-        }
+        private string DefaultHeroFor(int index) =>
+            GameCatalog.Get(State.GameId).DefaultCharacterFor(index, State.DlcFlags);
 
-        private static bool IsKnownHero(string heroId)
+        private bool IsKnownHero(string heroId)
         {
             if (string.IsNullOrEmpty(heroId)) return false;
-            try
-            {
-                HeroDatabase.Get(heroId);
-                return true;
-            }
-            catch (KeyNotFoundException)
-            {
-                return false;
-            }
+            foreach (var character in GameCatalog.Get(State.GameId).CharactersFor(State.DlcFlags))
+                if (character.Id == heroId)
+                    return true;
+            return false;
         }
 
         private int SlotOfClient(ulong clientId)
@@ -271,15 +263,27 @@ namespace Pascension.Net
                     return slot.Name + " has no hero";
             }
 
+            var module = GameCatalog.Get(State.GameId);
+            if (picked.Count < module.MinPlayers)
+                return module.DisplayName + " needs at least " + module.MinPlayers + " players";
+            if (picked.Count > module.MaxPlayers)
+                return module.DisplayName + " supports at most " + module.MaxPlayers + " players";
+
             // Lobby-level seed generation (config input, not engine randomness).
             ulong seed = unchecked((ulong)DateTime.UtcNow.Ticks);
 
-            var players = new List<PlayerConfig>();
+            var players = new List<Pascension.Core.PlayerSpec>();
             var seats = new List<SeatAssignment>();
             for (int i = 0; i < picked.Count; i++)
             {
                 var slot = picked[i];
-                players.Add(new PlayerConfig { Name = slot.Name, HeroId = slot.HeroId });
+                players.Add(new Pascension.Core.PlayerSpec
+                {
+                    Name = slot.Name,
+                    CharacterId = slot.HeroId,
+                    IsBot = slot.Kind == LobbySlotKind.Bot,
+                    BotKind = slot.BotKind
+                });
                 seats.Add(new SeatAssignment
                 {
                     PlayerIndex = i,
@@ -293,18 +297,52 @@ namespace Pascension.Net
                 });
             }
 
-            NetLobbyData.Config = ContentRegistry.StandardConfig(seed, players);
+            NetLobbyData.GameId = State.GameId;
+            NetLobbyData.DlcFlags = State.DlcFlags;
+            NetLobbyData.Config = module.BuildConfig(seed, players, State.DlcFlags);
             NetLobbyData.Seats = seats;
             NetLobbyData.MatchRunning = true;
 
-            var status = NetworkManager.SceneManager.LoadScene(NetLauncher.GameSceneName, LoadSceneMode.Single);
+            var status = NetworkManager.SceneManager.LoadScene(module.GameSceneName, LoadSceneMode.Single);
             if (status != SceneEventProgressStatus.Started)
             {
                 NetLobbyData.ResetForLobby();
-                return "Could not load the Game scene: " + status +
-                       " (is Assets/Scenes/Game.unity in Build Settings?)";
+                return "Could not load the game scene: " + status +
+                       " (is " + module.GameSceneName + ".unity in Build Settings?)";
             }
             return null;
+        }
+
+        /// <summary>Host picks which game this lobby starts. Character picks that do not
+        /// exist in the new game reset to defaults; non-host humans get un-readied.</summary>
+        public void HostSetGame(string gameId)
+        {
+            if (!IsServer || State.GameId == gameId) return;
+            State.GameId = gameId;
+            State.DlcFlags = 0;
+            RevalidateSlots();
+            BroadcastState();
+        }
+
+        public void HostSetDlc(int dlcFlags)
+        {
+            if (!IsServer || State.DlcFlags == dlcFlags) return;
+            State.DlcFlags = dlcFlags;
+            RevalidateSlots();
+            BroadcastState();
+        }
+
+        private void RevalidateSlots()
+        {
+            for (int i = 0; i < State.Slots.Count; i++)
+            {
+                var slot = State.Slots[i];
+                if (slot.Kind == LobbySlotKind.Empty) continue;
+                if (!IsKnownHero(slot.HeroId))
+                    slot.HeroId = DefaultHeroFor(i);
+                if (slot.Kind == LobbySlotKind.Human && slot.ClientId != State.HostClientId)
+                    slot.Ready = false;
+            }
         }
 
         // ---------------- replication ----------------
@@ -313,13 +351,13 @@ namespace Pascension.Net
         {
             if (!IsServer) return;
             StateChanged?.Invoke(State);
-            StateRpc(Encoding.UTF8.GetBytes(EngineJson.Serialize(State)));
+            StateRpc(NetWire.Encode(State));
         }
 
         [Rpc(SendTo.NotServer)]
         private void StateRpc(byte[] stateJson)
         {
-            State = EngineJson.Deserialize<LobbyState>(Encoding.UTF8.GetString(stateJson));
+            State = NetWire.Decode<LobbyState>(stateJson);
             StateChanged?.Invoke(State);
         }
     }

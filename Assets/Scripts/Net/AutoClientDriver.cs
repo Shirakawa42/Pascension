@@ -108,33 +108,9 @@ namespace Pascension.Net
         private void OnInputRequested(PendingSnap pending)
         {
             if (_boundSession == null || pending == null) return;
-            PlayerAction action;
-            if (pending.Kind == PendingInputKind.Decision && pending.Decision != null)
-            {
-                var req = pending.Decision;
-                var answer = new Engine.Decisions.DecisionAnswer { DecisionId = req.Id };
-                answer.ChosenOptionIds.AddRange(req.DefaultOptionIds);
-                for (int i = 0; answer.ChosenOptionIds.Count < req.Min && i < req.Options.Count; i++)
-                    if (!answer.ChosenOptionIds.Contains(req.Options[i].Id))
-                        answer.ChosenOptionIds.Add(req.Options[i].Id);
-                while (answer.ChosenOptionIds.Count > req.Max)
-                    answer.ChosenOptionIds.RemoveAt(answer.ChosenOptionIds.Count - 1);
-                action = new SubmitDecisionAction { Answer = answer };
-            }
-            else
-            {
-                action = null;
-                if (pending.LegalActions != null)
-                    foreach (var legal in pending.LegalActions)
-                        if (legal is PassPriorityAction)
-                        {
-                            action = legal;
-                            break;
-                        }
-                if (action == null && pending.LegalActions != null && pending.LegalActions.Count > 0)
-                    action = pending.LegalActions[0];
-                if (action == null) return;
-            }
+            // Game-agnostic: ISafeDefaultAction (pass/end-turn) or the decision defaults.
+            var action = Pascension.Core.DefaultActions.For(pending);
+            if (action == null) return;
             Debug.Log("[AutoClient] auto-answer: " + action.Describe());
             _boundSession.SubmitAction(action);
         }

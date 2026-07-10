@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Pascension.Core;
 using Pascension.Engine.Events;
 using Pascension.Engine.Serialization;
 
@@ -35,7 +36,7 @@ namespace Pascension.Net
             _bridge()?.SendEvents(ClientId, filteredEvents[0].Seq, filteredEvents);
         }
 
-        public void DeliverSnapshot(ClientSnapshot snapshot)
+        public void DeliverSnapshot(SnapshotBase snapshot)
         {
             if (Connected)
                 _bridge()?.SendSnapshot(ClientId, snapshot);

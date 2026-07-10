@@ -1,4 +1,4 @@
-using Pascension.Bots;
+using Pascension.Core;
 using Pascension.Engine.Serialization;
 using System.Collections.Generic;
 using Unity.Netcode;
@@ -22,7 +22,8 @@ namespace Pascension.Net
         private NetworkSession _clientSession;
         private readonly List<BotSeat> _bots = new();
         private readonly List<RemoteSeat> _remoteSeats = new();
-        private Engine.Core.GameConfig _config;
+        private IGameModule _module;
+        private object _config;
 
         private void Awake()
         {
@@ -41,7 +42,12 @@ namespace Pascension.Net
 
         private void SetupClient()
         {
-            _clientSession = new NetworkSession();
+            // The active scene name identifies the game (rejoin included: NGO scene-syncs
+            // the client into the host's per-game scene before this runs).
+            var module = GameCatalog.ByScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name)
+                         ?? GameCatalog.Get(GameCatalog.DefaultGameId);
+            _module = module;
+            _clientSession = new NetworkSession(module.Codec);
             SessionProvider.Current = _clientSession;
         }
 
@@ -55,8 +61,10 @@ namespace Pascension.Net
                 return;
             }
 
+            _module = GameCatalog.Get(NetLobbyData.GameId);
             _config = config;
-            _host = new GameHost(config);
+            _host = new GameHost(_module.CreateEngine(config), NetLobbyData.Seats.Count,
+                _module.ResponseTimeoutOf(config));
 
             foreach (var seat in NetLobbyData.Seats)
             {
@@ -77,7 +85,8 @@ namespace Pascension.Net
                         break;
 
                     case LobbySlotKind.Bot:
-                        var agent = new HeuristicBot(config.Seed ^ (ulong)((seat.PlayerIndex + 1) * 7919));
+                        var agent = _module.CreateBot(seat.BotKind,
+                            _module.SeedOf(config) ^ (ulong)((seat.PlayerIndex + 1) * 7919), _host.Engine);
                         var bot = new BotSeat(seat.PlayerIndex, agent);
                         bot.Bind(_host);
                         _bots.Add(bot);
@@ -112,7 +121,7 @@ namespace Pascension.Net
         private void OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode mode,
             List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
         {
-            if (sceneName != NetLauncher.GameSceneName) return;
+            if (_module == null || sceneName != _module.GameSceneName) return;
             _sceneReady = true;
             var manager = NetworkManager.Singleton;
             if (manager != null)
@@ -129,7 +138,7 @@ namespace Pascension.Net
             }
             var go = Instantiate(prefab);
             _bridge = go.GetComponent<GameNetBridge>();
-            _bridge.ConfigureHost(_host, SeatOfClient, ResyncClient); // wire BEFORE Spawn
+            _bridge.ConfigureHost(_host, _module.Codec, SeatOfClient, ResyncClient); // wire BEFORE Spawn
             go.GetComponent<NetworkObject>().Spawn(destroyWithScene: true);
         }
 
@@ -187,18 +196,12 @@ namespace Pascension.Net
             if (playerIndex < 0) return;
 
             _bridge.SendSeat(clientId, playerIndex);
-            _bridge.SendRules(clientId, _config.Rules); // reliable RPCs are ordered — lands before the snapshot
+            _bridge.SendRules(clientId, _module.RulesOf(_config)); // reliable RPCs are ordered — lands before the snapshot
             _bridge.SendSnapshot(clientId, _host.SnapshotFor(playerIndex));
 
             var pending = _host.Engine.PendingInput;
             if (pending != null && pending.PlayerIndex == playerIndex)
-                _bridge.SendInputRequest(clientId, new PendingSnap
-                {
-                    Kind = pending.Kind,
-                    PlayerIndex = pending.PlayerIndex,
-                    LegalActions = pending.LegalActions,
-                    Decision = pending.Decision
-                });
+                _bridge.SendInputRequest(clientId, pending);
 
             _bridge.SendPauseState(clientId, BuildPauseInfo(canKick: false));
         }
@@ -251,7 +254,7 @@ namespace Pascension.Net
         {
             if (_host == null) return;
             bool shouldPause = false;
-            if (!_host.Engine.State.GameOver)
+            if (!_host.Engine.GameOver)
                 foreach (var seat in _remoteSeats)
                     if (!seat.Connected)
                     {
@@ -310,7 +313,8 @@ namespace Pascension.Net
                 assignment.ClientGuid = null;
             }
 
-            var agent = new HeuristicBot(_config.Seed ^ (ulong)((playerIndex + 1) * 7919));
+            var agent = _module.CreateBot(LobbyNetBehaviour.DefaultBotKind,
+                _module.SeedOf(_config) ^ (ulong)((playerIndex + 1) * 7919), _host.Engine);
             var bot = new BotSeat(playerIndex, agent);
             bot.Bind(_host);
             _bots.Add(bot);

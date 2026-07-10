@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
+using Pascension.Core;
 using Pascension.Engine.Actions;
 using Pascension.Engine.Events;
 using Pascension.Engine.Serialization;
@@ -17,7 +17,7 @@ namespace Pascension.Net
     {
         public int LocalPlayerIndex { get; private set; } = -1;
 
-        public event Action<ClientSnapshot> SnapshotReceived;
+        public event Action<SnapshotBase> SnapshotReceived;
         public event Action<List<GameEvent>> EventsReceived;
         public event Action<PendingSnap> InputRequested;
         public event Action<string> ActionRejected;
@@ -28,8 +28,9 @@ namespace Pascension.Net
 
         /// <summary>The host's game rules, populated in place during resync (the UI holds
         /// this reference from bind time, so in-place mutation keeps it correct).</summary>
-        public Engine.Core.GameRules Rules { get; } = new Engine.Core.GameRules();
+        public object Rules { get; }
 
+        private readonly IGameCodec _codec;
         private GameNetBridge _bridge;
 
         /// <summary>Next event Seq we expect; -1 until the first snapshot baseline arrives.</summary>
@@ -37,8 +38,10 @@ namespace Pascension.Net
 
         private bool _resyncPending;
 
-        public NetworkSession()
+        public NetworkSession(IGameCodec codec)
         {
+            _codec = codec;
+            Rules = codec.CreateRules();
             GameNetBridge.ClientSpawned += OnBridgeSpawned;
             if (GameNetBridge.Instance != null)
                 OnBridgeSpawned(GameNetBridge.Instance);
@@ -70,7 +73,7 @@ namespace Pascension.Net
             }
             if (LocalPlayerIndex >= 0)
                 action.PlayerIndex = LocalPlayerIndex; // cosmetic — the host re-stamps it from the seat
-            _bridge.SubmitActionRpc(Encoding.UTF8.GetBytes(EngineJson.SerializeAction(action)));
+            _bridge.SubmitActionRpc(_codec.EncodeAction(action));
         }
 
         private void RequestResync()
@@ -86,7 +89,7 @@ namespace Pascension.Net
 
         internal void HandleSnapshot(byte[] snapshotJson)
         {
-            var snapshot = NetJson.Deserialize<ClientSnapshot>(Encoding.UTF8.GetString(snapshotJson));
+            var snapshot = _codec.DecodeSnapshot(snapshotJson);
             if (LocalPlayerIndex < 0)
                 LocalPlayerIndex = snapshot.ViewerIndex; // redundant with SeatAssignedRpc, but harmless
             _expectedSeq = snapshot.EventSeq;
@@ -107,7 +110,7 @@ namespace Pascension.Net
                 return;
             }
 
-            var events = EngineJson.DeserializeEvents(Encoding.UTF8.GetString(eventsJson));
+            var events = _codec.DecodeEvents(eventsJson);
             if (events.Count == 0) return;
             int lastSeq = events[events.Count - 1].Seq;
             if (lastSeq < _expectedSeq) return; // stale duplicate, already covered by a snapshot
@@ -122,7 +125,7 @@ namespace Pascension.Net
 
         internal void HandleInputRequested(byte[] pendingJson)
         {
-            var pending = NetJson.Deserialize<PendingSnap>(Encoding.UTF8.GetString(pendingJson));
+            var pending = _codec.DecodePending(pendingJson);
             InputRequested?.Invoke(pending);
         }
 
@@ -130,12 +133,12 @@ namespace Pascension.Net
 
         internal void HandleRules(byte[] rulesJson)
         {
-            Newtonsoft.Json.JsonConvert.PopulateObject(Encoding.UTF8.GetString(rulesJson), Rules);
+            _codec.PopulateRules(rulesJson, Rules);
         }
 
         internal void HandlePauseChanged(byte[] pauseJson)
         {
-            var info = EngineJson.Deserialize<PauseInfo>(Encoding.UTF8.GetString(pauseJson));
+            var info = NetWire.Decode<PauseInfo>(pauseJson);
             if (info == null) return;
             info.CanKick = false; // only the host may kick, whatever the wire says
             if (string.IsNullOrEmpty(info.JoinCode))

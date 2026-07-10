@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
-using Pascension.Engine.Actions;
+using Pascension.Core;
 using Pascension.Engine.Events;
 using Pascension.Engine.Serialization;
 using Unity.Netcode;
@@ -12,10 +11,10 @@ namespace Pascension.Net
     /// The single host↔client pipe for a running match, spawned by the host from the
     /// Resources prefab after the Game scene loads. Host side is configured by
     /// HostMatchStarter (GameHost access + clientId→seat mapping + resync handler);
-    /// client side binds a NetworkSession. All payloads are UTF8 JSON in the
-    /// EngineJson/NetJson wire format. Host→client traffic uses targeted RPCs
-    /// (SendTo.SpecifiedInParams + RpcTarget.Single) so hidden information only ever
-    /// reaches the seat it was filtered for.
+    /// client side binds a NetworkSession. All payloads are UTF8 JSON encoded by the
+    /// ACTIVE GAME's <see cref="IGameCodec"/> — the bridge itself is game-agnostic.
+    /// Host→client traffic uses targeted RPCs (SendTo.SpecifiedInParams +
+    /// RpcTarget.Single) so hidden information only ever reaches its seat.
     /// </summary>
     public sealed class GameNetBridge : NetworkBehaviour
     {
@@ -25,14 +24,17 @@ namespace Pascension.Net
         public static event Action<GameNetBridge> ClientSpawned;
 
         private GameHost _host;
+        private IGameCodec _codec;
         private Func<ulong, int> _seatOfClient;
         private Action<ulong> _resyncRequested;
         private NetworkSession _session;
 
         /// <summary>Host-side wiring. Call BEFORE NetworkObject.Spawn().</summary>
-        public void ConfigureHost(GameHost host, Func<ulong, int> seatOfClient, Action<ulong> resyncRequested)
+        public void ConfigureHost(GameHost host, IGameCodec codec, Func<ulong, int> seatOfClient,
+            Action<ulong> resyncRequested)
         {
             _host = host;
+            _codec = codec;
             _seatOfClient = seatOfClient;
             _resyncRequested = resyncRequested;
         }
@@ -65,16 +67,16 @@ namespace Pascension.Net
         {
             ulong sender = rpcParams.Receive.SenderClientId;
             int seat = _seatOfClient?.Invoke(sender) ?? -1;
-            if (_host == null || seat < 0)
+            if (_host == null || _codec == null || seat < 0)
             {
                 SendRejection(sender, "You have no seat in this game");
                 return;
             }
 
-            PlayerAction action;
+            Engine.Actions.PlayerAction action;
             try
             {
-                action = EngineJson.DeserializeAction(Encoding.UTF8.GetString(actionJson));
+                action = _codec.DecodeAction(actionJson);
             }
             catch (Exception e)
             {
@@ -102,24 +104,24 @@ namespace Pascension.Net
                 SeatAssignedRpc(playerIndex, RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
-        public void SendEvents(ulong clientId, int seqStart, IReadOnlyList<GameEvent> events)
+        public void SendEvents(ulong clientId, int seqStart, List<GameEvent> events)
         {
             if (CanSendTo(clientId))
-                EventBatchRpc(Utf8(EngineJson.SerializeEvents(events)), seqStart,
+                EventBatchRpc(_codec.EncodeEvents(events), seqStart,
                     RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
-        public void SendSnapshot(ulong clientId, ClientSnapshot snapshot)
+        public void SendSnapshot(ulong clientId, SnapshotBase snapshot)
         {
             if (CanSendTo(clientId))
-                SnapshotRpc(Utf8(NetJson.Serialize(snapshot)),
+                SnapshotRpc(_codec.EncodeSnapshot(snapshot),
                     RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
         public void SendInputRequest(ulong clientId, PendingSnap pending)
         {
             if (CanSendTo(clientId))
-                InputRequestedRpc(Utf8(NetJson.Serialize(pending)),
+                InputRequestedRpc(_codec.EncodePending(pending),
                     RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
@@ -129,24 +131,24 @@ namespace Pascension.Net
                 ActionRejectedRpc(error, RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
-        public void SendRules(ulong clientId, Engine.Core.GameRules rules)
+        public void SendRules(ulong clientId, object rules)
         {
             if (CanSendTo(clientId))
-                RulesRpc(Utf8(EngineJson.Serialize(rules)), RpcTarget.Single(clientId, RpcTargetUse.Temp));
+                RulesRpc(_codec.EncodeRules(rules), RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
         /// <summary>Pause state is not hidden information — everyone gets the same copy.</summary>
         public void BroadcastPause(PauseInfo info)
         {
             if (IsServer && IsSpawned)
-                PauseStateRpc(Utf8(EngineJson.Serialize(info)));
+                PauseStateRpc(NetWire.Encode(info));
         }
 
         /// <summary>Targeted pause state for a resyncing client (others may still be out).</summary>
         public void SendPauseState(ulong clientId, PauseInfo info)
         {
             if (CanSendTo(clientId))
-                PauseStateTargetedRpc(Utf8(EngineJson.Serialize(info)),
+                PauseStateTargetedRpc(NetWire.Encode(info),
                     RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
@@ -160,8 +162,6 @@ namespace Pascension.Net
                     return true;
             return false;
         }
-
-        private static byte[] Utf8(string s) => Encoding.UTF8.GetBytes(s);
 
         // ---------------- client receive ----------------
 

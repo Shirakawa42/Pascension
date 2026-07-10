@@ -497,8 +497,9 @@ namespace Pascension.Game.UI
 
         // ------------------------------------------------------------------ session events
 
-        private void OnSnapshot(ClientSnapshot snapshot)
+        private void OnSnapshot(Pascension.Core.SnapshotBase snapshotBase)
         {
+            var snapshot = (ClientSnapshot)snapshotBase; // this screen only ever binds Pascension sessions
             View.Apply(snapshot);
             RefreshHandLive();
             if (Queue == null || Queue.IsIdle)
