@@ -53,6 +53,9 @@ namespace Pascension.Net
         {
             _networkManager = gameObject.AddComponent<NetworkManager>();
             _transport = gameObject.AddComponent<UnityTransport>();
+            // Default 30s makes disconnect detection (and the "identity already
+            // connected" rejoin window) feel broken — pause UX needs ~10s.
+            _transport.DisconnectTimeoutMS = 10000;
 
             _networkManager.NetworkConfig = new NetworkConfig
             {

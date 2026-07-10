@@ -45,15 +45,29 @@ namespace Pascension.Game.EditorSupport
             BuildMenuScene(artIndex);
             BuildGameScene(artIndex);
 
-            EditorBuildSettings.scenes = new[]
-            {
-                new EditorBuildSettingsScene(MenuScenePath, true),
-                new EditorBuildSettingsScene(GameScenePath, true)
-            };
+            // Idempotent append — never clobber entries other builders own (Lobby.unity
+            // comes from NetSceneBuilder and must survive a Build All Scenes run).
+            EnsureBuildSettingsScene(MenuScenePath);
+            EnsureBuildSettingsScene(GameScenePath);
 
             AssetDatabase.SaveAssets();
             Debug.Log("[Pascension] Built MainMenu.unity + Game.unity, registered build scenes, " +
                       $"CardArtIndex has {artIndex.entries.Count} entries. Open {MenuScenePath} and press Play.");
+        }
+
+        /// <summary>Add a scene to Build Settings if absent; enable it if present.</summary>
+        private static void EnsureBuildSettingsScene(string scenePath)
+        {
+            var scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+            foreach (var entry in scenes)
+            {
+                if (entry.path != scenePath) continue;
+                entry.enabled = true;
+                EditorBuildSettings.scenes = scenes.ToArray();
+                return;
+            }
+            scenes.Add(new EditorBuildSettingsScene(scenePath, true));
+            EditorBuildSettings.scenes = scenes.ToArray();
         }
 
         // ------------------------------------------------------------------ prerequisites
