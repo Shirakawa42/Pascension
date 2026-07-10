@@ -2,6 +2,7 @@
     "name": "Pascension.Net",
     "rootNamespace": "Pascension.Net",
     "references": [
+        "Pascension.Core",
         "Pascension.Engine",
         "Pascension.Content",
         "Pascension.Bots",

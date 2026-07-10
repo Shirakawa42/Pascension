@@ -2,6 +2,7 @@
     "name": "Pascension.Game",
     "rootNamespace": "Pascension.Game",
     "references": [
+        "Pascension.Core",
         "UnityEngine.UI",
         "Pascension.Engine",
         "Pascension.Content",

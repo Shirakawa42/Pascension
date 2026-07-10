@@ -43,6 +43,9 @@ namespace Pascension.Engine.Decisions
         public bool Ordered;
         /// <summary>Answer applied when the player times out or is disconnected (host decides).</summary>
         public List<int> DefaultOptionIds = new();
+        /// <summary>Free-form tag routing this decision to a custom UI surface
+        /// (e.g. "soi.split"); null renders the generic decision modal.</summary>
+        public string Context;
 
         public static DecisionRequest YesNo(int player, string title, bool defaultYes = false)
         {

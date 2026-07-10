@@ -12,20 +12,7 @@ using Pascension.Engine.Turns;
 
 namespace Pascension.Engine.Core
 {
-    public readonly struct SubmitResult
-    {
-        public readonly bool Accepted;
-        public readonly string Error;
-
-        private SubmitResult(bool accepted, string error)
-        {
-            Accepted = accepted;
-            Error = error;
-        }
-
-        public static SubmitResult Ok() => new(true, null);
-        public static SubmitResult Rejected(string error) => new(false, error);
-    }
+    // SubmitResult lives in Pascension.Core (Core/SubmitResult.cs).
 
     /// <summary>
     /// The sequential rules machine. Exactly one external input is awaited at any time

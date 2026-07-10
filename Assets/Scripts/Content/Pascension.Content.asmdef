@@ -2,6 +2,7 @@
     "name": "Pascension.Content",
     "rootNamespace": "Pascension.Content",
     "references": [
+        "Pascension.Core",
         "Pascension.Engine"
     ],
     "includePlatforms": [],

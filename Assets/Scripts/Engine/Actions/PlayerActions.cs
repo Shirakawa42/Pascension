@@ -1,15 +1,9 @@
-using Pascension.Engine.Decisions;
 using Pascension.Engine.Targeting;
 
 namespace Pascension.Engine.Actions
 {
-    /// <summary>An intent submitted by a player (human UI, bot, or network client).</summary>
-    public abstract class PlayerAction
-    {
-        public int PlayerIndex;
-
-        public abstract string Describe();
-    }
+    // PlayerAction base + PassPriority/SubmitDecision/Concede live in Pascension.Core
+    // (Core/PlayerAction.cs) — this file holds only Pascension-specific actions.
 
     /// <summary>Play a card from hand. Required targets are asked for via a decision afterwards.</summary>
     public sealed class PlayCardAction : PlayerAction
@@ -60,20 +54,4 @@ namespace Pascension.Engine.Actions
         public override string Describe() => Ultimate ? "Use hero ultimate" : "Use hero active";
     }
 
-    public sealed class PassPriorityAction : PlayerAction
-    {
-        public override string Describe() => "Pass";
-    }
-
-    public sealed class SubmitDecisionAction : PlayerAction
-    {
-        public DecisionAnswer Answer;
-
-        public override string Describe() => $"Answer decision #{Answer?.DecisionId}";
-    }
-
-    public sealed class ConcedeAction : PlayerAction
-    {
-        public override string Describe() => "Concede";
-    }
 }

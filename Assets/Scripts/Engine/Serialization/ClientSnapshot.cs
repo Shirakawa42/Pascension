@@ -59,23 +59,11 @@ namespace Pascension.Engine.Serialization
         public List<Targeting.TargetRef> Targets = new();
     }
 
-    public sealed class PendingSnap
-    {
-        public PendingInputKind Kind;
-        public int PlayerIndex;
-        /// <summary>Populated only when the viewer is the pending player.</summary>
-        public List<PlayerAction> LegalActions;
-        /// <summary>Populated only when the viewer is the pending player.</summary>
-        public DecisionRequest Decision;
-    }
+    // PendingSnap lives in Pascension.Core (Core/PendingSnap.cs).
 
     /// <summary>Full masked view for one player: UI rebuild, network join, reconnection.</summary>
-    public sealed class ClientSnapshot
+    public sealed class ClientSnapshot : Pascension.Core.SnapshotBase
     {
-        public int ViewerIndex;
-        /// <summary>Event-log length when the snapshot was taken (clients resync gaps from here).</summary>
-        public int EventSeq;
-
         public int TurnPlayerIndex;
         public Phase Phase;
         public int Round;

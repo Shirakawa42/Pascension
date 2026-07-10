@@ -2,6 +2,7 @@
     "name": "Pascension.Bots",
     "rootNamespace": "Pascension.Bots",
     "references": [
+        "Pascension.Core",
         "Pascension.Engine",
         "Pascension.Content"
     ],

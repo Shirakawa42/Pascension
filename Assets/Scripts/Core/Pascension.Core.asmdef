@@ -1,9 +1,7 @@
 {
-    "name": "Pascension.Engine",
-    "rootNamespace": "Pascension.Engine",
-    "references": [
-        "Pascension.Core"
-    ],
+    "name": "Pascension.Core",
+    "rootNamespace": "Pascension.Core",
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
