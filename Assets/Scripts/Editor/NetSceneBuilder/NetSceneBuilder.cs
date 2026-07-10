@@ -55,7 +55,8 @@ namespace Pascension.Editor
             lobbyNetGo.AddComponent<NetworkObject>();
             lobbyNetGo.AddComponent<LobbyNetBehaviour>();
 
-            new GameObject("LobbyUI").AddComponent<LobbyUiController>();
+            // House-style TMP lobby UI (canvas/theme/background/LobbyScreen).
+            Pascension.Game.EditorSupport.SceneConstruction.PopulateLobbyScene();
 
             Directory.CreateDirectory("Assets/Scenes");
             if (!EditorSceneManager.SaveScene(scene, LobbyScenePath))

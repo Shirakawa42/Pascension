@@ -61,7 +61,11 @@ namespace Pascension.Game.View
             backRt.pivot = new Vector2(0.5f, 0f);
             backRt.anchoredPosition = new Vector2(0f, 24f);
             backRt.sizeDelta = new Vector2(280f, 54f);
-            back.onClick.AddListener(SceneFlow.LoadMenu);
+            back.onClick.AddListener(() =>
+            {
+                Pascension.Net.NetLauncher.Shutdown(); // no-op offline; ends NGO after online games
+                SceneFlow.LoadMenu();
+            });
 
             Container.gameObject.SetActive(false);
         }

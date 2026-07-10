@@ -22,6 +22,7 @@ namespace Pascension.Net
         private NetworkSession _clientSession;
         private readonly List<BotSeat> _bots = new();
         private readonly List<RemoteSeat> _remoteSeats = new();
+        private Engine.Core.GameConfig _config;
 
         private void Awake()
         {
@@ -54,6 +55,7 @@ namespace Pascension.Net
                 return;
             }
 
+            _config = config;
             _host = new GameHost(config);
 
             foreach (var seat in NetLobbyData.Seats)
@@ -119,10 +121,13 @@ namespace Pascension.Net
             {
                 _hostStarted = true;
                 _host.Start();
+                // A client may have died during the scene transition — pause immediately.
+                RecomputePause();
             }
             _host.Tick(Time.deltaTime);
-            foreach (var bot in _bots)
-                bot.Tick(Time.deltaTime);
+            if (!_host.Paused)
+                foreach (var bot in _bots)
+                    bot.Tick(Time.deltaTime);
         }
 
         private void OnDestroy()
@@ -148,7 +153,8 @@ namespace Pascension.Net
             return -1;
         }
 
-        /// <summary>Full per-client resync: seat index, masked snapshot, pending input.</summary>
+        /// <summary>Full per-client resync: seat, rules, masked snapshot, pending input,
+        /// pause state (a rejoiner may arrive while other players are still out).</summary>
         private void ResyncClient(ulong clientId)
         {
             if (_host == null || _bridge == null) return;
@@ -156,6 +162,7 @@ namespace Pascension.Net
             if (playerIndex < 0) return;
 
             _bridge.SendSeat(clientId, playerIndex);
+            _bridge.SendRules(clientId, _config.Rules); // reliable RPCs are ordered — lands before the snapshot
             _bridge.SendSnapshot(clientId, _host.SnapshotFor(playerIndex));
 
             var pending = _host.Engine.PendingInput;
@@ -167,6 +174,8 @@ namespace Pascension.Net
                     LegalActions = pending.LegalActions,
                     Decision = pending.Decision
                 });
+
+            _bridge.SendPauseState(clientId, BuildPauseInfo(canKick: false));
         }
 
         private void OnSeatActionRejected(int playerIndex, string error)
@@ -194,6 +203,7 @@ namespace Pascension.Net
                         assignment.ClientId = clientId;
                 // Push a resync now; the client also pulls one when its bridge spawns.
                 ResyncClient(clientId);
+                RecomputePause();
                 return;
             }
         }
@@ -203,8 +213,86 @@ namespace Pascension.Net
             foreach (var seat in _remoteSeats)
                 if (seat.Connected && seat.ClientId == clientId)
                     seat.Connected = false;
-            // The seat stays attached: GameHost's response timer auto-plays defaults
-            // so the match keeps moving until the player reconnects.
+            // Policy: the match PAUSES until they rejoin (same game ID reclaims the
+            // seat) or the host replaces them with a bot.
+            RecomputePause();
+        }
+
+        // ---------------- pause / kick ----------------
+
+        /// <summary>Freeze the match while any remote human is disconnected; thaw when
+        /// everyone is back (or replaced). Pushes pause state to every session.</summary>
+        private void RecomputePause()
+        {
+            if (_host == null) return;
+            bool shouldPause = false;
+            if (!_host.Engine.State.GameOver)
+                foreach (var seat in _remoteSeats)
+                    if (!seat.Connected)
+                    {
+                        shouldPause = true;
+                        break;
+                    }
+
+            _host.SetPaused(shouldPause);
+            _localSession?.RaisePause(BuildPauseInfo(canKick: true));
+            _bridge?.BroadcastPause(BuildPauseInfo(canKick: false));
+        }
+
+        private PauseInfo BuildPauseInfo(bool canKick)
+        {
+            var info = new PauseInfo
+            {
+                Paused = _host != null && _host.Paused,
+                JoinCode = NetLauncher.CurrentJoinCode,
+                CanKick = canKick
+            };
+            foreach (var seat in _remoteSeats)
+            {
+                if (seat.Connected) continue;
+                string name = "Player " + (seat.PlayerIndex + 1);
+                foreach (var assignment in NetLobbyData.Seats)
+                    if (assignment.PlayerIndex == seat.PlayerIndex && !string.IsNullOrEmpty(assignment.PlayerName))
+                        name = assignment.PlayerName;
+                info.Waiting.Add(new PausedSeat { PlayerIndex = seat.PlayerIndex, Name = name });
+            }
+            return info;
+        }
+
+        /// <summary>Host kicks a disconnected player: a heuristic bot takes the seat
+        /// permanently and the kicked identity can no longer reconnect.</summary>
+        public void KickSeatToBot(int playerIndex)
+        {
+            if (_host == null) return;
+            RemoteSeat target = null;
+            foreach (var seat in _remoteSeats)
+                if (seat.PlayerIndex == playerIndex)
+                    target = seat;
+            if (target == null) return;
+
+            var manager = NetworkManager.Singleton;
+            if (target.Connected && manager != null && manager.IsServer)
+                manager.DisconnectClient(target.ClientId, "Replaced by a bot"); // safety; UI only offers kick when disconnected
+            _remoteSeats.Remove(target);
+
+            // Flip the seat record to Bot and drop the GUID: FindSeatByGuid only matches
+            // Human seats, so the kicked identity is rejected at connection approval.
+            foreach (var assignment in NetLobbyData.Seats)
+            {
+                if (assignment.PlayerIndex != playerIndex) continue;
+                assignment.Kind = LobbySlotKind.Bot;
+                assignment.BotKind = LobbyNetBehaviour.DefaultBotKind;
+                assignment.ClientGuid = null;
+            }
+
+            var agent = new HeuristicBot(_config.Seed ^ (ulong)((playerIndex + 1) * 7919));
+            var bot = new BotSeat(playerIndex, agent);
+            bot.Bind(_host);
+            _bots.Add(bot);
+            // Re-routes any pending input for this seat to the bot (it answers once unpaused).
+            _host.ReplaceSeat(playerIndex, bot, isHuman: false);
+            Debug.Log("[Net] Seat " + playerIndex + " replaced by a bot.");
+            RecomputePause();
         }
 
         private static bool IsClientConnected(NetworkManager manager, ulong clientId)

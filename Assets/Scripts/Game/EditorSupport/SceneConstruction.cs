@@ -55,6 +55,28 @@ namespace Pascension.Game.EditorSupport
                       $"CardArtIndex has {artIndex.entries.Count} entries. Open {MenuScenePath} and press Play.");
         }
 
+        /// <summary>
+        /// Fill the CURRENTLY OPEN scene with the lobby UI (canvas + theme + background +
+        /// LobbyScreen). Called by NetSceneBuilder after it authors the camera,
+        /// EventSystem and the in-scene LobbyNet NetworkObject — netcode authoring stays
+        /// out of this assembly.
+        /// </summary>
+        public static void PopulateLobbyScene()
+        {
+            if (!EnsureTmpEssentials())
+                return;
+            var artIndex = EnsureCardArtIndex();
+            var (canvas, theme) = BuildCanvas(artIndex);
+            BuildBackground(canvas.transform, theme, tryKeyart: true);
+
+            var rootRect = UiFactory.CreateRect("LobbyRoot", canvas.transform);
+            UiFactory.Stretch(rootRect);
+
+            var screen = canvas.gameObject.AddComponent<LobbyScreen>();
+            screen.Theme = theme;
+            screen.Root = rootRect;
+        }
+
         /// <summary>Add a scene to Build Settings if absent; enable it if present.</summary>
         private static void EnsureBuildSettingsScene(string scenePath)
         {

@@ -202,6 +202,7 @@ namespace Pascension.Net
                 string reason = _networkManager.DisconnectReason;
                 Debug.Log("[Net] Disconnected from host" +
                           (string.IsNullOrEmpty(reason) ? "." : ": " + reason));
+                NetEvents.RaiseLocalClientDisconnected(reason);
             }
         }
 

@@ -81,10 +81,8 @@ namespace Pascension.Game.UI
             solo.onClick.AddListener(() => ShowPanel(_soloPanel));
 
             var multi = MenuButton(_homePanel, "MULTIPLAYER", ref y);
-            multi.interactable = false;
-            var multiNote = UiFactory.CreateText(Theme, "MultiNote", _homePanel,
-                "via Lobby — see multiplayer notes", 14f, UiPalette.TextDim, TextAlignmentOptions.Center);
-            UiFactory.Place(multiNote.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, y + 62f), new Vector2(420f, 18f));
+            multi.onClick.AddListener(() =>
+                UnityEngine.SceneManagement.SceneManager.LoadScene(Pascension.Net.NetLauncher.LobbySceneName));
 
             var settings = MenuButton(_homePanel, "SETTINGS", ref y);
             settings.onClick.AddListener(() => ShowPanel(_settingsPanel));

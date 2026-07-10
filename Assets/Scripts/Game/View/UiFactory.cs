@@ -114,6 +114,36 @@ namespace Pascension.Game.View
         public static TextMeshProUGUI ButtonLabel(Button button) =>
             button.GetComponentInChildren<TextMeshProUGUI>();
 
+        /// <summary>Single-line TMP input field in the house style.</summary>
+        public static TMP_InputField CreateInputField(UiTheme theme, string name, Transform parent,
+            string placeholder, float fontSize = 20f)
+        {
+            var bg = CreateImage(name, parent, theme.Rounded, UiPalette.WithAlpha(Color.black, 0.45f), raycast: true);
+            var outline = bg.gameObject.AddComponent<Outline>();
+            outline.effectColor = UiPalette.WithAlpha(UiPalette.Border, 0.9f);
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            var area = CreateRect("TextArea", bg.transform);
+            Stretch(area, 12, 4, 12, 4);
+            area.gameObject.AddComponent<RectMask2D>();
+
+            var placeholderText = CreateText(theme, "Placeholder", area, placeholder, fontSize,
+                UiPalette.WithAlpha(UiPalette.TextDim, 0.7f), TextAlignmentOptions.MidlineLeft, FontStyles.Italic);
+            Stretch(placeholderText.rectTransform);
+            var text = CreateText(theme, "Text", area, "", fontSize,
+                UiPalette.TextMain, TextAlignmentOptions.MidlineLeft);
+            Stretch(text.rectTransform);
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+
+            var input = bg.gameObject.AddComponent<TMP_InputField>();
+            input.targetGraphic = bg;
+            input.textViewport = area;
+            input.textComponent = text;
+            input.placeholder = placeholderText;
+            input.lineType = TMP_InputField.LineType.SingleLine;
+            return input;
+        }
+
         public static ScrollRect CreateScrollView(UiTheme theme, string name, Transform parent,
             out RectTransform content)
         {

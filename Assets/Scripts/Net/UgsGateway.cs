@@ -93,6 +93,7 @@ namespace Pascension.Net
         private static UgsException Normalize(Exception e, bool joining)
         {
             if (e is UgsException already) return already;
+            Debug.LogWarning("[Net] UGS failure: " + e); // full detail for diagnosis; UI shows the friendly text
             if (e is RelayServiceException relay)
             {
                 if (relay.Reason == RelayExceptionReason.JoinCodeNotFound ||

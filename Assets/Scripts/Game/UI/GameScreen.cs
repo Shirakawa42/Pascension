@@ -66,6 +66,7 @@ namespace Pascension.Game.UI
         private bool _gameOverShown;
         private UnityEngine.UI.Button _turnButton;
         private TMPro.TextMeshProUGUI _turnLabel;
+        private PauseOverlayView _pauseOverlay;
         private RectTransform _moveRow;
         private StackArrows _stackArrows;
         private CardView _preview;
@@ -155,6 +156,14 @@ namespace Pascension.Game.UI
             UiFactory.Place(_stagedLabel.rectTransform, new Vector2(0.5f, 1f), Vector2.zero, new Vector2(140f, 32f));
             _stagedRoot.gameObject.SetActive(false);
 
+            // Online pause / connection-lost overlay (topmost; re-asserts on Show).
+            _pauseOverlay = PauseOverlayView.Create(uiRoot, Theme);
+            session.PauseChanged += OnPauseChanged;
+            NetEvents.LocalClientDisconnected += OnLocalClientDisconnected;
+            if (session is NetworkSession netSession && netSession.CurrentPause != null &&
+                netSession.CurrentPause.Paused)
+                OnPauseChanged(netSession.CurrentPause); // rejoin: pause state arrived before bind
+
             // Large hover preview so small card text is always readable (created last =
             // on top). Fixed spot: top-left, just right of the play-history bar.
             _preview = CardViewFactory.Create(uiRoot, Theme, 1.3f);
@@ -203,7 +212,28 @@ namespace Pascension.Game.UI
             }
         }
 
-        private void OnDestroy() => CardView.AnyHovered -= OnAnyCardHovered;
+        private void OnDestroy()
+        {
+            CardView.AnyHovered -= OnAnyCardHovered;
+            NetEvents.LocalClientDisconnected -= OnLocalClientDisconnected; // static — leaks otherwise
+            if (_session != null)
+                _session.PauseChanged -= OnPauseChanged;
+        }
+
+        private void OnPauseChanged(PauseInfo info)
+        {
+            if (_pauseOverlay == null) return;
+            if (info != null && info.Paused)
+                _pauseOverlay.ShowWaiting(info);
+            else
+                _pauseOverlay.HideWaiting();
+        }
+
+        private void OnLocalClientDisconnected(string reason)
+        {
+            if (_pauseOverlay == null || _gameOverShown) return;
+            _pauseOverlay.ShowConnectionLost(reason);
+        }
 
         private PlayerSnap Me()
         {

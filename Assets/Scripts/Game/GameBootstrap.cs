@@ -36,7 +36,14 @@ namespace Pascension.Game
             {
                 ContentRegistry.RegisterAll();
                 if (Screen != null)
-                    Screen.Bind(SessionProvider.Current, new GameRules());
+                {
+                    // Host: the lobby-built config's rules. Client: the NetworkSession's
+                    // rules object (populated in place by the host's resync).
+                    var rules = SessionProvider.Current is NetworkSession ns ? ns.Rules
+                        : NetLobbyData.Config != null ? NetLobbyData.Config.Rules
+                        : new GameRules();
+                    Screen.Bind(SessionProvider.Current, rules);
+                }
                 else
                     Debug.LogError("GameBootstrap: no GameScreen assigned — run Pascension/Setup/Build All Scenes.");
                 return;

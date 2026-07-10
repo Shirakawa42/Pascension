@@ -3,6 +3,7 @@
     "rootNamespace": "Pascension.Editor",
     "references": [
         "Pascension.Net",
+        "Pascension.Game",
         "Unity.Netcode.Runtime",
         "Unity.InputSystem",
         "UnityEngine.UI"

@@ -6,8 +6,16 @@ plus `Assets/Scripts/Editor/NetSceneBuilder/`.
 ## File map
 
 - `SessionProvider.cs` — **UI integration contract** (see below).
-- `NetLauncher.cs` — public static entry points: `StartHost(port)`, `StartClient(ip, port)`,
-  `TryReconnect()`, `Shutdown()`. MainMenu should call these for its IP/join controls.
+- `NetLauncher.cs` — public static entry points. PRIMARY (Relay): `HostAsync()` returns the
+  join code = the GAME ID players share, `JoinAsync(code)`, `RejoinAsync()`, `Shutdown()`.
+  Dev/LAN fallback (no UI): `StartHost(port)`, `StartClient(ip, port)`, `TryReconnect()`.
+- `UgsGateway.cs` — the ONLY file that talks to Unity Gaming Services: anonymous auth (one
+  profile per MPPM virtual player via `ClientIdentity.AuthProfile`) + Relay allocations.
+  Every SDK exception is normalized to a user-readable `UgsException` (raw detail is logged).
+  PREREQUISITE: the project must be linked to Unity Cloud with Relay enabled, else HostAsync
+  fails with a friendly error.
+- `NetEvents.cs` — static client-side notifications (LocalClientDisconnected → the Game
+  scene's connection-lost overlay). Subscribers MUST unsubscribe in OnDestroy.
 - `NetBootstrap.cs` — code-built DontDestroyOnLoad NetworkManager + UnityTransport, connection
   approval, prefab registration, creates `HostMatchStarter` when the Game scene loads while NGO runs.
 - `ClientIdentity.cs` — persistent client GUID + player name (PlayerPrefs).
@@ -15,7 +23,9 @@ plus `Assets/Scripts/Editor/NetSceneBuilder/`.
 - `NetJson.cs` — snapshot/pending wire format (see "wire format" below).
 - `Lobby/LobbySlotKind|LobbySlot|LobbyState.cs` — replicated lobby DTOs.
 - `Lobby/LobbyNetBehaviour.cs` — replicated lobby (in-scene NetworkObject in Lobby.unity).
-- `Lobby/LobbyUiController.cs` — lobby UI built entirely from code (legacy uGUI Text, no TMP).
+- Lobby UI lives in the GAME assembly (`Game/UI/LobbyScreen.cs`, house TMP style; asmdef
+  direction forbids it here). `SceneConstruction.PopulateLobbyScene()` authors it; the old
+  `Lobby/LobbyUiController.cs` (legacy uGUI) was deleted.
 - `Match/GameNetBridge.cs` — the host↔client RPC pipe (spawned from `Resources/Net/GameNetBridge`).
 - `Match/RemoteSeat.cs` — IHostSeat forwarding to a client via the bridge.
 - `Match/NetworkSession.cs` — client-side ISession with seq-gap detection → resync.
@@ -62,10 +72,17 @@ if (session == null)
 - Sequence tracking: batches carry `seqStart` (= first event's `Seq`); NetworkSession keeps
   `expectedSeq` (from `ClientSnapshot.EventSeq` or last batch); gap → `RequestResyncRpc`;
   overlapping duplicates are trimmed by `Seq`.
-- Reconnect: disconnect keeps the seat (`RemoteSeat.Connected=false`; GameHost's 25s response
-  timer auto-plays defaults). Approval mid-game admits only GUIDs in `NetLobbyData.Seats`.
-  On reconnect the RemoteSeat is re-pointed at the new clientId and resynced (push + client pull).
-  `NetLauncher.TryReconnect()` re-joins the last address with the same GUID.
+- Disconnect mid-game: the match PAUSES (`GameHost.SetPaused` — submits rejected, bots hold,
+  timers frozen; `HostMatchStarter.RecomputePause` orchestrates and pushes `PauseInfo` to every
+  session: `LocalSession.RaisePause` for the host UI, `GameNetBridge.BroadcastPause` for clients).
+  Everyone sees the pause overlay with the game ID; the host can kick → `KickSeatToBot` replaces
+  the seat with a HeuristicBot via `GameHost.ReplaceSeat` (re-routes any pending input) and flips
+  the `NetLobbyData` seat to Bot, which locks the kicked GUID out at approval
+  (`FindSeatByGuid` matches Human seats only). Approval mid-game admits only GUIDs in
+  `NetLobbyData.Seats`. On reconnect the RemoteSeat is re-pointed at the new clientId and
+  resynced (push + client pull; resync also carries rules + pause state), then unpaused.
+  `NetLauncher.RejoinAsync()` re-joins the last game ID with the same GUID.
+  Transport `DisconnectTimeoutMS=10s` so disconnects are detected promptly.
 
 ## Wire format deviation (important)
 
@@ -128,9 +145,9 @@ the scene and never rebuilds the prefab.
 5. Lobby: cycle heroes (own slot only; host can cycle bot heroes), toggle Ready on clients,
    host Add Bot / Remove / Kick, then Start (needs ≥2 seats, all remote humans ready).
 6. Game: play actions from host and client seats; verify bots act; verify a client's illegal
-   action shows a rejection; verify the 25s timer auto-passes an idle human.
+   action shows a rejection; kill a client and verify the pause overlay appears everywhere.
 7. Disconnect test: deactivate a virtual player mid-game → host log shows disconnect, its turns
-   auto-play after the timer. Reactivate → it boots into Lobby scene → click **Join Game** →
+   the pause overlay on all peers. Reactivate → it boots into Lobby scene → JOIN by game ID →
    approval maps its GUID to the old seat → Game scene syncs → snapshot + pending input restored.
 8. Solo regression: start a solo game from the normal path — no NetworkManager must be created.
 

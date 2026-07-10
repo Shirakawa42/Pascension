@@ -129,6 +129,27 @@ namespace Pascension.Net
                 ActionRejectedRpc(error, RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
+        public void SendRules(ulong clientId, Engine.Core.GameRules rules)
+        {
+            if (CanSendTo(clientId))
+                RulesRpc(Utf8(EngineJson.Serialize(rules)), RpcTarget.Single(clientId, RpcTargetUse.Temp));
+        }
+
+        /// <summary>Pause state is not hidden information — everyone gets the same copy.</summary>
+        public void BroadcastPause(PauseInfo info)
+        {
+            if (IsServer && IsSpawned)
+                PauseStateRpc(Utf8(EngineJson.Serialize(info)));
+        }
+
+        /// <summary>Targeted pause state for a resyncing client (others may still be out).</summary>
+        public void SendPauseState(ulong clientId, PauseInfo info)
+        {
+            if (CanSendTo(clientId))
+                PauseStateTargetedRpc(Utf8(EngineJson.Serialize(info)),
+                    RpcTarget.Single(clientId, RpcTargetUse.Temp));
+        }
+
         private bool CanSendTo(ulong clientId)
         {
             if (!IsServer || !IsSpawned) return false;
@@ -163,5 +184,17 @@ namespace Pascension.Net
         [Rpc(SendTo.SpecifiedInParams)]
         private void ActionRejectedRpc(string error, RpcParams rpcParams = default) =>
             _session?.HandleRejected(error);
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void RulesRpc(byte[] rulesJson, RpcParams rpcParams = default) =>
+            _session?.HandleRules(rulesJson);
+
+        [Rpc(SendTo.NotServer)]
+        private void PauseStateRpc(byte[] pauseJson) =>
+            _session?.HandlePauseChanged(pauseJson);
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void PauseStateTargetedRpc(byte[] pauseJson, RpcParams rpcParams = default) =>
+            _session?.HandlePauseChanged(pauseJson);
     }
 }
