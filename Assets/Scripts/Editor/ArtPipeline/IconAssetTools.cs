@@ -22,7 +22,7 @@ namespace Pascension.Editor.ArtPipeline
         {
             "icon_dmg", "icon_ap", "icon_xp", "icon_step",
             // Shards of Infinity inline icons (glyph names keep the soi_ prefix).
-            "soi_health", "soi_mastery", "soi_gem", "soi_power", "soi_tap"
+            "soi_health", "soi_mastery", "soi_gem", "soi_power", "soi_tap", "soi_shield"
         };
         private const int Cell = 512;
 

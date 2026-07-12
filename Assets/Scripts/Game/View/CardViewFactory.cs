@@ -76,6 +76,26 @@ namespace Pascension.Game.View
             view.HpGroup = hpGroup.gameObject;
             view.HpText = hpText;
 
+            // Shield badge (Shards of Infinity): shield icon + count, left edge above
+            // the rules box. Inactive by default — Pascension never shows it.
+            var shieldGroup = UiFactory.CreateRect("Shield", frame.transform);
+            UiFactory.Place(shieldGroup, new Vector2(0f, 0f), new Vector2(26f, 130f), new Vector2(44f, 48f));
+            var shieldIcon = UiFactory.CreateText(theme, "Icon", shieldGroup, "<sprite name=\"soi_shield\">", 40f,
+                Color.white, TextAlignmentOptions.Center);
+            if (theme.Icons != null) shieldIcon.spriteAsset = theme.Icons;
+            UiFactory.Stretch(shieldIcon.rectTransform);
+            shieldIcon.raycastTarget = false;
+            var shieldText = UiFactory.CreateText(theme, "Value", shieldGroup, "0", 19f,
+                Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(shieldText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 1f), new Vector2(40f, 26f));
+            var shieldOutline = shieldText.gameObject.AddComponent<UnityEngine.UI.Outline>();
+            shieldOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+            shieldOutline.effectDistance = new Vector2(1.2f, -1.2f);
+            shieldText.raycastTarget = false;
+            shieldGroup.gameObject.SetActive(false);
+            view.ShieldGroup = shieldGroup.gameObject;
+            view.ShieldText = shieldText;
+
             // Translucent rules box at the bottom.
             var rulesBox = UiFactory.CreateImage("RulesBox", frame.transform, null, new Color(0f, 0f, 0f, 0.72f));
             rulesBox.rectTransform.anchorMin = new Vector2(0f, 0f);

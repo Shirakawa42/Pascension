@@ -342,7 +342,7 @@ namespace Pascension.Game.UI
                     var rt = (RectTransform)toggle.transform;
                     rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 0.5f);
                     rt.anchoredPosition = new Vector2(x, 0f);
-                    rt.sizeDelta = new Vector2(180f, 28f);
+                    rt.sizeDelta = new Vector2(290f, 28f);
                     int flag = dlc.Flag;
                     toggle.onValueChanged.AddListener(on =>
                     {
@@ -352,7 +352,7 @@ namespace Pascension.Game.UI
                         int flags = l.State.DlcFlags;
                         l.HostSetDlc(on ? flags | flag : flags & ~flag);
                     });
-                    x += 190f;
+                    x += 300f;
                 }
             }
 
@@ -464,8 +464,10 @@ namespace Pascension.Game.UI
             _gameButton.onClick.AddListener(OnGameCycleClicked);
             _gameLabel = UiFactory.ButtonLabel(_gameButton);
 
+            // Full-width band of its own — SoI has 3 long-named DLC toggles which must
+            // never run under the player slots below.
             _dlcRow = UiFactory.CreateRect("DlcRow", panel.transform);
-            UiFactory.Place(_dlcRow, new Vector2(0f, 1f), new Vector2(40f, -118f), new Vector2(400f, 30f));
+            UiFactory.Place(_dlcRow, new Vector2(0f, 1f), new Vector2(40f, -130f), new Vector2(960f, 30f));
 
             for (int i = 0; i < _rows.Length; i++)
                 _rows[i] = BuildSlotRow(panel.transform, i);
@@ -495,7 +497,7 @@ namespace Pascension.Game.UI
             var rowBg = UiFactory.CreatePanel(Theme, $"Slot{index}", parent,
                 UiPalette.WithAlpha(UiPalette.PanelLight, 0.55f));
             UiFactory.Place(rowBg.rectTransform, new Vector2(0.5f, 1f),
-                new Vector2(0f, -140f - index * 88f), new Vector2(960f, 78f));
+                new Vector2(0f, -172f - index * 84f), new Vector2(960f, 78f));
 
             var row = new SlotRow();
             row.Label = UiFactory.CreateText(Theme, "Label", rowBg.transform, "", 20f,

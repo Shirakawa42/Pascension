@@ -125,6 +125,11 @@ MonoBehaviour:
     m_GlyphIndex: 8
     m_Scale: 1
     m_Name: soi_tap
+  - m_ElementType: 2
+    m_Unicode: 57353
+    m_GlyphIndex: 9
+    m_Scale: 1
+    m_Name: soi_shield
   m_GlyphTable:
   - m_Index: 0
     m_Metrics:
@@ -263,6 +268,22 @@ MonoBehaviour:
       m_HorizontalAdvance: 512
     m_GlyphRect:
       m_X: 4096
+      m_Y: 0
+      m_Width: 512
+      m_Height: 512
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+    sprite: {fileID: 0}
+  - m_Index: 9
+    m_Metrics:
+      m_Width: 512
+      m_Height: 512
+      m_HorizontalBearingX: 0
+      m_HorizontalBearingY: 460.8
+      m_HorizontalAdvance: 512
+    m_GlyphRect:
+      m_X: 4608
       m_Y: 0
       m_Width: 512
       m_Height: 512

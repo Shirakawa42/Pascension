@@ -42,7 +42,9 @@ namespace Pascension.Game.Soi
                 ShowCost = showCost,
                 CostText = def.Cost.ToString(),
                 ShowBadge = champion && def.Defense > 0,
-                BadgeText = def.Defense.ToString()
+                BadgeText = def.Defense.ToString(),
+                ShowShield = def.Shield > 0 || def.DynamicShield != null,
+                ShieldValueText = def.DynamicShield != null ? "M" : def.Shield.ToString()
             };
         }
 
@@ -73,8 +75,6 @@ namespace Pascension.Game.Soi
                 ShardsCardType.Relic => faction + "Relic" + (def.IsChampion ? " Champion" : " Ally"),
                 _ => faction + def.Type
             };
-            if (def.Shield > 0 || def.DynamicShield != null)
-                line += "  ·  Shield " + (def.DynamicShield != null ? "M" : def.Shield.ToString());
             return line;
         }
 
@@ -87,6 +87,9 @@ namespace Pascension.Game.Soi
         public static string Iconize(string text)
         {
             if (string.IsNullOrEmpty(text)) return text;
+
+            // The shield value lives in the card's shield badge, not the text box.
+            text = Regex.Replace(text, @"Shield (\d+|equal to your \w+)\.\s*", "");
 
             // Threshold pills first (they consume the "M10:" tokens).
             text = Regex.Replace(text, @"\bM(\d+)\s*[:]\s*",

@@ -33,6 +33,7 @@ namespace Pascension.Game.Soi
 
         private ISession _session;
         private ShardsSnapshot _snap;
+        private int _maxHealth = 50;
         private PendingSnap _pending;
         private DecisionRequest _deferredDecision;
         private bool _gameOverShown;
@@ -71,6 +72,7 @@ namespace Pascension.Game.Soi
         // Event-time lookups (rebuilt on every full refresh).
         private readonly Dictionary<int, CardView> _boardViews = new Dictionary<int, CardView>();
         private readonly Dictionary<int, RectTransform> _opponentPanels = new Dictionary<int, RectTransform>();
+        private readonly Dictionary<int, TextMeshProUGUI> _opponentStatTexts = new Dictionary<int, TextMeshProUGUI>();
         private readonly HashSet<int> _pendingReveal = new HashSet<int>();
         private readonly List<CardView> _transient = new List<CardView>();
 
@@ -79,6 +81,8 @@ namespace Pascension.Game.Soi
         public void Bind(ISession session, object rules)
         {
             _session = session;
+            if (rules is ShardsRules shardsRules)
+                _maxHealth = shardsRules.MaxHealth;
             SoiCardFaces.Install();
 
             BuildLayout();
@@ -299,20 +303,22 @@ namespace Pascension.Game.Soi
         private TextMeshProUGUI Stat(RectTransform root, string iconName, Vector2 pos, Color color, out RectTransform rect)
         {
             rect = UiFactory.CreateRect("Stat_" + iconName, root);
-            UiFactory.Place(rect, new Vector2(0.5f, 0.5f), pos, new Vector2(150f, 54f));
+            UiFactory.Place(rect, new Vector2(0.5f, 0.5f), pos, new Vector2(168f, 54f));
             var bg = UiFactory.CreatePanel(Theme, "Bg", rect, UiPalette.WithAlpha(UiPalette.Panel, 0.9f));
             UiFactory.Stretch((RectTransform)bg.transform);
-            // Icon instead of a word.
-            var icon = UiFactory.CreateText(Theme, "Icon", rect, $"<sprite name=\"{iconName}\">", 30f,
+            // Icon instead of a word — fixed left slot, value centered in the rest.
+            var icon = UiFactory.CreateText(Theme, "Icon", rect, $"<sprite name=\"{iconName}\">", 28f,
                 Color.white, TextAlignmentOptions.Center);
             if (Theme.Icons != null) icon.spriteAsset = Theme.Icons;
-            UiFactory.Place(icon.rectTransform, new Vector2(0f, 0.5f), new Vector2(30f, 0f), new Vector2(48f, 48f));
-            var value = UiFactory.CreateText(Theme, "Value", rect, "0", 26f, color,
+            UiFactory.Place(icon.rectTransform, new Vector2(0f, 0.5f), new Vector2(26f, 0f), new Vector2(40f, 44f));
+            var value = UiFactory.CreateText(Theme, "Value", rect, "0", 25f, color,
                 TextAlignmentOptions.Center, FontStyles.Bold);
-            UiFactory.Place(value.rectTransform, new Vector2(0f, 0.5f), new Vector2(96f, 0f), new Vector2(88f, 44f));
+            // Pivot sits at the LEFT edge (Place sets pivot=anchor) — the rect must end
+            // inside the 168-wide tile or "0/30" runs under the + focus button.
+            UiFactory.Place(value.rectTransform, new Vector2(0f, 0.5f), new Vector2(66f, 0f), new Vector2(94f, 44f));
             value.enableAutoSizing = true;
-            value.fontSizeMin = 13f;
-            value.fontSizeMax = 26f;
+            value.fontSizeMin = 12f;
+            value.fontSizeMax = 25f;
             return value;
         }
 
@@ -526,7 +532,7 @@ namespace Pascension.Game.Soi
 
             _hand.Render(HandSnaps(me), PlayableIds(me), _pendingReveal.Count > 0 ? _pendingReveal : null);
 
-            _statHealth.text = me.Health.ToString();
+            _statHealth.text = me.Health + "/" + _maxHealth;
             _statMastery.text = me.Mastery + "/30";
             _statGems.text = me.Gems.ToString();
             _statPower.text = me.Power.ToString();
@@ -623,9 +629,24 @@ namespace Pascension.Game.Soi
                 StartCoroutine(Tween.Punch(slot.transform, 0.18f, 0.22f));
         }
 
+        private string OpponentStatsLine(ShardsPlayerSnap player) =>
+            $"<color=#6FDF8F>{player.Health}/{_maxHealth}</color><sprite name=\"soi_health\">  " +
+            $"<color=#D4AF37>{player.Mastery}</color><sprite name=\"soi_mastery\">  " +
+            $"hand {player.HandCount} · deck {player.DeckCount} · discard {player.Discard.Count}";
+
+        /// <summary>Life totals update the instant damage lands — never waiting for the
+        /// animation queue to drain.</summary>
+        private void UpdateOpponentLine(int playerIndex)
+        {
+            if (_snap == null || playerIndex < 0 || playerIndex >= _snap.Players.Count) return;
+            if (_opponentStatTexts.TryGetValue(playerIndex, out var text) && text != null)
+                text.text = OpponentStatsLine(_snap.Players[playerIndex]);
+        }
+
         private void RenderOpponents()
         {
             _opponentPanels.Clear();
+            _opponentStatTexts.Clear();
             int count = 0;
             foreach (var player in _snap.Players)
                 if (player.Index != MyIndex)
@@ -650,13 +671,11 @@ namespace Pascension.Game.Soi
                     16f, theirTurn ? UiPalette.Gold : UiPalette.TextMain, TextAlignmentOptions.Left, FontStyles.Bold);
                 UiFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -15f), new Vector2(350f, 22f));
 
-                var stats = UiFactory.CreateText(Theme, "Stats", rect,
-                    $"<color=#6FDF8F>{player.Health}</color><sprite name=\"soi_health\">  " +
-                    $"<color=#D4AF37>{player.Mastery}</color><sprite name=\"soi_mastery\">  " +
-                    $"hand {player.HandCount} · deck {player.DeckCount} · discard {player.Discard.Count}",
+                var stats = UiFactory.CreateText(Theme, "Stats", rect, OpponentStatsLine(player),
                     13f, UiPalette.TextDim, TextAlignmentOptions.Left);
                 if (Theme.Icons != null) stats.spriteAsset = Theme.Icons;
                 UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -38f), new Vector2(356f, 20f));
+                _opponentStatTexts[player.Index] = stats;
 
                 float cx = 10f;
                 foreach (var champion in player.Champions)
@@ -999,7 +1018,8 @@ namespace Pascension.Game.Soi
                 _floats.Spawn(_floats.ToLocal(myTile), text, tint, 26f);
             else if (_opponentPanels.TryGetValue(playerIndex, out var panel))
                 _floats.Spawn(_floats.ToLocal(panel), text, tint, 22f);
-            RefreshHandLive(); // keep the visible numbers current mid-batch
+            RefreshHandLive();               // my numbers stay current mid-batch
+            UpdateOpponentLine(playerIndex); // and so do the opponents’
         }
 
         private IEnumerator PlayChampionHit(int instanceId, int amount)
@@ -1055,6 +1075,8 @@ namespace Pascension.Game.Soi
                     : (_opponentPanels.TryGetValue(target, out var panel) ? _floats.ToLocal(panel) : Vector2.zero);
                 _floats.Spawn(at, "−" + amount, UiPalette.WoundedRed, 34f);
                 _bursts.Burst(at, UiPalette.WoundedRed, 12, 190f);
+                RefreshHandLive();
+                UpdateOpponentLine(target); // life updates instantly, not post-batch
                 if (target != MyIndex && _opponentPanels.TryGetValue(target, out var hitPanel))
                     StartCoroutine(Tween.Punch(hitPanel, 0.12f, 0.2f));
             }

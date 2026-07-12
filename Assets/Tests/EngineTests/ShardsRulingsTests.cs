@@ -73,12 +73,24 @@ namespace Pascension.Engine.Tests
             while (!engine.State.GameOver && engine.PendingInput != null &&
                    engine.PendingInput.Kind == PendingInputKind.Decision && guard++ < 50)
             {
-                var request = engine.PendingInput.Decision;
-                var answer = new DecisionAnswer { DecisionId = request.Id };
-                for (int i = 0; i < request.Min && i < request.Options.Count; i++)
-                    answer.ChosenOptionIds.Add(request.Options[i].Id);
-                MustSubmit(engine, new SubmitDecisionAction { PlayerIndex = request.PlayerIndex, Answer = answer });
+                DrainOne(engine);
             }
+        }
+
+        /// <summary>Answer one pending decision like DefaultActions does: declared
+        /// defaults first (the split pre-fills a full assignment there), then pad with
+        /// distinct options up to Min, clamped to Max.</summary>
+        private static void DrainOne(ShardsEngine engine)
+        {
+            var request = engine.PendingInput.Decision;
+            var answer = new DecisionAnswer { DecisionId = request.Id };
+            answer.ChosenOptionIds.AddRange(request.DefaultOptionIds);
+            for (int i = 0; answer.ChosenOptionIds.Count < request.Min && i < request.Options.Count; i++)
+                if (!answer.ChosenOptionIds.Contains(request.Options[i].Id))
+                    answer.ChosenOptionIds.Add(request.Options[i].Id);
+            while (answer.ChosenOptionIds.Count > request.Max)
+                answer.ChosenOptionIds.RemoveAt(answer.ChosenOptionIds.Count - 1);
+            MustSubmit(engine, new SubmitDecisionAction { PlayerIndex = request.PlayerIndex, Answer = answer });
         }
 
         // ------------------------------------------------------------- faction triggers
@@ -449,15 +461,6 @@ namespace Pascension.Engine.Tests
 
             Assert.Contains(merc, p0.Discard, "kept fast-play joins the discard (recruited)");
             Assert.AreNotEqual(merc.InstanceId, engine.State.CenterDeck.Count > 0 ? engine.State.CenterDeck[0].InstanceId : -1);
-        }
-
-        private static void DrainOne(ShardsEngine engine)
-        {
-            var request = engine.PendingInput.Decision;
-            var answer = new DecisionAnswer { DecisionId = request.Id };
-            for (int i = 0; i < request.Min && i < request.Options.Count; i++)
-                answer.ChosenOptionIds.Add(request.Options[i].Id);
-            MustSubmit(engine, new SubmitDecisionAction { PlayerIndex = request.PlayerIndex, Answer = answer });
         }
 
         // ------------------------------------------------------------- verification-pass fixes

@@ -36,6 +36,8 @@ namespace Pascension.Game.View
         public TextMeshProUGUI RulesText;
         public GameObject DamageGroup;
         public TextMeshProUGUI DamageText;
+        public GameObject ShieldGroup;
+        public TextMeshProUGUI ShieldText;
         public CanvasGroup Group;
 
         public int InstanceId { get; private set; } = -1;
@@ -68,6 +70,9 @@ namespace Pascension.Game.View
             /// <summary>Red badge (Pascension: monster HP; SoI: champion defense).</summary>
             public bool ShowBadge;
             public string BadgeText;
+            /// <summary>Shield badge on the card face (count inside the shield icon).</summary>
+            public bool ShowShield;
+            public string ShieldValueText;
         }
 
         /// <summary>Set by non-Pascension tables (SoiGameScreen). Return null for unknown ids.</summary>
@@ -78,6 +83,7 @@ namespace Pascension.Game.View
         // later re-bound to a Pascension card.
         private bool _rulesDefaultsCaptured;
         private float _rulesBoxDefaultTop;
+        private Vector2 _costDefaultPos;
         private bool _rulesAutoSizeDefault;
         private float _rulesFontMinDefault, _rulesFontMaxDefault, _rulesFontSizeDefault;
 
@@ -86,6 +92,7 @@ namespace Pascension.Game.View
             if (_rulesDefaultsCaptured || RulesBox == null || RulesText == null) return;
             _rulesDefaultsCaptured = true;
             _rulesBoxDefaultTop = RulesBox.rectTransform.offsetMax.y;
+            _costDefaultPos = ((RectTransform)CostGroup.transform).anchoredPosition;
             _rulesAutoSizeDefault = RulesText.enableAutoSizing;
             _rulesFontMinDefault = RulesText.fontSizeMin;
             _rulesFontMaxDefault = RulesText.fontSizeMax;
@@ -95,6 +102,8 @@ namespace Pascension.Game.View
         private void RestoreRulesDefaults()
         {
             if (!_rulesDefaultsCaptured) return;
+            ((RectTransform)CostGroup.transform).anchoredPosition = _costDefaultPos;
+            if (ShieldGroup != null) ShieldGroup.SetActive(false);
             RulesText.enableAutoSizing = _rulesAutoSizeDefault;
             RulesText.fontSizeMin = _rulesFontMinDefault;
             RulesText.fontSizeMax = _rulesFontMaxDefault;
@@ -238,6 +247,15 @@ namespace Pascension.Game.View
             if (face.ShowCost) CostText.text = face.CostText;
             HpGroup.SetActive(face.ShowBadge);
             if (face.ShowBadge) HpText.text = face.BadgeText;
+            // Champions show BOTH: the defense badge keeps the right slot, the cost
+            // disc slides left beside it (both live in the top bar).
+            ((RectTransform)CostGroup.transform).anchoredPosition =
+                face.ShowBadge && face.ShowCost ? _costDefaultPos + new Vector2(-36f, 0f) : _costDefaultPos;
+            if (ShieldGroup != null)
+            {
+                ShieldGroup.SetActive(face.ShowShield);
+                if (face.ShowShield && ShieldText != null) ShieldText.text = face.ShieldValueText;
+            }
 
             var sprite = Theme != null ? Theme.Art(face.ArtId ?? DefId) : null;
             Art.sprite = sprite;

@@ -230,6 +230,7 @@ namespace Shards.Bots
                     int target = -1, lowest = int.MaxValue;
                     foreach (var option in request.Options)
                     {
+                        if (option.Id >= ShardsEngine.ChampionSplitBase) continue; // champions: mid-turn business
                         var opponent = _engine.State.Players[option.Id];
                         if (!opponent.Eliminated && opponent.Health < lowest)
                         {

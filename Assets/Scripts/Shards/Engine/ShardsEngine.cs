@@ -436,34 +436,7 @@ namespace Shards.Engine
 
             player.Power -= spend;
             Emit(new ShardsPowerChangedEvent { PlayerIndex = player.Index, Delta = -spend, NewValue = player.Power });
-            champion.DamageThisTurn += spend;
-
-            if (champion.DamageThisTurn >= EffectiveDefense(owner, champion))
-            {
-                owner.Champions.Remove(champion);
-                champion.Zone = ShardsZone.Discard;
-                champion.DamageThisTurn = 0;
-                owner.Discard.Add(champion);
-                Emit(new ShardsChampionDestroyedEvent
-                {
-                    OwnerIndex = owner.Index,
-                    ByPlayerIndex = player.Index,
-                    InstanceId = champion.InstanceId,
-                    DefId = champion.DefId
-                });
-            }
-            else
-            {
-                Emit(new ShardsChampionDamagedEvent
-                {
-                    OwnerIndex = owner.Index,
-                    ByPlayerIndex = player.Index,
-                    InstanceId = champion.InstanceId,
-                    DefId = champion.DefId,
-                    Amount = spend,
-                    Total = champion.DamageThisTurn
-                });
-            }
+            ApplyPowerToChampion(player.Index, owner, champion, spend);
             return SubmitResult.Ok();
         }
 
@@ -716,9 +689,18 @@ namespace Shards.Engine
 
             var opponents = new List<ShardsPlayer>(State.LivingOpponentsOf(player.Index));
             opponents.RemoveAll(o => !CanAssignDamageTo(o)); // Taunt champions protect their owner
-            if (player.Power > 0 && opponents.Count > 0)
+
+            // Enemy champions are assignable too (same power pool; marks accumulate
+            // and reset at end of turn exactly like mid-turn attacks).
+            var championTargets = new List<(ShardsPlayer owner, ShardsCard champion)>();
+            foreach (var championOwner in State.LivingOpponentsOf(player.Index))
+                foreach (var champion in championOwner.Champions)
+                    if (CanAttackChampion(player, championOwner, champion))
+                        championTargets.Add((championOwner, champion));
+
+            if (player.Power > 0 && (opponents.Count > 0 || championTargets.Count > 0))
             {
-                if (opponents.Count == 1)
+                if (opponents.Count == 1 && championTargets.Count == 0)
                 {
                     // Only one possible target — skip the split decision.
                     _splitTargets = new List<int> { opponents[0].Index };
@@ -734,18 +716,26 @@ namespace Shards.Engine
                     Kind = DecisionKind.ChooseMode,
                     Title = $"Assign {player.Power} damage between your opponents",
                     Context = "soi.split",
-                    // Full assignment is MANDATORY — only the split is free (rulebook:
-                    // assign ALL remaining power among opponents).
-                    Min = player.Power,
+                    // Full assignment among PLAYERS is mandatory (rulebook: assign
+                    // ALL remaining power); champion-only assignment (every player
+                    // taunt-protected) is optional.
+                    Min = opponents.Count > 0 ? player.Power : 0,
                     Max = player.Power,
                     Ordered = true
                 };
                 foreach (var opponent in opponents)
                     request.Options.Add(new DecisionOption(opponent.Index, opponent.Name));
+                foreach (var (championOwner, champion) in championTargets)
+                    request.Options.Add(new DecisionOption(ChampionSplitBase + champion.InstanceId,
+                        champion.Def.Name + " (" + championOwner.Name + ")")
+                    {
+                        CardInstanceId = champion.InstanceId
+                    });
                 // Defaults pad with DISTINCT options only — pre-fill a full assignment
                 // (everything on the first opponent) so timeouts/bot-takeovers stay legal.
-                for (int i = 0; i < player.Power; i++)
-                    request.DefaultOptionIds.Add(opponents[0].Index);
+                if (opponents.Count > 0)
+                    for (int i = 0; i < player.Power; i++)
+                        request.DefaultOptionIds.Add(opponents[0].Index);
                 // Answer format: one option id per damage point (repeats allowed).
                 // Queue only — Submit's pump picks it up. NEVER pump from inside the
                 // end-turn chain: these methods also run inside effect iterators, and a
@@ -763,8 +753,16 @@ namespace Shards.Engine
 
             _splitTargets = new List<int>();
             _splitAmounts = new List<int>();
+            var championHits = new Dictionary<int, int>();
             foreach (int optionId in ctx.Answer.ChosenOptionIds)
             {
+                if (optionId >= ChampionSplitBase)
+                {
+                    int hitId = optionId - ChampionSplitBase;
+                    championHits.TryGetValue(hitId, out int soFar);
+                    championHits[hitId] = soFar + 1;
+                    continue;
+                }
                 int index = _splitTargets.IndexOf(optionId);
                 if (index < 0)
                 {
@@ -776,6 +774,19 @@ namespace Shards.Engine
                     _splitAmounts[index]++;
                 }
             }
+
+            // Champion damage lands first (shields never protect champions).
+            foreach (var hit in championHits)
+            {
+                foreach (var championOwner in State.Players)
+                {
+                    var champion = championOwner.Champions.Find(c => c.InstanceId == hit.Key);
+                    if (champion == null) continue;
+                    ApplyPowerToChampion(ctx.ControllerIndex, championOwner, champion, hit.Value);
+                    break;
+                }
+            }
+
             BeginDefenses(ctx.Controller);
         }
 
@@ -1402,6 +1413,35 @@ namespace Shards.Engine
                 Emit(new ShardsDeckShuffledEvent { PlayerIndex = player.Index });
             }
             return player.Deck[player.Deck.Count - 1];
+        }
+
+        /// <summary>Split-decision option ids at or above this value target a champion
+        /// (id = base + champion instance id); below it they are player indexes.</summary>
+        public const int ChampionSplitBase = 100000;
+
+        /// <summary>Apply assigned power to a champion: marks accumulate within the
+        /// turn; the champion dies once its full effective defense is reached. Shared by
+        /// the AttackChampion action and the end-turn damage split.</summary>
+        private void ApplyPowerToChampion(int attackerIndex, ShardsPlayer owner, ShardsCard champion, int amount)
+        {
+            if (amount <= 0) return;
+            champion.DamageThisTurn += amount;
+            if (champion.DamageThisTurn >= EffectiveDefense(owner, champion))
+            {
+                DestroyChampion(owner, champion, attackerIndex);
+            }
+            else
+            {
+                Emit(new ShardsChampionDamagedEvent
+                {
+                    OwnerIndex = owner.Index,
+                    ByPlayerIndex = attackerIndex,
+                    InstanceId = champion.InstanceId,
+                    DefId = champion.DefId,
+                    Amount = amount,
+                    Total = champion.DamageThisTurn
+                });
+            }
         }
 
         /// <summary>Destroy a champion by card effect (bypasses defense entirely — a

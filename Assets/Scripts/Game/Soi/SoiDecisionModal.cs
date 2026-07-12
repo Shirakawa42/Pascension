@@ -168,17 +168,37 @@ namespace Pascension.Game.Soi
 
         private void BuildSplit(DecisionRequest request)
         {
-            float y = -20f;
+            // Rows live in a scroll view (opponents + every attackable champion can
+            // exceed the panel); the ALL shortcuts stay pinned below the scroll area.
+            var scroll = UiFactory.CreateScrollView(_theme, "SplitRows", _body, out var content);
+            var srect = (RectTransform)scroll.transform;
+            srect.anchorMin = Vector2.zero;
+            srect.anchorMax = Vector2.one;
+            srect.pivot = new Vector2(0.5f, 0.5f);
+            srect.offsetMin = new Vector2(0f, 56f); // room for the shortcut row
+            srect.offsetMax = Vector2.zero;
+
+            var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 8f;
+            layout.padding = new RectOffset(8, 8, 8, 8);
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            var fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
             foreach (var option in request.Options)
             {
                 _splitCounts[option.Id] = 0;
-                var row = UiFactory.CreateRect("Split_" + option.Id, _body);
-                UiFactory.Place(row, new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(560f, 64f));
-                y -= 74f;
+                var row = UiFactory.CreateRect("Split_" + option.Id, content);
+                row.sizeDelta = new Vector2(0f, 64f);
+                var le = row.gameObject.AddComponent<LayoutElement>();
+                le.preferredHeight = 64f;
 
                 var name = UiFactory.CreateText(_theme, "Name", row, option.Label, 18f, UiPalette.TextMain,
                     TextAlignmentOptions.Left, FontStyles.Bold);
-                UiFactory.Place(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(140f, 0f), new Vector2(260f, 40f));
+                UiFactory.Place(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(16f, 0f), new Vector2(330f, 40f));
 
                 var minus = UiFactory.CreateButton(_theme, "Minus", row, "−", 22f);
                 UiFactory.Place((RectTransform)minus.transform, new Vector2(1f, 0.5f), new Vector2(-160f, 0f), new Vector2(52f, 52f));
@@ -197,13 +217,15 @@ namespace Pascension.Game.Soi
                 plus.onClick.AddListener(() => Bump(id, +1, countLabel));
             }
 
-            // "All on X" shortcuts save clicks for big pools.
-            float x = -(request.Options.Count - 1) * 100f;
-            foreach (var option in request.Options)
+            // "All on X" shortcuts save clicks for big pools — PLAYER targets only
+            // (champion options carry the champion's CardInstanceId and can be many).
+            var playerOptions = request.Options.FindAll(o => o.CardInstanceId <= 0);
+            float x = -(playerOptions.Count - 1) * 100f;
+            foreach (var option in playerOptions)
             {
                 var all = UiFactory.CreateButton(_theme, "All_" + option.Id, _body,
                     "ALL → " + option.Label.ToUpperInvariant(), 12f);
-                UiFactory.Place((RectTransform)all.transform, new Vector2(0.5f, 0f), new Vector2(x, 30f), new Vector2(190f, 40f));
+                UiFactory.Place((RectTransform)all.transform, new Vector2(0.5f, 0f), new Vector2(x, 24f), new Vector2(190f, 40f));
                 x += 200f;
                 int id = option.Id;
                 all.onClick.AddListener(() =>
