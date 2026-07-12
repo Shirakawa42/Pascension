@@ -115,28 +115,78 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 150732b292bf0a6458ff197640b1214e, type: 3}
   - id: wren
     sprite: {fileID: 21300000, guid: da186265b36de8a4d87646bc45599d2a, type: 3}
+  - id: absorption_grid
+    sprite: {fileID: 21300000, guid: e2b9edd4c48a9d54f807ee957664ab35, type: 3}
   - id: additri_gaiamancer
     sprite: {fileID: 21300000, guid: 46026763c6dc6f54fadfb9fad596c96f, type: 3}
+  - id: advanced_medicine
+    sprite: {fileID: 21300000, guid: 2f6dc589c2e85b542805b5cc63056dd6, type: 3}
+  - id: advanced_weapons
+    sprite: {fileID: 21300000, guid: 09a860fcd10234a45808329189a62b2a, type: 3}
   - id: aetherbreaker
     sprite: {fileID: 21300000, guid: 926ff9f2c3e4db343ab376235041a02c, type: 3}
+  - id: agony_of_choice
+    sprite: {fileID: 21300000, guid: f158ea27c3d66b24ea330eb7b24c12aa, type: 3}
+  - id: anomaly_cleric
+    sprite: {fileID: 21300000, guid: 33a220dd36c65d94d8ad0337082b40d9, type: 3}
+  - id: arach_devotees
+    sprite: {fileID: 21300000, guid: 47152cc1c149ac84c8c6a65d32af33dd, type: 3}
+  - id: axia
+    sprite: {fileID: 21300000, guid: 655049b806bf2a748993ed66de6e105e, type: 3}
+  - id: biotech_enhancements
+    sprite: {fileID: 21300000, guid: 0cf3235bae7c296489161951a41c5f22, type: 3}
   - id: blaster
     sprite: {fileID: 21300000, guid: 324275c263409634db90bb50f09db5d6, type: 3}
+  - id: blood_for_blood
+    sprite: {fileID: 21300000, guid: 76d39b2f5e8b0474abaa7f69ca403ee3, type: 3}
+  - id: bound_for_life
+    sprite: {fileID: 21300000, guid: bf081e501f4b71e47a78cc7a3391645a, type: 3}
+  - id: breaker
+    sprite: {fileID: 21300000, guid: 411083d384c6e03428c34b2583e77dc8, type: 3}
+  - id: brute
+    sprite: {fileID: 21300000, guid: c4950f9a8801b1842869e56f5439ab0e, type: 3}
   - id: cache_warden
     sprite: {fileID: 21300000, guid: 6dafb29cb17eca9459df4ccd70c93180, type: 3}
+  - id: carnivorous_vine
+    sprite: {fileID: 21300000, guid: ce34b4ac26d68564e84e771aceb536e8, type: 3}
+  - id: cinder_scars
+    sprite: {fileID: 21300000, guid: 25ae5d43d7a64444d8e783eac0080198, type: 3}
+  - id: cloud_oracles
+    sprite: {fileID: 21300000, guid: 99a2ee0a221b63246986ff5a85143221, type: 3}
+  - id: cloud_oracles_sos
+    sprite: {fileID: 21300000, guid: 27f9acf38267eed498485f69e44b6f36, type: 3}
   - id: command_seer
     sprite: {fileID: 21300000, guid: b602768e203b3b7489c0631bfb1a23ec, type: 3}
   - id: cryptofist_monk
     sprite: {fileID: 21300000, guid: 3a23842b30eb47046b24dfc554a150ba, type: 3}
   - id: crystal
     sprite: {fileID: 21300000, guid: 808b1ced4b746244bbb2f41d31a46ce1, type: 3}
+  - id: crystal_gate
+    sprite: {fileID: 21300000, guid: f22de6e1b4ec1ae4db5a0586ef68fef5, type: 3}
+  - id: dash
+    sprite: {fileID: 21300000, guid: b2ef08f588cc5bf4b892efa38ca34793, type: 3}
   - id: data_heretic
     sprite: {fileID: 21300000, guid: 3974d3a24ba341046b1fe23592b52648, type: 3}
+  - id: datic_robes
+    sprite: {fileID: 21300000, guid: 3a66897727ca76644927652e5b28d8cc, type: 3}
+  - id: datic_secrets
+    sprite: {fileID: 21300000, guid: 69cf340524f84254684875a16c4bd7ec, type: 3}
+  - id: deadly_recruits
+    sprite: {fileID: 21300000, guid: b15ab9e13dfce0a48a62cdc537da11cd, type: 3}
   - id: drakonarius
     sprite: {fileID: 21300000, guid: 1c14d0421cebf6b458262ba71c708fd8, type: 3}
+  - id: duplication_fabricator
+    sprite: {fileID: 21300000, guid: c2b793e1aa3aca348ae51fa03bb81876, type: 3}
+  - id: entropic_talons
+    sprite: {fileID: 21300000, guid: 92f5d6c282a2dd244b985105c962deec, type: 3}
   - id: evokatus
     sprite: {fileID: 21300000, guid: a4408b337a427b9419d29c6d22544b18, type: 3}
   - id: fao_cutul
     sprite: {fileID: 21300000, guid: a25d1d83ec53bbe4ab42ec878b91446e, type: 3}
+  - id: ferrata_guard
+    sprite: {fileID: 21300000, guid: 3685967c20c8f9e4f91e7cc8c37d7afb, type: 3}
+  - id: forged_in_flame
+    sprite: {fileID: 21300000, guid: c4b2f02f98361a844afd0e963a1e2e17, type: 3}
   - id: fungal_hermit
     sprite: {fileID: 21300000, guid: 4f0f8188b5e481245a5af64a0cc06e74, type: 3}
   - id: furrowing_elemental
@@ -149,38 +199,98 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 36e3fa7295539e9478393e1169a21728, type: 3}
   - id: grand_architect
     sprite: {fileID: 21300000, guid: c09d2d79d9536c742a83d6ce620d3a42, type: 3}
+  - id: g_48
+    sprite: {fileID: 21300000, guid: c454d3ebace3fd04f8eebb575a8a4490, type: 3}
+  - id: healing_hands
+    sprite: {fileID: 21300000, guid: be1670aad98e4564fabc77157e1fb631, type: 3}
+  - id: heart_of_nothing
+    sprite: {fileID: 21300000, guid: aa702309e5706f14f8504fab9269572a, type: 3}
+  - id: hounds_of_volos
+    sprite: {fileID: 21300000, guid: fb0f4e4c966b3e2478f1d25060a80218, type: 3}
   - id: infinity_shard
     sprite: {fileID: 21300000, guid: 8ee9ae31f9f95a84c98b2abd184100fd, type: 3}
+  - id: ingeminex_agony
+    sprite: {fileID: 21300000, guid: 11ba28ff623a0654cbb8dc79cfa624c3, type: 3}
+  - id: ingeminex_brutality
+    sprite: {fileID: 21300000, guid: 290466820b989af49a2548d56ff77d37, type: 3}
+  - id: ingeminex_corruption
+    sprite: {fileID: 21300000, guid: 430880c01b3f44a43abd36de32656dc1, type: 3}
+  - id: ingeminex_malice
+    sprite: {fileID: 21300000, guid: dafa741b09c6f2f4c92da1dea37b5ea4, type: 3}
+  - id: ingeminex_torment
+    sprite: {fileID: 21300000, guid: 367e7f76f4fcb8c46a0fe1e155b4945c, type: 3}
+  - id: j_chord
+    sprite: {fileID: 21300000, guid: fcb60b19d02717f468b52967f20583a1, type: 3}
   - id: kiln_drone
     sprite: {fileID: 21300000, guid: 20c664b2e8536414d8812a41df81d0f4, type: 3}
   - id: korvus_legionnaire
     sprite: {fileID: 21300000, guid: fae5b48213791e545aa5fdadbaf7ee46, type: 3}
+  - id: legion_carrier
+    sprite: {fileID: 21300000, guid: 7f9fd3a585d532b46b43c80d5e89169c, type: 3}
   - id: leshai_knight
     sprite: {fileID: 21300000, guid: e09d3b37f6ecd2a4bad649a259bf08f1, type: 3}
+  - id: limiter_drones
+    sprite: {fileID: 21300000, guid: b2bf11b3bba6f1447a6683976acab52f, type: 3}
   - id: li_hin
     sprite: {fileID: 21300000, guid: 7491e90ed5465624b9941ffb72443624, type: 3}
+  - id: lucky
+    sprite: {fileID: 21300000, guid: 1f5286096c4b64d49b13ce39ff742db1, type: 3}
+  - id: maglev_tunnels
+    sprite: {fileID: 21300000, guid: e525a351f8ead3344a13006bca3cb8df, type: 3}
+  - id: mainframe_abbot
+    sprite: {fileID: 21300000, guid: f0203543ebdd500488766a66f1547698, type: 3}
   - id: mining_drones
     sprite: {fileID: 21300000, guid: b50bc32039b04a94d99d7dc7253dff92, type: 3}
+  - id: nature_dominance
+    sprite: {fileID: 21300000, guid: ac3bcc58ee373ed43a0626ea5f4f9edf, type: 3}
   - id: nil_assassin
     sprite: {fileID: 21300000, guid: c59f74946c1c7bf4eaf40e4cf70b8453, type: 3}
   - id: numeri_drones
     sprite: {fileID: 21300000, guid: c016e8dcf61ffd04bace771fe847507b, type: 3}
+  - id: oblivion_gatekeeper
+    sprite: {fileID: 21300000, guid: 76f71d6922d4915409b09c7300c96a35, type: 3}
   - id: ojas_genesis_druid
     sprite: {fileID: 21300000, guid: 34ebabe7db651f14db63128a4cc48b03, type: 3}
   - id: omnius
     sprite: {fileID: 21300000, guid: 8973cd6d5bdb6f2419e6efc062cbee40, type: 3}
+  - id: one_mind_one_army
+    sprite: {fileID: 21300000, guid: aedb71d581839824293bef6261b9d957, type: 3}
   - id: optio_crusher
     sprite: {fileID: 21300000, guid: 18cd73e35453e4a44881d425b3c1142d, type: 3}
   - id: order_initiate
     sprite: {fileID: 21300000, guid: 57b260ab303d7fa4388d175ea178e43c, type: 3}
+  - id: orm_madu
+    sprite: {fileID: 21300000, guid: 7bf2477220f424941a1e3e7bb486fe43, type: 3}
+  - id: pall_shades
+    sprite: {fileID: 21300000, guid: ebd7eb435ba201e4695b82b929436958, type: 3}
+  - id: panconscious_crown
+    sprite: {fileID: 21300000, guid: 1f47e999159675743b25ffba11ff0aa9, type: 3}
+  - id: paradigm_shift
+    sprite: {fileID: 21300000, guid: fed852777c8746a4f9c1361e24161329, type: 3}
+  - id: phasic_technology
+    sprite: {fileID: 21300000, guid: ace591d13e1e1804c82f06181b43088b, type: 3}
   - id: portal_monk
     sprite: {fileID: 21300000, guid: df52dd94bee9d3748bde1c577af8d0fb, type: 3}
+  - id: power_struggle
+    sprite: {fileID: 21300000, guid: 249f6a8c260578244b8249f7a59b5561, type: 3}
+  - id: praetorian_01
+    sprite: {fileID: 21300000, guid: 13c0823ee82737448a50062106a42523, type: 3}
+  - id: praetorian_02
+    sprite: {fileID: 21300000, guid: 5d4c226f8a98f6f4184c1ffdf6d83162, type: 3}
+  - id: price_of_power
+    sprite: {fileID: 21300000, guid: 15a01dfab2608854298d49ad0c4384a6, type: 3}
   - id: primus_pilus
     sprite: {fileID: 21300000, guid: 8559a752572f766488e4aa1f9ae38230, type: 3}
+  - id: project_yggdrasil
+    sprite: {fileID: 21300000, guid: c213671e0ac906c42b312e61736a5af4, type: 3}
+  - id: raidian
+    sprite: {fileID: 21300000, guid: 9b1db6622c0dd36448bfd3537cc1c570, type: 3}
   - id: reactor_drone
     sprite: {fileID: 21300000, guid: 61a6f3e7909f0184b86deda790487f7d, type: 3}
   - id: root_of_the_forest
     sprite: {fileID: 21300000, guid: 7461fcd34412a7241ac38fbb02606d95, type: 3}
+  - id: ru_bo_vai
+    sprite: {fileID: 21300000, guid: db7807e54156f9647abd79ceb8111f21, type: 3}
   - id: scion_of_nothingness
     sprite: {fileID: 21300000, guid: 73ccb892f7fb3fe4e8a8100a831ccfed, type: 3}
   - id: shadebound_sentry
@@ -191,18 +301,72 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 0c98ad0b603f98846a31fedaa6f24a12, type: 3}
   - id: shard_abstractor
     sprite: {fileID: 21300000, guid: 79e02ba3c8ce1714ab3d923314e14e6e, type: 3}
+  - id: shard_defiant
+    sprite: {fileID: 21300000, guid: 6575d7fa4f14f854cbf0c246deb9218c, type: 3}
+  - id: shard_reactor
+    sprite: {fileID: 21300000, guid: 59135f41fb1a2a740b39de7b192a75d1, type: 3}
+  - id: shard_seer
+    sprite: {fileID: 21300000, guid: 6d49c589f7bf59e498e82c020172036a, type: 3}
+  - id: slipstream_shard
+    sprite: {fileID: 21300000, guid: bda3d492aa7e9d04a83df78ba6ea9a73, type: 3}
+  - id: soichar_decima
+    sprite: {fileID: 21300000, guid: 7157f3babe47b914595af47ec9e29ca5, type: 3}
+  - id: soichar_kosynwu
+    sprite: {fileID: 21300000, guid: daea8facdd0efc14fa2c76e48254020f, type: 3}
+  - id: soichar_rez
+    sprite: {fileID: 21300000, guid: b5213b293f984d746825432eb0f6f57e, type: 3}
+  - id: soichar_tetra
+    sprite: {fileID: 21300000, guid: 6c31c1b6fde0cc54ca2b142bb1c44872, type: 3}
+  - id: soichar_volos
+    sprite: {fileID: 21300000, guid: ce212ad9d3ccbe2488246aeee7c929ad, type: 3}
+  - id: soul_syphon
+    sprite: {fileID: 21300000, guid: 9152c9143d977fb4ea26e2f1ae8ef272, type: 3}
   - id: spore_cleric
     sprite: {fileID: 21300000, guid: 95f0b3f90af11eb46ba432d027bb79f2, type: 3}
+  - id: stolen_futures
+    sprite: {fileID: 21300000, guid: f7b6875b318c0fb49885bba94e81c35b, type: 3}
+  - id: strategic_mastermind
+    sprite: {fileID: 21300000, guid: f5123c1fe7726494eaa6132f83532c64, type: 3}
+  - id: swyft
+    sprite: {fileID: 21300000, guid: 707b523baeae7834dbc449e22ad38c07, type: 3}
+  - id: synthesis
+    sprite: {fileID: 21300000, guid: ad450735d95e73442bc749f30aba8d07, type: 3}
   - id: systema_ai
     sprite: {fileID: 21300000, guid: 07fe60dfa5048a048b3e1bfbcbc96f71, type: 3}
+  - id: taur_arachpriest
+    sprite: {fileID: 21300000, guid: 10a67731324d109449f9b9afa1a49f5c, type: 3}
+  - id: terminal_crescents
+    sprite: {fileID: 21300000, guid: 1e217edee433b79459258ec01893d894, type: 3}
+  - id: the_dispossessed
+    sprite: {fileID: 21300000, guid: 91fb4b7d0f6673b4e84f3bd267c14caa, type: 3}
+  - id: the_last_city
+    sprite: {fileID: 21300000, guid: b4c38baefaabcdd43bf89ac6b15b058b, type: 3}
+  - id: the_lost
+    sprite: {fileID: 21300000, guid: c7ea0c7e558eed849b35d9266ea10aca, type: 3}
+  - id: the_rotten
+    sprite: {fileID: 21300000, guid: 0c64b9c31fc59e445a93a250a687f358, type: 3}
   - id: thorn_zealot
     sprite: {fileID: 21300000, guid: e76a95ac77f5bd4448c890501da71aad, type: 3}
+  - id: torian_commandos
+    sprite: {fileID: 21300000, guid: 34b40cc9ab9fdf54ea336c295e8ecd71, type: 3}
+  - id: true_leader
+    sprite: {fileID: 21300000, guid: 15969fe470c2bc249b26cebcb9fed803, type: 3}
   - id: umbral_scourge
     sprite: {fileID: 21300000, guid: 973fbf42b7ee2f8448c8af1149bd6120, type: 3}
+  - id: unconditional_conscription
+    sprite: {fileID: 21300000, guid: 7d2e40c0ca44f0149917aed806efedb0, type: 3}
   - id: undergrowth_aspirant
     sprite: {fileID: 21300000, guid: 9884f7bf67394484d961d30d2c5bde38, type: 3}
   - id: venator_of_the_wastes
     sprite: {fileID: 21300000, guid: b4339b5c9f8090e4ba3f2ff8d807aef5, type: 3}
+  - id: warpquartz
+    sprite: {fileID: 21300000, guid: 202e9780c295703428aec6f470011574, type: 3}
+  - id: war_bound
+    sprite: {fileID: 21300000, guid: adf2e27dbe2658740b3582416fcfbd6f, type: 3}
+  - id: whatever_it_takes
+    sprite: {fileID: 21300000, guid: aae1ee827a3d3e042870a9ae63c1b556, type: 3}
+  - id: world_piercer
+    sprite: {fileID: 21300000, guid: 329e0976f82e7e440b71c009698aecd8, type: 3}
   - id: wraethe_skirmisher
     sprite: {fileID: 21300000, guid: 13d46f1d6e7deb54ca362c58886248ea, type: 3}
   - id: zara_ra
