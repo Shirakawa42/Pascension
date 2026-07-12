@@ -16,10 +16,11 @@ namespace Shards.Engine
     public enum ShardsFaction
     {
         None,       // starters, some neutral cards
-        Homodeus,
-        Undergrowth,
-        Order,
-        Wraith,     // TODO-VERIFY exact 4th base faction name from rules-notes (M4)
+        Homodeus,   // champions-in-play synergy (Inspire, from RotF)
+        Undergrowth,// healing / ally chains (Unify)
+        Order,      // mastery, shields, draw (Dominion)
+        Wraethe,    // discard-pile synergy, banish (Echo, from RotF)
+        Aion,       // 5th faction (Shadow of Salvation / Into the Horizon)
         Monster     // Into the Horizon Ingeminex
     }
 
@@ -43,8 +44,10 @@ namespace Shards.Engine
         Discard,
         PlayZone,
         Champions,
-        SetAside,   // relics/destinies waiting to be earned
-        Removed
+        SetAside,     // relics waiting to be earned (RotF)
+        DestinyRow,   // shared face-up destiny row (ItH)
+        MonsterSpace, // revealed Ingeminex beside the row (ItH)
+        Banished      // shared removed-from-game pile
     }
 
     /// <summary>A physical card in the game (SoI has no tapping of hand cards — only
@@ -58,8 +61,10 @@ namespace Shards.Engine
         public ShardsZone Zone;
         /// <summary>Champions/character: used an exhaust ability this turn.</summary>
         public bool Exhausted;
-        /// <summary>Fast-played mercenary — returns to the bottom of the CENTER deck at cleanup.</summary>
+        /// <summary>Fast-played (or warped) — returns to the bottom of the CENTER deck at cleanup.</summary>
         public bool FastPlayed;
+        /// <summary>Champion/Ingeminex damage marked THIS turn — clears every end phase.</summary>
+        public int DamageThisTurn;
 
         public ShardsCardDef Def => ShardsCardDatabase.Get(DefId);
     }
@@ -78,8 +83,11 @@ namespace Shards.Engine
         public int Quantity = 1;
         /// <summary>Champions/monsters: power required to destroy it.</summary>
         public int Defense;
-        /// <summary>Shield value (hand-reveal for allies marked as shields; passive for champions).</summary>
+        /// <summary>Shield value — revealed FROM HAND to prevent damage (champions'
+        /// printed shields are inert while in play, base game).</summary>
         public int Shield;
+        /// <summary>Praetorian-02 exception: shield works while IN PLAY instead of from hand.</summary>
+        public bool ShieldInPlay;
         /// <summary>Owning character id for relics/destinies.</summary>
         public string Character;
 
@@ -89,11 +97,50 @@ namespace Shards.Engine
         public IShardsEffect ExhaustEffect;
         /// <summary>Monster kill reward (Into the Horizon).</summary>
         public IShardsEffect RewardEffect;
+        /// <summary>Ingeminex: fires once, end of the reveal turn, against ALL players.</summary>
+        public IShardsEffect MonsterAttackEffect;
+
+        // ---- static hooks (defs are code-built, never serialized) ----
+
+        /// <summary>Champion targeting veto: (state, attacker, owner, champion) — null = always attackable.
+        /// (Li Hin: never with power; Raidian: attacker needs mastery ≥ owner's; Drakonarius:
+        /// not while owner controls General Decurion.)</summary>
+        public System.Func<ShardsState, ShardsPlayer, ShardsPlayer, ShardsCard, bool> CanBeAttacked;
+        /// <summary>Zetta: while in play, the owner and their OTHER champions can't be attacked
+        /// (end-turn damage can't be assigned to the owner either).</summary>
+        public bool Taunt;
+        /// <summary>Defense bonus this card (while in owner's play/destiny zone) grants a
+        /// champion: (owner, sourceCard, champion) → bonus. Ferrata Guard, One Mind One Army.</summary>
+        public System.Func<ShardsPlayer, ShardsCard, ShardsCard, int> DefenseAura;
+        /// <summary>Buy-cost adjustment while in the row: (buyer) → delta. Axia.</summary>
+        public System.Func<ShardsPlayer, int> CostModifier;
+        /// <summary>Praetorian-01: returns from the owner's discard to hand when they play a champion.</summary>
+        public bool ReturnsFromDiscardOnChampionPlay;
+        /// <summary>Owned-destiny trigger on unprevented player damage: (dealt) → effect or null.
+        /// Blood for Blood.</summary>
+        public System.Func<int, IShardsEffect> OnDamageDealt;
+        /// <summary>Swyft: while in play and the owner's character matches this id, the owner
+        /// may keep fast-played cards (→ discard) instead of returning them at cleanup.</summary>
+        public string KeepFastPlaysCharacter;
+        /// <summary>Maglev Tunnels: owned destiny lets Homodeus champion recruits go on top
+        /// of the deck instead of discard (owner's choice).</summary>
+        public bool RedirectChampionRecruitsToDeckTop;
+        /// <summary>Breaker: recruits go to the buyer's HAND instead of discard.</summary>
+        public bool RecruitsToHand;
+        /// <summary>Datic Robes (shield = your mastery), Praetorian-02 M20 — overrides the
+        /// printed Shield value: (owner) → value.</summary>
+        public System.Func<ShardsPlayer, int> DynamicShield;
+        /// <summary>The Dispossessed: while in the discard pile, playing a card of this
+        /// faction lets the owner return it to hand (optional).</summary>
+        public ShardsFaction ReturnFromDiscardOnFactionPlay = ShardsFaction.None;
 
         public string RulesText = "";
         public string ArtPrompt = "";
 
-        public bool IsChampion => Type == ShardsCardType.Champion;
+        /// <summary>Champions plus relic champions (Praetorian-02): they deploy to the
+        /// champion zone when played and persist across turns.</summary>
+        public bool IsChampion => Type == ShardsCardType.Champion ||
+                                  (Type == ShardsCardType.Relic && Defense > 0);
         public bool IsMonster => Type == ShardsCardType.Monster;
     }
 

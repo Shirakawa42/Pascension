@@ -107,6 +107,17 @@ namespace Shards.Engine
         public string DefId;
     }
 
+    /// <summary>Partial power spent on a champion — marks accumulate within the turn.</summary>
+    public sealed class ShardsChampionDamagedEvent : GameEvent
+    {
+        public int OwnerIndex;
+        public int ByPlayerIndex;
+        public int InstanceId;
+        public string DefId;
+        public int Amount;
+        public int Total;
+    }
+
     public sealed class ShardsCharacterExhaustedEvent : GameEvent
     {
         public int PlayerIndex;
@@ -140,17 +151,68 @@ namespace Shards.Engine
         public string DefId;
     }
 
-    public sealed class ShardsDestinyChosenEvent : GameEvent
+    /// <summary>A destiny moved from the shared row in front of a player (ItH).</summary>
+    public sealed class ShardsDestinyTakenEvent : GameEvent
     {
         public int PlayerIndex;
+        public int InstanceId;
         public string DefId;
+    }
+
+    /// <summary>An Ingeminex was revealed from the center deck (bypasses the row).</summary>
+    public sealed class ShardsMonsterRevealedEvent : GameEvent
+    {
+        public int InstanceId;
+        public string DefId;
+    }
+
+    /// <summary>An Ingeminex's one-time end-of-turn attack fires (hits ALL players).</summary>
+    public sealed class ShardsMonsterAttackedEvent : GameEvent
+    {
+        public int InstanceId;
+        public string DefId;
+    }
+
+    /// <summary>Partial power spent on an Ingeminex — same accumulation as champions.</summary>
+    public sealed class ShardsMonsterDamagedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public int InstanceId;
+        public string DefId;
+        public int Amount;
+        public int Total;
     }
 
     public sealed class ShardsMonsterDefeatedEvent : GameEvent
     {
         public int PlayerIndex;
-        public int SlotIndex;
+        public int InstanceId;
         public string DefId;
+    }
+
+    /// <summary>A card moved to the shared removed-from-game pile.</summary>
+    public sealed class ShardsCardBanishedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public int InstanceId;
+        public string DefId;
+    }
+
+    /// <summary>A card returned to its owner's hand / deck top (public — the card was
+    /// visible where it came from: discard, recruit, play zone).</summary>
+    public sealed class ShardsCardReturnedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public int InstanceId;
+        public string DefId;
+    }
+
+    /// <summary>Cards revealed from a hand or deck for a condition (Unify/Dominion
+    /// reveals, deck-top reveals) — public by rule.</summary>
+    public sealed class ShardsCardsRevealedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public List<string> DefIds = new();
     }
 
     public sealed class ShardsMercenaryReturnedEvent : GameEvent

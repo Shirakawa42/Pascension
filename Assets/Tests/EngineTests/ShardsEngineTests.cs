@@ -54,7 +54,7 @@ namespace Pascension.Engine.Tests
                 new Gain { Gems = 1 }, shield: 3);
             Def("guard_champ", "Guard Champion", ShardsCardType.Champion, ShardsFaction.Order, 4, 6,
                 new Gain { Power = 1 }, defense: 4, shield: 1);
-            Def("hired_blade", "Hired Blade", ShardsCardType.Mercenary, ShardsFaction.Wraith, 3, 6,
+            Def("hired_blade", "Hired Blade", ShardsCardType.Mercenary, ShardsFaction.Wraethe, 3, 6,
                 new Gain { Power = 4 });
         }
 
@@ -216,7 +216,7 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void ChampionAttack_RequiresFullDefense_ChampionToDiscard()
+        public void ChampionAttack_DamageAccumulatesWithinTurn_ResetsAtEndOfTurn()
         {
             var engine = NewGame(seed: 23);
             var p0 = engine.State.Players[0];
@@ -225,21 +225,38 @@ namespace Pascension.Engine.Tests
             var champion = new ShardsCard { InstanceId = 9100, DefId = "guard_champ", Owner = 1, Zone = ShardsZone.Champions };
             p1.Champions.Add(champion);
 
+            // Partial hit is legal — marks accumulate within the turn (digital-adaptation
+            // ruling; defense 4). Explicit Amount = spend that much.
             p0.Power = 3;
-            var tooWeak = engine.Submit(new ShardsAttackChampionAction
+            MustSubmit(engine, new ShardsAttackChampionAction
             {
-                PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = champion.InstanceId
+                PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = champion.InstanceId, Amount = 3
             });
-            Assert.IsFalse(tooWeak.Accepted, "partial damage cannot kill a champion");
+            Assert.AreEqual(0, p0.Power);
+            Assert.AreEqual(3, champion.DamageThisTurn, "partial damage marked, champion survives");
+            Assert.AreEqual(1, p1.Champions.Count);
 
+            // Finish it later the same turn: Amount 0 = exactly what's still needed (1).
             p0.Power = 5;
             MustSubmit(engine, new ShardsAttackChampionAction
             {
                 PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = champion.InstanceId
             });
-            Assert.AreEqual(1, p0.Power, "spent exactly the defense (4)");
+            Assert.AreEqual(4, p0.Power, "spent only the remaining 1 of defense 4");
             Assert.AreEqual(0, p1.Champions.Count);
             Assert.IsTrue(p1.Discard.Contains(champion), "destroyed champion goes to owner's discard");
+
+            // Marks on a survivor evaporate at end of turn.
+            var second = new ShardsCard { InstanceId = 9101, DefId = "guard_champ", Owner = 1, Zone = ShardsZone.Champions };
+            p1.Champions.Add(second);
+            MustSubmit(engine, new ShardsAttackChampionAction
+            {
+                PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = second.InstanceId, Amount = 2
+            });
+            Assert.AreEqual(2, second.DamageThisTurn);
+            MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+            ResolveAllDecisionsWithDefaults(engine);
+            Assert.AreEqual(0, second.DamageThisTurn, "champion damage never persists between turns");
         }
 
         [Test]

@@ -1,0 +1,17 @@
+{
+    "name": "Shards.Bots",
+    "rootNamespace": "Shards.Bots",
+    "references": [
+        "Pascension.Core",
+        "Shards.Engine"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

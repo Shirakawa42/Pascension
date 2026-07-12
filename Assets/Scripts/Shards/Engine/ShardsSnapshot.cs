@@ -8,6 +8,8 @@ namespace Shards.Engine
         public int InstanceId;
         public string DefId;
         public bool Exhausted;
+        /// <summary>Champion/Ingeminex damage marked this turn.</summary>
+        public int DamageThisTurn;
     }
 
     public sealed class ShardsPlayerSnap
@@ -23,7 +25,7 @@ namespace Shards.Engine
         public bool FocusedThisTurn;
         public bool Eliminated;
         public bool RelicRecruited;
-        public string DestinyId;
+        public bool DestinyTaken;
 
         public int DeckCount;
         public int HandCount;
@@ -33,7 +35,9 @@ namespace Shards.Engine
         public List<ShardsCardSnap> Discard = new();
         public List<ShardsCardSnap> PlayZone = new();
         public List<ShardsCardSnap> Champions = new();
-        /// <summary>Viewer-only: unearned relics/destinies.</summary>
+        /// <summary>Owned destinies sit face up in front of the player (public).</summary>
+        public List<ShardsCardSnap> Destinies = new();
+        /// <summary>Viewer-only: unearned set-aside relics.</summary>
         public List<ShardsCardSnap> SetAside;
     }
 
@@ -48,6 +52,12 @@ namespace Shards.Engine
 
         public int CenterDeckCount;
         public List<ShardsCardSnap> CenterRow = new();
+        /// <summary>Shared face-up destiny row (ItH) — public.</summary>
+        public List<ShardsCardSnap> DestinyRow = new();
+        /// <summary>Revealed Ingeminex beside the row (ItH) — public.</summary>
+        public List<ShardsCardSnap> ActiveMonsters = new();
+        /// <summary>Shared removed-from-game pile — public.</summary>
+        public List<ShardsCardSnap> Banished = new();
         public List<ShardsPlayerSnap> Players = new();
         public PendingSnapInfo Pending;
 
@@ -77,6 +87,9 @@ namespace Shards.Engine
 
             foreach (var card in state.CenterRow)
                 snapshot.CenterRow.Add(card == null ? null : Snap(card));
+            foreach (var card in state.DestinyRow) snapshot.DestinyRow.Add(Snap(card));
+            foreach (var card in state.ActiveMonsters) snapshot.ActiveMonsters.Add(Snap(card));
+            foreach (var card in state.Banished) snapshot.Banished.Add(Snap(card));
 
             foreach (var player in state.Players)
             {
@@ -93,13 +106,14 @@ namespace Shards.Engine
                     FocusedThisTurn = player.FocusedThisTurn,
                     Eliminated = player.Eliminated,
                     RelicRecruited = player.RelicRecruited,
-                    DestinyId = player.DestinyId,
+                    DestinyTaken = player.DestinyTaken,
                     DeckCount = player.Deck.Count,
                     HandCount = player.Hand.Count
                 };
                 foreach (var card in player.Discard) snap.Discard.Add(Snap(card));
                 foreach (var card in player.PlayZone) snap.PlayZone.Add(Snap(card));
                 foreach (var card in player.Champions) snap.Champions.Add(Snap(card));
+                foreach (var card in player.Destinies) snap.Destinies.Add(Snap(card));
                 if (player.Index == viewerIndex)
                 {
                     snap.Hand = new List<ShardsCardSnap>();
@@ -124,7 +138,8 @@ namespace Shards.Engine
         {
             InstanceId = card.InstanceId,
             DefId = card.DefId,
-            Exhausted = card.Exhausted
+            Exhausted = card.Exhausted,
+            DamageThisTurn = card.DamageThisTurn
         };
     }
 }

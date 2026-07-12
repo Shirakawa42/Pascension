@@ -44,26 +44,52 @@ namespace Shards.Engine
             State.Dlc = config.Dlc;
             State.Rng = new DeterministicRng(config.Seed);
 
-            // Center deck from the enabled sets.
+            // Center deck from the enabled sets (relics and destinies are never in it).
             foreach (var def in ShardsCardDatabase.All)
             {
+                if (def.Type == ShardsCardType.Starter ||
+                    def.Type == ShardsCardType.Relic ||
+                    def.Type == ShardsCardType.Destiny)
+                    continue;
                 bool inSet = def.Set switch
                 {
-                    "base" => def.Type != ShardsCardType.Starter &&
-                              def.Type != ShardsCardType.Relic && def.Type != ShardsCardType.Destiny,
-                    "relics_of_the_future" => (config.Dlc & ShardsDlc.RelicsOfTheFuture) != 0 &&
-                                              def.Type != ShardsCardType.Relic,
-                    "shadow_of_salvation" => (config.Dlc & ShardsDlc.ShadowOfSalvation) != 0 &&
-                                             def.Type != ShardsCardType.Relic,
-                    "into_the_horizon" => (config.Dlc & ShardsDlc.IntoTheHorizon) != 0 &&
-                                          def.Type != ShardsCardType.Destiny,
+                    "base" => true,
+                    "relics_of_the_future" => (config.Dlc & ShardsDlc.RelicsOfTheFuture) != 0,
+                    "shadow_of_salvation" => (config.Dlc & ShardsDlc.ShadowOfSalvation) != 0,
+                    "into_the_horizon" => (config.Dlc & ShardsDlc.IntoTheHorizon) != 0,
                     _ => false
                 };
-                if (!inSet || def.Type == ShardsCardType.Starter) continue;
+                if (!inSet) continue;
+                // ItH rule: Corruption's reward needs relics — remove it without RotF.
+                if (def.IsMonster && def.Id == "ingeminex_corruption" &&
+                    (config.Dlc & ShardsDlc.RelicsOfTheFuture) == 0)
+                    continue;
+                // SoS ships errata replacements for RotF's Cloud Oracles: with both sets
+                // enabled only the replacement copies play (PvP-identical wording fix).
+                if (def.Id == "cloud_oracles" && (config.Dlc & ShardsDlc.ShadowOfSalvation) != 0)
+                    continue;
                 for (int i = 0; i < def.Quantity; i++)
                     State.CenterDeck.Add(NewCard(def.Id, -1, ShardsZone.CenterDeck));
             }
             State.Rng.Shuffle(State.CenterDeck);
+
+            // ItH: shuffle the destiny deck and deal 6 face up as the shared Destiny Row
+            // (the row only ever shrinks — destinies are taken, never refilled; Stolen
+            // Futures can add more from the remaining deck).
+            if ((config.Dlc & ShardsDlc.IntoTheHorizon) != 0)
+            {
+                var destinies = new List<ShardsCard>();
+                foreach (var def in ShardsCardDatabase.All)
+                    if (def.Type == ShardsCardType.Destiny)
+                        for (int i = 0; i < def.Quantity; i++)
+                            destinies.Add(NewCard(def.Id, -1, ShardsZone.DestinyRow));
+                State.Rng.Shuffle(destinies);
+                for (int i = 0; i < destinies.Count; i++)
+                {
+                    if (i < 6) State.DestinyRow.Add(destinies[i]);
+                    else State.DestinyDeck.Add(destinies[i]);
+                }
+            }
 
             // Players: starter decks, staggered mastery 0/1/2/3, opening hands.
             for (int i = 0; i < config.Players.Count; i++)
@@ -86,15 +112,21 @@ namespace Shards.Engine
                 }
                 State.Rng.Shuffle(player.Deck);
 
-                // DLC1: set the character's two relics aside. DLC3: destinies set aside.
-                if ((config.Dlc & ShardsDlc.RelicsOfTheFuture) != 0)
-                    foreach (var def in ShardsCardDatabase.All)
-                        if (def.Type == ShardsCardType.Relic && def.Character == spec.CharacterId)
-                            player.SetAside.Add(NewCard(def.Id, i, ShardsZone.SetAside));
-                if ((config.Dlc & ShardsDlc.IntoTheHorizon) != 0)
-                    foreach (var def in ShardsCardDatabase.All)
-                        if (def.Type == ShardsCardType.Destiny && def.Character == spec.CharacterId)
-                            player.SetAside.Add(NewCard(def.Id, i, ShardsZone.SetAside));
+                // Relics are set aside when the SET that ships them is enabled (recruit
+                // ONE free at Mastery 10): RotF ships the four base characters' pairs,
+                // SoS ships Rez's — the SoS sheet grants Rez his relics with SoS alone.
+                foreach (var def in ShardsCardDatabase.All)
+                {
+                    if (def.Type != ShardsCardType.Relic || def.Character != spec.CharacterId) continue;
+                    bool shipped = def.Set switch
+                    {
+                        "relics_of_the_future" => (config.Dlc & ShardsDlc.RelicsOfTheFuture) != 0,
+                        "shadow_of_salvation" => (config.Dlc & ShardsDlc.ShadowOfSalvation) != 0,
+                        _ => false
+                    };
+                    if (shipped)
+                        player.SetAside.Add(NewCard(def.Id, i, ShardsZone.SetAside));
+                }
 
                 State.Players.Add(player);
             }
@@ -135,7 +167,6 @@ namespace Shards.Engine
 
             if (PendingInput.Kind == PendingInputKind.Decision)
             {
-                if (action is ShardsConcedeWrapper) { /* fallthrough for concede */ }
                 if (action is not SubmitDecisionAction decision)
                     return action is ConcedeAction concede ? Concede(concede.PlayerIndex)
                         : SubmitResult.Rejected("A decision is pending");
@@ -174,12 +205,6 @@ namespace Shards.Engine
             return null;
         }
 
-        // Internal marker (never serialized) so the decision branch can pattern-match cleanly.
-        private sealed class ShardsConcedeWrapper : PlayerAction
-        {
-            public override string Describe() => "";
-        }
-
         // ------------------------------------------------------------------ turn actions
 
         private SubmitResult ExecuteTurnAction(PlayerAction action)
@@ -200,9 +225,11 @@ namespace Shards.Engine
                 case ShardsExhaustAction exhaust:
                     return ExhaustCard(player, exhaust.CardInstanceId);
                 case ShardsAttackChampionAction attack:
-                    return AttackChampion(player, attack.TargetPlayerIndex, attack.CardInstanceId);
+                    return AttackChampion(player, attack.TargetPlayerIndex, attack.CardInstanceId, attack.Amount);
                 case ShardsAttackMonsterAction monster:
-                    return AttackMonster(player, monster.SlotIndex);
+                    return AttackMonster(player, monster.CardInstanceId, monster.Amount);
+                case ShardsTakeDestinyAction destiny:
+                    return TakeDestiny(player, destiny.CardInstanceId);
                 case ShardsRecruitRelicAction relic:
                     return RecruitRelic(player, relic.CardInstanceId);
                 case ShardsEndTurnAction:
@@ -226,19 +253,28 @@ namespace Shards.Engine
             {
                 card.Zone = ShardsZone.Champions;
                 card.Exhausted = false;
+                card.DamageThisTurn = 0;
                 player.Champions.Add(card);
                 Emit(new ShardsChampionDeployedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+
+                // Praetorian-01: bounces from the DISCARD pile when a champion is played.
+                foreach (var relic in player.Discard.FindAll(c => c.Def.ReturnsFromDiscardOnChampionPlay))
+                {
+                    player.Discard.Remove(relic);
+                    relic.Zone = ShardsZone.Hand;
+                    player.Hand.Add(relic);
+                    Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = relic.InstanceId, DefId = relic.DefId });
+                }
             }
             else
             {
                 card.Zone = ShardsZone.PlayZone;
                 player.PlayZone.Add(card);
             }
-            player.CountFactionPlay(def.Faction);
+            CountPlay(player, card);
             Emit(new ShardsCardPlayedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
 
-            if (def.PlayEffect != null)
-                QueueEffect(def.PlayEffect, player.Index, card);
+            QueuePlayEffect(player, card);
             return SubmitResult.Ok();
         }
 
@@ -249,13 +285,16 @@ namespace Shards.Engine
             var card = State.CenterRow[slotIndex];
             if (card == null) return SubmitResult.Rejected("Empty slot");
             var def = card.Def;
-            if (def.IsMonster) return SubmitResult.Rejected("Monsters are fought, not bought");
             if (fastPlay && def.Type != ShardsCardType.Mercenary)
                 return SubmitResult.Rejected("Only mercenaries can be fast-played");
-            if (player.Gems < def.Cost) return SubmitResult.Rejected("Not enough gems");
+            int cost = EffectiveCost(player, def);
+            if (player.Gems < cost) return SubmitResult.Rejected("Not enough gems");
 
-            player.Gems -= def.Cost;
-            Emit(new ShardsGemsChangedEvent { PlayerIndex = player.Index, Delta = -def.Cost, NewValue = player.Gems });
+            if (cost > 0)
+            {
+                player.Gems -= cost;
+                Emit(new ShardsGemsChangedEvent { PlayerIndex = player.Index, Delta = -cost, NewValue = player.Gems });
+            }
 
             // Row refills IMMEDIATELY — before the card's effect resolves.
             State.CenterRow[slotIndex] = null;
@@ -266,7 +305,7 @@ namespace Shards.Engine
                 PlayerIndex = player.Index,
                 SlotIndex = slotIndex,
                 DefId = card.DefId,
-                CostPaid = def.Cost,
+                CostPaid = cost,
                 FastPlay = fastPlay
             });
 
@@ -276,18 +315,72 @@ namespace Shards.Engine
                 card.Zone = ShardsZone.PlayZone;
                 card.FastPlayed = true;
                 player.PlayZone.Add(card);
-                player.CountFactionPlay(def.Faction); // counts as playing an ally of its faction
-                if (def.PlayEffect != null)
-                    QueueEffect(def.PlayEffect, player.Index, card);
+                CountPlay(player, card); // a fast-play counts as playing the card
+                QueuePlayEffect(player, card);
             }
             else
             {
                 card.Owner = player.Index;
-                card.Zone = ShardsZone.Discard;
                 card.FastPlayed = false;
-                player.Discard.Add(card);
+                RecruitTo(player, card);
             }
             return SubmitResult.Ok();
+        }
+
+        /// <summary>Recruited cards normally land in the discard, but turn effects can
+        /// redirect them: Numeri Drones (Homodeus champion → directly into play),
+        /// Anomaly Cleric M10 (→ hand), Maglev Tunnels (Homodeus champion → deck top).</summary>
+        private void RecruitTo(ShardsPlayer player, ShardsCard card)
+        {
+            var def = card.Def;
+            if (player.NextHomodeusChampionsIntoPlay > 0 && def.IsChampion && def.Faction == ShardsFaction.Homodeus)
+            {
+                player.NextHomodeusChampionsIntoPlay--;
+                card.Zone = ShardsZone.Champions;
+                card.Exhausted = false;
+                player.Champions.Add(card);
+                Emit(new ShardsChampionDeployedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+                return;
+            }
+            if (player.NextRecruitsToHand > 0 || def.RecruitsToHand)
+            {
+                if (!def.RecruitsToHand)
+                    player.NextRecruitsToHand--;
+                card.Zone = ShardsZone.Hand;
+                player.Hand.Add(card);
+                Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+                return;
+            }
+            card.Zone = ShardsZone.Discard;
+            player.Discard.Add(card);
+            if (def.IsChampion && def.Faction == ShardsFaction.Homodeus &&
+                player.Destinies.Exists(d => d.Def.RedirectChampionRecruitsToDeckTop))
+            {
+                // Maglev Tunnels: owner MAY move the recruit to the top of their deck.
+                QueueEffect(new Custom(ctx => MaglevFlow(ctx, card)), player.Index, card);
+            }
+        }
+
+        private IEnumerable<ShardsStep> MaglevFlow(ShardsContext ctx, ShardsCard card)
+        {
+            var request = new DecisionRequest
+            {
+                Id = State.NextDecisionId++,
+                PlayerIndex = ctx.ControllerIndex,
+                Kind = DecisionKind.ChooseCards,
+                Title = $"Put {card.Def.Name} on top of your deck?",
+                Context = "soi.maglev",
+                Min = 0,
+                Max = 1
+            };
+            request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+            yield return ShardsStep.AwaitDecision(request);
+            if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
+            var player = ctx.Controller;
+            if (!player.Discard.Remove(card)) yield break; // moved elsewhere meanwhile
+            card.Zone = ShardsZone.Deck;
+            player.Deck.Add(card); // list end = top
+            Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
         }
 
         private SubmitResult Focus(ShardsPlayer player)
@@ -308,8 +401,10 @@ namespace Shards.Engine
 
         private SubmitResult ExhaustCard(ShardsPlayer player, int instanceId)
         {
-            var card = player.Champions.Find(c => c.InstanceId == instanceId);
-            if (card == null) return SubmitResult.Rejected("Champion not in play");
+            // Champions and owned Destinies both carry once-per-turn exhaust powers.
+            var card = player.Champions.Find(c => c.InstanceId == instanceId)
+                       ?? player.Destinies.Find(c => c.InstanceId == instanceId);
+            if (card == null) return SubmitResult.Rejected("Card not in play");
             if (card.Exhausted) return SubmitResult.Rejected("Already exhausted this turn");
             var def = card.Def;
             if (def.ExhaustEffect == null) return SubmitResult.Rejected("No exhaust ability");
@@ -320,75 +415,265 @@ namespace Shards.Engine
             return SubmitResult.Ok();
         }
 
-        private SubmitResult AttackChampion(ShardsPlayer player, int targetPlayer, int instanceId)
+        private SubmitResult AttackChampion(ShardsPlayer player, int targetPlayer, int instanceId, int amount)
         {
             if (targetPlayer < 0 || targetPlayer >= State.Players.Count || targetPlayer == player.Index)
                 return SubmitResult.Rejected("Invalid target player");
             var owner = State.Players[targetPlayer];
             var champion = owner.Champions.Find(c => c.InstanceId == instanceId);
             if (champion == null) return SubmitResult.Rejected("Champion not in play");
+            if (!CanAttackChampion(player, owner, champion))
+                return SubmitResult.Rejected("That champion can't be attacked");
             var def = champion.Def;
-            // Champions must be destroyed whole — damage on them never persists.
-            // (All-at-once model; TODO-VERIFY within-turn accumulation from rules-notes.)
-            if (player.Power < def.Defense) return SubmitResult.Rejected("Not enough power");
 
-            player.Power -= def.Defense;
-            Emit(new ShardsPowerChangedEvent { PlayerIndex = player.Index, Delta = -def.Defense, NewValue = player.Power });
+            // Within-turn accumulation: damage marks persist across attacks this turn and
+            // evaporate at end of turn — a champion dies only if ONE player deals its full
+            // defense within a single turn. Amount 0 = spend exactly what's still needed.
+            int remaining = EffectiveDefense(owner, champion) - champion.DamageThisTurn;
+            int spend = amount <= 0 ? remaining : System.Math.Min(amount, remaining);
+            if (spend <= 0) return SubmitResult.Rejected("Champion already fully damaged");
+            if (player.Power < spend) return SubmitResult.Rejected("Not enough power");
 
-            owner.Champions.Remove(champion);
-            champion.Zone = ShardsZone.Discard;
-            owner.Discard.Add(champion);
-            Emit(new ShardsChampionDestroyedEvent
+            player.Power -= spend;
+            Emit(new ShardsPowerChangedEvent { PlayerIndex = player.Index, Delta = -spend, NewValue = player.Power });
+            champion.DamageThisTurn += spend;
+
+            if (champion.DamageThisTurn >= EffectiveDefense(owner, champion))
             {
-                OwnerIndex = owner.Index,
-                ByPlayerIndex = player.Index,
-                InstanceId = champion.InstanceId,
-                DefId = champion.DefId
-            });
+                owner.Champions.Remove(champion);
+                champion.Zone = ShardsZone.Discard;
+                champion.DamageThisTurn = 0;
+                owner.Discard.Add(champion);
+                Emit(new ShardsChampionDestroyedEvent
+                {
+                    OwnerIndex = owner.Index,
+                    ByPlayerIndex = player.Index,
+                    InstanceId = champion.InstanceId,
+                    DefId = champion.DefId
+                });
+            }
+            else
+            {
+                Emit(new ShardsChampionDamagedEvent
+                {
+                    OwnerIndex = owner.Index,
+                    ByPlayerIndex = player.Index,
+                    InstanceId = champion.InstanceId,
+                    DefId = champion.DefId,
+                    Amount = spend,
+                    Total = champion.DamageThisTurn
+                });
+            }
             return SubmitResult.Ok();
         }
 
-        private SubmitResult AttackMonster(ShardsPlayer player, int slotIndex)
+        private SubmitResult AttackMonster(ShardsPlayer player, int instanceId, int amount)
         {
             if ((State.Dlc & ShardsDlc.IntoTheHorizon) == 0)
                 return SubmitResult.Rejected("Monsters are not in this game");
-            if (slotIndex < 0 || slotIndex >= State.CenterRow.Length)
-                return SubmitResult.Rejected("Invalid slot");
-            var card = State.CenterRow[slotIndex];
-            if (card == null || !card.Def.IsMonster) return SubmitResult.Rejected("No monster there");
-            var def = card.Def;
-            if (player.Power < def.Defense) return SubmitResult.Rejected("Not enough power");
+            var monster = State.ActiveMonsters.Find(m => m.InstanceId == instanceId);
+            if (monster == null) return SubmitResult.Rejected("No such Ingeminex");
+            var def = monster.Def;
 
-            player.Power -= def.Defense;
-            Emit(new ShardsPowerChangedEvent { PlayerIndex = player.Index, Delta = -def.Defense, NewValue = player.Power });
+            // Same accumulation model as champions (rules: "similar to using Power to
+            // defeat an opponent's Champion"); marks evaporate at end of turn.
+            int remaining = def.Defense - monster.DamageThisTurn;
+            int spend = amount <= 0 ? remaining : System.Math.Min(amount, remaining);
+            if (spend <= 0) return SubmitResult.Rejected("Ingeminex already fully damaged");
+            if (player.Power < spend) return SubmitResult.Rejected("Not enough power");
 
-            // Defeated monsters leave the game; the slot refills immediately.
-            // TODO-VERIFY monster disposal (removed vs bottom of deck) from rules-notes.
-            State.CenterRow[slotIndex] = null;
-            card.Zone = ShardsZone.Removed;
-            RefillSlot(slotIndex);
-            Emit(new ShardsMonsterDefeatedEvent { PlayerIndex = player.Index, SlotIndex = slotIndex, DefId = card.DefId });
+            player.Power -= spend;
+            Emit(new ShardsPowerChangedEvent { PlayerIndex = player.Index, Delta = -spend, NewValue = player.Power });
+            monster.DamageThisTurn += spend;
+
+            if (monster.DamageThisTurn < def.Defense)
+            {
+                Emit(new ShardsMonsterDamagedEvent
+                {
+                    PlayerIndex = player.Index,
+                    InstanceId = monster.InstanceId,
+                    DefId = monster.DefId,
+                    Amount = spend,
+                    Total = monster.DamageThisTurn
+                });
+                return SubmitResult.Ok();
+            }
+
+            // Defeated: bottom of the center deck (it never occupied a row slot), its
+            // pending attack is cancelled, and YOU alone gain the printed reward now.
+            State.ActiveMonsters.Remove(monster);
+            State.PendingMonsterAttacks.Remove(monster.InstanceId);
+            monster.DamageThisTurn = 0;
+            monster.Zone = ShardsZone.CenterDeck;
+            State.CenterDeck.Insert(0, monster); // list end = top; index 0 = bottom
+            Emit(new ShardsMonsterDefeatedEvent { PlayerIndex = player.Index, InstanceId = monster.InstanceId, DefId = monster.DefId });
 
             if (def.RewardEffect != null)
-                QueueEffect(def.RewardEffect, player.Index, card);
+                QueueEffect(def.RewardEffect, player.Index, monster);
             return SubmitResult.Ok();
+        }
+
+        private SubmitResult TakeDestiny(ShardsPlayer player, int instanceId)
+        {
+            if ((State.Dlc & ShardsDlc.IntoTheHorizon) == 0)
+                return SubmitResult.Rejected("Destinies are not in this game");
+            if (player.DestinyTaken) return SubmitResult.Rejected("Destiny already taken this game");
+            if (player.Mastery < 5) return SubmitResult.Rejected("Requires Mastery 5");
+            var destiny = State.DestinyRow.Find(c => c.InstanceId == instanceId);
+            if (destiny == null) return SubmitResult.Rejected("Not in the destiny row");
+
+            player.DestinyTaken = true;
+            GrantDestiny(player, destiny);
+            return SubmitResult.Ok();
+        }
+
+        /// <summary>Move a destiny from the row in front of a player (also used by the
+        /// Agony/Malice Ingeminex rewards, which bypass Mastery 5 AND the one-per-game
+        /// limit — those callers don't set DestinyTaken).</summary>
+        public void GrantDestiny(ShardsPlayer player, ShardsCard destiny)
+        {
+            State.DestinyRow.Remove(destiny); // the row shrinks — never refilled
+            destiny.Owner = player.Index;
+            destiny.Zone = ShardsZone.SetAside; // owned destinies sit in front of the player
+            destiny.Exhausted = false;
+            player.Destinies.Add(destiny);
+            Emit(new ShardsDestinyTakenEvent { PlayerIndex = player.Index, InstanceId = destiny.InstanceId, DefId = destiny.DefId });
+            if (destiny.Def.PlayEffect != null)
+                QueueEffect(destiny.Def.PlayEffect, player.Index, destiny);
         }
 
         private SubmitResult RecruitRelic(ShardsPlayer player, int instanceId)
         {
-            if ((State.Dlc & ShardsDlc.RelicsOfTheFuture) == 0)
-                return SubmitResult.Rejected("Relics are not in this game");
             if (player.RelicRecruited) return SubmitResult.Rejected("Relic already recruited this game");
             if (player.Mastery < 10) return SubmitResult.Rejected("Requires Mastery 10");
             var relic = player.SetAside.Find(c => c.InstanceId == instanceId && c.Def.Type == ShardsCardType.Relic);
             if (relic == null) return SubmitResult.Rejected("Not one of your relics");
 
             player.RelicRecruited = true;
-            player.SetAside.RemoveAll(c => c.Def.Type == ShardsCardType.Relic);
+            // Only the chosen relic leaves set-aside: the other stays there, normally dead
+            // weight — but the Ingeminex Corruption reward can still fetch it (ItH).
+            player.SetAside.Remove(relic);
             relic.Zone = ShardsZone.Discard;
             player.Discard.Add(relic);
             Emit(new ShardsRelicRecruitedEvent { PlayerIndex = player.Index, DefId = relic.DefId });
             return SubmitResult.Ok();
+        }
+
+        /// <summary>A card's shield value for this owner: dynamic overrides (Datic Robes =
+        /// mastery, Praetorian-02 M20) plus Phasic Technology (+2 on Homodeus/Order cards).</summary>
+        public int ShieldValue(ShardsPlayer owner, ShardsCard card)
+        {
+            var def = card.Def;
+            int value = def.DynamicShield != null ? def.DynamicShield(owner) : def.Shield;
+            if ((def.Faction == ShardsFaction.Homodeus || def.Faction == ShardsFaction.Order) &&
+                owner.Destinies.Exists(d => d.DefId == "phasic_technology"))
+                value += 2;
+            return value;
+        }
+
+        /// <summary>Faction identity check honoring Project Yggdrasil (the owner's Wraethe
+        /// cards also count as Undergrowth and vice versa).</summary>
+        public static bool CountsAs(ShardsPlayer owner, ShardsCardDef def, ShardsFaction faction)
+        {
+            if (def.Faction == faction) return true;
+            if (!owner.Destinies.Exists(d => d.DefId == "project_yggdrasil")) return false;
+            return (faction == ShardsFaction.Wraethe && def.Faction == ShardsFaction.Undergrowth) ||
+                   (faction == ShardsFaction.Undergrowth && def.Faction == ShardsFaction.Wraethe);
+        }
+
+        /// <summary>Count a play for faction triggers; Project Yggdrasil double-counts
+        /// Wraethe/Undergrowth plays as each other. Also fires discard-pile play triggers
+        /// (The Dispossessed).</summary>
+        private void CountPlay(ShardsPlayer player, ShardsCard card)
+        {
+            var def = card.Def;
+            bool isAlly = !def.IsChampion;
+            player.CountFactionPlay(def.Faction, isAlly);
+            if (player.Destinies.Exists(d => d.DefId == "project_yggdrasil"))
+            {
+                if (def.Faction == ShardsFaction.Wraethe)
+                    player.CountFactionPlay(ShardsFaction.Undergrowth, isAlly);
+                else if (def.Faction == ShardsFaction.Undergrowth)
+                    player.CountFactionPlay(ShardsFaction.Wraethe, isAlly);
+            }
+            player.PlayedThisTurn.Add(card);
+
+            // The Dispossessed: a matching-faction play lets it return from the discard.
+            foreach (var waiting in player.Discard.FindAll(c =>
+                         c.Def.ReturnFromDiscardOnFactionPlay != ShardsFaction.None &&
+                         CountsAs(player, def, c.Def.ReturnFromDiscardOnFactionPlay) &&
+                         c != card))
+            {
+                var captured = waiting;
+                QueueEffect(new Custom(ctx => OptionalReturnFlow(ctx, captured)), player.Index, captured);
+            }
+        }
+
+        private IEnumerable<ShardsStep> OptionalReturnFlow(ShardsContext ctx, ShardsCard card)
+        {
+            var player = ctx.Controller;
+            if (!player.Discard.Contains(card)) yield break;
+            var request = new DecisionRequest
+            {
+                Id = State.NextDecisionId++,
+                PlayerIndex = player.Index,
+                Kind = DecisionKind.ChooseCards,
+                Title = $"Return {card.Def.Name} from your discard pile to your hand?",
+                Context = "soi.return",
+                Min = 0,
+                Max = 1
+            };
+            request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+            yield return ShardsStep.AwaitDecision(request);
+            if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
+            if (!player.Discard.Remove(card)) yield break;
+            card.Zone = ShardsZone.Hand;
+            player.Hand.Add(card);
+            Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+        }
+
+        /// <summary>Row price after modifiers (Axia: cheaper per Homodeus champion in play).</summary>
+        public int EffectiveCost(ShardsPlayer buyer, ShardsCardDef def)
+        {
+            int cost = def.Cost;
+            if (def.CostModifier != null)
+                cost += def.CostModifier(buyer);
+            return System.Math.Max(0, cost);
+        }
+
+        /// <summary>Printed defense plus auras from the owner's champions and destinies
+        /// (Ferrata Guard, One Mind One Army).</summary>
+        public int EffectiveDefense(ShardsPlayer owner, ShardsCard champion)
+        {
+            int defense = champion.Def.Defense;
+            foreach (var source in owner.Champions)
+                if (source.Def.DefenseAura != null)
+                    defense += source.Def.DefenseAura(owner, source, champion);
+            foreach (var source in owner.Destinies)
+                if (source.Def.DefenseAura != null)
+                    defense += source.Def.DefenseAura(owner, source, champion);
+            return defense;
+        }
+
+        /// <summary>Targeting rules: a Taunt champion (Zetta) shields its owner's OTHER
+        /// champions; per-card vetoes (Li Hin, Raidian, Drakonarius) apply on top.</summary>
+        public bool CanAttackChampion(ShardsPlayer attacker, ShardsPlayer owner, ShardsCard champion)
+        {
+            foreach (var other in owner.Champions)
+                if (other != champion && other.Def.Taunt)
+                    return false;
+            var veto = champion.Def.CanBeAttacked;
+            return veto == null || veto(State, attacker, owner, champion);
+        }
+
+        /// <summary>Zetta also protects the PLAYER: end-turn damage can't be assigned to
+        /// an opponent with a Taunt champion in play.</summary>
+        public bool CanAssignDamageTo(ShardsPlayer defender)
+        {
+            foreach (var champion in defender.Champions)
+                if (champion.Def.Taunt)
+                    return false;
+            return true;
         }
 
         private SubmitResult Concede(int playerIndex)
@@ -397,7 +682,27 @@ namespace Shards.Engine
             if (player.Eliminated) return SubmitResult.Rejected("Already out");
             Emit(new ShardsConcededEvent { PlayerIndex = playerIndex });
             EliminatePlayer(player);
-            if (!State.GameOver && State.TurnPlayerIndex == playerIndex && !_endTurnInProgress)
+            CheckStateBased();
+
+            // If the conceder owed a decision, answer it minimally so the parked effect
+            // iterator can finish instead of stalling the game.
+            if (!State.GameOver && PendingInput != null &&
+                PendingInput.Kind == PendingInputKind.Decision &&
+                PendingInput.Decision.PlayerIndex == playerIndex &&
+                _activeContext != null)
+            {
+                var request = PendingInput.Decision;
+                var answer = new DecisionAnswer { DecisionId = request.Id };
+                for (int i = 0; i < request.Min && i < request.Options.Count; i++)
+                    answer.ChosenOptionIds.Add(request.Options[i].Id);
+                PendingInput = null;
+                Emit(new DecisionMadeEvent { PlayerIndex = playerIndex, DecisionId = request.Id });
+                _activeContext.Answer = answer;
+                PumpEffects();
+            }
+
+            if (!State.GameOver && State.TurnPlayerIndex == playerIndex && !_endTurnInProgress &&
+                (PendingInput == null || PendingInput.Kind != PendingInputKind.Decision))
                 AdvanceTurn();
             RoutePriority();
             return SubmitResult.Ok();
@@ -410,6 +715,7 @@ namespace Shards.Engine
             _endTurnInProgress = true;
 
             var opponents = new List<ShardsPlayer>(State.LivingOpponentsOf(player.Index));
+            opponents.RemoveAll(o => !CanAssignDamageTo(o)); // Taunt champions protect their owner
             if (player.Power > 0 && opponents.Count > 0)
             {
                 if (opponents.Count == 1)
@@ -428,19 +734,27 @@ namespace Shards.Engine
                     Kind = DecisionKind.ChooseMode,
                     Title = $"Assign {player.Power} damage between your opponents",
                     Context = "soi.split",
-                    Min = 0,
+                    // Full assignment is MANDATORY — only the split is free (rulebook:
+                    // assign ALL remaining power among opponents).
+                    Min = player.Power,
                     Max = player.Power,
                     Ordered = true
                 };
                 foreach (var opponent in opponents)
                     request.Options.Add(new DecisionOption(opponent.Index, opponent.Name));
+                // Defaults pad with DISTINCT options only — pre-fill a full assignment
+                // (everything on the first opponent) so timeouts/bot-takeovers stay legal.
+                for (int i = 0; i < player.Power; i++)
+                    request.DefaultOptionIds.Add(opponents[0].Index);
                 // Answer format: one option id per damage point (repeats allowed).
+                // Queue only — Submit's pump picks it up. NEVER pump from inside the
+                // end-turn chain: these methods also run inside effect iterators, and a
+                // nested pump would clobber the parked iterator (hard-won).
                 QueueEffect(new Custom(ctx => SplitDamageFlow(ctx, request)), player.Index, null);
-                Pump();
                 return;
             }
 
-            FinishEndTurn(player);
+            AfterDefenses(player);
         }
 
         private IEnumerable<ShardsStep> SplitDamageFlow(ShardsContext ctx, DecisionRequest request)
@@ -467,10 +781,17 @@ namespace Shards.Engine
 
         private void BeginDefenses(ShardsPlayer attacker)
         {
+            // Defenders resolve in clockwise turn order from the attacker. The rulebook
+            // gives no ordering; each shield decision is independent, so this is purely
+            // presentational (rules-notes TODO-VERIFY #1 — outcome-equivalent).
             _pendingDefenses = new Queue<(int, int)>();
-            for (int i = 0; i < _splitTargets.Count; i++)
-                if (_splitAmounts[i] > 0)
-                    _pendingDefenses.Enqueue((_splitTargets[i], _splitAmounts[i]));
+            for (int step = 1; step < State.Players.Count; step++)
+            {
+                int seat = (attacker.Index + step) % State.Players.Count;
+                int i = _splitTargets.IndexOf(seat);
+                if (i >= 0 && _splitAmounts[i] > 0)
+                    _pendingDefenses.Enqueue((seat, _splitAmounts[i]));
+            }
             NextDefense(attacker);
         }
 
@@ -482,13 +803,22 @@ namespace Shards.Engine
                 var defender = State.Players[defenderIndex];
                 if (defender.Eliminated) continue;
 
-                // In-play champion shields absorb passively; hand shields are a choice.
-                // TODO-VERIFY champion-shield application details from rules-notes (M4).
+                // Ru Bo Vai M10: the attacker ignores ALL shields this turn.
+                if (attacker.IgnoreShieldsThisTurn)
+                {
+                    ApplyDamage(attacker.Index, defender, amount, 0, revealed: null);
+                    continue;
+                }
+
+                // A champion's printed shield is INERT while in play (base game) — shields
+                // are revealed FROM HAND only. Exception: cards flagged ShieldInPlay
+                // (Praetorian-02) shield passively in play and NOT from hand.
                 int passive = 0;
                 foreach (var champion in defender.Champions)
-                    passive += champion.Def.Shield;
+                    if (champion.Def.ShieldInPlay)
+                        passive += ShieldValue(defender, champion);
 
-                var handShields = defender.Hand.FindAll(c => c.Def.Shield > 0);
+                var handShields = defender.Hand.FindAll(c => ShieldValue(defender, c) > 0 && !c.Def.ShieldInPlay);
                 if (handShields.Count == 0)
                 {
                     ApplyDamage(attacker.Index, defender, amount, passive, revealed: null);
@@ -507,7 +837,7 @@ namespace Shards.Engine
                 };
                 foreach (var shield in handShields)
                 {
-                    var option = new DecisionOption(shield.InstanceId, shield.Def.Name + " (shield " + shield.Def.Shield + ")")
+                    var option = new DecisionOption(shield.InstanceId, shield.Def.Name + " (shield " + ShieldValue(defender, shield) + ")")
                     {
                         CardInstanceId = shield.InstanceId
                     };
@@ -517,14 +847,15 @@ namespace Shards.Engine
                 int capturedAmount = amount;
                 int capturedPassive = passive;
                 var capturedDefender = defender;
+                // Queue only (see BeginEndTurn) — NextDefense also runs from inside
+                // ShieldFlow iterators, where a nested pump would corrupt the pump state.
                 QueueEffect(new Custom(ctx => ShieldFlow(ctx, request, attacker.Index, capturedDefender, capturedAmount, capturedPassive)),
                     defender.Index, null);
-                Pump();
                 return; // resumes via the effect; remaining defenders follow after it
             }
 
             _pendingDefenses = null;
-            FinishEndTurn(State.Players[attacker.Index]);
+            AfterDefenses(State.Players[attacker.Index]);
         }
 
         private IEnumerable<ShardsStep> ShieldFlow(ShardsContext ctx, DecisionRequest request,
@@ -538,7 +869,7 @@ namespace Shards.Engine
             {
                 var card = defender.Hand.Find(c => c.InstanceId == id);
                 if (card == null) continue;
-                prevented += card.Def.Shield;
+                prevented += ShieldValue(defender, card);
                 revealed.Add(card.DefId); // shields STAY in hand — reveal only
             }
             if (revealed.Count > 0)
@@ -560,8 +891,99 @@ namespace Shards.Engine
                 Targets = new List<int> { defender.Index },
                 Amounts = new List<int> { dealt }
             });
+
+            // Unprevented-damage bookkeeping: Heart of Nothing (10+ on one opponent) and
+            // owned-destiny triggers (Blood for Blood at 5+).
+            var attacker = State.Players[attackerIndex];
+            if (dealt > attacker.MaxDamageDealtToOneOpponent)
+                attacker.MaxDamageDealtToOneOpponent = dealt;
+            foreach (var destiny in attacker.Destinies)
+                if (destiny.Def.OnDamageDealt != null)
+                {
+                    var effect = destiny.Def.OnDamageDealt(dealt);
+                    if (effect != null)
+                        QueueEffect(effect, attackerIndex, destiny);
+                }
+
             if (defender.Health <= 0)
                 EliminatePlayer(defender);
+        }
+
+        /// <summary>After all player-damage defenses: Ingeminex revealed this turn attack
+        /// ALL players once (ItH), then cleanup runs. Monster effects may pause on
+        /// decisions, so cleanup is queued behind them as a final effect.</summary>
+        private void AfterDefenses(ShardsPlayer player)
+        {
+            _pendingDefenses = null;
+            CheckStateBased();
+            if (State.GameOver) return;
+
+            bool queued = false;
+
+            // Swyft (while in play, character matches): fast-played cards may be KEPT
+            // (recruited to discard) instead of returning to the center deck.
+            bool canKeep = player.Champions.Exists(c =>
+                c.Def.KeepFastPlaysCharacter != null && c.Def.KeepFastPlaysCharacter == player.CharacterId);
+            if (canKeep && player.PlayZone.Exists(c => c.FastPlayed))
+            {
+                QueueEffect(new Custom(ctx => KeepFastPlaysFlow(ctx)), player.Index, null);
+                queued = true;
+            }
+
+            if (State.PendingMonsterAttacks.Count > 0)
+            {
+                foreach (int id in new List<int>(State.PendingMonsterAttacks))
+                {
+                    var monster = State.ActiveMonsters.Find(m => m.InstanceId == id);
+                    if (monster == null) continue;
+                    Emit(new ShardsMonsterAttackedEvent { InstanceId = monster.InstanceId, DefId = monster.DefId });
+                    if (monster.Def.MonsterAttackEffect != null)
+                        QueueEffect(monster.Def.MonsterAttackEffect, player.Index, monster);
+                }
+                State.PendingMonsterAttacks.Clear();
+                queued = true;
+            }
+
+            if (queued)
+            {
+                // Queue only — no nested pump (see BeginEndTurn).
+                QueueEffect(new Custom(_ => FinishFlow(player)), player.Index, null);
+                return;
+            }
+
+            FinishEndTurn(player);
+        }
+
+        private IEnumerable<ShardsStep> KeepFastPlaysFlow(ShardsContext ctx)
+        {
+            var player = ctx.Controller;
+            var fastPlays = player.PlayZone.FindAll(c => c.FastPlayed);
+            if (fastPlays.Count == 0) yield break;
+            var request = new DecisionRequest
+            {
+                Id = State.NextDecisionId++,
+                PlayerIndex = player.Index,
+                Kind = DecisionKind.ChooseCards,
+                Title = "Keep fast-played cards? (they join your discard pile)",
+                Context = "soi.keepfast",
+                Min = 0,
+                Max = fastPlays.Count
+            };
+            foreach (var card in fastPlays)
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+            yield return ShardsStep.AwaitDecision(request);
+            foreach (int id in ctx.Answer.ChosenOptionIds)
+            {
+                var card = fastPlays.Find(c => c.InstanceId == id);
+                if (card != null)
+                    card.FastPlayed = false; // cleanup now treats it as recruited
+            }
+        }
+
+        private IEnumerable<ShardsStep> FinishFlow(ShardsPlayer player)
+        {
+            FinishEndTurn(player);
+            yield break;
         }
 
         private void FinishEndTurn(ShardsPlayer player)
@@ -570,7 +992,9 @@ namespace Shards.Engine
             _splitTargets = null;
             _splitAmounts = null;
 
-            // Cleanup: play zone → discard, fast-played mercs → bottom of CENTER deck.
+            // End phase, in rules order:
+            // 1. fast-played/warped cards → BOTTOM of the center deck
+            // 2. remaining play-zone cards → discard
             foreach (var card in player.PlayZone)
             {
                 if (card.FastPlayed)
@@ -589,16 +1013,30 @@ namespace Shards.Engine
             }
             player.PlayZone.Clear();
 
-            // Hand stays (SoI does not discard the hand); draw back up to hand size.
-            // TODO-VERIFY: base rules — discard remaining hand at end of turn, or keep?
-            // Star-Realms-family games discard + draw 5; rules-notes (M4) settles this.
+            // 3. discard the remaining hand
             foreach (var card in new List<ShardsCard>(player.Hand))
             {
                 player.Hand.Remove(card);
                 card.Zone = ShardsZone.Discard;
                 player.Discard.Add(card);
             }
+
+            // 4. ready your champions, destinies and character card; all champion and
+            //    Ingeminex damage marks evaporate (they never persist between turns).
+            player.CharacterExhausted = false;
+            foreach (var champion in player.Champions) champion.Exhausted = false;
+            foreach (var destiny in player.Destinies) destiny.Exhausted = false;
+            foreach (var p in State.Players)
+                foreach (var champion in p.Champions)
+                    champion.DamageThisTurn = 0;
+            foreach (var monster in State.ActiveMonsters)
+                monster.DamageThisTurn = 0;
+
+            // 5. draw a new hand (Heart of Nothing: +N extra if 10+ unprevented damage
+            //    landed on a single opponent this turn)
             int toDraw = State.Rules.HandSize;
+            if (player.BonusDrawsOnBigHit > 0 && player.MaxDamageDealtToOneOpponent >= 10)
+                toDraw += player.BonusDrawsOnBigHit;
             for (int i = 0; i < toDraw; i++)
                 DrawOne(player);
 
@@ -606,7 +1044,19 @@ namespace Shards.Engine
             Emit(new ShardsCleanupEvent { PlayerIndex = player.Index });
 
             if (!State.GameOver)
-                AdvanceTurn();
+            {
+                // Slipstream Shard M20: the player takes another turn (once per game).
+                if (State.ExtraTurnForPlayer == player.Index && !player.Eliminated)
+                {
+                    State.ExtraTurnForPlayer = -1;
+                    StartTurn(player.Index, firstTurn: false);
+                }
+                else
+                {
+                    State.ExtraTurnForPlayer = -1;
+                    AdvanceTurn();
+                }
+            }
             RoutePriority();
         }
 
@@ -623,11 +1073,8 @@ namespace Shards.Engine
 
         private void StartTurn(int playerIndex, bool firstTurn)
         {
+            // Readying happens in the END phase (champions/destinies/character), not here.
             State.TurnPlayerIndex = playerIndex;
-            var player = State.Players[playerIndex];
-            player.CharacterExhausted = false;
-            foreach (var champion in player.Champions)
-                champion.Exhausted = false;
             Emit(new ShardsTurnStartedEvent { PlayerIndex = playerIndex, Round = State.Round });
         }
 
@@ -683,7 +1130,10 @@ namespace Shards.Engine
 
                 if (_effectQueue.Count == 0)
                 {
-                    if (PendingInput == null || PendingInput.Kind == PendingInputKind.Decision)
+                    // Refresh priority whenever no decision pends — legal actions change
+                    // after every action, and the active player may have been eliminated
+                    // by their own effect (RoutePriority passes the turn on then).
+                    if (PendingInput == null || PendingInput.Kind != PendingInputKind.Decision)
                         RoutePriority();
                     return;
                 }
@@ -695,10 +1145,17 @@ namespace Shards.Engine
 
         private void CheckStateBased()
         {
-            // Destiny at Mastery 5 (DLC3) and relic availability are handled as actions/
-            // decisions elsewhere; here: elimination + last-survivor.
             if (State.GameOver) return;
-            if (State.LivingCount == 1)
+            int living = State.LivingCount;
+            if (living == 0)
+            {
+                // Simultaneous drop below 1 (possible with "lose Health" effects) ⇒ TIE.
+                State.GameOver = true;
+                State.WinnerIndex = -1;
+                Emit(new ShardsGameEndedEvent { WinnerIndex = -1 });
+                PendingInput = null;
+            }
+            else if (living == 1)
             {
                 foreach (var p in State.Players)
                     if (!p.Eliminated)
@@ -715,6 +1172,10 @@ namespace Shards.Engine
         {
             if (State.GameOver) { PendingInput = null; return; }
             if (PendingInput != null && PendingInput.Kind == PendingInputKind.Decision) return;
+            // The active player can eliminate THEMSELVES mid-turn (Bound for Life,
+            // Oblivion Gatekeeper) — pass the turn on instead of deadlocking.
+            if (State.TurnPlayer.Eliminated && !_endTurnInProgress)
+                AdvanceTurn();
             PendingInput = PendingInput.Priority(State.TurnPlayerIndex, LegalActions(State.TurnPlayerIndex));
         }
 
@@ -735,13 +1196,7 @@ namespace Shards.Engine
                 var card = State.CenterRow[s];
                 if (card == null) continue;
                 var def = card.Def;
-                if (def.IsMonster)
-                {
-                    if (player.Power >= def.Defense)
-                        actions.Add(new ShardsAttackMonsterAction { PlayerIndex = playerIndex, SlotIndex = s });
-                    continue;
-                }
-                if (player.Gems >= def.Cost)
+                if (player.Gems >= EffectiveCost(player, def))
                 {
                     actions.Add(new ShardsBuyCardAction { PlayerIndex = playerIndex, SlotIndex = s });
                     if (def.Type == ShardsCardType.Mercenary)
@@ -755,10 +1210,16 @@ namespace Shards.Engine
             foreach (var champion in player.Champions)
                 if (!champion.Exhausted && champion.Def.ExhaustEffect != null)
                     actions.Add(new ShardsExhaustAction { PlayerIndex = playerIndex, CardInstanceId = champion.InstanceId });
+            foreach (var destiny in player.Destinies)
+                if (!destiny.Exhausted && destiny.Def.ExhaustEffect != null)
+                    actions.Add(new ShardsExhaustAction { PlayerIndex = playerIndex, CardInstanceId = destiny.InstanceId });
 
+            // Only completing attacks are advertised (partial marking stays legal via an
+            // explicit Amount — bots and defaults shouldn't waste power on partial hits).
             foreach (var opponent in State.LivingOpponentsOf(playerIndex))
                 foreach (var champion in opponent.Champions)
-                    if (player.Power >= champion.Def.Defense)
+                    if (CanAttackChampion(player, opponent, champion) &&
+                        player.Power >= EffectiveDefense(opponent, champion) - champion.DamageThisTurn)
                         actions.Add(new ShardsAttackChampionAction
                         {
                             PlayerIndex = playerIndex,
@@ -766,7 +1227,15 @@ namespace Shards.Engine
                             CardInstanceId = champion.InstanceId
                         });
 
-            if ((State.Dlc & ShardsDlc.RelicsOfTheFuture) != 0 && !player.RelicRecruited && player.Mastery >= 10)
+            foreach (var monster in State.ActiveMonsters)
+                if (player.Power >= monster.Def.Defense - monster.DamageThisTurn)
+                    actions.Add(new ShardsAttackMonsterAction { PlayerIndex = playerIndex, CardInstanceId = monster.InstanceId });
+
+            if ((State.Dlc & ShardsDlc.IntoTheHorizon) != 0 && !player.DestinyTaken && player.Mastery >= 5)
+                foreach (var destiny in State.DestinyRow)
+                    actions.Add(new ShardsTakeDestinyAction { PlayerIndex = playerIndex, CardInstanceId = destiny.InstanceId });
+
+            if (!player.RelicRecruited && player.Mastery >= 10)
                 foreach (var relic in player.SetAside)
                     if (relic.Def.Type == ShardsCardType.Relic)
                         actions.Add(new ShardsRecruitRelicAction { PlayerIndex = playerIndex, CardInstanceId = relic.InstanceId });
@@ -801,8 +1270,17 @@ namespace Shards.Engine
             player.Mastery = System.Math.Min(State.Rules.MasteryCap, player.Mastery + amount);
             if (player.Mastery != before)
                 Emit(new ShardsMasteryChangedEvent { PlayerIndex = playerIndex, Delta = player.Mastery - before, NewValue = player.Mastery });
-            // Destiny at Mastery 5 (DLC3): TODO(M5-data) queue the choice when crossing 5
-            // once destiny defs exist; acquisition details from rules-notes.
+        }
+
+        /// <summary>Mastery can be LOST to card effects (e.g. Venator of the Wastes,
+        /// Ingeminex Torment) — floor at 0; thresholds/relics already earned stay earned.</summary>
+        public void LoseMastery(int playerIndex, int amount)
+        {
+            var player = State.Players[playerIndex];
+            int before = player.Mastery;
+            player.Mastery = System.Math.Max(0, player.Mastery - amount);
+            if (player.Mastery != before)
+                Emit(new ShardsMasteryChangedEvent { PlayerIndex = playerIndex, Delta = player.Mastery - before, NewValue = player.Mastery });
         }
 
         public void GainHealth(int playerIndex, int amount)
@@ -810,10 +1288,183 @@ namespace Shards.Engine
             var player = State.Players[playerIndex];
             int before = player.Health;
             player.Health = System.Math.Min(State.Rules.MaxHealth, player.Health + amount);
-            // Note: "would gain at cap" still counts as gaining for conversion effects —
-            // effects reading the gain should use the REQUESTED amount, not the delta.
             if (player.Health != before)
                 Emit(new ShardsHealthChangedEvent { PlayerIndex = playerIndex, Delta = player.Health - before, NewValue = player.Health });
+            // Entropic Talons: health gained this turn also grants that much power — and
+            // "would gain at the 50 cap" still counts (FAQ), so use the REQUESTED amount.
+            if (player.HealthToPowerThisTurn && amount > 0)
+                GainPower(playerIndex, amount);
+        }
+
+        /// <summary>"Lose Health" is NOT damage: shields can never prevent it and it does
+        /// not count as unblocked damage. It CAN cause simultaneous-death ties.</summary>
+        public void LoseHealth(int playerIndex, int amount)
+        {
+            var player = State.Players[playerIndex];
+            if (player.Eliminated || amount <= 0) return;
+            player.Health -= amount;
+            Emit(new ShardsHealthChangedEvent { PlayerIndex = playerIndex, Delta = -amount, NewValue = player.Health });
+            if (player.Health <= 0)
+                EliminatePlayer(player);
+        }
+
+        /// <summary>Warp (effect keyword, "Warp N"): fast-play a center-row card for FREE.
+        /// Card effects call this after their choose-a-row-card decision. The warped card
+        /// follows fast-play rules — effect now, play zone, faction play counted, bottom
+        /// of the center deck at cleanup.</summary>
+        public bool WarpFromRow(int playerIndex, int slotIndex, bool keep = false)
+        {
+            if (slotIndex < 0 || slotIndex >= State.CenterRow.Length) return false;
+            var card = State.CenterRow[slotIndex];
+            if (card == null) return false;
+            var player = State.Players[playerIndex];
+
+            State.CenterRow[slotIndex] = null;
+            RefillSlot(slotIndex);
+
+            Emit(new ShardsCardBoughtEvent
+            {
+                PlayerIndex = playerIndex,
+                SlotIndex = slotIndex,
+                DefId = card.DefId,
+                CostPaid = 0,
+                FastPlay = true
+            });
+
+            card.Owner = playerIndex;
+            card.Zone = ShardsZone.PlayZone;
+            // keep (Deadly Recruits): NOT the Warp keyword — the card is yours and goes
+            // to your discard at cleanup instead of the bottom of the center deck.
+            card.FastPlayed = !keep;
+            player.PlayZone.Add(card);
+            CountPlay(player, card);
+            QueuePlayEffect(player, card);
+            return true;
+        }
+
+        /// <summary>Queue a played card's effect from ANY play path (hand, fast-play,
+        /// warp). General Decurion M20: Homodeus ally effects resolve a second time —
+        /// fast-played mercenaries count as played allies, so every path doubles.</summary>
+        private void QueuePlayEffect(ShardsPlayer player, ShardsCard card)
+        {
+            var def = card.Def;
+            if (def.PlayEffect == null) return;
+            QueueEffect(def.PlayEffect, player.Index, card);
+            if (player.CopyHomodeusAlliesThisTurn && def.Faction == ShardsFaction.Homodeus && !def.IsChampion)
+                QueueEffect(def.PlayEffect, player.Index, card);
+        }
+
+        /// <summary>Reveal/take the top card of the CENTER deck (The Shard Defiant).
+        /// Ingeminex bypass to their space and the next card is taken instead.</summary>
+        public ShardsCard DrawFromCenterDeck()
+        {
+            while (State.CenterDeck.Count > 0)
+            {
+                var card = State.CenterDeck[State.CenterDeck.Count - 1];
+                State.CenterDeck.RemoveAt(State.CenterDeck.Count - 1);
+                if (card.Def.IsMonster)
+                {
+                    card.Zone = ShardsZone.MonsterSpace;
+                    card.DamageThisTurn = 0;
+                    State.ActiveMonsters.Add(card);
+                    State.PendingMonsterAttacks.Add(card.InstanceId);
+                    Emit(new ShardsMonsterRevealedEvent { InstanceId = card.InstanceId, DefId = card.DefId });
+                    continue;
+                }
+                return card;
+            }
+            return null;
+        }
+
+        /// <summary>Recruit a card taken off the center deck (Shard Defiant "recruit it").</summary>
+        public void RecruitLoose(ShardsPlayer player, ShardsCard card)
+        {
+            card.Owner = player.Index;
+            card.FastPlayed = false;
+            Emit(new ShardsCardBoughtEvent { PlayerIndex = player.Index, SlotIndex = -1, DefId = card.DefId, CostPaid = 0, FastPlay = false });
+            RecruitTo(player, card);
+        }
+
+        /// <summary>Top of a personal deck, reshuffling the discard in if needed (reveal
+        /// effects can never deck out). Null if deck AND discard are empty.</summary>
+        public ShardsCard PeekTopOfDeck(ShardsPlayer player)
+        {
+            if (player.Deck.Count == 0)
+            {
+                if (player.Discard.Count == 0) return null;
+                foreach (var card in player.Discard)
+                {
+                    card.Zone = ShardsZone.Deck;
+                    player.Deck.Add(card);
+                }
+                player.Discard.Clear();
+                State.Rng.Shuffle(player.Deck);
+                Emit(new ShardsDeckShuffledEvent { PlayerIndex = player.Index });
+            }
+            return player.Deck[player.Deck.Count - 1];
+        }
+
+        /// <summary>Destroy a champion by card effect (bypasses defense entirely — a
+        /// destroy-effect can kill even an unattackable champion) or by lethal marks.
+        /// byPlayer -1 = a game effect (Ingeminex Malice).</summary>
+        public void DestroyChampion(ShardsPlayer owner, ShardsCard champion, int byPlayer)
+        {
+            if (!owner.Champions.Remove(champion)) return;
+            champion.Zone = ShardsZone.Discard;
+            champion.DamageThisTurn = 0;
+            owner.Discard.Add(champion);
+            Emit(new ShardsChampionDestroyedEvent
+            {
+                OwnerIndex = owner.Index,
+                ByPlayerIndex = byPlayer,
+                InstanceId = champion.InstanceId,
+                DefId = champion.DefId
+            });
+        }
+
+        /// <summary>Recruit a row card for free by effect (Portal Monk, The Crystal Gate).
+        /// toHand: the card goes to hand instead of discard. Redirect flags still apply
+        /// on the normal path via RecruitTo.</summary>
+        public bool RecruitFromRowFree(int playerIndex, int slotIndex, bool toHand)
+        {
+            if (slotIndex < 0 || slotIndex >= State.CenterRow.Length) return false;
+            var card = State.CenterRow[slotIndex];
+            if (card == null) return false;
+            var player = State.Players[playerIndex];
+
+            State.CenterRow[slotIndex] = null;
+            RefillSlot(slotIndex);
+            Emit(new ShardsCardBoughtEvent
+            {
+                PlayerIndex = playerIndex,
+                SlotIndex = slotIndex,
+                DefId = card.DefId,
+                CostPaid = 0,
+                FastPlay = false
+            });
+
+            card.Owner = playerIndex;
+            card.FastPlayed = false;
+            if (toHand)
+            {
+                card.Zone = ShardsZone.Hand;
+                player.Hand.Add(card);
+                Emit(new ShardsCardReturnedEvent { PlayerIndex = playerIndex, InstanceId = card.InstanceId, DefId = card.DefId });
+            }
+            else
+            {
+                RecruitTo(player, card);
+            }
+            return true;
+        }
+
+        /// <summary>Banish: move a card to the shared removed-from-game pile.</summary>
+        public void Banish(ShardsCard card, List<ShardsCard> fromZone)
+        {
+            if (!fromZone.Remove(card)) return;
+            card.Zone = ShardsZone.Banished;
+            State.Banished.Add(card);
+            Emit(new ShardsCardBanishedEvent { PlayerIndex = card.Owner, InstanceId = card.InstanceId, DefId = card.DefId });
         }
 
         public void DrawCards(int playerIndex, int count)
@@ -846,20 +1497,67 @@ namespace Shards.Engine
 
         private void RefillSlot(int slotIndex)
         {
-            if (State.CenterDeck.Count == 0) return;
-            var card = State.CenterDeck[State.CenterDeck.Count - 1];
-            State.CenterDeck.RemoveAt(State.CenterDeck.Count - 1);
-            card.Zone = ShardsZone.CenterRow;
-            State.CenterRow[slotIndex] = card;
-            Emit(new ShardsRowRefilledEvent { SlotIndex = slotIndex, InstanceId = card.InstanceId, DefId = card.DefId });
+            while (State.CenterDeck.Count > 0)
+            {
+                var card = State.CenterDeck[State.CenterDeck.Count - 1];
+                State.CenterDeck.RemoveAt(State.CenterDeck.Count - 1);
+
+                if (card.Def.IsMonster)
+                {
+                    // Ingeminex never enter the row: they go face up to their own space
+                    // and the NEXT center-deck card replaces them for the refill. Their
+                    // attack fires once, at the end of the turn they were revealed on.
+                    card.Zone = ShardsZone.MonsterSpace;
+                    card.DamageThisTurn = 0;
+                    State.ActiveMonsters.Add(card);
+                    State.PendingMonsterAttacks.Add(card.InstanceId);
+                    Emit(new ShardsMonsterRevealedEvent { InstanceId = card.InstanceId, DefId = card.DefId });
+                    continue;
+                }
+
+                card.Zone = ShardsZone.CenterRow;
+                State.CenterRow[slotIndex] = card;
+                Emit(new ShardsRowRefilledEvent { SlotIndex = slotIndex, InstanceId = card.InstanceId, DefId = card.DefId });
+                return;
+            }
+            State.CenterRow[slotIndex] = null; // center deck ran dry
         }
 
         private void EliminatePlayer(ShardsPlayer player)
         {
             if (player.Eliminated) return;
             player.Eliminated = true;
+
+            // Their cards leave play with them — except fast-played/warped cards, which
+            // belong to the CENTER deck and return to its bottom.
+            foreach (var card in new List<ShardsCard>(player.PlayZone))
+            {
+                if (card.FastPlayed)
+                {
+                    card.FastPlayed = false;
+                    card.Owner = -1;
+                    card.Zone = ShardsZone.CenterDeck;
+                    State.CenterDeck.Insert(0, card);
+                }
+                else
+                {
+                    card.Zone = ShardsZone.Discard;
+                    player.Discard.Add(card);
+                }
+            }
+            player.PlayZone.Clear();
+            foreach (var champion in player.Champions)
+            {
+                champion.Zone = ShardsZone.Discard;
+                champion.DamageThisTurn = 0;
+                player.Discard.Add(champion);
+            }
+            player.Champions.Clear();
+
             Emit(new ShardsPlayerEliminatedEvent { PlayerIndex = player.Index });
-            CheckStateBased();
+            // NO CheckStateBased here: simultaneous eliminations (all players losing
+            // health at once) must all land before the winner/tie check — the pump,
+            // AfterDefenses and Concede run the check afterwards.
         }
     }
 }

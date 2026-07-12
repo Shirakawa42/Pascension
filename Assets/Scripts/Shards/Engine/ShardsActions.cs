@@ -32,19 +32,32 @@ namespace Shards.Engine
         public override string Describe() => $"Exhaust #{CardInstanceId}";
     }
 
-    /// <summary>Destroy an enemy champion by paying its full defense in power.</summary>
+    /// <summary>Spend power on an enemy champion. Damage accumulates WITHIN the turn;
+    /// the champion is destroyed once its marks reach full defense (marks clear at end
+    /// of turn — champion damage never persists between turns).</summary>
     public sealed class ShardsAttackChampionAction : PlayerAction
     {
         public int TargetPlayerIndex;
         public int CardInstanceId;
-        public override string Describe() => $"Attack champion #{CardInstanceId} of P{TargetPlayerIndex}";
+        /// <summary>Power to spend; 0 = as much as needed/possible.</summary>
+        public int Amount;
+        public override string Describe() => $"Attack champion #{CardInstanceId} of P{TargetPlayerIndex} for {Amount}";
     }
 
-    /// <summary>Defeat an Ingeminex monster in the center row (Into the Horizon).</summary>
+    /// <summary>Spend power on a revealed Ingeminex (Into the Horizon). Same accumulation
+    /// model as champions; defeating it grants YOU its reward.</summary>
     public sealed class ShardsAttackMonsterAction : PlayerAction
     {
-        public int SlotIndex;
-        public override string Describe() => $"Attack monster in slot {SlotIndex}";
+        public int CardInstanceId;
+        public int Amount;
+        public override string Describe() => $"Attack Ingeminex #{CardInstanceId} for {Amount}";
+    }
+
+    /// <summary>Take one destiny from the shared row (once per game, Mastery 5+, free — ItH).</summary>
+    public sealed class ShardsTakeDestinyAction : PlayerAction
+    {
+        public int CardInstanceId;
+        public override string Describe() => $"Take destiny #{CardInstanceId}";
     }
 
     /// <summary>Recruit one of your two set-aside relics (Mastery 10+, once per game — DLC1).</summary>

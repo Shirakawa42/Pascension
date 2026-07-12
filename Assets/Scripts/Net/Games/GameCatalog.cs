@@ -66,6 +66,7 @@ namespace Pascension.Net
             if (_registered) return;
             _registered = true;
             Modules.Add(new PascensionModule());
+            Modules.Add(new ShardsModule());
         }
 
         public static IReadOnlyList<IGameModule> All
