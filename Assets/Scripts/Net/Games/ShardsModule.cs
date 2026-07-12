@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Pascension.Core;
 using Pascension.Engine.Actions;
 using Pascension.Engine.Events;
+using Pascension.Engine.Serialization;
 using Shards.Bots;
 using Shards.Content;
 using Shards.Engine;
