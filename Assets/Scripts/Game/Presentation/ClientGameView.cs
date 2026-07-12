@@ -51,6 +51,7 @@ namespace Pascension.Game.Presentation
                 foreach (var c in p.Exile) if (c.InstanceId == instanceId) return c;
                 foreach (var c in p.PlayedThisTurn) if (c.InstanceId == instanceId) return c;
                 foreach (var c in p.Relics) if (c.InstanceId == instanceId) return c;
+                foreach (var c in p.Deck) if (c.InstanceId == instanceId) return c;
                 foreach (var c in p.Equipment)
                     if (c != null && c.InstanceId == instanceId) return c;
             }

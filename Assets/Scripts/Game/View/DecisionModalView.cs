@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Pascension.Engine.Decisions;
+using Pascension.Engine.Serialization;
 using Pascension.Game.Presentation;
 using TMPro;
 using UnityEngine;
@@ -141,7 +142,8 @@ namespace Pascension.Game.View
 
             bool anyCards = false;
             foreach (var option in request.Options)
-                if (option.CardInstanceId >= 0 && view != null && view.FindCard(option.CardInstanceId) != null)
+                if (!string.IsNullOrEmpty(option.DefId) ||
+                    (option.CardInstanceId >= 0 && view != null && view.FindCard(option.CardInstanceId) != null))
                     anyCards = true;
 
             bool innStyle = request.Kind == DecisionKind.InnChoice;
@@ -181,6 +183,10 @@ namespace Pascension.Game.View
         private void BuildOption(DecisionOption option, ClientGameView view, bool cardGrid, bool innStyle)
         {
             var snap = option.CardInstanceId >= 0 && view != null ? view.FindCard(option.CardInstanceId) : null;
+            // Cards outside every client-visible zone (market exile, deck reveals)
+            // still render as real cards via the option's DefId.
+            if (snap == null && !string.IsNullOrEmpty(option.DefId))
+                snap = new CardSnap { DefId = option.DefId, InstanceId = option.CardInstanceId, EffectiveCost = -1 };
 
             if (cardGrid && snap != null)
             {

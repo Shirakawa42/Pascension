@@ -129,7 +129,7 @@ namespace Shards.Content
                 Max = 1
             };
             foreach (var card in exhausted)
-                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
             var chosen = player.Champions.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
@@ -181,7 +181,7 @@ namespace Shards.Content
                     Max = 1
                 };
                 foreach (var card in champions)
-                    pick.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                    pick.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
                 yield return ShardsStep.AwaitDecision(pick);
                 if (ctx.Answer.ChosenOptionIds.Count > 0)
                     toHand = champions.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
@@ -231,7 +231,7 @@ namespace Shards.Content
                 Max = 1
             };
             foreach (var card in copyable)
-                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             var chosen = copyable.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
             if (chosen == null) yield break;
@@ -254,7 +254,7 @@ namespace Shards.Content
                 Max = 1
             };
             foreach (var card in shards)
-                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
             ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { "infinity_shard" } });
@@ -347,7 +347,7 @@ namespace Shards.Content
                     Max = 1
                 };
                 foreach (var relic in relics)
-                    request.Options.Add(new DecisionOption(relic.InstanceId, relic.Def.Name) { CardInstanceId = relic.InstanceId });
+                    request.Options.Add(new DecisionOption(relic.InstanceId, relic.Def.Name) { CardInstanceId = relic.InstanceId, DefId = relic.DefId });
                 yield return ShardsStep.AwaitDecision(request);
                 chosen = relics.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
                 if (chosen == null) yield break;
@@ -374,7 +374,7 @@ namespace Shards.Content
                 Max = 1
             };
             foreach (var destiny in engine.State.DestinyRow)
-                request.Options.Add(new DecisionOption(destiny.InstanceId, destiny.Def.Name) { CardInstanceId = destiny.InstanceId });
+                request.Options.Add(new DecisionOption(destiny.InstanceId, destiny.Def.Name) { CardInstanceId = destiny.InstanceId, DefId = destiny.DefId });
             yield return ShardsStep.AwaitDecision(request);
             var chosen = engine.State.DestinyRow.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
             if (chosen != null)
@@ -597,7 +597,7 @@ namespace Shards.Content
                 Max = 1
             };
             foreach (var card in candidates)
-                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
             var chosen = candidates.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
@@ -628,7 +628,7 @@ namespace Shards.Content
             foreach (int s in slots)
             {
                 var card = engine.State.CenterRow[s];
-                request.Options.Add(new DecisionOption(s, card.Def.Name + " (cost " + card.Def.Cost + ")") { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(s, card.Def.Name + " (cost " + card.Def.Cost + ")") { CardInstanceId = card.InstanceId, DefId = card.DefId });
             }
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
@@ -649,7 +649,7 @@ namespace Shards.Content
                 Max = 1
             };
             foreach (var champion in player.Champions)
-                request.Options.Add(new DecisionOption(champion.InstanceId, champion.Def.Name) { CardInstanceId = champion.InstanceId });
+                request.Options.Add(new DecisionOption(champion.InstanceId, champion.Def.Name) { CardInstanceId = champion.InstanceId, DefId = champion.DefId });
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
             var chosen = player.Champions.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
@@ -750,7 +750,7 @@ namespace Shards.Content
                     Max = 1
                 };
                 foreach (var destiny in engine.State.DestinyRow)
-                    request.Options.Add(new DecisionOption(destiny.InstanceId, destiny.Def.Name) { CardInstanceId = destiny.InstanceId });
+                    request.Options.Add(new DecisionOption(destiny.InstanceId, destiny.Def.Name) { CardInstanceId = destiny.InstanceId, DefId = destiny.DefId });
                 yield return ShardsStep.AwaitDecision(request);
                 var chosen = engine.State.DestinyRow.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
                 if (chosen != null)

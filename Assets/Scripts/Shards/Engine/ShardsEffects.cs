@@ -230,7 +230,7 @@ namespace Shards.Engine
                     Max = 1
                 };
                 foreach (var card in candidates)
-                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
                 yield return ShardsStep.AwaitDecision(request);
                 if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
                 var chosen = player.Hand.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
@@ -279,7 +279,7 @@ namespace Shards.Engine
                     Max = candidates.Count
                 };
                 foreach (var card in candidates)
-                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name + " (" + card.Def.Faction + ")") { CardInstanceId = card.InstanceId });
+                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name + " (" + card.Def.Faction + ")") { CardInstanceId = card.InstanceId, DefId = card.DefId });
                 yield return ShardsStep.AwaitDecision(request);
 
                 var revealedFactions = new HashSet<ShardsFaction>();
@@ -396,7 +396,7 @@ namespace Shards.Engine
             foreach (var card in candidates)
             {
                 string zone = card.Zone == ShardsZone.Hand ? "hand" : "discard";
-                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name + " (" + zone + ")") { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name + " (" + zone + ")") { CardInstanceId = card.InstanceId, DefId = card.DefId });
             }
             yield return ShardsStep.AwaitDecision(request);
             foreach (int id in ctx.Answer.ChosenOptionIds)
@@ -445,7 +445,7 @@ namespace Shards.Engine
                     Max = 1
                 };
                 foreach (var card in matches)
-                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
                 yield return ShardsStep.AwaitDecision(request);
                 matches = new List<ShardsCard>();
                 foreach (int id in ctx.Answer.ChosenOptionIds)
@@ -493,7 +493,7 @@ namespace Shards.Engine
                     Max = 1
                 };
                 foreach (var (owner, champion) in targets)
-                    request.Options.Add(new DecisionOption(champion.InstanceId, champion.Def.Name + " (" + owner.Name + ")") { CardInstanceId = champion.InstanceId });
+                    request.Options.Add(new DecisionOption(champion.InstanceId, champion.Def.Name + " (" + owner.Name + ")") { CardInstanceId = champion.InstanceId, DefId = champion.DefId });
                 yield return ShardsStep.AwaitDecision(request);
                 targets = targets.FindAll(t => ctx.Answer.ChosenOptionIds.Contains(t.champion.InstanceId));
             }
@@ -540,7 +540,7 @@ namespace Shards.Engine
             foreach (int s in slots)
             {
                 var card = engine.State.CenterRow[s];
-                request.Options.Add(new DecisionOption(s, card.Def.Name + " (cost " + card.Def.Cost + ")") { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(s, card.Def.Name + " (cost " + card.Def.Cost + ")") { CardInstanceId = card.InstanceId, DefId = card.DefId });
             }
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
@@ -592,7 +592,7 @@ namespace Shards.Engine
             foreach (int s in slots)
             {
                 var card = engine.State.CenterRow[s];
-                request.Options.Add(new DecisionOption(s, card.Def.Name + " (cost " + card.Def.Cost + ")") { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(s, card.Def.Name + " (cost " + card.Def.Cost + ")") { CardInstanceId = card.InstanceId, DefId = card.DefId });
             }
             yield return ShardsStep.AwaitDecision(request);
             engine.RecruitFromRowFree(ctx.ControllerIndex, ctx.Answer.ChosenOptionIds[0], _toHand);
@@ -638,7 +638,7 @@ namespace Shards.Engine
                     Max = 1
                 };
                 foreach (var card in candidates)
-                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
                 yield return ShardsStep.AwaitDecision(request);
                 chosen = candidates.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
                 if (chosen == null) yield break;
@@ -714,7 +714,7 @@ namespace Shards.Engine
                     Max = count
                 };
                 foreach (var card in player.Hand)
-                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
                 yield return ShardsStep.AwaitDecision(request);
                 foreach (int id in ctx.Answer.ChosenOptionIds)
                 {

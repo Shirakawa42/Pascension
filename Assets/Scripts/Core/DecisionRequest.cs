@@ -20,6 +20,11 @@ namespace Pascension.Engine.Decisions
         public string Label;
         /// <summary>Set when the option refers to a card (for UI display).</summary>
         public int CardInstanceId = -1;
+        /// <summary>Card definition id, set alongside CardInstanceId so the UI can render
+        /// the actual card face even when the instance is in no client-visible zone
+        /// (center-deck reveals, market exile). Decisions only reach the deciding
+        /// player, so this leaks nothing. Null-omitted on the wire.</summary>
+        public string DefId;
         /// <summary>Set when the option is a target.</summary>
         public TargetRef? Target;
 

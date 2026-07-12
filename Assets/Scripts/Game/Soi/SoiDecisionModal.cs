@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Pascension.Engine.Decisions;
+using Pascension.Engine.Serialization;
 using Pascension.Game.View;
 using TMPro;
 using UnityEngine;
@@ -33,6 +34,7 @@ namespace Pascension.Game.Soi
         private readonly List<int> _picked = new List<int>();
         private readonly Dictionary<int, int> _splitCounts = new Dictionary<int, int>();
         private readonly List<(Button button, Image bg, int optionId)> _optionButtons = new();
+        private readonly List<(CardView card, int optionId)> _optionCards = new();
         private readonly List<TextMeshProUGUI> _splitLabels = new();
 
         public bool Visible => _root != null && _root.gameObject.activeSelf;
@@ -82,13 +84,17 @@ namespace Pascension.Game.Soi
             rect.gameObject.SetActive(false);
         }
 
-        public void Show(DecisionRequest request, Func<int, string> optionLabel, Action<List<int>> onConfirm)
+        /// <summary>Show a decision. `defIdResolver` maps a card instance id to its def id
+        /// so options that reference cards render as the real card face (null = no card).</summary>
+        public void Show(DecisionRequest request, Func<int, string> optionLabel, Action<List<int>> onConfirm,
+            Func<int, string> defIdResolver = null)
         {
             _request = request;
             _onConfirm = onConfirm;
             _picked.Clear();
             _splitCounts.Clear();
             _optionButtons.Clear();
+            _optionCards.Clear();
             _splitLabels.Clear();
             foreach (Transform child in _body)
                 Destroy(child.gameObject);
@@ -101,8 +107,17 @@ namespace Pascension.Game.Soi
             if (request.Context == "soi.split")
                 BuildSplit(request);
             else
-                BuildList(request, optionLabel);
+                BuildList(request, optionLabel, defIdResolver);
             RefreshConfirm();
+        }
+
+        /// <summary>The card def id an option renders as: explicit DefId, else resolved
+        /// from the option's card instance id via the caller's zone lookup.</summary>
+        private static string OptionDefId(DecisionOption option, Func<int, string> defIdResolver)
+        {
+            if (!string.IsNullOrEmpty(option.DefId)) return option.DefId;
+            if (option.CardInstanceId > 0 && defIdResolver != null) return defIdResolver(option.CardInstanceId);
+            return null;
         }
 
         public void Hide()
@@ -113,7 +128,61 @@ namespace Pascension.Game.Soi
 
         // ------------------------------------------------------------------ list mode
 
-        private void BuildList(DecisionRequest request, Func<int, string> optionLabel)
+        private void BuildList(DecisionRequest request, Func<int, string> optionLabel, Func<int, string> defIdResolver)
+        {
+            // Card mode when any option references a card: render real card faces in a
+            // scrollable grid (works for both games via CardView's external face resolver).
+            bool anyCard = false;
+            foreach (var option in request.Options)
+                if (OptionDefId(option, defIdResolver) != null) { anyCard = true; break; }
+
+            if (anyCard)
+                BuildCardGrid(request, optionLabel, defIdResolver);
+            else
+                BuildTextList(request, optionLabel);
+        }
+
+        private void BuildCardGrid(DecisionRequest request, Func<int, string> optionLabel, Func<int, string> defIdResolver)
+        {
+            var scroll = UiFactory.CreateScrollView(_theme, "Options", _body, out var content);
+            UiFactory.Stretch((RectTransform)scroll.transform);
+
+            var grid = content.gameObject.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(140f, 198f);
+            grid.spacing = new Vector2(12f, 12f);
+            grid.padding = new RectOffset(10, 10, 10, 10);
+            grid.childAlignment = TextAnchor.UpperCenter;
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 4;
+            var fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            foreach (var option in request.Options)
+            {
+                int id = option.Id;
+                var cell = UiFactory.CreateRect("Opt_" + id, content);
+                string defId = OptionDefId(option, defIdResolver);
+                if (defId != null)
+                {
+                    var card = CardViewFactory.Create(cell, _theme, 0.6f);
+                    card.Bind(new CardSnap { DefId = defId, InstanceId = option.CardInstanceId, EffectiveCost = -1 });
+                    card.Clicked += _ => TogglePick(id);
+                    _optionCards.Add((card, id));
+                }
+                else
+                {
+                    // Non-card option in a mixed list (e.g. "Leave it on top") — text button.
+                    string label = optionLabel != null ? optionLabel(id) : option.Label;
+                    var button = UiFactory.CreateButton(_theme, "OptTxt_" + id, cell, label, 13f);
+                    UiFactory.Stretch((RectTransform)button.transform);
+                    var bg = button.GetComponent<Image>();
+                    button.onClick.AddListener(() => TogglePick(id));
+                    _optionButtons.Add((button, bg, id));
+                }
+            }
+        }
+
+        private void BuildTextList(DecisionRequest request, Func<int, string> optionLabel)
         {
             var scroll = UiFactory.CreateScrollView(_theme, "Options", _body, out var content);
             UiFactory.Stretch((RectTransform)scroll.transform);
@@ -138,12 +207,12 @@ namespace Pascension.Game.Soi
                 le.preferredHeight = 44f;
                 int id = option.Id;
                 var bg = button.GetComponent<Image>();
-                button.onClick.AddListener(() => ToggleOption(id, bg));
+                button.onClick.AddListener(() => TogglePick(id));
                 _optionButtons.Add((button, bg, id));
             }
         }
 
-        private void ToggleOption(int id, Image bg)
+        private void TogglePick(int id)
         {
             if (_picked.Contains(id))
             {
@@ -161,6 +230,8 @@ namespace Pascension.Game.Soi
                 image.color = _picked.Contains(optionId)
                     ? new Color(0.5f, 0.42f, 0.2f, 1f)
                     : UiPalette.PanelLight;
+            foreach (var (card, optionId) in _optionCards)
+                card.SetGlow(_picked.Contains(optionId), UiPalette.Gold);
             RefreshConfirm();
         }
 

@@ -30,6 +30,9 @@ namespace Shards.Engine
         private Queue<(int defender, int amount)> _pendingDefenses;
         private List<int> _splitTargets;
         private List<int> _splitAmounts;
+        /// <summary>Non-null only during the initial center-row fill: monsters drawn then
+        /// are held here (not revealed) and shuffled back into the deck afterward.</summary>
+        private List<ShardsCard> _suppressedMonsters;
 
         public ShardsEngine(ShardsConfig config)
         {
@@ -131,10 +134,24 @@ namespace Shards.Engine
                 State.Players.Add(player);
             }
 
-            // Center row.
+            // Center row. Monsters revealed during this INITIAL fill would attack on
+            // turn 1 before anyone has acted, so (design decision) hold any drawn
+            // Ingeminex aside and reshuffle them back into the center deck once the row
+            // is full — the opening board is always monster-free.
             State.CenterRow = new ShardsCard[config.Rules.CenterRowSize];
+            _suppressedMonsters = new List<ShardsCard>();
             for (int s = 0; s < State.CenterRow.Length; s++)
                 RefillSlot(s);
+            if (_suppressedMonsters.Count > 0)
+            {
+                foreach (var monster in _suppressedMonsters)
+                {
+                    monster.Zone = ShardsZone.CenterDeck;
+                    State.CenterDeck.Add(monster);
+                }
+                State.Rng.Shuffle(State.CenterDeck);
+            }
+            _suppressedMonsters = null;
 
             Emit(new ShardsGameStartedEvent { PlayerCount = config.Players.Count, Dlc = (int)config.Dlc });
 
@@ -373,7 +390,7 @@ namespace Shards.Engine
                 Min = 0,
                 Max = 1
             };
-            request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+            request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
             var player = ctx.Controller;
@@ -596,7 +613,7 @@ namespace Shards.Engine
                 Min = 0,
                 Max = 1
             };
-            request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+            request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
             if (!player.Discard.Remove(card)) yield break;
@@ -728,9 +745,7 @@ namespace Shards.Engine
                 foreach (var (championOwner, champion) in championTargets)
                     request.Options.Add(new DecisionOption(ChampionSplitBase + champion.InstanceId,
                         champion.Def.Name + " (" + championOwner.Name + ")")
-                    {
-                        CardInstanceId = champion.InstanceId
-                    });
+                    { CardInstanceId = champion.InstanceId, DefId = champion.DefId });
                 // Defaults pad with DISTINCT options only — pre-fill a full assignment
                 // (everything on the first opponent) so timeouts/bot-takeovers stay legal.
                 if (opponents.Count > 0)
@@ -849,9 +864,7 @@ namespace Shards.Engine
                 foreach (var shield in handShields)
                 {
                     var option = new DecisionOption(shield.InstanceId, shield.Def.Name + " (shield " + ShieldValue(defender, shield) + ")")
-                    {
-                        CardInstanceId = shield.InstanceId
-                    };
+                    { CardInstanceId = shield.InstanceId, DefId = shield.DefId };
                     request.Options.Add(option);
                 }
 
@@ -981,7 +994,7 @@ namespace Shards.Engine
                 Max = fastPlays.Count
             };
             foreach (var card in fastPlays)
-                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             foreach (int id in ctx.Answer.ChosenOptionIds)
             {
@@ -1544,6 +1557,13 @@ namespace Shards.Engine
 
                 if (card.Def.IsMonster)
                 {
+                    if (_suppressedMonsters != null)
+                    {
+                        // Initial setup: don't reveal — hold to reshuffle afterward so
+                        // no Ingeminex attacks on turn 1 (see the fill site in Setup).
+                        _suppressedMonsters.Add(card);
+                        continue;
+                    }
                     // Ingeminex never enter the row: they go face up to their own space
                     // and the NEXT center-deck card replaces them for the refill. Their
                     // attack fires once, at the end of the turn they were revealed on.

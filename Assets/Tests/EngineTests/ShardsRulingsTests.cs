@@ -369,6 +369,34 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void Setup_NoIngeminexInOpeningRow_MonstersReshuffledBack()
+        {
+            // A monster revealed during the INITIAL row fill would attack on turn 1
+            // before anyone acts. Setup must hold any drawn Ingeminex out of the row and
+            // shuffle them back into the center deck: none active, none in the row, none
+            // lost. (RotF keeps Corruption in the deck so the count is exact.)
+            var dlc = ShardsDlc.IntoTheHorizon | ShardsDlc.RelicsOfTheFuture;
+            int expectedMonsters = 0;
+            foreach (var def in ShardsCardDatabase.All)
+                if (def.IsMonster) expectedMonsters += def.Quantity;
+            Assert.Greater(expectedMonsters, 0, "ItH must contribute Ingeminex");
+
+            for (ulong seed = 1; seed <= 40; seed++)
+            {
+                var st = NewGame(dlc, seed: seed).State;
+                Assert.AreEqual(0, st.ActiveMonsters.Count, "seed " + seed + ": no active Ingeminex at setup");
+                Assert.AreEqual(0, st.PendingMonsterAttacks.Count, "seed " + seed + ": no pending monster attacks at setup");
+                foreach (var slot in st.CenterRow)
+                    Assert.IsFalse(slot != null && slot.Def.IsMonster, "seed " + seed + ": no Ingeminex in the opening row");
+
+                int inDeck = 0;
+                foreach (var c in st.CenterDeck) if (c.Def.IsMonster) inDeck++;
+                Assert.AreEqual(expectedMonsters, inDeck,
+                    "seed " + seed + ": every Ingeminex conserved in the center deck");
+            }
+        }
+
+        [Test]
         public void Destiny_TakeAtMastery5_OncePerGame_RowNeverRefills()
         {
             var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 31);

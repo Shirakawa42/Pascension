@@ -95,7 +95,7 @@ namespace Shards.Content
                 Max = 1
             };
             foreach (var card in candidates)
-                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
             var chosen = player.Discard.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
@@ -138,7 +138,7 @@ namespace Shards.Content
             foreach (var card in candidates)
             {
                 string zone = card.Zone == ShardsZone.Hand ? "hand" : "discard";
-                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name + " (" + zone + ")") { CardInstanceId = card.InstanceId });
+                request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name + " (" + zone + ")") { CardInstanceId = card.InstanceId, DefId = card.DefId });
             }
             yield return ShardsStep.AwaitDecision(request);
 

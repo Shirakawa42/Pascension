@@ -291,7 +291,11 @@ namespace Pascension.Content.Effects
                 };
                 for (int i = 0; i < exiled.Count; i++)
                 {
-                    order.Options.Add(new DecisionOption(i, exiled[i].Def.Name) { CardInstanceId = exiled[i].InstanceId });
+                    order.Options.Add(new DecisionOption(i, exiled[i].Def.Name)
+                    {
+                        CardInstanceId = exiled[i].InstanceId,
+                        DefId = exiled[i].DefId // exiled to the market pile — not in any snapshot zone
+                    });
                     order.DefaultOptionIds.Add(i);
                 }
 

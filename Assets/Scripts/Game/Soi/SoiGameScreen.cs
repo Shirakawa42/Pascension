@@ -51,6 +51,7 @@ namespace Pascension.Game.Soi
         private TextMeshProUGUI _statHealth, _statMastery, _statGems, _statPower;
         private RectTransform _statHealthRect, _statMasteryRect, _statGemsRect, _statPowerRect;
         private Button _endTurn, _relics, _focusButton;
+        private Color _relicsBaseColor;
         private PlayHistoryBar _history;
         private RectTransform _buyPopup;
         private int _buyPopupSlot = -1;
@@ -206,15 +207,16 @@ namespace Pascension.Game.Soi
             _banishPile.Clicked += () => ShowPile("Banished (removed from the game)", _snap != null ? ZoneSnaps(_snap.Banished) : null);
 
             // END TURN sits at the very bottom, below the discard pile (clear of its
-            // title text); RECRUIT RELIC above the banish pile on the right edge.
+            // title text); RECRUIT RELIC directly to its left, pulsing once usable.
             _endTurn = UiFactory.CreateButton(Theme, "EndTurn", root, "END TURN", 21f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0f), new Vector2(-108f, 62f), new Vector2(186f, 58f));
             _endTurn.onClick.AddListener(() => Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex }));
             _relics = UiFactory.CreateButton(Theme, "Relics", root, "RECRUIT RELIC", 14f);
-            UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0f), new Vector2(-108f, 510f), new Vector2(186f, 48f));
+            UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0f), new Vector2(-306f, 62f), new Vector2(186f, 58f));
             _relics.onClick.AddListener(OnRelicsClicked);
             _relics.gameObject.SetActive(false);
+            _relicsBaseColor = _relics.image.color;
 
             // Hand — the real drag-to-play HandView, hugging the bottom edge.
             _handRect = UiFactory.CreateRect("Hand", root);
@@ -331,6 +333,54 @@ namespace Pascension.Game.Soi
             var row = UiFactory.CreateRect("Row_" + label, root);
             UiFactory.Place(row, new Vector2(0.5f, 0.5f), pos, size);
             return row;
+        }
+
+        /// <summary>Lay out `count` left-anchored (pivot 0,0.5) cards centered inside a
+        /// row of the given width. Cards keep `preferredStep` spacing until the run would
+        /// overflow, then the step compresses (cards overlap) so nothing is dropped.
+        /// Returns the first card's left-edge x and the per-card step.</summary>
+        private static void CenterRun(float width, int count, out float startX, out float step,
+            float preferredStep = 104f)
+        {
+            step = preferredStep;
+            if (count <= 0) { startX = 0f; return; }
+            float cardWidth = preferredStep - 8f; // approx card box (step minus the gap)
+            float runWidth = (count - 1) * step + cardWidth;
+            if (runWidth > width && count > 1)
+            {
+                step = (width - cardWidth) / (count - 1); // compress to fit
+                runWidth = width;
+            }
+            startX = (width - runWidth) / 2f;
+        }
+
+        private Coroutine _relicPulse;
+
+        /// <summary>Pulse the RECRUIT RELIC button gold while it is usable (Mastery 10,
+        /// not yet recruited) so the free once-per-game pick is impossible to miss.</summary>
+        private void SetRelicGlow(bool on)
+        {
+            if (on)
+            {
+                if (_relicPulse == null && isActiveAndEnabled)
+                    _relicPulse = StartCoroutine(RelicPulseLoop());
+            }
+            else if (_relicPulse != null)
+            {
+                StopCoroutine(_relicPulse);
+                _relicPulse = null;
+                if (_relics != null) _relics.image.color = _relicsBaseColor;
+            }
+        }
+
+        private IEnumerator RelicPulseLoop()
+        {
+            while (true)
+            {
+                float t = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4.5f);
+                _relics.image.color = Color.Lerp(_relicsBaseColor, UiPalette.Gold, t);
+                yield return null;
+            }
         }
 
         // ------------------------------------------------------------------ session plumbing
@@ -497,12 +547,16 @@ namespace Pascension.Game.Soi
                 Max = 1
             };
             foreach (var relic in me.SetAside)
-                request.Options.Add(new DecisionOption(relic.InstanceId, DefName(relic.DefId)));
+                request.Options.Add(new DecisionOption(relic.InstanceId, DefName(relic.DefId))
+                {
+                    CardInstanceId = relic.InstanceId,
+                    DefId = relic.DefId
+                });
             _modal.Show(request, id => OptionLabel(request, id), chosen =>
             {
                 if (chosen.Count > 0)
                     Submit(new ShardsRecruitRelicAction { PlayerIndex = MyIndex, CardInstanceId = chosen[0] });
-            });
+            }, FindDefId);
         }
 
         private void ShowDecision(DecisionRequest request)
@@ -512,7 +566,28 @@ namespace Pascension.Game.Soi
                 var answer = new DecisionAnswer { DecisionId = request.Id };
                 answer.ChosenOptionIds.AddRange(chosen);
                 Submit(new SubmitDecisionAction { PlayerIndex = MyIndex, Answer = answer });
-            });
+            }, FindDefId);
+        }
+
+        /// <summary>Resolve a card instance to its def id through every zone the viewer
+        /// can see — fallback for decision options that lack an explicit DefId.</summary>
+        private string FindDefId(int instanceId)
+        {
+            if (_snap == null || instanceId <= 0) return null;
+            foreach (var c in _snap.CenterRow) if (c != null && c.InstanceId == instanceId) return c.DefId;
+            foreach (var c in _snap.DestinyRow) if (c.InstanceId == instanceId) return c.DefId;
+            foreach (var c in _snap.ActiveMonsters) if (c.InstanceId == instanceId) return c.DefId;
+            foreach (var c in _snap.Banished) if (c.InstanceId == instanceId) return c.DefId;
+            foreach (var p in _snap.Players)
+            {
+                if (p.Hand != null) foreach (var c in p.Hand) if (c.InstanceId == instanceId) return c.DefId;
+                if (p.SetAside != null) foreach (var c in p.SetAside) if (c.InstanceId == instanceId) return c.DefId;
+                foreach (var c in p.Discard) if (c.InstanceId == instanceId) return c.DefId;
+                foreach (var c in p.PlayZone) if (c.InstanceId == instanceId) return c.DefId;
+                foreach (var c in p.Champions) if (c.InstanceId == instanceId) return c.DefId;
+                foreach (var c in p.Destinies) if (c.InstanceId == instanceId) return c.DefId;
+            }
+            return null;
         }
 
         private static string OptionLabel(DecisionRequest request, int id)
@@ -708,16 +783,17 @@ namespace Pascension.Game.Soi
             foreach (Transform child in _monsterRow) Destroy(child.gameObject);
 
             bool eligible = MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5;
-            float x = 0f;
+            CenterRun(760f, _snap.DestinyRow.Count, out float x, out float xStep, 96f);
             foreach (var destiny in _snap.DestinyRow)
             {
                 var view = CardViewFactory.Create(_destinyRow, Theme, 0.4f);
                 view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0.5f);
                 view.Rect.pivot = new Vector2(0f, 0.5f);
                 view.Rect.anchoredPosition = new Vector2(x, 0f);
-                x += 96f;
+                x += xStep;
                 view.BindDef(destiny.DefId, destiny.InstanceId);
                 view.SetGreyed(!eligible);
+                view.SetGlow(eligible, UiPalette.HealthyGreen); // takeable right now
                 view.Clicked += w =>
                 {
                     if (MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5)
@@ -728,14 +804,14 @@ namespace Pascension.Game.Soi
                 _boardViews[destiny.InstanceId] = view;
             }
 
-            x = 0f;
+            CenterRun(520f, _snap.ActiveMonsters.Count, out x, out xStep, 108f);
             foreach (var monster in _snap.ActiveMonsters)
             {
                 var view = CardViewFactory.Create(_monsterRow, Theme, 0.46f);
                 view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0.5f);
                 view.Rect.pivot = new Vector2(0f, 0.5f);
                 view.Rect.anchoredPosition = new Vector2(x, 0f);
-                x += 108f;
+                x += xStep;
                 view.BindDef(monster.DefId, monster.InstanceId);
                 view.SetMarkedDamage(monster.DamageThisTurn);
                 view.Clicked += w => Submit(new ShardsAttackMonsterAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
@@ -757,15 +833,16 @@ namespace Pascension.Game.Soi
 
             _relics.gameObject.SetActive(me.SetAside != null && me.SetAside.Count > 0 && !me.RelicRecruited);
 
-            float x = 0f;
+            // Cards sit centered under the row label; on overflow the spacing
+            // compresses (cards overlap) instead of dropping cards.
+            CenterRun(620f, me.Champions.Count, out float x, out float xStep);
             foreach (var champion in me.Champions)
             {
-                if (x > 560f) break;
                 var view = CardViewFactory.Create(_championRow, Theme, 0.44f);
                 view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0.5f);
                 view.Rect.pivot = new Vector2(0f, 0.5f);
                 view.Rect.anchoredPosition = new Vector2(x, 0f);
-                x += 104f;
+                x += xStep;
                 view.BindDef(champion.DefId, champion.InstanceId);
                 view.SetTapped(champion.Exhausted);
                 view.SetMarkedDamage(champion.DamageThisTurn);
@@ -777,15 +854,14 @@ namespace Pascension.Game.Soi
                 _boardViews[champion.InstanceId] = view;
             }
 
-            x = 0f;
+            CenterRun(560f, me.Destinies.Count, out x, out xStep);
             foreach (var destiny in me.Destinies)
             {
-                if (x > 480f) break;
                 var view = CardViewFactory.Create(_ownDestinyRow, Theme, 0.44f);
                 view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0.5f);
                 view.Rect.pivot = new Vector2(0f, 0.5f);
                 view.Rect.anchoredPosition = new Vector2(x, 0f);
-                x += 104f;
+                x += xStep;
                 view.BindDef(destiny.DefId, destiny.InstanceId);
                 view.SetTapped(destiny.Exhausted);
                 view.Clicked += w =>
@@ -803,6 +879,7 @@ namespace Pascension.Game.Soi
             var me = Me;
             _endTurn.interactable = canAct;
             _relics.interactable = canAct && me != null && me.Mastery >= 10;
+            SetRelicGlow(_relics.gameObject.activeSelf && _relics.interactable);
             _focusButton.interactable = canAct && me != null && me.Gems >= 1 &&
                                         !me.FocusedThisTurn && !me.CharacterExhausted;
             _statusLine.text = _gameOverShown || _pending == null ? "" :
