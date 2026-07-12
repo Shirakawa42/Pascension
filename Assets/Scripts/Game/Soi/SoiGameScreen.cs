@@ -51,6 +51,7 @@ namespace Pascension.Game.Soi
         private TextMeshProUGUI _statHealth, _statMastery, _statGems, _statPower;
         private RectTransform _statHealthRect, _statMasteryRect, _statGemsRect, _statPowerRect;
         private Button _endTurn, _relics, _focusButton;
+        private TextMeshProUGUI _endTurnLabel;
         private Color _relicsBaseColor;
         private PlayHistoryBar _history;
         private RectTransform _buyPopup;
@@ -212,6 +213,7 @@ namespace Pascension.Game.Soi
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0f), new Vector2(-108f, 62f), new Vector2(186f, 58f));
             _endTurn.onClick.AddListener(() => Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex }));
+            _endTurnLabel = UiFactory.ButtonLabel(_endTurn);
             _relics = UiFactory.CreateButton(Theme, "Relics", root, "RECRUIT RELIC", 14f);
             UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0f), new Vector2(-306f, 62f), new Vector2(186f, 58f));
             _relics.onClick.AddListener(OnRelicsClicked);
@@ -617,6 +619,8 @@ namespace Pascension.Game.Soi
             _discardPile.Render(me.Discard.Count, TopSnap(me.Discard));
             _banishPile.Render(_snap.Banished.Count, TopSnap(_snap.Banished));
             _centerDeckPile.Render(_snap.CenterDeckCount, null);
+
+            RefreshControls(); // live turn/button gating (also runs on drain via RefreshInteractivity)
         }
 
         // ------------------------------------------------------------------ full refresh (on drain)
@@ -875,17 +879,35 @@ namespace Pascension.Game.Soi
 
         private void RefreshInteractivity()
         {
-            bool canAct = MyPriority && !_gameOverShown;
+            RefreshControls();
             var me = Me;
+            if (_snap != null && me != null)
+                _hand.Render(HandSnaps(me), PlayableIds(me), _pendingReveal.Count > 0 ? _pendingReveal : null);
+        }
+
+        /// <summary>Button/status gating driven by the ALWAYS-FRESH snapshot (turn owner),
+        /// not the client's <c>_pending</c> field which goes stale during opponents' turns
+        /// (no input is routed to us then). Called live on every snapshot so the END TURN
+        /// button disables and reads "NOT YOUR TURN" the instant the turn passes, and
+        /// re-enables the instant it returns — not only when the animation queue drains.</summary>
+        private void RefreshControls()
+        {
+            var me = Me;
+            bool over = _gameOverShown || (_snap != null && _snap.GameOver);
+            bool myTurn = _snap != null && _snap.TurnPlayerIndex == MyIndex;
+            bool canAct = myTurn && MyPriority && !over;
+
             _endTurn.interactable = canAct;
+            _endTurnLabel.text = myTurn || over ? "END TURN" : "NOT YOUR TURN";
             _relics.interactable = canAct && me != null && me.Mastery >= 10;
             SetRelicGlow(_relics.gameObject.activeSelf && _relics.interactable);
             _focusButton.interactable = canAct && me != null && me.Gems >= 1 &&
                                         !me.FocusedThisTurn && !me.CharacterExhausted;
-            _statusLine.text = _gameOverShown || _pending == null ? "" :
-                _pending.PlayerIndex == MyIndex ? "" : "Waiting for " + NameOf(_pending.PlayerIndex) + "…";
-            if (_snap != null && me != null)
-                _hand.Render(HandSnaps(me), PlayableIds(me), _pendingReveal.Count > 0 ? _pendingReveal : null);
+            // Snapshot's Pending is fresh + unredacted for all viewers, so this covers
+            // both an opponent's whole turn and an opponent's mid-my-turn decision
+            // (e.g. shield reveals when I attack).
+            bool waitingOther = _snap != null && _snap.Pending != null && _snap.Pending.PlayerIndex != MyIndex;
+            _statusLine.text = over || !waitingOther ? "" : "Waiting for " + NameOf(_snap.Pending.PlayerIndex) + "…";
         }
 
         private void RenderGameOver()

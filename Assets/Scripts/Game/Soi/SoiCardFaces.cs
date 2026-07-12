@@ -17,6 +17,13 @@ namespace Pascension.Game.Soi
 
         public static void Install()
         {
+            // The card database must be registered wherever CardViews resolve SoI faces.
+            // On a networked CLIENT this is the ONLY place it happens: the client never
+            // builds an engine (SoiBootstrap returns early on the session path), and the
+            // engine constructor is what normally registers the DB. Without this the
+            // client renders blank cards AND cannot buy (OnRowSlotClicked's DB lookup
+            // fails, so the click is dropped). Idempotent.
+            Shards.Content.ShardsContentRegistry.EnsureRegistered();
             CardView.ExternalFaceResolver = Resolve;
         }
 
