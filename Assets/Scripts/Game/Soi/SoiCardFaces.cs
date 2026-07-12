@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Pascension.Game.View;
 using Shards.Engine;
 using UnityEngine;
@@ -35,7 +36,7 @@ namespace Pascension.Game.Soi
             {
                 Name = def.Name,
                 TypeLine = TypeLine(def),
-                RulesText = def.RulesText,
+                RulesText = Iconize(def.RulesText),
                 ArtId = def.Id,
                 FrameColor = FactionColor(def.Faction),
                 ShowCost = showCost,
@@ -52,7 +53,7 @@ namespace Pascension.Game.Soi
             {
                 Name = name,
                 TypeLine = "Character",
-                RulesText = "Focus — exhaust + pay 1 gem: gain 1 mastery (once per turn).",
+                RulesText = Iconize("Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn)."),
                 ArtId = "soichar_" + characterId,
                 FrameColor = new Color(0.5f, 0.42f, 0.2f, 1f),
                 ShowCost = false,
@@ -75,6 +76,33 @@ namespace Pascension.Game.Soi
             if (def.Shield > 0 || def.DynamicShield != null)
                 line += "  ·  Shield " + (def.DynamicShield != null ? "M" : def.Shield.ToString());
             return line;
+        }
+
+        /// <summary>Display-level rich-text pass applied to every SoI rules text:
+        /// - the resource words become inline icons (health/mastery/gems/power),
+        /// - the exhaust keyword becomes the tap-arrow icon,
+        /// - mastery thresholds ("M10: …") start a new line opened by a stylized gold
+        ///   pill holding the mastery icon + number (the printed-card look, no "M").
+        /// Card DEFINITIONS keep plain words — this is presentation only.</summary>
+        public static string Iconize(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            // Threshold pills first (they consume the "M10:" tokens).
+            text = Regex.Replace(text, @"\bM(\d+)\s*[:]\s*",
+                "\n<mark=#3A2F1BB4 padding=\"14,14,6,6\"><color=#E4C05A><sprite name=\"soi_mastery\"><b>$1</b></color></mark>  ");
+
+            // Tap icon for the exhaust keyword.
+            text = Regex.Replace(text, @"\bExhaust\s*:\s*", "<sprite name=\"soi_tap\"> : ", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\bexhausts?\b", "<sprite name=\"soi_tap\">", RegexOptions.IgnoreCase);
+
+            // Resource words -> inline icons.
+            text = Regex.Replace(text, @"\bgems?\b", "<sprite name=\"soi_gem\">", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\bpower\b", "<sprite name=\"soi_power\">", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\bhealth\b", "<sprite name=\"soi_health\">", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\bmastery\b", "<sprite name=\"soi_mastery\">", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"\bhp\b", "<sprite name=\"soi_health\">", RegexOptions.IgnoreCase);
+            return text;
         }
 
         public static Color FactionColor(ShardsFaction faction) => faction switch

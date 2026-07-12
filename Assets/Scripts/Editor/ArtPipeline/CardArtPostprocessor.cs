@@ -14,6 +14,10 @@ namespace Pascension.Editor.ArtPipeline
             string path = assetPath.Replace('\\', '/');
             if (!path.StartsWith("Assets/Art/"))
                 return;
+            // IconAssetTools manages its own imports (the stitched icon atlas must keep
+            // its full resolution or every TMP glyph rect points at the wrong texels).
+            if (path.StartsWith("Assets/Art/Icons/"))
+                return;
 
             var importer = (TextureImporter)assetImporter;
             importer.textureType = TextureImporterType.Sprite;

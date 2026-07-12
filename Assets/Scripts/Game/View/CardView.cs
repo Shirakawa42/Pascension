@@ -73,6 +73,36 @@ namespace Pascension.Game.View
         /// <summary>Set by non-Pascension tables (SoiGameScreen). Return null for unknown ids.</summary>
         public static Func<string, ExternalFace?> ExternalFaceResolver;
 
+        // Rules-box defaults captured on first bind so external faces (which use a fixed
+        // font size and grow the box instead) can be fully undone when a pooled view is
+        // later re-bound to a Pascension card.
+        private bool _rulesDefaultsCaptured;
+        private float _rulesBoxDefaultTop;
+        private bool _rulesAutoSizeDefault;
+        private float _rulesFontMinDefault, _rulesFontMaxDefault, _rulesFontSizeDefault;
+
+        private void CaptureRulesDefaults()
+        {
+            if (_rulesDefaultsCaptured || RulesBox == null || RulesText == null) return;
+            _rulesDefaultsCaptured = true;
+            _rulesBoxDefaultTop = RulesBox.rectTransform.offsetMax.y;
+            _rulesAutoSizeDefault = RulesText.enableAutoSizing;
+            _rulesFontMinDefault = RulesText.fontSizeMin;
+            _rulesFontMaxDefault = RulesText.fontSizeMax;
+            _rulesFontSizeDefault = RulesText.fontSize;
+        }
+
+        private void RestoreRulesDefaults()
+        {
+            if (!_rulesDefaultsCaptured) return;
+            RulesText.enableAutoSizing = _rulesAutoSizeDefault;
+            RulesText.fontSizeMin = _rulesFontMinDefault;
+            RulesText.fontSizeMax = _rulesFontMaxDefault;
+            RulesText.fontSize = _rulesFontSizeDefault;
+            var offsetMax = RulesBox.rectTransform.offsetMax;
+            RulesBox.rectTransform.offsetMax = new Vector2(offsetMax.x, _rulesBoxDefaultTop);
+        }
+
         public RectTransform Rect => (RectTransform)transform;
 
         // ------------------------------------------------------------------ binding
@@ -134,6 +164,7 @@ namespace Pascension.Game.View
             if (!string.IsNullOrEmpty(defId))
                 CardDatabase.TryGet(defId, out def);
 
+            CaptureRulesDefaults();
             if (def == null)
             {
                 // Not a Pascension card — another game's database may know this id.
@@ -145,6 +176,7 @@ namespace Pascension.Game.View
                 }
 
                 // Hidden / unknown card: card back.
+                RestoreRulesDefaults();
                 NameText.text = "";
                 CostGroup.SetActive(false);
                 HpGroup.SetActive(false);
@@ -156,6 +188,7 @@ namespace Pascension.Game.View
                 return;
             }
 
+            RestoreRulesDefaults();
             var tierColor = UiPalette.TierColor(def.Tier);
             Frame.color = tierColor;
             NameText.text = def.Name;
@@ -188,7 +221,19 @@ namespace Pascension.Game.View
             Frame.color = face.FrameColor;
             NameText.text = face.Name;
             TypeText.text = face.TypeLine;
+
+            // Fixed, readable font size — the rules box GROWS for long texts instead of
+            // shrinking the text (Shards cards can be wordy).
+            RulesText.enableAutoSizing = false;
+            RulesText.fontSize = 13.5f;
+            if (Theme != null && Theme.Icons != null)
+                RulesText.spriteAsset = Theme.Icons;
             RulesText.text = face.RulesText;
+            float textWidth = 210f - 16f; // frame-relative rules width minus padding
+            float preferred = RulesText.GetPreferredValues(face.RulesText ?? "", textWidth, 0f).y;
+            float boxTop = Mathf.Max(_rulesDefaultsCaptured ? _rulesBoxDefaultTop : 102f, preferred + 34f);
+            var offsetMax = RulesBox.rectTransform.offsetMax;
+            RulesBox.rectTransform.offsetMax = new Vector2(offsetMax.x, boxTop);
             CostGroup.SetActive(face.ShowCost);
             if (face.ShowCost) CostText.text = face.CostText;
             HpGroup.SetActive(face.ShowBadge);

@@ -49,7 +49,10 @@ namespace Pascension.Game.Soi
         private TextMeshProUGUI _hudTurn, _hudCounts, _statusLine;
         private TextMeshProUGUI _statHealth, _statMastery, _statGems, _statPower;
         private RectTransform _statHealthRect, _statMasteryRect, _statGemsRect, _statPowerRect;
-        private Button _endTurn, _relics;
+        private Button _endTurn, _relics, _focusButton;
+        private PlayHistoryBar _history;
+        private RectTransform _buyPopup;
+        private int _buyPopupSlot = -1;
         private RectTransform _opponentStrip, _centerRow, _destinyRow, _monsterRow;
         private RectTransform _championRow, _ownDestinyRow;
         private CardView _portrait;
@@ -123,10 +126,18 @@ namespace Pascension.Game.Soi
                 TextAlignmentOptions.Right, FontStyles.Italic);
             UiFactory.Place(_statusLine.rectTransform, new Vector2(1f, 1f), new Vector2(-24f, -80f), new Vector2(620f, 24f));
 
-            // Opponents (top-left strip).
+            // Opponents — centered along the top edge.
             _opponentStrip = UiFactory.CreateRect("Opponents", root);
-            UiFactory.Place(_opponentStrip, new Vector2(0f, 1f), new Vector2(14f, -10f), new Vector2(1160f, 170f));
-            _opponentStrip.pivot = new Vector2(0f, 1f);
+            UiFactory.Place(_opponentStrip, new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(1180f, 170f));
+            _opponentStrip.pivot = new Vector2(0.5f, 1f);
+
+            // Play history (top-left, like Pascension's RECENT bar).
+            var historyRect = UiFactory.CreateRect("History", root);
+            UiFactory.Place(historyRect, new Vector2(0f, 1f), new Vector2(10f, -8f), new Vector2(100f, 620f));
+            historyRect.pivot = new Vector2(0f, 1f);
+            _history = historyRect.gameObject.AddComponent<PlayHistoryBar>();
+            _history.Container = historyRect;
+            _history.Init(Theme);
 
             // Destiny row + Ingeminex space (between opponents and the center row).
             _destinyRow = UiFactory.CreateRect("DestinyRow", root);
@@ -154,25 +165,35 @@ namespace Pascension.Game.Soi
                 _slots[s] = slot;
             }
 
-            // Character portrait (left, mid) — CLICK TO FOCUS; taps like any ability.
-            _portrait = CardViewFactory.Create(root, Theme, 0.55f);
-            _portrait.Rect.anchorMin = _portrait.Rect.anchorMax = new Vector2(0.5f, 0.5f);
-            _portrait.Rect.anchoredPosition = new Vector2(-820f, 70f);
-            _portrait.Clicked += _ => OnFocusClicked();
+            // Character portrait — display only (Focus moved to the "+" mastery button),
+            // sitting just below the draw pile.
+            _portrait = CardViewFactory.Create(root, Theme, 0.5f);
+            _portrait.Rect.anchorMin = _portrait.Rect.anchorMax = new Vector2(0f, 0f);
+            _portrait.Rect.anchoredPosition = new Vector2(80f, 112f);
+            _portrait.SetRaycastable(false);
+            _portrait.Group.blocksRaycasts = false;
 
             // My champions + owned destinies (above the hand band).
             _championRow = LabeledRow(root, "MY CHAMPIONS", new Vector2(-330f, -122f), new Vector2(620f, 140f));
             _ownDestinyRow = LabeledRow(root, "MY DESTINIES", new Vector2(330f, -122f), new Vector2(560f, 140f));
 
-            // Stats (left edge column).
-            _statHealth = Stat(root, "HEALTH", new Vector2(-690f, -116f), UiPalette.HealthyGreen, out _statHealthRect);
-            _statMastery = Stat(root, "MASTERY", new Vector2(-690f, -178f), UiPalette.Gold, out _statMasteryRect);
-            _statGems = Stat(root, "GEMS", new Vector2(-690f, -240f), new Color(0.45f, 0.68f, 0.95f), out _statGemsRect);
-            _statPower = Stat(root, "POWER", new Vector2(-690f, -302f), UiPalette.WoundedRed, out _statPowerRect);
+            // Stats (left edge column) — icons instead of words.
+            _statHealth = Stat(root, "soi_health", new Vector2(-690f, -116f), UiPalette.HealthyGreen, out _statHealthRect);
+            _statMastery = Stat(root, "soi_mastery", new Vector2(-690f, -178f), UiPalette.Gold, out _statMasteryRect);
+            _statGems = Stat(root, "soi_gem", new Vector2(-690f, -240f), new Color(0.45f, 0.68f, 0.95f), out _statGemsRect);
+            _statPower = Stat(root, "soi_power", new Vector2(-690f, -302f), UiPalette.WoundedRed, out _statPowerRect);
 
-            // StS corner piles: draw + played left, discard + banish right.
-            _drawPile = CreatePile("DrawPile", "Draw", faceDown: true, new Vector2(0f, 0f), new Vector2(80f, 208f));
-            _playedPile = CreatePile("PlayedPile", "Played", faceDown: false, new Vector2(0f, 0f), new Vector2(80f, 396f));
+            // Focus lives on a "+" button beside the mastery counter (tap ability).
+            _focusButton = UiFactory.CreateButton(Theme, "FocusPlus", root, "+", 26f,
+                UiPalette.Gold, UiPalette.Background);
+            UiFactory.Place((RectTransform)_focusButton.transform, new Vector2(0.5f, 0.5f),
+                new Vector2(-690f + 112f, -178f), new Vector2(40f, 40f));
+            _focusButton.onClick.AddListener(OnFocusClicked);
+
+            // StS corner piles: played over draw on the left (portrait sits below the
+            // draw pile), banish over discard on the right.
+            _drawPile = CreatePile("DrawPile", "Draw", faceDown: true, new Vector2(0f, 0f), new Vector2(80f, 300f));
+            _playedPile = CreatePile("PlayedPile", "Played", faceDown: false, new Vector2(0f, 0f), new Vector2(80f, 488f));
             _discardPile = CreatePile("DiscardPile", "Discard", faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 208f));
             _banishPile = CreatePile("BanishPile", "Banish", faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 396f));
             _drawPile.Clicked += () => _toast.Show("Your deck: " + (Me?.DeckCount ?? 0) + " cards (contents and order hidden).");
@@ -180,19 +201,20 @@ namespace Pascension.Game.Soi
             _discardPile.Clicked += () => ShowPile("Discard pile", Me != null ? ZoneSnaps(Me.Discard) : null);
             _banishPile.Clicked += () => ShowPile("Banished (removed from the game)", _snap != null ? ZoneSnaps(_snap.Banished) : null);
 
-            // END TURN + RELIC (right side, above the discard corner).
+            // END TURN sits at the very bottom, below the discard pile (clear of its
+            // title text); RECRUIT RELIC above the banish pile on the right edge.
             _endTurn = UiFactory.CreateButton(Theme, "EndTurn", root, "END TURN", 21f,
                 UiPalette.Gold, UiPalette.Background);
-            UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0.5f), new Vector2(-108f, -120f), new Vector2(186f, 66f));
+            UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0f), new Vector2(-108f, 62f), new Vector2(186f, 58f));
             _endTurn.onClick.AddListener(() => Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex }));
             _relics = UiFactory.CreateButton(Theme, "Relics", root, "RECRUIT RELIC", 14f);
-            UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0.5f), new Vector2(-108f, -196f), new Vector2(186f, 48f));
+            UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0f), new Vector2(-108f, 510f), new Vector2(186f, 48f));
             _relics.onClick.AddListener(OnRelicsClicked);
             _relics.gameObject.SetActive(false);
 
-            // Hand — the real drag-to-play HandView, bottom center.
+            // Hand — the real drag-to-play HandView, hugging the bottom edge.
             _handRect = UiFactory.CreateRect("Hand", root);
-            UiFactory.Place(_handRect, new Vector2(0.5f, 0f), new Vector2(0f, 140f), new Vector2(1400f, 320f));
+            UiFactory.Place(_handRect, new Vector2(0.5f, 0f), new Vector2(0f, 62f), new Vector2(1400f, 320f));
             _hand = _handRect.gameObject.AddComponent<HandView>();
             _hand.Theme = Theme;
             _hand.Container = _handRect;
@@ -274,18 +296,20 @@ namespace Pascension.Game.Soi
             return pile;
         }
 
-        private TextMeshProUGUI Stat(RectTransform root, string label, Vector2 pos, Color color, out RectTransform rect)
+        private TextMeshProUGUI Stat(RectTransform root, string iconName, Vector2 pos, Color color, out RectTransform rect)
         {
-            rect = UiFactory.CreateRect("Stat_" + label, root);
-            UiFactory.Place(rect, new Vector2(0.5f, 0.5f), pos, new Vector2(170f, 54f));
+            rect = UiFactory.CreateRect("Stat_" + iconName, root);
+            UiFactory.Place(rect, new Vector2(0.5f, 0.5f), pos, new Vector2(150f, 54f));
             var bg = UiFactory.CreatePanel(Theme, "Bg", rect, UiPalette.WithAlpha(UiPalette.Panel, 0.9f));
             UiFactory.Stretch((RectTransform)bg.transform);
-            var caption = UiFactory.CreateText(Theme, "Caption", rect, label, 11f, UiPalette.TextDim,
-                TextAlignmentOptions.Left, FontStyles.Bold);
-            UiFactory.Place(caption.rectTransform, new Vector2(0f, 0.5f), new Vector2(126f, 0f), new Vector2(86f, 40f));
+            // Icon instead of a word.
+            var icon = UiFactory.CreateText(Theme, "Icon", rect, $"<sprite name=\"{iconName}\">", 30f,
+                Color.white, TextAlignmentOptions.Center);
+            if (Theme.Icons != null) icon.spriteAsset = Theme.Icons;
+            UiFactory.Place(icon.rectTransform, new Vector2(0f, 0.5f), new Vector2(30f, 0f), new Vector2(48f, 48f));
             var value = UiFactory.CreateText(Theme, "Value", rect, "0", 26f, color,
                 TextAlignmentOptions.Center, FontStyles.Bold);
-            UiFactory.Place(value.rectTransform, new Vector2(0f, 0.5f), new Vector2(44f, 0f), new Vector2(84f, 44f));
+            UiFactory.Place(value.rectTransform, new Vector2(0f, 0.5f), new Vector2(96f, 0f), new Vector2(88f, 44f));
             value.enableAutoSizing = true;
             value.fontSizeMin = 13f;
             value.fontSizeMax = 26f;
@@ -384,7 +408,7 @@ namespace Pascension.Game.Soi
             if (me.CharacterExhausted) { _toast.Show("Your character is already exhausted."); return; }
             if (me.FocusedThisTurn) { _toast.Show("You already focused this turn."); return; }
             if (me.Gems < 1) { _toast.Show("Focus costs 1 gem."); return; }
-            _portrait.SetTapped(true); // optimistic tap — the snapshot confirms
+            _portrait.SetTapped(true); // the portrait taps visually; the snapshot confirms
             Submit(new ShardsFocusAction { PlayerIndex = MyIndex });
         }
 
@@ -397,27 +421,60 @@ namespace Pascension.Game.Soi
 
             if (def.Type == ShardsCardType.Mercenary)
             {
-                const string recruitLabel = "Recruit (to your discard pile)";
-                const string fastLabel = "Fast-play (effect now, returns to the center deck)";
-                var request = new DecisionRequest
-                {
-                    Id = -1,
-                    PlayerIndex = MyIndex,
-                    Title = def.Name + ": recruit it, or fast-play it now?",
-                    Context = "local.buy",
-                    Min = 0,
-                    Max = 1
-                };
-                request.Options.Add(new DecisionOption(0, recruitLabel));
-                request.Options.Add(new DecisionOption(1, fastLabel));
-                _modal.Show(request, id => id == 0 ? recruitLabel : fastLabel, chosen =>
-                {
-                    if (chosen.Count == 0) return;
-                    Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = slot, FastPlay = chosen[0] == 1 });
-                });
+                ShowBuyUsePopup(slot);
                 return;
             }
             Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = slot });
+        }
+
+        /// <summary>Mercenary click: two inline buttons right at the card — BUY (recruit
+        /// to your deck) or USE (fast-play once). Clicking anywhere else dismisses.</summary>
+        private void ShowBuyUsePopup(int slot)
+        {
+            if (_buyPopup == null)
+            {
+                _buyPopup = UiFactory.CreateRect("BuyUsePopup", UiRootRect);
+                UiFactory.Stretch(_buyPopup);
+
+                // Full-screen invisible catcher: any outside click closes the popup.
+                var catcher = UiFactory.CreateImage("Dismiss", _buyPopup, null, new Color(0f, 0f, 0f, 0.001f), raycast: true);
+                UiFactory.Stretch(catcher.rectTransform);
+                var dismiss = catcher.gameObject.AddComponent<Button>();
+                dismiss.targetGraphic = catcher;
+                dismiss.transition = Selectable.Transition.None;
+                dismiss.onClick.AddListener(() => _buyPopup.gameObject.SetActive(false));
+
+                var holder = UiFactory.CreateRect("Buttons", _buyPopup);
+                holder.sizeDelta = new Vector2(162f, 128f);
+                var backdrop = UiFactory.CreatePanel(Theme, "Backdrop", holder, UiPalette.WithAlpha(UiPalette.Background, 0.92f));
+                UiFactory.Stretch((RectTransform)backdrop.transform, -6f, -6f, 6f, 6f);
+
+                var buy = UiFactory.CreateButton(Theme, "Buy", holder, "BUY", 19f,
+                    UiPalette.Gold, UiPalette.Background);
+                UiFactory.Place((RectTransform)buy.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 31f), new Vector2(150f, 52f));
+                buy.onClick.AddListener(() =>
+                {
+                    _buyPopup.gameObject.SetActive(false);
+                    Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = _buyPopupSlot });
+                });
+
+                var use = UiFactory.CreateButton(Theme, "Use", holder, "USE", 19f,
+                    UiPalette.Danger, UiPalette.TextMain);
+                UiFactory.Place((RectTransform)use.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, -31f), new Vector2(150f, 52f));
+                use.onClick.AddListener(() =>
+                {
+                    _buyPopup.gameObject.SetActive(false);
+                    Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = _buyPopupSlot, FastPlay = true });
+                });
+            }
+
+            _buyPopupSlot = slot;
+            var holderRect = (RectTransform)_buyPopup.GetChild(1);
+            var slotWorld = _slots[slot].Rect.TransformPoint(_slots[slot].Rect.rect.center);
+            Vector2 local = UiRootRect.InverseTransformPoint(slotWorld);
+            holderRect.anchoredPosition = local + new Vector2(0f, -10f);
+            _buyPopup.gameObject.SetActive(true);
+            _buyPopup.SetAsLastSibling();
         }
 
         private void OnRelicsClicked()
@@ -535,8 +592,18 @@ namespace Pascension.Game.Soi
                 }
                 slot.gameObject.SetActive(true);
                 slot.BindDef(card.DefId, card.InstanceId);
+                MarkMercenary(slot, card.DefId);
                 _boardViews[card.InstanceId] = slot;
             }
+        }
+
+        /// <summary>Mercenaries get a red frame glow — buy them into your deck OR use
+        /// them once on the spot.</summary>
+        private static void MarkMercenary(CardView slot, string defId)
+        {
+            bool mercenary = ShardsCardDatabase.TryGet(defId, out var def) &&
+                             def.Type == ShardsCardType.Mercenary;
+            slot.SetGlow(mercenary, UiPalette.Danger);
         }
 
         /// <summary>RowRefilled reveal: bind + pop a slot as its flight lands (the full
@@ -550,6 +617,7 @@ namespace Pascension.Game.Soi
             if (card == null) { slot.gameObject.SetActive(false); return; }
             slot.gameObject.SetActive(true);
             slot.BindDef(card.DefId, card.InstanceId);
+            MarkMercenary(slot, card.DefId);
             _boardViews[card.InstanceId] = slot;
             if (isActiveAndEnabled)
                 StartCoroutine(Tween.Punch(slot.transform, 0.18f, 0.22f));
@@ -558,14 +626,18 @@ namespace Pascension.Game.Soi
         private void RenderOpponents()
         {
             _opponentPanels.Clear();
-            float x = 0f;
+            int count = 0;
+            foreach (var player in _snap.Players)
+                if (player.Index != MyIndex)
+                    count++;
+            float x = -(count * 384f - 12f) / 2f; // centered along the top edge
             foreach (var player in _snap.Players)
             {
                 if (player.Index == MyIndex) continue;
                 var panel = UiFactory.CreatePanel(Theme, "Opp_" + player.Index, _opponentStrip,
                     UiPalette.WithAlpha(UiPalette.Panel, player.Eliminated ? 0.4f : 0.92f));
                 var rect = (RectTransform)panel.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
                 rect.pivot = new Vector2(0f, 1f);
                 rect.anchoredPosition = new Vector2(x, 0f);
                 rect.sizeDelta = new Vector2(372f, 168f);
@@ -579,9 +651,11 @@ namespace Pascension.Game.Soi
                 UiFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -15f), new Vector2(350f, 22f));
 
                 var stats = UiFactory.CreateText(Theme, "Stats", rect,
-                    $"<color=#6FDF8F>{player.Health} hp</color>   <color=#D4AF37>{player.Mastery} mastery</color>   " +
+                    $"<color=#6FDF8F>{player.Health}</color><sprite name=\"soi_health\">  " +
+                    $"<color=#D4AF37>{player.Mastery}</color><sprite name=\"soi_mastery\">  " +
                     $"hand {player.HandCount} · deck {player.DeckCount} · discard {player.Discard.Count}",
                     13f, UiPalette.TextDim, TextAlignmentOptions.Left);
+                if (Theme.Icons != null) stats.spriteAsset = Theme.Icons;
                 UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -38f), new Vector2(356f, 20f));
 
                 float cx = 10f;
@@ -660,7 +734,7 @@ namespace Pascension.Game.Soi
 
             _portrait.BindDef(SoiCardFaces.CharacterPrefix + me.CharacterId);
             _portrait.SetTapped(me.CharacterExhausted);
-            _portrait.SetGreyed(!MyPriority || me.CharacterExhausted || me.FocusedThisTurn || me.Gems < 1);
+            _portrait.SetGreyed(me.CharacterExhausted); // display-only: tapped/greyed when exhausted
 
             _relics.gameObject.SetActive(me.SetAside != null && me.SetAside.Count > 0 && !me.RelicRecruited);
 
@@ -707,12 +781,15 @@ namespace Pascension.Game.Soi
         private void RefreshInteractivity()
         {
             bool canAct = MyPriority && !_gameOverShown;
+            var me = Me;
             _endTurn.interactable = canAct;
-            _relics.interactable = canAct && Me != null && Me.Mastery >= 10;
+            _relics.interactable = canAct && me != null && me.Mastery >= 10;
+            _focusButton.interactable = canAct && me != null && me.Gems >= 1 &&
+                                        !me.FocusedThisTurn && !me.CharacterExhausted;
             _statusLine.text = _gameOverShown || _pending == null ? "" :
                 _pending.PlayerIndex == MyIndex ? "" : "Waiting for " + NameOf(_pending.PlayerIndex) + "…";
-            if (_snap != null && Me != null)
-                _hand.Render(HandSnaps(Me), PlayableIds(Me), _pendingReveal.Count > 0 ? _pendingReveal : null);
+            if (_snap != null && me != null)
+                _hand.Render(HandSnaps(me), PlayableIds(me), _pendingReveal.Count > 0 ? _pendingReveal : null);
         }
 
         private void RenderGameOver()
@@ -749,16 +826,16 @@ namespace Pascension.Game.Soi
                 case ShardsCleanupEvent cleanup:
                     return PlayCleanup(cleanup.PlayerIndex);
                 case ShardsGemsChangedEvent gems:
-                    PlayStatFloat(gems.PlayerIndex, gems.Delta, "gems", new Color(0.45f, 0.68f, 0.95f), _statGemsRect);
+                    PlayStatFloat(gems.PlayerIndex, gems.Delta, "soi_gem", new Color(0.45f, 0.68f, 0.95f), _statGemsRect);
                     return null;
                 case ShardsPowerChangedEvent power:
-                    PlayStatFloat(power.PlayerIndex, power.Delta, "power", UiPalette.WoundedRed, _statPowerRect);
+                    PlayStatFloat(power.PlayerIndex, power.Delta, "soi_power", UiPalette.WoundedRed, _statPowerRect);
                     return null;
                 case ShardsMasteryChangedEvent mastery:
-                    PlayStatFloat(mastery.PlayerIndex, mastery.Delta, "mastery", UiPalette.Gold, _statMasteryRect);
+                    PlayStatFloat(mastery.PlayerIndex, mastery.Delta, "soi_mastery", UiPalette.Gold, _statMasteryRect);
                     return null;
                 case ShardsHealthChangedEvent health:
-                    PlayStatFloat(health.PlayerIndex, health.Delta, "hp", UiPalette.HealthyGreen, _statHealthRect);
+                    PlayStatFloat(health.PlayerIndex, health.Delta, "soi_health", UiPalette.HealthyGreen, _statHealthRect);
                     return null;
                 case ShardsChampionDamagedEvent hit:
                     return PlayChampionHit(hit.InstanceId, hit.Amount);
@@ -813,6 +890,7 @@ namespace Pascension.Game.Soi
 
         private IEnumerator PlayShowcase(int playerIndex, string defId)
         {
+            _history.Push(defId, playerIndex);
             Vector2 from = AnchorOf(playerIndex, _handRect);
             Vector2 to = playerIndex == MyIndex
                 ? _showcase.ToLocal(_playedPile.AnchorRect)
@@ -857,6 +935,7 @@ namespace Pascension.Game.Soi
 
             if (bought.FastPlay)
             {
+                _history.Push(bought.DefId, bought.PlayerIndex);
                 yield return _showcase.Play(_queue, bought.DefId, bought.PlayerIndex, from,
                     bought.PlayerIndex == MyIndex ? _showcase.ToLocal(_playedPile.AnchorRect) : AnchorOf(bought.PlayerIndex, null));
                 if (bought.PlayerIndex == MyIndex) _playedPile.Pulse();
@@ -914,7 +993,7 @@ namespace Pascension.Game.Soi
         private void PlayStatFloat(int playerIndex, int delta, string label, Color color, RectTransform myTile)
         {
             if (delta == 0) return;
-            string text = (delta > 0 ? "+" : "−") + Mathf.Abs(delta) + " " + label;
+            string text = (delta > 0 ? "+" : "−") + Mathf.Abs(delta) + " <sprite name=\"" + label + "\">";
             var tint = delta >= 0 ? color : UiPalette.WoundedRed;
             if (playerIndex == MyIndex)
                 _floats.Spawn(_floats.ToLocal(myTile), text, tint, 26f);

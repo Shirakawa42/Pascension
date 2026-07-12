@@ -18,7 +18,12 @@ namespace Pascension.Editor.ArtPipeline
         private const string IconDir = "Assets/Art/Icons";
         private const string AtlasPath = IconDir + "/icon_atlas.png";
         private const string SpriteAssetPath = IconDir + "/PascensionIcons.asset";
-        private static readonly string[] IconIds = { "icon_dmg", "icon_ap", "icon_xp", "icon_step" };
+        private static readonly string[] IconIds =
+        {
+            "icon_dmg", "icon_ap", "icon_xp", "icon_step",
+            // Shards of Infinity inline icons (glyph names keep the soi_ prefix).
+            "soi_health", "soi_mastery", "soi_gem", "soi_power", "soi_tap"
+        };
         private const int Cell = 512;
 
         [MenuItem("Pascension/Setup/Build Icon Sprite Asset")]
@@ -46,7 +51,9 @@ namespace Pascension.Editor.ArtPipeline
             File.WriteAllBytes(AtlasPath, atlas.EncodeToPNG());
             Object.DestroyImmediate(atlas);
             AssetDatabase.ImportAsset(AtlasPath);
-            ConfigureImporter(AtlasPath, readable: false);
+            // 9 cells x 512 = 4608 px — the atlas MUST NOT be downscaled or every
+            // glyph rect points at the wrong texels (sprites render blank).
+            ConfigureImporter(AtlasPath, readable: false, maxSize: 8192);
             AssetDatabase.Refresh();
 
             var atlasTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(AtlasPath);
@@ -112,7 +119,7 @@ namespace Pascension.Editor.ArtPipeline
             Debug.Log($"[Pascension] Icon sprite asset built: {found}/{IconIds.Length} icons at {SpriteAssetPath}");
         }
 
-        private static void ConfigureImporter(string path, bool readable)
+        private static void ConfigureImporter(string path, bool readable, int maxSize = 2048)
         {
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer == null) return;
@@ -121,7 +128,9 @@ namespace Pascension.Editor.ArtPipeline
             importer.alphaIsTransparency = true;
             importer.mipmapEnabled = false;
             importer.isReadable = readable;
-            importer.maxTextureSize = 2048;
+            importer.maxTextureSize = maxSize;
+            importer.npotScale = TextureImporterNPOTScale.None;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.SaveAndReimport();
         }
     }

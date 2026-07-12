@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b9084fb40f2c12b498cf1251e960b3fa
+guid: dfbec65d66c098641b96b073f5c0e9d0
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 9005049205861846395
-    second: icon_step_0
+      213: -8338635451523794663
+    second: soi_mastery_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: icon_step_0
+      name: soi_mastery_0
       rect:
         serializedVersion: 2
-        x: 153
-        y: 169
-        width: 206
-        height: 214
+        x: 34
+        y: 34
+        width: 444
+        height: 444
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b7d0f4cba8c58fc70800000000000000
-      internalID: 9005049205861846395
+      spriteID: 919f170ac37374c80800000000000000
+      internalID: -8338635451523794663
       vertices: []
       indices: 
       edges: []

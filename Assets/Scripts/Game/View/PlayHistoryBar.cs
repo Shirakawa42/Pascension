@@ -67,7 +67,14 @@ namespace Pascension.Game.View
             }
 
             CardDatabase.TryGet(defId, out var def);
-            var name = UiFactory.CreateText(Theme, "Name", entry, def?.Name ?? defId, 10f,
+            string displayName = def?.Name;
+            if (displayName == null)
+            {
+                // Non-Pascension ids (Shards of Infinity) resolve via the shared hook.
+                var external = CardView.ExternalFaceResolver?.Invoke(defId);
+                displayName = external?.Name ?? defId;
+            }
+            var name = UiFactory.CreateText(Theme, "Name", entry, displayName, 10f,
                 UiPalette.TextMain, TextAlignmentOptions.MidlineLeft);
             UiFactory.Stretch(name.rectTransform, 48, 2, 2, 2);
             name.enableAutoSizing = true;

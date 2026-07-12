@@ -100,6 +100,31 @@ MonoBehaviour:
     m_GlyphIndex: 3
     m_Scale: 1
     m_Name: step
+  - m_ElementType: 2
+    m_Unicode: 57348
+    m_GlyphIndex: 4
+    m_Scale: 1
+    m_Name: soi_health
+  - m_ElementType: 2
+    m_Unicode: 57349
+    m_GlyphIndex: 5
+    m_Scale: 1
+    m_Name: soi_mastery
+  - m_ElementType: 2
+    m_Unicode: 57350
+    m_GlyphIndex: 6
+    m_Scale: 1
+    m_Name: soi_gem
+  - m_ElementType: 2
+    m_Unicode: 57351
+    m_GlyphIndex: 7
+    m_Scale: 1
+    m_Name: soi_power
+  - m_ElementType: 2
+    m_Unicode: 57352
+    m_GlyphIndex: 8
+    m_Scale: 1
+    m_Name: soi_tap
   m_GlyphTable:
   - m_Index: 0
     m_Metrics:
@@ -158,6 +183,86 @@ MonoBehaviour:
       m_HorizontalAdvance: 512
     m_GlyphRect:
       m_X: 1536
+      m_Y: 0
+      m_Width: 512
+      m_Height: 512
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+    sprite: {fileID: 0}
+  - m_Index: 4
+    m_Metrics:
+      m_Width: 512
+      m_Height: 512
+      m_HorizontalBearingX: 0
+      m_HorizontalBearingY: 460.8
+      m_HorizontalAdvance: 512
+    m_GlyphRect:
+      m_X: 2048
+      m_Y: 0
+      m_Width: 512
+      m_Height: 512
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+    sprite: {fileID: 0}
+  - m_Index: 5
+    m_Metrics:
+      m_Width: 512
+      m_Height: 512
+      m_HorizontalBearingX: 0
+      m_HorizontalBearingY: 460.8
+      m_HorizontalAdvance: 512
+    m_GlyphRect:
+      m_X: 2560
+      m_Y: 0
+      m_Width: 512
+      m_Height: 512
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+    sprite: {fileID: 0}
+  - m_Index: 6
+    m_Metrics:
+      m_Width: 512
+      m_Height: 512
+      m_HorizontalBearingX: 0
+      m_HorizontalBearingY: 460.8
+      m_HorizontalAdvance: 512
+    m_GlyphRect:
+      m_X: 3072
+      m_Y: 0
+      m_Width: 512
+      m_Height: 512
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+    sprite: {fileID: 0}
+  - m_Index: 7
+    m_Metrics:
+      m_Width: 512
+      m_Height: 512
+      m_HorizontalBearingX: 0
+      m_HorizontalBearingY: 460.8
+      m_HorizontalAdvance: 512
+    m_GlyphRect:
+      m_X: 3584
+      m_Y: 0
+      m_Width: 512
+      m_Height: 512
+    m_Scale: 1
+    m_AtlasIndex: 0
+    m_ClassDefinitionType: 0
+    sprite: {fileID: 0}
+  - m_Index: 8
+    m_Metrics:
+      m_Width: 512
+      m_Height: 512
+      m_HorizontalBearingX: 0
+      m_HorizontalBearingY: 460.8
+      m_HorizontalAdvance: 512
+    m_GlyphRect:
+      m_X: 4096
       m_Y: 0
       m_Width: 512
       m_Height: 512
