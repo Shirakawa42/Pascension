@@ -1,0 +1,91 @@
+using Pascension.Game.View;
+using Shards.Engine;
+using UnityEngine;
+
+namespace Pascension.Game.Soi
+{
+    /// <summary>
+    /// Bridges Shards of Infinity defs into the shared CardView pipeline: any CardView
+    /// bound to a SoI def id (hand cards, flights, showcases, pile tops, previews)
+    /// resolves its face here. Faction colors match the tabletop's frames.
+    /// Also synthesizes character-portrait faces ("soichar:decima").
+    /// </summary>
+    public static class SoiCardFaces
+    {
+        public const string CharacterPrefix = "soichar:";
+
+        public static void Install()
+        {
+            CardView.ExternalFaceResolver = Resolve;
+        }
+
+        public static CardView.ExternalFace? Resolve(string defId)
+        {
+            if (defId.StartsWith(CharacterPrefix))
+                return CharacterFace(defId.Substring(CharacterPrefix.Length));
+
+            if (!ShardsCardDatabase.TryGet(defId, out var def))
+                return null;
+
+            bool champion = def.IsChampion || def.IsMonster;
+            bool showCost = def.Type == ShardsCardType.Ally ||
+                            def.Type == ShardsCardType.Mercenary ||
+                            def.Type == ShardsCardType.Champion;
+            return new CardView.ExternalFace
+            {
+                Name = def.Name,
+                TypeLine = TypeLine(def),
+                RulesText = def.RulesText,
+                ArtId = def.Id,
+                FrameColor = FactionColor(def.Faction),
+                ShowCost = showCost,
+                CostText = def.Cost.ToString(),
+                ShowBadge = champion && def.Defense > 0,
+                BadgeText = def.Defense.ToString()
+            };
+        }
+
+        private static CardView.ExternalFace CharacterFace(string characterId)
+        {
+            string name = Shards.Content.ShardsContentRegistry.CharacterDisplayName(characterId);
+            return new CardView.ExternalFace
+            {
+                Name = name,
+                TypeLine = "Character",
+                RulesText = "Focus — exhaust + pay 1 gem: gain 1 mastery (once per turn).",
+                ArtId = "soichar_" + characterId,
+                FrameColor = new Color(0.5f, 0.42f, 0.2f, 1f),
+                ShowCost = false,
+                ShowBadge = false
+            };
+        }
+
+        public static string TypeLine(ShardsCardDef def)
+        {
+            string faction = def.Faction == ShardsFaction.None || def.Faction == ShardsFaction.Monster
+                ? "" : def.Faction + " ";
+            string line = def.Type switch
+            {
+                ShardsCardType.Monster => "Ingeminex",
+                ShardsCardType.Starter => "Item — Ally",
+                ShardsCardType.Mercenary => faction + "Mercenary Ally",
+                ShardsCardType.Relic => faction + "Relic" + (def.IsChampion ? " Champion" : " Ally"),
+                _ => faction + def.Type
+            };
+            if (def.Shield > 0 || def.DynamicShield != null)
+                line += "  ·  Shield " + (def.DynamicShield != null ? "M" : def.Shield.ToString());
+            return line;
+        }
+
+        public static Color FactionColor(ShardsFaction faction) => faction switch
+        {
+            ShardsFaction.Homodeus => new Color(0.52f, 0.46f, 0.26f, 1f),
+            ShardsFaction.Order => new Color(0.24f, 0.38f, 0.58f, 1f),
+            ShardsFaction.Undergrowth => new Color(0.24f, 0.48f, 0.28f, 1f),
+            ShardsFaction.Wraethe => new Color(0.42f, 0.28f, 0.52f, 1f),
+            ShardsFaction.Aion => new Color(0.62f, 0.32f, 0.22f, 1f),
+            ShardsFaction.Monster => new Color(0.56f, 0.18f, 0.18f, 1f),
+            _ => new Color(0.32f, 0.32f, 0.36f, 1f)
+        };
+    }
+}

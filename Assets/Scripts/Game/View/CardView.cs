@@ -52,6 +52,27 @@ namespace Pascension.Game.View
         /// <summary>Global hover feed — drives the large card preview.</summary>
         public static event Action<CardView, bool> AnyHovered;
 
+        /// <summary>Face data for def ids OUTSIDE Pascension's CardDatabase (the Shards
+        /// of Infinity table plugs its database in through this). Only consulted when a
+        /// CardDatabase lookup misses, so Pascension rendering is untouched.</summary>
+        public struct ExternalFace
+        {
+            public string Name;
+            public string TypeLine;
+            public string RulesText;
+            public string ArtId;
+            public Color FrameColor;
+            /// <summary>Cost disc (blue, top-left).</summary>
+            public bool ShowCost;
+            public string CostText;
+            /// <summary>Red badge (Pascension: monster HP; SoI: champion defense).</summary>
+            public bool ShowBadge;
+            public string BadgeText;
+        }
+
+        /// <summary>Set by non-Pascension tables (SoiGameScreen). Return null for unknown ids.</summary>
+        public static Func<string, ExternalFace?> ExternalFaceResolver;
+
         public RectTransform Rect => (RectTransform)transform;
 
         // ------------------------------------------------------------------ binding
@@ -115,6 +136,14 @@ namespace Pascension.Game.View
 
             if (def == null)
             {
+                // Not a Pascension card — another game's database may know this id.
+                var external = !string.IsNullOrEmpty(defId) ? ExternalFaceResolver?.Invoke(defId) : null;
+                if (external.HasValue)
+                {
+                    ApplyExternalFace(external.Value);
+                    return;
+                }
+
                 // Hidden / unknown card: card back.
                 NameText.text = "";
                 CostGroup.SetActive(false);
@@ -151,6 +180,31 @@ namespace Pascension.Game.View
             {
                 Art.sprite = TierGradients.Sprite(def.Tier);
                 Art.color = Color.white;
+            }
+        }
+
+        private void ApplyExternalFace(ExternalFace face)
+        {
+            Frame.color = face.FrameColor;
+            NameText.text = face.Name;
+            TypeText.text = face.TypeLine;
+            RulesText.text = face.RulesText;
+            CostGroup.SetActive(face.ShowCost);
+            if (face.ShowCost) CostText.text = face.CostText;
+            HpGroup.SetActive(face.ShowBadge);
+            if (face.ShowBadge) HpText.text = face.BadgeText;
+
+            var sprite = Theme != null ? Theme.Art(face.ArtId ?? DefId) : null;
+            Art.sprite = sprite;
+            if (sprite != null)
+            {
+                Art.color = Color.white;
+            }
+            else
+            {
+                // No art yet: a dimmed take on the frame color reads as intentional.
+                Art.color = new Color(face.FrameColor.r * 0.45f, face.FrameColor.g * 0.45f,
+                    face.FrameColor.b * 0.45f, 1f);
             }
         }
 

@@ -115,3 +115,99 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 150732b292bf0a6458ff197640b1214e, type: 3}
   - id: wren
     sprite: {fileID: 21300000, guid: da186265b36de8a4d87646bc45599d2a, type: 3}
+  - id: additri_gaiamancer
+    sprite: {fileID: 21300000, guid: 46026763c6dc6f54fadfb9fad596c96f, type: 3}
+  - id: aetherbreaker
+    sprite: {fileID: 21300000, guid: 926ff9f2c3e4db343ab376235041a02c, type: 3}
+  - id: blaster
+    sprite: {fileID: 21300000, guid: 324275c263409634db90bb50f09db5d6, type: 3}
+  - id: cache_warden
+    sprite: {fileID: 21300000, guid: 6dafb29cb17eca9459df4ccd70c93180, type: 3}
+  - id: command_seer
+    sprite: {fileID: 21300000, guid: b602768e203b3b7489c0631bfb1a23ec, type: 3}
+  - id: cryptofist_monk
+    sprite: {fileID: 21300000, guid: 3a23842b30eb47046b24dfc554a150ba, type: 3}
+  - id: crystal
+    sprite: {fileID: 21300000, guid: 808b1ced4b746244bbb2f41d31a46ce1, type: 3}
+  - id: data_heretic
+    sprite: {fileID: 21300000, guid: 3974d3a24ba341046b1fe23592b52648, type: 3}
+  - id: drakonarius
+    sprite: {fileID: 21300000, guid: 1c14d0421cebf6b458262ba71c708fd8, type: 3}
+  - id: evokatus
+    sprite: {fileID: 21300000, guid: a4408b337a427b9419d29c6d22544b18, type: 3}
+  - id: fao_cutul
+    sprite: {fileID: 21300000, guid: a25d1d83ec53bbe4ab42ec878b91446e, type: 3}
+  - id: fungal_hermit
+    sprite: {fileID: 21300000, guid: 4f0f8188b5e481245a5af64a0cc06e74, type: 3}
+  - id: furrowing_elemental
+    sprite: {fileID: 21300000, guid: bb69c78e4fe123d46bb414de8423f441, type: 3}
+  - id: general_decurion
+    sprite: {fileID: 21300000, guid: ac0c46926f2871c4488bccbfe56f300a, type: 3}
+  - id: ghostwillow_avenger
+    sprite: {fileID: 21300000, guid: e11b727d25ba63144bff38366ce6f059, type: 3}
+  - id: giga_source_adept
+    sprite: {fileID: 21300000, guid: 36e3fa7295539e9478393e1169a21728, type: 3}
+  - id: grand_architect
+    sprite: {fileID: 21300000, guid: c09d2d79d9536c742a83d6ce620d3a42, type: 3}
+  - id: infinity_shard
+    sprite: {fileID: 21300000, guid: 8ee9ae31f9f95a84c98b2abd184100fd, type: 3}
+  - id: kiln_drone
+    sprite: {fileID: 21300000, guid: 20c664b2e8536414d8812a41df81d0f4, type: 3}
+  - id: korvus_legionnaire
+    sprite: {fileID: 21300000, guid: fae5b48213791e545aa5fdadbaf7ee46, type: 3}
+  - id: leshai_knight
+    sprite: {fileID: 21300000, guid: e09d3b37f6ecd2a4bad649a259bf08f1, type: 3}
+  - id: li_hin
+    sprite: {fileID: 21300000, guid: 7491e90ed5465624b9941ffb72443624, type: 3}
+  - id: mining_drones
+    sprite: {fileID: 21300000, guid: b50bc32039b04a94d99d7dc7253dff92, type: 3}
+  - id: nil_assassin
+    sprite: {fileID: 21300000, guid: c59f74946c1c7bf4eaf40e4cf70b8453, type: 3}
+  - id: numeri_drones
+    sprite: {fileID: 21300000, guid: c016e8dcf61ffd04bace771fe847507b, type: 3}
+  - id: ojas_genesis_druid
+    sprite: {fileID: 21300000, guid: 34ebabe7db651f14db63128a4cc48b03, type: 3}
+  - id: omnius
+    sprite: {fileID: 21300000, guid: 8973cd6d5bdb6f2419e6efc062cbee40, type: 3}
+  - id: optio_crusher
+    sprite: {fileID: 21300000, guid: 18cd73e35453e4a44881d425b3c1142d, type: 3}
+  - id: order_initiate
+    sprite: {fileID: 21300000, guid: 57b260ab303d7fa4388d175ea178e43c, type: 3}
+  - id: portal_monk
+    sprite: {fileID: 21300000, guid: df52dd94bee9d3748bde1c577af8d0fb, type: 3}
+  - id: primus_pilus
+    sprite: {fileID: 21300000, guid: 8559a752572f766488e4aa1f9ae38230, type: 3}
+  - id: reactor_drone
+    sprite: {fileID: 21300000, guid: 61a6f3e7909f0184b86deda790487f7d, type: 3}
+  - id: root_of_the_forest
+    sprite: {fileID: 21300000, guid: 7461fcd34412a7241ac38fbb02606d95, type: 3}
+  - id: scion_of_nothingness
+    sprite: {fileID: 21300000, guid: 73ccb892f7fb3fe4e8a8100a831ccfed, type: 3}
+  - id: shadebound_sentry
+    sprite: {fileID: 21300000, guid: 625a2070b404934489b64fc4ba3d319a, type: 3}
+  - id: shadow_apostle
+    sprite: {fileID: 21300000, guid: 826699c1c291ae0409910bb1cf47ad18, type: 3}
+  - id: shardwood_guardian
+    sprite: {fileID: 21300000, guid: 0c98ad0b603f98846a31fedaa6f24a12, type: 3}
+  - id: shard_abstractor
+    sprite: {fileID: 21300000, guid: 79e02ba3c8ce1714ab3d923314e14e6e, type: 3}
+  - id: spore_cleric
+    sprite: {fileID: 21300000, guid: 95f0b3f90af11eb46ba432d027bb79f2, type: 3}
+  - id: systema_ai
+    sprite: {fileID: 21300000, guid: 07fe60dfa5048a048b3e1bfbcbc96f71, type: 3}
+  - id: thorn_zealot
+    sprite: {fileID: 21300000, guid: e76a95ac77f5bd4448c890501da71aad, type: 3}
+  - id: umbral_scourge
+    sprite: {fileID: 21300000, guid: 973fbf42b7ee2f8448c8af1149bd6120, type: 3}
+  - id: undergrowth_aspirant
+    sprite: {fileID: 21300000, guid: 9884f7bf67394484d961d30d2c5bde38, type: 3}
+  - id: venator_of_the_wastes
+    sprite: {fileID: 21300000, guid: b4339b5c9f8090e4ba3f2ff8d807aef5, type: 3}
+  - id: wraethe_skirmisher
+    sprite: {fileID: 21300000, guid: 13d46f1d6e7deb54ca362c58886248ea, type: 3}
+  - id: zara_ra
+    sprite: {fileID: 21300000, guid: 3604ab53818a1d349a0eb65005a34137, type: 3}
+  - id: zen_chi_set
+    sprite: {fileID: 21300000, guid: 53228203e9bcf5c44becf936e27f22ab, type: 3}
+  - id: zetta_encryptor
+    sprite: {fileID: 21300000, guid: 44555070f2bf7f840b0f304a36a496ae, type: 3}

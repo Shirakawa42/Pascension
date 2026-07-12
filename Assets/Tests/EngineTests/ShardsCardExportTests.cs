@@ -49,6 +49,17 @@ namespace Pascension.Engine.Tests
             if (!File.Exists(manifestPath))
                 File.WriteAllText(manifestPath, manifest.ToString());
 
+            // Art prompts for the ComfyUI/Anima fallback batch (original art generation).
+            var prompts = new StringBuilder();
+            prompts.AppendLine("[");
+            for (int i = 0; i < defs.Count; i++)
+            {
+                string prompt = (defs[i].ArtPrompt ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"");
+                prompts.AppendLine($"  {{ \"id\": \"{defs[i].Id}\", \"prompt\": \"{prompt}\" }}{(i < defs.Count - 1 ? "," : "")}");
+            }
+            prompts.AppendLine("]");
+            File.WriteAllText(Path.Combine(root, "Tools", "ShardsData", "art-prompts.json"), prompts.ToString());
+
             Assert.Pass($"exported {defs.Count} defs");
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Pascension.Core;
 using Pascension.Engine.Actions;
@@ -6,6 +7,7 @@ using Pascension.Engine.Core;
 using Pascension.Engine.Decisions;
 using Pascension.Engine.Events;
 using Pascension.Engine.Serialization;
+using Pascension.Game.Presentation;
 using Pascension.Game.View;
 using Pascension.Net;
 using Shards.Engine;
@@ -16,11 +18,13 @@ using UnityEngine.UI;
 namespace Pascension.Game.Soi
 {
     /// <summary>
-    /// The Shards of Infinity table. Builds ALL of its UI at runtime in Bind (the
-    /// LobbyScreen pattern — nothing to serialize, view Init at runtime only) and
-    /// re-renders every zone from each snapshot: SoI has no response windows or
-    /// speculative staging, so a straight rebuild is correct and simple. Zero rules
-    /// logic here — it renders ShardsSnapshot and submits PlayerActions.
+    /// The Shards of Infinity table on Pascension's full presentation stack: real
+    /// CardViews everywhere (via CardView.ExternalFaceResolver), the drag-to-play
+    /// HandView, StS corner piles, zone flights, played-card showcases, floating
+    /// numbers, glow bursts and the click-to-skip PresentationQueue. Same architecture
+    /// as GameScreen: the hand, stats and pile counts render LIVE on every snapshot;
+    /// board zones refresh on queue drain; decisions wait for animations. Zero rules
+    /// logic — renders ShardsSnapshot and submits PlayerActions.
     /// </summary>
     public sealed class SoiGameScreen : MonoBehaviour
     {
@@ -30,31 +34,49 @@ namespace Pascension.Game.Soi
         private ISession _session;
         private ShardsSnapshot _snap;
         private PendingSnap _pending;
+        private DecisionRequest _deferredDecision;
         private bool _gameOverShown;
 
-        // Static chrome (built once).
-        private TextMeshProUGUI _hudTurn;
-        private TextMeshProUGUI _hudCounts;
-        private TextMeshProUGUI _statHealth, _statMastery, _statGems, _statPower;
-        private Button _endTurn, _focus, _relics;
-        private TextMeshProUGUI _statusLine;
-        private RectTransform _centerRow, _destinyRow, _monsterRow;
-        private RectTransform _handRow, _championRow, _playZoneRow, _destinyOwnRow;
-        private RectTransform _opponentStrip;
-        private SoiDecisionModal _modal;
+        // Presentation stack.
+        private PresentationQueue _queue;
+        private FlightLayer _flights;
+        private CardShowcase _showcase;
+        private GlowBurstLayer _bursts;
+        private FloatingNumberLayer _floats;
         private ToastView _toast;
+
+        // Table views.
+        private TextMeshProUGUI _hudTurn, _hudCounts, _statusLine;
+        private TextMeshProUGUI _statHealth, _statMastery, _statGems, _statPower;
+        private RectTransform _statHealthRect, _statMasteryRect, _statGemsRect, _statPowerRect;
+        private Button _endTurn, _relics;
+        private RectTransform _opponentStrip, _centerRow, _destinyRow, _monsterRow;
+        private RectTransform _championRow, _ownDestinyRow;
+        private CardView _portrait;
+        private CardView[] _slots;
+        private readonly HashSet<int> _hiddenSlots = new HashSet<int>();
+        private HandView _hand;
+        private RectTransform _handRect;
+        private PileWidget _drawPile, _playedPile, _discardPile, _banishPile, _centerDeckPile;
+        private SoiDecisionModal _modal;
+        private CardListModal _cardList;
         private PauseOverlayView _pauseOverlay;
-        private SoiCardWidget _preview;
+        private CardView _preview;
         private RectTransform _gameOverPanel;
         private TextMeshProUGUI _gameOverText;
 
-        private readonly List<SoiCardWidget> _widgets = new List<SoiCardWidget>();
+        // Event-time lookups (rebuilt on every full refresh).
+        private readonly Dictionary<int, CardView> _boardViews = new Dictionary<int, CardView>();
+        private readonly Dictionary<int, RectTransform> _opponentPanels = new Dictionary<int, RectTransform>();
+        private readonly HashSet<int> _pendingReveal = new HashSet<int>();
+        private readonly List<CardView> _transient = new List<CardView>();
 
         // ------------------------------------------------------------------ bind
 
         public void Bind(ISession session, object rules)
         {
             _session = session;
+            SoiCardFaces.Install();
 
             BuildLayout();
 
@@ -63,6 +85,9 @@ namespace Pascension.Game.Soi
             session.InputRequested += OnInputRequested;
             session.ActionRejected += OnActionRejected;
 
+            _queue.EventPlayer = PlayEvent;
+            _queue.Drained += RefreshAll;
+
             _pauseOverlay = PauseOverlayView.Create(UiRootRect, Theme);
             session.PauseChanged += OnPauseChanged;
             NetEvents.LocalClientDisconnected += OnLocalClientDisconnected;
@@ -70,104 +95,149 @@ namespace Pascension.Game.Soi
                 netSession.CurrentPause.Paused)
                 OnPauseChanged(netSession.CurrentPause);
 
-            SoiCardWidget.AnyHovered += OnCardHovered;
+            CardView.AnyHovered += OnAnyCardHovered;
         }
 
         private void OnDestroy()
         {
-            SoiCardWidget.AnyHovered -= OnCardHovered;
+            CardView.AnyHovered -= OnAnyCardHovered;
             NetEvents.LocalClientDisconnected -= OnLocalClientDisconnected;
             if (_session != null)
                 _session.PauseChanged -= OnPauseChanged;
         }
 
-        // ------------------------------------------------------------------ layout (built once)
+        // ------------------------------------------------------------------ layout
 
         private void BuildLayout()
         {
             var root = UiRootRect;
 
-            // HUD (top-right).
+            // HUD (top-right) + status line.
             _hudTurn = UiFactory.CreateText(Theme, "HudTurn", root, "", 20f, UiPalette.Gold,
                 TextAlignmentOptions.Right, FontStyles.Bold);
             UiFactory.Place(_hudTurn.rectTransform, new Vector2(1f, 1f), new Vector2(-24f, -26f), new Vector2(500f, 30f));
             _hudCounts = UiFactory.CreateText(Theme, "HudCounts", root, "", 14f, UiPalette.TextDim,
                 TextAlignmentOptions.Right);
             UiFactory.Place(_hudCounts.rectTransform, new Vector2(1f, 1f), new Vector2(-24f, -54f), new Vector2(500f, 22f));
+            _statusLine = UiFactory.CreateText(Theme, "Status", root, "", 16f, UiPalette.GoldDim,
+                TextAlignmentOptions.Right, FontStyles.Italic);
+            UiFactory.Place(_statusLine.rectTransform, new Vector2(1f, 1f), new Vector2(-24f, -80f), new Vector2(620f, 24f));
 
-            _statusLine = UiFactory.CreateText(Theme, "Status", root, "", 17f, UiPalette.GoldDim,
-                TextAlignmentOptions.Center, FontStyles.Italic);
-            UiFactory.Place(_statusLine.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(900f, 26f));
-
-            // Opponents (top-left).
+            // Opponents (top-left strip).
             _opponentStrip = UiFactory.CreateRect("Opponents", root);
-            UiFactory.Place(_opponentStrip, new Vector2(0f, 1f), new Vector2(14f, -12f), new Vector2(1200f, 160f));
+            UiFactory.Place(_opponentStrip, new Vector2(0f, 1f), new Vector2(14f, -10f), new Vector2(1160f, 170f));
             _opponentStrip.pivot = new Vector2(0f, 1f);
 
-            // Center row (market).
-            var rowLabel = UiFactory.CreateText(Theme, "RowLabel", root, "CENTER ROW", 13f, UiPalette.TextDim,
-                TextAlignmentOptions.Left, FontStyles.Bold);
-            UiFactory.Place(rowLabel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(-560f, 190f), new Vector2(200f, 20f));
-            _centerRow = UiFactory.CreateRect("CenterRow", root);
-            UiFactory.Place(_centerRow, new Vector2(0.5f, 0.5f), new Vector2(0f, 66f), new Vector2(1100f, 214f));
-
-            // Destiny row + Ingeminex (only populated with ItH).
+            // Destiny row + Ingeminex space (between opponents and the center row).
             _destinyRow = UiFactory.CreateRect("DestinyRow", root);
-            UiFactory.Place(_destinyRow, new Vector2(0.5f, 0.5f), new Vector2(-220f, -78f), new Vector2(900f, 54f));
+            UiFactory.Place(_destinyRow, new Vector2(0.5f, 0.5f), new Vector2(-260f, 268f), new Vector2(760f, 126f));
             _monsterRow = UiFactory.CreateRect("MonsterRow", root);
-            UiFactory.Place(_monsterRow, new Vector2(0.5f, 0.5f), new Vector2(430f, -78f), new Vector2(420f, 60f));
+            UiFactory.Place(_monsterRow, new Vector2(0.5f, 0.5f), new Vector2(400f, 268f), new Vector2(520f, 132f));
 
-            // Player stats block (bottom-left).
-            _statHealth = Stat(root, "HEALTH", new Vector2(20f, -150f), UiPalette.HealthyGreen, out _);
-            _statMastery = Stat(root, "MASTERY", new Vector2(180f, -150f), UiPalette.Gold, out _);
-            _statGems = Stat(root, "GEMS", new Vector2(340f, -150f), new Color(0.45f, 0.68f, 0.95f), out _);
-            _statPower = Stat(root, "POWER", new Vector2(500f, -150f), UiPalette.WoundedRed, out _);
+            // Center row: deck pile + 6 persistent card slots.
+            _centerDeckPile = CreatePile("CenterDeck", "Center", faceDown: true,
+                new Vector2(0.5f, 0.5f), new Vector2(-590f, 84f));
+            _centerDeckPile.Clicked += () => _toast.Show("The shared center deck — row slots refill from here.");
 
-            _focus = UiFactory.CreateButton(Theme, "Focus", root, "FOCUS\n(1 gem → 1 mastery)", 14f,
+            _centerRow = UiFactory.CreateRect("CenterRow", root);
+            UiFactory.Place(_centerRow, new Vector2(0.5f, 0.5f), new Vector2(60f, 90f), new Vector2(900f, 200f));
+            _slots = new CardView[6];
+            for (int s = 0; s < 6; s++)
+            {
+                var slot = CardViewFactory.Create(_centerRow, Theme, 0.62f);
+                slot.Rect.anchorMin = slot.Rect.anchorMax = new Vector2(0f, 0.5f);
+                slot.Rect.pivot = new Vector2(0f, 0.5f);
+                slot.Rect.anchoredPosition = new Vector2(s * 148f, 0f);
+                int slotIndex = s;
+                slot.Clicked += _ => OnRowSlotClicked(slotIndex);
+                slot.gameObject.SetActive(false);
+                _slots[s] = slot;
+            }
+
+            // Character portrait (left, mid) — CLICK TO FOCUS; taps like any ability.
+            _portrait = CardViewFactory.Create(root, Theme, 0.55f);
+            _portrait.Rect.anchorMin = _portrait.Rect.anchorMax = new Vector2(0.5f, 0.5f);
+            _portrait.Rect.anchoredPosition = new Vector2(-820f, 70f);
+            _portrait.Clicked += _ => OnFocusClicked();
+
+            // My champions + owned destinies (above the hand band).
+            _championRow = LabeledRow(root, "MY CHAMPIONS", new Vector2(-330f, -122f), new Vector2(620f, 140f));
+            _ownDestinyRow = LabeledRow(root, "MY DESTINIES", new Vector2(330f, -122f), new Vector2(560f, 140f));
+
+            // Stats (left edge column).
+            _statHealth = Stat(root, "HEALTH", new Vector2(-690f, -116f), UiPalette.HealthyGreen, out _statHealthRect);
+            _statMastery = Stat(root, "MASTERY", new Vector2(-690f, -178f), UiPalette.Gold, out _statMasteryRect);
+            _statGems = Stat(root, "GEMS", new Vector2(-690f, -240f), new Color(0.45f, 0.68f, 0.95f), out _statGemsRect);
+            _statPower = Stat(root, "POWER", new Vector2(-690f, -302f), UiPalette.WoundedRed, out _statPowerRect);
+
+            // StS corner piles: draw + played left, discard + banish right.
+            _drawPile = CreatePile("DrawPile", "Draw", faceDown: true, new Vector2(0f, 0f), new Vector2(80f, 208f));
+            _playedPile = CreatePile("PlayedPile", "Played", faceDown: false, new Vector2(0f, 0f), new Vector2(80f, 396f));
+            _discardPile = CreatePile("DiscardPile", "Discard", faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 208f));
+            _banishPile = CreatePile("BanishPile", "Banish", faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 396f));
+            _drawPile.Clicked += () => _toast.Show("Your deck: " + (Me?.DeckCount ?? 0) + " cards (contents and order hidden).");
+            _playedPile.Clicked += () => ShowPile("Played this turn", Me != null ? ZoneSnaps(Me.PlayZone) : null);
+            _discardPile.Clicked += () => ShowPile("Discard pile", Me != null ? ZoneSnaps(Me.Discard) : null);
+            _banishPile.Clicked += () => ShowPile("Banished (removed from the game)", _snap != null ? ZoneSnaps(_snap.Banished) : null);
+
+            // END TURN + RELIC (right side, above the discard corner).
+            _endTurn = UiFactory.CreateButton(Theme, "EndTurn", root, "END TURN", 21f,
                 UiPalette.Gold, UiPalette.Background);
-            UiFactory.Place((RectTransform)_focus.transform, new Vector2(0f, 0.5f), new Vector2(670f, -150f), new Vector2(200f, 78f));
-            ((RectTransform)_focus.transform).pivot = new Vector2(0f, 0.5f);
-            _focus.onClick.AddListener(() => Submit(new ShardsFocusAction { PlayerIndex = MyIndex }));
-
-            _relics = UiFactory.CreateButton(Theme, "Relics", root, "RELIC", 14f);
-            UiFactory.Place((RectTransform)_relics.transform, new Vector2(0f, 0.5f), new Vector2(890f, -150f), new Vector2(150f, 78f));
-            ((RectTransform)_relics.transform).pivot = new Vector2(0f, 0.5f);
+            UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0.5f), new Vector2(-108f, -120f), new Vector2(186f, 66f));
+            _endTurn.onClick.AddListener(() => Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex }));
+            _relics = UiFactory.CreateButton(Theme, "Relics", root, "RECRUIT RELIC", 14f);
+            UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0.5f), new Vector2(-108f, -196f), new Vector2(186f, 48f));
             _relics.onClick.AddListener(OnRelicsClicked);
             _relics.gameObject.SetActive(false);
 
-            _endTurn = UiFactory.CreateButton(Theme, "EndTurn", root, "END TURN", 21f,
-                UiPalette.Gold, UiPalette.Background);
-            UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0.5f), new Vector2(-110f, -150f), new Vector2(190f, 78f));
-            _endTurn.onClick.AddListener(() => Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex }));
+            // Hand — the real drag-to-play HandView, bottom center.
+            _handRect = UiFactory.CreateRect("Hand", root);
+            UiFactory.Place(_handRect, new Vector2(0.5f, 0f), new Vector2(0f, 140f), new Vector2(1400f, 320f));
+            _hand = _handRect.gameObject.AddComponent<HandView>();
+            _hand.Theme = Theme;
+            _hand.Container = _handRect;
+            _hand.PlayRequested += OnHandPlayRequested;
 
-            // My board rows.
-            _championRow = LabeledRow(root, "MY CHAMPIONS (click to exhaust)", new Vector2(-690f, 120f), new Vector2(500f, 96f));
-            _playZoneRow = LabeledRow(root, "PLAYED THIS TURN", new Vector2(430f, -390f), new Vector2(560f, 70f));
-            _destinyOwnRow = LabeledRow(root, "MY DESTINIES", new Vector2(430f, -470f), new Vector2(560f, 60f));
+            // Presentation layers (z: flights below showcase below bursts/floats).
+            _flights = Layer<FlightLayer>("Flights", root, out var flightsRect);
+            _flights.Container = flightsRect;
+            _flights.Init(Theme);
+            _bursts = Layer<GlowBurstLayer>("Bursts", root, out var burstsRect);
+            _bursts.Container = burstsRect;
+            _bursts.Init(Theme);
+            _showcase = Layer<CardShowcase>("Showcase", root, out var showcaseRect);
+            _showcase.Container = showcaseRect;
+            _showcase.Init(Theme, _bursts);
+            _floats = Layer<FloatingNumberLayer>("Floats", root, out var floatsRect);
+            _floats.Container = floatsRect;
+            _floats.Init(Theme);
+            _queue = gameObject.AddComponent<PresentationQueue>();
 
-            _handRow = UiFactory.CreateRect("Hand", root);
-            UiFactory.Place(_handRow, new Vector2(0.5f, 0f), new Vector2(-260f, 100f), new Vector2(1300f, 220f));
-
-            // Shared services.
-            _modal = SoiDecisionModal.Create(root, Theme);
-
+            // Services above the table.
             var toastRect = UiFactory.CreateRect("ToastHost", root);
-            UiFactory.Place(toastRect, new Vector2(0.5f, 0f), new Vector2(0f, 360f), new Vector2(600f, 60f));
+            UiFactory.Place(toastRect, new Vector2(0.5f, 0f), new Vector2(0f, 390f), new Vector2(600f, 60f));
             _toast = toastRect.gameObject.AddComponent<ToastView>();
             _toast.Container = toastRect;
             _toast.Init(Theme);
 
-            // Fixed hover preview (top-left, below the opponent strip).
-            _preview = SoiCardWidget.Create(root, Theme, new Vector2(280f, 392f));
+            var cardListRect = UiFactory.CreateRect("CardList", root);
+            UiFactory.Stretch(cardListRect);
+            _cardList = cardListRect.gameObject.AddComponent<CardListModal>();
+            _cardList.Container = cardListRect;
+            _cardList.Init(Theme);
+            _modal = SoiDecisionModal.Create(root, Theme);
+
+            // Fixed hover preview (top-left, under the opponent strip).
+            _preview = CardViewFactory.Create(root, Theme, 1.3f);
             _preview.Rect.anchorMin = _preview.Rect.anchorMax = new Vector2(0f, 1f);
             _preview.Rect.pivot = new Vector2(0f, 1f);
-            _preview.Rect.anchoredPosition = new Vector2(18f, -186f);
-            var previewGroup = _preview.GetComponent<CanvasGroup>();
-            previewGroup.blocksRaycasts = false;
-            previewGroup.interactable = false;
+            _preview.Rect.anchoredPosition = new Vector2(16f, -192f);
+            _preview.SetRaycastable(false);
+            _preview.Group.blocksRaycasts = false;
+            _preview.Group.interactable = false;
             _preview.gameObject.SetActive(false);
 
-            // Game-over panel (simple, self-contained).
+            // Game-over panel.
             _gameOverPanel = UiFactory.CreateRect("GameOver", root);
             UiFactory.Stretch(_gameOverPanel);
             UiFactory.CreateDimmer("Dimmer", _gameOverPanel);
@@ -187,42 +257,56 @@ namespace Pascension.Game.Soi
             _gameOverPanel.gameObject.SetActive(false);
         }
 
-        private TextMeshProUGUI Stat(RectTransform root, string label, Vector2 pos, Color color,
-            out RectTransform rect)
+        private T Layer<T>(string name, RectTransform root, out RectTransform rect) where T : Component
+        {
+            rect = UiFactory.CreateRect(name, root);
+            UiFactory.Stretch(rect);
+            return rect.gameObject.AddComponent<T>();
+        }
+
+        private PileWidget CreatePile(string goName, string title, bool faceDown, Vector2 anchor, Vector2 pos)
+        {
+            var rect = UiFactory.CreateRect(goName, UiRootRect);
+            UiFactory.Place(rect, anchor, pos, new Vector2(140f, 170f));
+            var pile = rect.gameObject.AddComponent<PileWidget>();
+            pile.Container = rect;
+            pile.Init(Theme, title, faceDown);
+            return pile;
+        }
+
+        private TextMeshProUGUI Stat(RectTransform root, string label, Vector2 pos, Color color, out RectTransform rect)
         {
             rect = UiFactory.CreateRect("Stat_" + label, root);
-            UiFactory.Place(rect, new Vector2(0f, 0.5f), pos, new Vector2(150f, 78f));
+            UiFactory.Place(rect, new Vector2(0.5f, 0.5f), pos, new Vector2(170f, 54f));
             var bg = UiFactory.CreatePanel(Theme, "Bg", rect, UiPalette.WithAlpha(UiPalette.Panel, 0.9f));
             UiFactory.Stretch((RectTransform)bg.transform);
-            var caption = UiFactory.CreateText(Theme, "Caption", rect, label, 12f, UiPalette.TextDim,
+            var caption = UiFactory.CreateText(Theme, "Caption", rect, label, 11f, UiPalette.TextDim,
+                TextAlignmentOptions.Left, FontStyles.Bold);
+            UiFactory.Place(caption.rectTransform, new Vector2(0f, 0.5f), new Vector2(126f, 0f), new Vector2(86f, 40f));
+            var value = UiFactory.CreateText(Theme, "Value", rect, "0", 26f, color,
                 TextAlignmentOptions.Center, FontStyles.Bold);
-            UiFactory.Place(caption.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -12f), new Vector2(150f, 18f));
-            var value = UiFactory.CreateText(Theme, "Value", rect, "0", 30f, color,
-                TextAlignmentOptions.Center, FontStyles.Bold);
-            UiFactory.Place(value.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(146f, 44f));
+            UiFactory.Place(value.rectTransform, new Vector2(0f, 0.5f), new Vector2(44f, 0f), new Vector2(84f, 44f));
             value.enableAutoSizing = true;
-            value.fontSizeMin = 14f;
-            value.fontSizeMax = 30f;
+            value.fontSizeMin = 13f;
+            value.fontSizeMax = 26f;
             return value;
         }
 
         private RectTransform LabeledRow(RectTransform root, string label, Vector2 pos, Vector2 size)
         {
             var caption = UiFactory.CreateText(Theme, "Label_" + label, root, label, 11f, UiPalette.TextDim,
-                TextAlignmentOptions.Left, FontStyles.Bold);
+                TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(caption.rectTransform, new Vector2(0.5f, 0.5f),
-                pos + new Vector2(0f, size.y / 2f + 12f), new Vector2(size.x, 16f));
-            caption.alignment = TextAlignmentOptions.Center;
+                pos + new Vector2(0f, size.y / 2f + 10f), new Vector2(size.x, 16f));
             var row = UiFactory.CreateRect("Row_" + label, root);
             UiFactory.Place(row, new Vector2(0.5f, 0.5f), pos, size);
             return row;
         }
 
-        // ------------------------------------------------------------------ session events
+        // ------------------------------------------------------------------ session plumbing
 
         private int MyIndex => _session.LocalPlayerIndex;
         private ShardsPlayerSnap Me => _snap != null ? _snap.Players[MyIndex] : null;
-        private bool MyTurn => _snap != null && _snap.TurnPlayerIndex == MyIndex;
         private bool MyPriority => _pending != null && _pending.PlayerIndex == MyIndex &&
                                    _pending.Kind == PendingInputKind.Priority;
 
@@ -230,32 +314,18 @@ namespace Pascension.Game.Soi
         {
             _snap = snapshotBase as ShardsSnapshot;
             if (_snap == null) return;
-            RenderAll();
+            RefreshHandLive();
+            if (_queue.IsIdle)
+                RefreshAll();
         }
 
         private void OnEvents(List<GameEvent> batch)
         {
+            // Drawn cards render hidden until their flight lands (mine only).
             foreach (var e in batch)
-            {
-                switch (e)
-                {
-                    case ShardsPlayerEliminatedEvent elim when _snap != null:
-                        _toast.ShowBanner(NameOf(elim.PlayerIndex) + " has been eliminated!");
-                        break;
-                    case ShardsMonsterRevealedEvent monster:
-                        _toast.ShowBanner("An Ingeminex appears: " + DefName(monster.DefId));
-                        break;
-                    case ShardsShieldsRevealedEvent shields:
-                        _toast.Show(NameOf(shields.PlayerIndex) + " reveals shields — prevents " + shields.Prevented);
-                        break;
-                    case ShardsDestinyTakenEvent destiny:
-                        _toast.Show(NameOf(destiny.PlayerIndex) + " takes a destiny: " + DefName(destiny.DefId));
-                        break;
-                    case ShardsRelicRecruitedEvent relic:
-                        _toast.Show(NameOf(relic.PlayerIndex) + " recruits " + DefName(relic.DefId));
-                        break;
-                }
-            }
+                if (e is ShardsCardDrawnEvent drawn && drawn.PlayerIndex == MyIndex && drawn.InstanceId > 0)
+                    _pendingReveal.Add(drawn.InstanceId);
+            _queue.Enqueue(batch);
         }
 
         private void OnInputRequested(PendingSnap pending)
@@ -264,7 +334,11 @@ namespace Pascension.Game.Soi
             if (pending != null && pending.Kind == PendingInputKind.Decision &&
                 pending.PlayerIndex == MyIndex && pending.Decision != null)
             {
-                ShowDecision(pending.Decision);
+                // Decisions wait for animations to finish (Pascension discipline).
+                if (_queue.IsIdle)
+                    ShowDecision(pending.Decision);
+                else
+                    _deferredDecision = pending.Decision;
             }
             RefreshInteractivity();
         }
@@ -290,24 +364,60 @@ namespace Pascension.Game.Soi
             _session.SubmitAction(action);
         }
 
-        // ------------------------------------------------------------------ decisions
+        // ------------------------------------------------------------------ input handlers
 
-        private void ShowDecision(DecisionRequest request)
+        private void OnHandPlayRequested(int instanceId)
         {
-            _modal.Show(request, id => OptionLabel(request, id), chosen =>
+            if (!MyPriority)
             {
-                var answer = new DecisionAnswer { DecisionId = request.Id };
-                answer.ChosenOptionIds.AddRange(chosen);
-                Submit(new SubmitDecisionAction { PlayerIndex = MyIndex, Answer = answer });
-            });
+                _toast.Show("Not your turn.");
+                return;
+            }
+            _hand.RemoveCardOptimistic(instanceId);
+            Submit(new ShardsPlayCardAction { PlayerIndex = MyIndex, CardInstanceId = instanceId });
         }
 
-        private string OptionLabel(DecisionRequest request, int id)
+        private void OnFocusClicked()
         {
-            foreach (var option in request.Options)
-                if (option.Id == id)
-                    return option.Label;
-            return id.ToString();
+            var me = Me;
+            if (!MyPriority || me == null) return;
+            if (me.CharacterExhausted) { _toast.Show("Your character is already exhausted."); return; }
+            if (me.FocusedThisTurn) { _toast.Show("You already focused this turn."); return; }
+            if (me.Gems < 1) { _toast.Show("Focus costs 1 gem."); return; }
+            _portrait.SetTapped(true); // optimistic tap — the snapshot confirms
+            Submit(new ShardsFocusAction { PlayerIndex = MyIndex });
+        }
+
+        private void OnRowSlotClicked(int slot)
+        {
+            if (!MyPriority || _snap == null) return;
+            var card = _snap.CenterRow[slot];
+            if (card == null) return;
+            if (!ShardsCardDatabase.TryGet(card.DefId, out var def)) return;
+
+            if (def.Type == ShardsCardType.Mercenary)
+            {
+                const string recruitLabel = "Recruit (to your discard pile)";
+                const string fastLabel = "Fast-play (effect now, returns to the center deck)";
+                var request = new DecisionRequest
+                {
+                    Id = -1,
+                    PlayerIndex = MyIndex,
+                    Title = def.Name + ": recruit it, or fast-play it now?",
+                    Context = "local.buy",
+                    Min = 0,
+                    Max = 1
+                };
+                request.Options.Add(new DecisionOption(0, recruitLabel));
+                request.Options.Add(new DecisionOption(1, fastLabel));
+                _modal.Show(request, id => id == 0 ? recruitLabel : fastLabel, chosen =>
+                {
+                    if (chosen.Count == 0) return;
+                    Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = slot, FastPlay = chosen[0] == 1 });
+                });
+                return;
+            }
+            Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = slot });
         }
 
         private void OnRelicsClicked()
@@ -332,39 +442,122 @@ namespace Pascension.Game.Soi
             });
         }
 
-        // ------------------------------------------------------------------ rendering
+        private void ShowDecision(DecisionRequest request)
+        {
+            _modal.Show(request, id => OptionLabel(request, id), chosen =>
+            {
+                var answer = new DecisionAnswer { DecisionId = request.Id };
+                answer.ChosenOptionIds.AddRange(chosen);
+                Submit(new SubmitDecisionAction { PlayerIndex = MyIndex, Answer = answer });
+            });
+        }
 
-        private void RenderAll()
+        private static string OptionLabel(DecisionRequest request, int id)
+        {
+            foreach (var option in request.Options)
+                if (option.Id == id)
+                    return option.Label;
+            return id.ToString();
+        }
+
+        // ------------------------------------------------------------------ live rendering (every snapshot)
+
+        private void RefreshHandLive()
+        {
+            var me = Me;
+            if (me == null) return;
+
+            _hand.Render(HandSnaps(me), PlayableIds(me), _pendingReveal.Count > 0 ? _pendingReveal : null);
+
+            _statHealth.text = me.Health.ToString();
+            _statMastery.text = me.Mastery + "/30";
+            _statGems.text = me.Gems.ToString();
+            _statPower.text = me.Power.ToString();
+
+            _drawPile.Render(me.DeckCount, null);
+            _playedPile.Render(me.PlayZone.Count, TopSnap(me.PlayZone));
+            _discardPile.Render(me.Discard.Count, TopSnap(me.Discard));
+            _banishPile.Render(_snap.Banished.Count, TopSnap(_snap.Banished));
+            _centerDeckPile.Render(_snap.CenterDeckCount, null);
+        }
+
+        // ------------------------------------------------------------------ full refresh (on drain)
+
+        private void RefreshAll()
         {
             if (_snap == null) return;
-            ClearWidgets();
+            _pendingReveal.Clear();
+            _hiddenSlots.Clear();
+            RefreshHandLive();
 
-            RenderHud();
-            RenderOpponents();
+            _hudTurn.text = $"ROUND {_snap.Round}  ·  " +
+                (_snap.TurnPlayerIndex == MyIndex ? "YOUR TURN" : NameOf(_snap.TurnPlayerIndex).ToUpperInvariant() + "'S TURN");
+            _hudCounts.text = $"center deck {_snap.CenterDeckCount}  ·  banished {_snap.Banished.Count}";
+
+            _boardViews.Clear();
+            foreach (var view in _transient)
+                if (view != null)
+                    Destroy(view.gameObject);
+            _transient.Clear();
+            foreach (Transform child in _opponentStrip) Destroy(child.gameObject);
+
             RenderCenterRow();
+            RenderOpponents();
             RenderDestinyAndMonsters();
             RenderMyBoard();
-            RenderHand();
             RefreshInteractivity();
             RenderGameOver();
+
+            if (_deferredDecision != null && _pending != null &&
+                _pending.Kind == PendingInputKind.Decision &&
+                _pending.Decision != null && _pending.Decision.Id == _deferredDecision.Id)
+            {
+                var request = _deferredDecision;
+                _deferredDecision = null;
+                ShowDecision(request);
+            }
+            else
+            {
+                _deferredDecision = null;
+            }
         }
 
-        private void ClearWidgets()
+        private void RenderCenterRow()
         {
-            _widgets.Clear();
-            foreach (var row in new[] { _centerRow, _destinyRow, _monsterRow, _handRow, _championRow, _playZoneRow, _destinyOwnRow, _opponentStrip })
-                foreach (Transform child in row)
-                    Destroy(child.gameObject);
+            for (int s = 0; s < _slots.Length && s < _snap.CenterRow.Count; s++)
+            {
+                var card = _snap.CenterRow[s];
+                var slot = _slots[s];
+                if (card == null || _hiddenSlots.Contains(s))
+                {
+                    slot.gameObject.SetActive(false);
+                    continue;
+                }
+                slot.gameObject.SetActive(true);
+                slot.BindDef(card.DefId, card.InstanceId);
+                _boardViews[card.InstanceId] = slot;
+            }
         }
 
-        private void RenderHud()
+        /// <summary>RowRefilled reveal: bind + pop a slot as its flight lands (the full
+        /// render would otherwise pop the whole row in at batch end).</summary>
+        private void RevealSlot(int slotIndex)
         {
-            _hudTurn.text = $"ROUND {_snap.Round}  ·  {(MyTurn ? "YOUR TURN" : NameOf(_snap.TurnPlayerIndex) + "'S TURN")}";
-            _hudCounts.text = $"center deck {_snap.CenterDeckCount}  ·  banished {_snap.Banished.Count}";
+            _hiddenSlots.Remove(slotIndex);
+            if (_snap == null || slotIndex >= _snap.CenterRow.Count) return;
+            var card = _snap.CenterRow[slotIndex];
+            var slot = _slots[slotIndex];
+            if (card == null) { slot.gameObject.SetActive(false); return; }
+            slot.gameObject.SetActive(true);
+            slot.BindDef(card.DefId, card.InstanceId);
+            _boardViews[card.InstanceId] = slot;
+            if (isActiveAndEnabled)
+                StartCoroutine(Tween.Punch(slot.transform, 0.18f, 0.22f));
         }
 
         private void RenderOpponents()
         {
+            _opponentPanels.Clear();
             float x = 0f;
             foreach (var player in _snap.Players)
             {
@@ -375,133 +568,85 @@ namespace Pascension.Game.Soi
                 rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
                 rect.pivot = new Vector2(0f, 1f);
                 rect.anchoredPosition = new Vector2(x, 0f);
-                rect.sizeDelta = new Vector2(370f, 156f);
-                x += 382f;
+                rect.sizeDelta = new Vector2(372f, 168f);
+                x += 384f;
+                _opponentPanels[player.Index] = rect;
 
                 bool theirTurn = _snap.TurnPlayerIndex == player.Index;
                 var name = UiFactory.CreateText(Theme, "Name", rect, player.Name +
-                        (player.Eliminated ? "  (eliminated)" : theirTurn ? "  ← turn" : ""),
+                        (player.Eliminated ? "  · eliminated" : theirTurn ? "  ← turn" : ""),
                     16f, theirTurn ? UiPalette.Gold : UiPalette.TextMain, TextAlignmentOptions.Left, FontStyles.Bold);
-                UiFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -16f), new Vector2(340f, 22f));
+                UiFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -15f), new Vector2(350f, 22f));
 
                 var stats = UiFactory.CreateText(Theme, "Stats", rect,
-                    $"HP {player.Health}   M {player.Mastery}   hand {player.HandCount}   deck {player.DeckCount}   discard {player.Discard.Count}",
+                    $"<color=#6FDF8F>{player.Health} hp</color>   <color=#D4AF37>{player.Mastery} mastery</color>   " +
+                    $"hand {player.HandCount} · deck {player.DeckCount} · discard {player.Discard.Count}",
                     13f, UiPalette.TextDim, TextAlignmentOptions.Left);
-                UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -40f), new Vector2(350f, 20f));
+                UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -38f), new Vector2(356f, 20f));
 
-                // Champions — mini chips, click to attack (engine validates power/taunt).
-                float cx = 12f;
+                float cx = 10f;
                 foreach (var champion in player.Champions)
                 {
-                    var chip = SoiCardWidget.Create(rect, Theme, new Vector2(82f, 92f));
-                    chip.Rect.anchorMin = chip.Rect.anchorMax = new Vector2(0f, 0f);
-                    chip.Rect.pivot = new Vector2(0f, 0f);
-                    chip.Rect.anchoredPosition = new Vector2(cx, 8f);
-                    cx += 88f;
-                    chip.Show(champion.DefId, champion.InstanceId, champion.Exhausted, champion.DamageThisTurn);
+                    if (cx > 290f) break;
+                    var view = CardViewFactory.Create(rect, Theme, 0.36f);
+                    view.RotateWhenTapped = false;
+                    view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0f);
+                    view.Rect.pivot = new Vector2(0f, 0f);
+                    view.Rect.anchoredPosition = new Vector2(cx, 6f);
+                    cx += 86f;
+                    view.BindDef(champion.DefId, champion.InstanceId);
+                    view.SetTapped(champion.Exhausted);
+                    view.SetMarkedDamage(champion.DamageThisTurn);
                     int target = player.Index;
-                    chip.Clicked += w => Submit(new ShardsAttackChampionAction
+                    view.Clicked += w => Submit(new ShardsAttackChampionAction
                     {
                         PlayerIndex = MyIndex,
                         TargetPlayerIndex = target,
                         CardInstanceId = w.InstanceId
                     });
-                    _widgets.Add(chip);
-                    if (cx > 350f) break;
+                    _boardViews[champion.InstanceId] = view;
                 }
             }
-        }
-
-        private void RenderCenterRow()
-        {
-            for (int slot = 0; slot < _snap.CenterRow.Count; slot++)
-            {
-                var card = _snap.CenterRow[slot];
-                var widget = SoiCardWidget.Create(_centerRow, Theme, new Vector2(150f, 210f));
-                widget.Rect.anchorMin = widget.Rect.anchorMax = new Vector2(0f, 0.5f);
-                widget.Rect.pivot = new Vector2(0f, 0.5f);
-                widget.Rect.anchoredPosition = new Vector2(slot * 158f, 0f);
-                if (card == null)
-                {
-                    widget.Show(null);
-                    continue;
-                }
-                widget.Show(card.DefId, card.InstanceId);
-                int slotIndex = slot;
-                string defId = card.DefId;
-                widget.Clicked += _ => OnRowSlotClicked(slotIndex, defId);
-                _widgets.Add(widget);
-            }
-        }
-
-        private void OnRowSlotClicked(int slot, string defId)
-        {
-            if (!MyPriority) return;
-            if (!ShardsCardDatabase.TryGet(defId, out var def)) return;
-
-            if (def.Type == ShardsCardType.Mercenary)
-            {
-                var request = new DecisionRequest
-                {
-                    Id = -1,
-                    PlayerIndex = MyIndex,
-                    Title = def.Name + ": recruit it, or fast-play it now?",
-                    Context = "local.buy",
-                    Min = 0,
-                    Max = 1
-                };
-                request.Options.Add(new DecisionOption(0, "Recruit (to your discard pile)"));
-                request.Options.Add(new DecisionOption(1, "Fast-play (effect now, returns to the center deck)"));
-                _modal.Show(request, id => OptionLabel(request, id), chosen =>
-                {
-                    if (chosen.Count == 0) return;
-                    Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = slot, FastPlay = chosen[0] == 1 });
-                });
-                return;
-            }
-            Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = slot });
         }
 
         private void RenderDestinyAndMonsters()
         {
-            bool ith = _snap.DestinyRow.Count > 0 || _snap.ActiveMonsters.Count > 0 || Me?.Destinies.Count > 0;
-            _destinyRow.gameObject.SetActive(ith);
-            _monsterRow.gameObject.SetActive(_snap.ActiveMonsters.Count > 0);
+            foreach (Transform child in _destinyRow) Destroy(child.gameObject);
+            foreach (Transform child in _monsterRow) Destroy(child.gameObject);
 
-            float x = 0f;
             bool eligible = MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5;
+            float x = 0f;
             foreach (var destiny in _snap.DestinyRow)
             {
-                var button = UiFactory.CreateButton(Theme, "Destiny_" + destiny.InstanceId, _destinyRow,
-                    DefName(destiny.DefId), 11f, eligible ? UiPalette.Gold : UiPalette.PanelLight, UiPalette.Background);
-                var rect = (RectTransform)button.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(0f, 0.5f);
-                rect.pivot = new Vector2(0f, 0.5f);
-                rect.anchoredPosition = new Vector2(x, 0f);
-                rect.sizeDelta = new Vector2(142f, 46f);
-                x += 148f;
-                int id = destiny.InstanceId;
-                string defId = destiny.DefId;
-                button.onClick.AddListener(() =>
+                var view = CardViewFactory.Create(_destinyRow, Theme, 0.4f);
+                view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0.5f);
+                view.Rect.pivot = new Vector2(0f, 0.5f);
+                view.Rect.anchoredPosition = new Vector2(x, 0f);
+                x += 96f;
+                view.BindDef(destiny.DefId, destiny.InstanceId);
+                view.SetGreyed(!eligible);
+                view.Clicked += w =>
                 {
-                    if (eligible)
-                        Submit(new ShardsTakeDestinyAction { PlayerIndex = MyIndex, CardInstanceId = id });
+                    if (MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5)
+                        Submit(new ShardsTakeDestinyAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
                     else
-                        _toast.Show(DefName(defId) + ": " + RulesOf(defId));
-                });
+                        _toast.Show("Destinies unlock at Mastery 5 (one per game).");
+                };
+                _boardViews[destiny.InstanceId] = view;
             }
 
             x = 0f;
             foreach (var monster in _snap.ActiveMonsters)
             {
-                var chip = SoiCardWidget.Create(_monsterRow, Theme, new Vector2(100f, 60f));
-                chip.Rect.anchorMin = chip.Rect.anchorMax = new Vector2(0f, 0.5f);
-                chip.Rect.pivot = new Vector2(0f, 0.5f);
-                chip.Rect.anchoredPosition = new Vector2(x, 0f);
-                x += 106f;
-                chip.Show(monster.DefId, monster.InstanceId, damage: monster.DamageThisTurn);
-                chip.Clicked += w => Submit(new ShardsAttackMonsterAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
-                _widgets.Add(chip);
+                var view = CardViewFactory.Create(_monsterRow, Theme, 0.46f);
+                view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0.5f);
+                view.Rect.pivot = new Vector2(0f, 0.5f);
+                view.Rect.anchoredPosition = new Vector2(x, 0f);
+                x += 108f;
+                view.BindDef(monster.DefId, monster.InstanceId);
+                view.SetMarkedDamage(monster.DamageThisTurn);
+                view.Clicked += w => Submit(new ShardsAttackMonsterAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
+                _boardViews[monster.InstanceId] = view;
             }
         }
 
@@ -510,80 +655,64 @@ namespace Pascension.Game.Soi
             var me = Me;
             if (me == null) return;
 
-            _statHealth.text = me.Health.ToString();
-            _statMastery.text = me.Mastery + " / 30";
-            _statGems.text = me.Gems.ToString();
-            _statPower.text = me.Power.ToString();
+            foreach (Transform child in _championRow) Destroy(child.gameObject);
+            foreach (Transform child in _ownDestinyRow) Destroy(child.gameObject);
+
+            _portrait.BindDef(SoiCardFaces.CharacterPrefix + me.CharacterId);
+            _portrait.SetTapped(me.CharacterExhausted);
+            _portrait.SetGreyed(!MyPriority || me.CharacterExhausted || me.FocusedThisTurn || me.Gems < 1);
 
             _relics.gameObject.SetActive(me.SetAside != null && me.SetAside.Count > 0 && !me.RelicRecruited);
 
             float x = 0f;
             foreach (var champion in me.Champions)
             {
-                var chip = SoiCardWidget.Create(_championRow, Theme, new Vector2(96f, 96f));
-                chip.Rect.anchorMin = chip.Rect.anchorMax = new Vector2(0f, 0.5f);
-                chip.Rect.pivot = new Vector2(0f, 0.5f);
-                chip.Rect.anchoredPosition = new Vector2(x, 0f);
-                x += 102f;
-                chip.Show(champion.DefId, champion.InstanceId, champion.Exhausted, champion.DamageThisTurn);
-                chip.Clicked += w => Submit(new ShardsExhaustAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
-                _widgets.Add(chip);
-            }
-
-            x = 0f;
-            foreach (var played in me.PlayZone)
-            {
-                var chip = UiFactory.CreateText(Theme, "Played", _playZoneRow, "· " + DefName(played.DefId), 13f,
-                    UiPalette.TextDim, TextAlignmentOptions.Left);
-                UiFactory.Place(chip.rectTransform, new Vector2(0f, 1f), new Vector2(6f, -(x)), new Vector2(540f, 18f));
-                x += 18f;
-                if (x > 66f) { chip.text += "  (+" + (me.PlayZone.Count - 4) + " more)"; break; }
+                if (x > 560f) break;
+                var view = CardViewFactory.Create(_championRow, Theme, 0.44f);
+                view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0.5f);
+                view.Rect.pivot = new Vector2(0f, 0.5f);
+                view.Rect.anchoredPosition = new Vector2(x, 0f);
+                x += 104f;
+                view.BindDef(champion.DefId, champion.InstanceId);
+                view.SetTapped(champion.Exhausted);
+                view.SetMarkedDamage(champion.DamageThisTurn);
+                view.Clicked += w =>
+                {
+                    if (MyPriority)
+                        Submit(new ShardsExhaustAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
+                };
+                _boardViews[champion.InstanceId] = view;
             }
 
             x = 0f;
             foreach (var destiny in me.Destinies)
             {
-                var chip = SoiCardWidget.Create(_destinyOwnRow, Theme, new Vector2(96f, 56f));
-                chip.Rect.anchorMin = chip.Rect.anchorMax = new Vector2(0f, 0.5f);
-                chip.Rect.pivot = new Vector2(0f, 0.5f);
-                chip.Rect.anchoredPosition = new Vector2(x, 0f);
-                x += 102f;
-                chip.Show(destiny.DefId, destiny.InstanceId, destiny.Exhausted);
-                chip.Clicked += w => Submit(new ShardsExhaustAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
-                _widgets.Add(chip);
-            }
-        }
-
-        private void RenderHand()
-        {
-            var me = Me;
-            if (me?.Hand == null) return;
-            int count = me.Hand.Count;
-            float step = Mathf.Min(158f, count > 1 ? 1140f / (count - 1) : 158f);
-            float start = -(count - 1) * step / 2f;
-            for (int i = 0; i < count; i++)
-            {
-                var card = me.Hand[i];
-                var widget = SoiCardWidget.Create(_handRow, Theme, new Vector2(150f, 210f));
-                widget.Rect.anchoredPosition = new Vector2(start + i * step, 0f);
-                widget.Show(card.DefId, card.InstanceId);
-                widget.Clicked += w => Submit(new ShardsPlayCardAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
-                _widgets.Add(widget);
+                if (x > 480f) break;
+                var view = CardViewFactory.Create(_ownDestinyRow, Theme, 0.44f);
+                view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0.5f);
+                view.Rect.pivot = new Vector2(0f, 0.5f);
+                view.Rect.anchoredPosition = new Vector2(x, 0f);
+                x += 104f;
+                view.BindDef(destiny.DefId, destiny.InstanceId);
+                view.SetTapped(destiny.Exhausted);
+                view.Clicked += w =>
+                {
+                    if (MyPriority)
+                        Submit(new ShardsExhaustAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
+                };
+                _boardViews[destiny.InstanceId] = view;
             }
         }
 
         private void RefreshInteractivity()
         {
             bool canAct = MyPriority && !_gameOverShown;
-            var me = Me;
             _endTurn.interactable = canAct;
-            _focus.interactable = canAct && me != null && me.Gems >= 1 && !me.FocusedThisTurn && !me.CharacterExhausted;
-            _relics.interactable = canAct && me != null && me.Mastery >= 10;
-            _statusLine.text = _gameOverShown ? "" :
-                _pending == null ? "" :
-                _pending.PlayerIndex == MyIndex
-                    ? (_pending.Kind == PendingInputKind.Decision ? "" : "Your move — play cards, buy, then END TURN.")
-                    : "Waiting for " + NameOf(_pending.PlayerIndex) + "…";
+            _relics.interactable = canAct && Me != null && Me.Mastery >= 10;
+            _statusLine.text = _gameOverShown || _pending == null ? "" :
+                _pending.PlayerIndex == MyIndex ? "" : "Waiting for " + NameOf(_pending.PlayerIndex) + "…";
+            if (_snap != null && Me != null)
+                _hand.Render(HandSnaps(Me), PlayableIds(Me), _pendingReveal.Count > 0 ? _pendingReveal : null);
         }
 
         private void RenderGameOver()
@@ -594,25 +723,381 @@ namespace Pascension.Game.Soi
             _gameOverPanel.SetAsLastSibling();
             _gameOverText.text = _snap.WinnerIndex < 0 ? "IT'S A TIE"
                 : _snap.WinnerIndex == MyIndex ? "VICTORY!"
-                : NameOf(_snap.WinnerIndex) + " WINS";
+                : NameOf(_snap.WinnerIndex).ToUpperInvariant() + " WINS";
+        }
+
+        // ------------------------------------------------------------------ event playback
+
+        private IEnumerator PlayEvent(GameEvent e)
+        {
+            switch (e)
+            {
+                case ShardsCardPlayedEvent played:
+                    return PlayShowcase(played.PlayerIndex, played.DefId);
+                case CoalescedDrawEvent draws:
+                    return PlayDraws(draws.PlayerIndex, draws.InstanceIds);
+                case ShardsCardDrawnEvent drawn:
+                    return PlayDraws(drawn.PlayerIndex, new List<int> { drawn.InstanceId });
+                case ShardsCardBoughtEvent bought:
+                    return PlayBuy(bought);
+                case ShardsRowRefilledEvent refilled:
+                    return PlayRefill(refilled);
+                case ShardsDeckShuffledEvent shuffled:
+                    return PlayShuffle(shuffled.PlayerIndex);
+                case ShardsMercenaryReturnedEvent merc:
+                    return PlayMercReturn(merc);
+                case ShardsCleanupEvent cleanup:
+                    return PlayCleanup(cleanup.PlayerIndex);
+                case ShardsGemsChangedEvent gems:
+                    PlayStatFloat(gems.PlayerIndex, gems.Delta, "gems", new Color(0.45f, 0.68f, 0.95f), _statGemsRect);
+                    return null;
+                case ShardsPowerChangedEvent power:
+                    PlayStatFloat(power.PlayerIndex, power.Delta, "power", UiPalette.WoundedRed, _statPowerRect);
+                    return null;
+                case ShardsMasteryChangedEvent mastery:
+                    PlayStatFloat(mastery.PlayerIndex, mastery.Delta, "mastery", UiPalette.Gold, _statMasteryRect);
+                    return null;
+                case ShardsHealthChangedEvent health:
+                    PlayStatFloat(health.PlayerIndex, health.Delta, "hp", UiPalette.HealthyGreen, _statHealthRect);
+                    return null;
+                case ShardsChampionDamagedEvent hit:
+                    return PlayChampionHit(hit.InstanceId, hit.Amount);
+                case ShardsChampionDestroyedEvent killed:
+                    return PlayChampionDestroyed(killed);
+                case ShardsMonsterDamagedEvent monsterHit:
+                    return PlayChampionHit(monsterHit.InstanceId, monsterHit.Amount);
+                case ShardsMonsterDefeatedEvent defeated:
+                    return PlayMonsterDefeated(defeated);
+                case ShardsMonsterRevealedEvent revealed:
+                    return PlayMonsterRevealed(revealed);
+                case ShardsMonsterAttackedEvent attack:
+                    _toast.ShowBanner(DefName(attack.DefId) + " strikes every player!");
+                    return null;
+                case ShardsDamageAssignedEvent damage:
+                    return PlayPlayerDamage(damage);
+                case ShardsShieldsRevealedEvent shields:
+                    return PlayShields(shields);
+                case ShardsCharacterExhaustedEvent exhausted:
+                    return PlayExhaust(exhausted);
+                case ShardsFocusedEvent focused:
+                    if (focused.PlayerIndex != MyIndex)
+                        _toast.Show(NameOf(focused.PlayerIndex) + " focuses.");
+                    return null;
+                case ShardsDestinyTakenEvent destiny:
+                    return PlayShowcase(destiny.PlayerIndex, destiny.DefId);
+                case ShardsRelicRecruitedEvent relic:
+                    _toast.Show(NameOf(relic.PlayerIndex) + " recruits " + DefName(relic.DefId));
+                    return PlayShowcase(relic.PlayerIndex, relic.DefId);
+                case ShardsCardBanishedEvent banished:
+                    return PlayBanish(banished);
+                case ShardsCardReturnedEvent returned:
+                    return PlayReturn(returned);
+                case ShardsPlayerEliminatedEvent eliminated:
+                    _toast.ShowBanner(NameOf(eliminated.PlayerIndex) + " has been eliminated!");
+                    return null;
+                case ShardsTurnStartedEvent turn:
+                    if (turn.PlayerIndex == MyIndex)
+                        _toast.ShowBanner("YOUR TURN");
+                    return null;
+                default:
+                    return null;
+            }
+        }
+
+        private Vector2 AnchorOf(int playerIndex, RectTransform mine)
+        {
+            if (playerIndex == MyIndex)
+                return _flights.ToLocal(mine != null ? mine : _handRect);
+            return _flights.ToLocal(_opponentPanels.TryGetValue(playerIndex, out var panel) ? panel : _opponentStrip);
+        }
+
+        private IEnumerator PlayShowcase(int playerIndex, string defId)
+        {
+            Vector2 from = AnchorOf(playerIndex, _handRect);
+            Vector2 to = playerIndex == MyIndex
+                ? _showcase.ToLocal(_playedPile.AnchorRect)
+                : AnchorOf(playerIndex, null);
+            yield return _showcase.Play(_queue, defId, playerIndex, from, to);
+            if (playerIndex == MyIndex) _playedPile.Pulse();
+        }
+
+        private IEnumerator PlayDraws(int playerIndex, List<int> instanceIds)
+        {
+            if (playerIndex != MyIndex)
+            {
+                Vector2 oppTo = AnchorOf(playerIndex, null);
+                yield return _flights.FlyMany(_queue, null, instanceIds.Count,
+                    _flights.ToLocal(_drawPile.AnchorRect), oppTo, 0.5f, 0.4f, 0.3f, faceDown: true, stagger: 0.05f);
+                yield break;
+            }
+
+            Vector2 from = _flights.ToLocal(_drawPile.AnchorRect);
+            foreach (int id in instanceIds)
+            {
+                var target = _hand.CardRect(id);
+                Vector2 to = target != null ? _flights.ToLocal(target) : _flights.ToLocal(_handRect);
+                StartCoroutine(FlightThenReveal(id, from, to));
+                yield return _queue.Wait(0.09f);
+            }
+            yield return _queue.Wait(0.3f);
+        }
+
+        private IEnumerator FlightThenReveal(int instanceId, Vector2 from, Vector2 to)
+        {
+            yield return _flights.Fly(_queue, null, from, to, 0.5f, 0.75f, 0.32f, faceDown: true);
+            _pendingReveal.Remove(instanceId);
+            _hand.RevealCard(instanceId);
+        }
+
+        private IEnumerator PlayBuy(ShardsCardBoughtEvent bought)
+        {
+            Vector2 from = bought.SlotIndex >= 0 && bought.SlotIndex < _slots.Length
+                ? _flights.ToLocal(_slots[bought.SlotIndex].Rect)
+                : _flights.ToLocal(_centerDeckPile.AnchorRect);
+
+            if (bought.FastPlay)
+            {
+                yield return _showcase.Play(_queue, bought.DefId, bought.PlayerIndex, from,
+                    bought.PlayerIndex == MyIndex ? _showcase.ToLocal(_playedPile.AnchorRect) : AnchorOf(bought.PlayerIndex, null));
+                if (bought.PlayerIndex == MyIndex) _playedPile.Pulse();
+                yield break;
+            }
+
+            Vector2 to = bought.PlayerIndex == MyIndex
+                ? _flights.ToLocal(_discardPile.AnchorRect)
+                : AnchorOf(bought.PlayerIndex, null);
+            yield return _flights.Fly(_queue, bought.DefId, from, to, 0.62f, 0.4f, 0.42f);
+            if (bought.PlayerIndex == MyIndex) _discardPile.Pulse();
+        }
+
+        private IEnumerator PlayRefill(ShardsRowRefilledEvent refilled)
+        {
+            if (refilled.SlotIndex < 0 || refilled.SlotIndex >= _slots.Length) yield break;
+            _hiddenSlots.Add(refilled.SlotIndex);
+            _slots[refilled.SlotIndex].gameObject.SetActive(false);
+            yield return _flights.Fly(_queue, refilled.DefId,
+                _flights.ToLocal(_centerDeckPile.AnchorRect),
+                _flights.ToLocal(_slots[refilled.SlotIndex].Rect), 0.45f, 0.62f, 0.3f);
+            RevealSlot(refilled.SlotIndex);
+        }
+
+        private IEnumerator PlayShuffle(int playerIndex)
+        {
+            if (playerIndex != MyIndex) yield break;
+            yield return _flights.FlyMany(_queue, null, 3,
+                _flights.ToLocal(_discardPile.AnchorRect), _flights.ToLocal(_drawPile.AnchorRect),
+                0.45f, 0.45f, 0.32f, faceDown: true, stagger: 0.07f);
+            _drawPile.Pulse();
+        }
+
+        private IEnumerator PlayMercReturn(ShardsMercenaryReturnedEvent merc)
+        {
+            Vector2 from = merc.PlayerIndex == MyIndex
+                ? _flights.ToLocal(_playedPile.AnchorRect)
+                : AnchorOf(merc.PlayerIndex, null);
+            yield return _flights.Fly(_queue, merc.DefId, from,
+                _flights.ToLocal(_centerDeckPile.AnchorRect), 0.45f, 0.4f, 0.4f);
+            _centerDeckPile.Pulse();
+        }
+
+        private IEnumerator PlayCleanup(int playerIndex)
+        {
+            if (playerIndex != MyIndex) yield break;
+            var me = Me;
+            int count = me != null ? Mathf.Max(1, me.PlayZone.Count) : 2;
+            yield return _flights.FlyMany(_queue, null, count,
+                _flights.ToLocal(_playedPile.AnchorRect), _flights.ToLocal(_discardPile.AnchorRect),
+                0.42f, 0.4f, 0.3f, faceDown: false, stagger: 0.06f);
+            _discardPile.Pulse();
+        }
+
+        private void PlayStatFloat(int playerIndex, int delta, string label, Color color, RectTransform myTile)
+        {
+            if (delta == 0) return;
+            string text = (delta > 0 ? "+" : "−") + Mathf.Abs(delta) + " " + label;
+            var tint = delta >= 0 ? color : UiPalette.WoundedRed;
+            if (playerIndex == MyIndex)
+                _floats.Spawn(_floats.ToLocal(myTile), text, tint, 26f);
+            else if (_opponentPanels.TryGetValue(playerIndex, out var panel))
+                _floats.Spawn(_floats.ToLocal(panel), text, tint, 22f);
+            RefreshHandLive(); // keep the visible numbers current mid-batch
+        }
+
+        private IEnumerator PlayChampionHit(int instanceId, int amount)
+        {
+            if (_boardViews.TryGetValue(instanceId, out var view) && view != null)
+            {
+                _floats.Spawn(_floats.ToLocal(view.Rect), "−" + amount, UiPalette.WoundedRed, 30f);
+                _bursts.Burst(_bursts.ToLocal(view.Rect), UiPalette.WoundedRed, 8, 130f);
+                view.SetMarkedDamage(amount);
+                yield return Tween.Punch(view.transform, 0.2f, 0.18f);
+            }
+        }
+
+        private IEnumerator PlayChampionDestroyed(ShardsChampionDestroyedEvent killed)
+        {
+            Vector2 from = _boardViews.TryGetValue(killed.InstanceId, out var view) && view != null
+                ? _flights.ToLocal(view.Rect)
+                : AnchorOf(killed.OwnerIndex, _championRow);
+            if (view != null) view.gameObject.SetActive(false);
+            _bursts.Burst(from, UiPalette.WoundedRed, 14, 200f);
+            Vector2 to = killed.OwnerIndex == MyIndex
+                ? _flights.ToLocal(_discardPile.AnchorRect)
+                : AnchorOf(killed.OwnerIndex, null);
+            yield return _flights.Fly(_queue, killed.DefId, from, to, 0.44f, 0.36f, 0.4f);
+        }
+
+        private IEnumerator PlayMonsterRevealed(ShardsMonsterRevealedEvent revealed)
+        {
+            _toast.ShowBanner("An Ingeminex appears: " + DefName(revealed.DefId));
+            yield return _showcase.Play(_queue, revealed.DefId, -1,
+                _showcase.ToLocal(_centerDeckPile.AnchorRect), _showcase.ToLocal(_monsterRow));
+        }
+
+        private IEnumerator PlayMonsterDefeated(ShardsMonsterDefeatedEvent defeated)
+        {
+            Vector2 from = _boardViews.TryGetValue(defeated.InstanceId, out var view) && view != null
+                ? _flights.ToLocal(view.Rect)
+                : _flights.ToLocal(_monsterRow);
+            if (view != null) view.gameObject.SetActive(false);
+            _bursts.Burst(from, UiPalette.Gold, 16, 240f);
+            yield return _flights.Fly(_queue, defeated.DefId, from,
+                _flights.ToLocal(_centerDeckPile.AnchorRect), 0.5f, 0.4f, 0.45f);
+        }
+
+        private IEnumerator PlayPlayerDamage(ShardsDamageAssignedEvent damage)
+        {
+            for (int i = 0; i < damage.Targets.Count; i++)
+            {
+                int target = damage.Targets[i];
+                int amount = damage.Amounts[i];
+                Vector2 at = target == MyIndex
+                    ? _floats.ToLocal(_statHealthRect)
+                    : (_opponentPanels.TryGetValue(target, out var panel) ? _floats.ToLocal(panel) : Vector2.zero);
+                _floats.Spawn(at, "−" + amount, UiPalette.WoundedRed, 34f);
+                _bursts.Burst(at, UiPalette.WoundedRed, 12, 190f);
+                if (target != MyIndex && _opponentPanels.TryGetValue(target, out var hitPanel))
+                    StartCoroutine(Tween.Punch(hitPanel, 0.12f, 0.2f));
+            }
+            yield return _queue.Wait(0.35f);
+        }
+
+        private IEnumerator PlayShields(ShardsShieldsRevealedEvent shields)
+        {
+            Vector2 at = shields.PlayerIndex == MyIndex
+                ? _floats.ToLocal(_statHealthRect)
+                : (_opponentPanels.TryGetValue(shields.PlayerIndex, out var panel) ? _floats.ToLocal(panel) : Vector2.zero);
+            _floats.Spawn(at, "blocked " + shields.Prevented, new Color(0.7f, 0.72f, 0.78f), 28f);
+            if (shields.DefIds.Count > 0)
+                yield return _showcase.Play(_queue, shields.DefIds[0], shields.PlayerIndex, at, at);
+            if (shields.DefIds.Count > 1)
+                _toast.Show(NameOf(shields.PlayerIndex) + " reveals " + shields.DefIds.Count + " shields — blocks " + shields.Prevented);
+        }
+
+        private IEnumerator PlayExhaust(ShardsCharacterExhaustedEvent exhausted)
+        {
+            // The tap rotation itself lands with the re-render; this is the click feedback.
+            if (exhausted.CardInstanceId < 0)
+            {
+                if (exhausted.PlayerIndex == MyIndex)
+                {
+                    _portrait.SetTapped(true);
+                    _bursts.Burst(_bursts.ToLocal(_portrait.Rect), UiPalette.Gold, 8, 120f);
+                    yield return Tween.Punch(_portrait.transform, 0.16f, 0.15f);
+                }
+                yield break;
+            }
+            if (_boardViews.TryGetValue(exhausted.CardInstanceId, out var view) && view != null)
+            {
+                view.SetTapped(true);
+                _bursts.Burst(_bursts.ToLocal(view.Rect), UiPalette.Gold, 8, 120f);
+                yield return Tween.Punch(view.transform, 0.16f, 0.15f);
+            }
+        }
+
+        private IEnumerator PlayBanish(ShardsCardBanishedEvent banished)
+        {
+            Vector2 from = banished.PlayerIndex == MyIndex
+                ? _flights.ToLocal(_discardPile.AnchorRect)
+                : AnchorOf(banished.PlayerIndex, null);
+            yield return _flights.Fly(_queue, banished.DefId, from,
+                _flights.ToLocal(_banishPile.AnchorRect), 0.42f, 0.38f, 0.4f);
+            _banishPile.Pulse();
+        }
+
+        private IEnumerator PlayReturn(ShardsCardReturnedEvent returned)
+        {
+            if (returned.PlayerIndex != MyIndex) yield break;
+            yield return _flights.Fly(_queue, returned.DefId,
+                _flights.ToLocal(_discardPile.AnchorRect), _flights.ToLocal(_handRect), 0.42f, 0.6f, 0.38f);
         }
 
         // ------------------------------------------------------------------ hover preview
 
-        private void OnCardHovered(SoiCardWidget widget, bool entered)
+        private void OnAnyCardHovered(CardView view, bool entered)
         {
-            if (widget == _preview) return;
-            if (!entered || widget.DefId == null)
+            if (view == _preview || _hand.IsDragging) return;
+            if (!entered || string.IsNullOrEmpty(view.DefId))
             {
                 _preview.gameObject.SetActive(false);
                 return;
             }
             _preview.gameObject.SetActive(true);
             _preview.transform.SetAsLastSibling();
-            _preview.Show(widget.DefId);
+            _preview.BindDef(view.DefId);
         }
 
-        // ------------------------------------------------------------------ helpers
+        // ------------------------------------------------------------------ data helpers
+
+        private List<CardSnap> HandSnaps(ShardsPlayerSnap me)
+        {
+            var result = new List<CardSnap>();
+            if (me.Hand == null) return result;
+            foreach (var card in me.Hand)
+                result.Add(Synth(card.DefId, card.InstanceId));
+            return result;
+        }
+
+        private HashSet<int> PlayableIds(ShardsPlayerSnap me)
+        {
+            var result = new HashSet<int>();
+            if (me.Hand != null && MyPriority)
+                foreach (var card in me.Hand)
+                    result.Add(card.InstanceId);
+            return result;
+        }
+
+        /// <summary>Synthetic CardSnap: DefId + InstanceId only — CardView resolves SoI
+        /// ids through the external face resolver, so every shared widget renders them.</summary>
+        private static CardSnap Synth(string defId, int instanceId) => new CardSnap
+        {
+            DefId = defId,
+            InstanceId = instanceId,
+            EffectiveCost = -1
+        };
+
+        private static CardSnap TopSnap(List<ShardsCardSnap> zone) =>
+            zone != null && zone.Count > 0 ? Synth(zone[zone.Count - 1].DefId, zone[zone.Count - 1].InstanceId) : null;
+
+        private static List<CardSnap> ZoneSnaps(List<ShardsCardSnap> zone)
+        {
+            var result = new List<CardSnap>();
+            if (zone == null) return result;
+            foreach (var card in zone)
+                result.Add(Synth(card.DefId, card.InstanceId));
+            result.Sort((a, b) => string.CompareOrdinal(DefName(a.DefId), DefName(b.DefId)));
+            return result;
+        }
+
+        private void ShowPile(string title, List<CardSnap> cards)
+        {
+            if (cards == null || cards.Count == 0)
+            {
+                _toast.Show("Nothing there yet.");
+                return;
+            }
+            _cardList.Show(title, cards);
+        }
 
         private string NameOf(int playerIndex) =>
             _snap != null && playerIndex >= 0 && playerIndex < _snap.Players.Count
@@ -620,8 +1105,5 @@ namespace Pascension.Game.Soi
 
         private static string DefName(string defId) =>
             ShardsCardDatabase.TryGet(defId, out var def) ? def.Name : defId;
-
-        private static string RulesOf(string defId) =>
-            ShardsCardDatabase.TryGet(defId, out var def) ? def.RulesText : "";
     }
 }

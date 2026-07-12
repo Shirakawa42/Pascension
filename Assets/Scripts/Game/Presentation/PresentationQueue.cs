@@ -113,6 +113,26 @@ namespace Pascension.Game.Presentation
                         continue;
                     }
                 }
+
+                // Shards of Infinity draws coalesce the same way (redraw-5 at cleanup).
+                if (batch[i] is Shards.Engine.ShardsCardDrawnEvent sfirst)
+                {
+                    int count = 1;
+                    while (i + count < batch.Count &&
+                           batch[i + count] is Shards.Engine.ShardsCardDrawnEvent snext &&
+                           snext.PlayerIndex == sfirst.PlayerIndex)
+                        count++;
+                    if (count > 1)
+                    {
+                        var coalesced = new CoalescedDrawEvent { PlayerIndex = sfirst.PlayerIndex, Count = count };
+                        for (int k = 0; k < count; k++)
+                            coalesced.InstanceIds.Add(((Shards.Engine.ShardsCardDrawnEvent)batch[i + k]).InstanceId);
+                        result.Add(coalesced);
+                        i += count;
+                        continue;
+                    }
+                }
+
                 result.Add(batch[i]);
                 i++;
             }
