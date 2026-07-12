@@ -15,7 +15,8 @@ namespace Pascension.Editor.ArtPipeline
     public static class CardArtIndexBuilder
     {
         public const string AssetPath = "Assets/Art/CardArtIndex.asset";
-        private static readonly string[] SourceFolders = { "Assets/Art/Cards", "Assets/Art/Heroes" };
+        private static readonly string[] SourceFolders =
+            { "Assets/Art/Cards", "Assets/Art/Heroes", "Assets/Art/Shards/Cards" };
 
         [MenuItem("Pascension/Rebuild Card Art Index")]
         public static void Rebuild()

@@ -7,6 +7,8 @@
         "Pascension.Engine",
         "Pascension.Content",
         "Pascension.Bots",
+        "Shards.Content",
+        "Shards.Engine",
         "Pascension.Net",
         "Unity.Netcode.Runtime",
         "Unity.TextMeshPro",

@@ -39,3 +39,7 @@ Library/MCPForUnity/
 [Bb]in/
 Tools/**/obj/
 Tools/**/bin/
+
+# Shards of Infinity imported card art — PERSONAL USE ONLY, never distribute/commit.
+Assets/Art/Shards/
+Assets/Art/Shards.meta

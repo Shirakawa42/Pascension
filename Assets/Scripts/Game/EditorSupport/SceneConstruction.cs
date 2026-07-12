@@ -27,6 +27,7 @@ namespace Pascension.Game.EditorSupport
         private const string ScenesFolder = "Assets/Scenes";
         private const string MenuScenePath = ScenesFolder + "/MainMenu.unity";
         private const string GameScenePath = ScenesFolder + "/Game.unity";
+        private const string ShardsScenePath = ScenesFolder + "/GameShards.unity";
         private const string ArtIndexPath = "Assets/Art/CardArtIndex.asset";
         private const string KeyartPath = "Assets/Art/Board/menu_keyart.png";
 
@@ -44,14 +45,16 @@ namespace Pascension.Game.EditorSupport
 
             BuildMenuScene(artIndex);
             BuildGameScene(artIndex);
+            BuildShardsGameScene(artIndex);
 
             // Idempotent append — never clobber entries other builders own (Lobby.unity
             // comes from NetSceneBuilder and must survive a Build All Scenes run).
             EnsureBuildSettingsScene(MenuScenePath);
             EnsureBuildSettingsScene(GameScenePath);
+            EnsureBuildSettingsScene(ShardsScenePath);
 
             AssetDatabase.SaveAssets();
-            Debug.Log("[Pascension] Built MainMenu.unity + Game.unity, registered build scenes, " +
+            Debug.Log("[Pascension] Built MainMenu.unity + Game.unity + GameShards.unity, registered build scenes, " +
                       $"CardArtIndex has {artIndex.entries.Count} entries. Open {MenuScenePath} and press Play.");
         }
 
@@ -128,8 +131,11 @@ namespace Pascension.Game.EditorSupport
 
             // Convenience: index any art already on disk (id = file name). The art
             // pipeline agent owns this asset; we only add entries that are missing.
+            // Shards of Infinity shares the index — its def ids never collide with
+            // Pascension's (imported SoI art is personal-use only and git-ignored).
             PopulateFromFolder(index, "Assets/Art/Cards");
             PopulateFromFolder(index, "Assets/Art/Heroes");
+            PopulateFromFolder(index, "Assets/Art/Shards/Cards");
             EditorUtility.SetDirty(index);
             return index;
         }
@@ -490,6 +496,37 @@ namespace Pascension.Game.EditorSupport
             bootstrap.Screen = screen;
 
             SaveScene(scene, GameScenePath);
+        }
+
+        // ------------------------------------------------------------------ shards table
+
+        /// <summary>The Shards of Infinity table is a thin scene: camera, canvas,
+        /// background, a 16:9-locked UiRoot and the two components. SoiGameScreen builds
+        /// its whole UI at runtime in Bind (nothing to serialize — the view-Init-at-
+        /// runtime rule by construction).</summary>
+        private static void BuildShardsGameScene(CardArtIndex artIndex)
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            BuildCamera();
+            BuildEventSystem();
+            var (canvas, theme) = BuildCanvas(artIndex);
+            BuildBackground(canvas.transform, theme, tryKeyart: false);
+
+            var uiRoot = UiFactory.CreateRect("UiRoot", canvas.transform);
+            uiRoot.anchorMin = uiRoot.anchorMax = uiRoot.pivot = new Vector2(0.5f, 0.5f);
+            uiRoot.sizeDelta = new Vector2(1920f, 1080f);
+            uiRoot.gameObject.AddComponent<RectMask2D>();
+
+            var screen = canvas.gameObject.AddComponent<Soi.SoiGameScreen>();
+            screen.Theme = theme;
+            screen.UiRootRect = uiRoot;
+
+            var bootstrapGo = new GameObject("GameRoot");
+            var bootstrap = bootstrapGo.AddComponent<Soi.SoiBootstrap>();
+            bootstrap.Screen = screen;
+
+            SaveScene(scene, ShardsScenePath);
         }
 
         // ------------------------------------------------------------------ helpers

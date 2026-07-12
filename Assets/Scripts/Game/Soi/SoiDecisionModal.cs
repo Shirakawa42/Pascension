@@ -1,0 +1,273 @@
+using System;
+using System.Collections.Generic;
+using Pascension.Engine.Decisions;
+using Pascension.Game.View;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace Pascension.Game.Soi
+{
+    /// <summary>
+    /// Generic decision UI for Shards of Infinity. Two modes:
+    /// - list (default): one toggle-button per option; CONFIRM enables once the picked
+    ///   count is within [Min, Max]; a SKIP shortcut appears when Min == 0.
+    /// - split ("soi.split"): one stepper per opponent; CONFIRM enables when the total
+    ///   equals the mandatory full assignment.
+    /// Built entirely at runtime; one instance per screen, reshown per request.
+    /// </summary>
+    public sealed class SoiDecisionModal : MonoBehaviour
+    {
+        private UiTheme _theme;
+        private RectTransform _root;
+        private Image _dimmer;
+        private RectTransform _panel;
+        private TextMeshProUGUI _title;
+        private RectTransform _body;
+        private Button _confirm;
+        private TextMeshProUGUI _confirmLabel;
+        private Button _skip;
+
+        private DecisionRequest _request;
+        private Action<List<int>> _onConfirm;
+        private readonly List<int> _picked = new List<int>();
+        private readonly Dictionary<int, int> _splitCounts = new Dictionary<int, int>();
+        private readonly List<(Button button, Image bg, int optionId)> _optionButtons = new();
+        private readonly List<TextMeshProUGUI> _splitLabels = new();
+
+        public bool Visible => _root != null && _root.gameObject.activeSelf;
+
+        public static SoiDecisionModal Create(Transform parent, UiTheme theme)
+        {
+            var rect = UiFactory.CreateRect("SoiDecisionModal", parent);
+            UiFactory.Stretch(rect);
+            var modal = rect.gameObject.AddComponent<SoiDecisionModal>();
+            modal.Build(theme, rect);
+            return modal;
+        }
+
+        private void Build(UiTheme theme, RectTransform rect)
+        {
+            _theme = theme;
+            _root = rect;
+
+            _dimmer = UiFactory.CreateDimmer("Dimmer", rect);
+
+            var panelImg = UiFactory.CreatePanel(theme, "Panel", rect, UiPalette.Panel);
+            _panel = (RectTransform)panelImg.transform;
+            UiFactory.Place(_panel, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(660f, 560f));
+
+            _title = UiFactory.CreateText(theme, "Title", _panel, "", 22f, UiPalette.Gold,
+                TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(_title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -32f), new Vector2(620f, 56f));
+
+            _body = UiFactory.CreateRect("Body", _panel);
+            UiFactory.Place(_body, new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(620f, 400f));
+
+            _confirm = UiFactory.CreateButton(theme, "Confirm", _panel, "CONFIRM", 18f,
+                UiPalette.Gold, UiPalette.Background);
+            UiFactory.Place((RectTransform)_confirm.transform, new Vector2(0.5f, 0f), new Vector2(-110f, 42f), new Vector2(190f, 52f));
+            _confirm.onClick.AddListener(Confirm);
+            _confirmLabel = UiFactory.ButtonLabel(_confirm);
+
+            _skip = UiFactory.CreateButton(theme, "Skip", _panel, "SKIP", 16f);
+            UiFactory.Place((RectTransform)_skip.transform, new Vector2(0.5f, 0f), new Vector2(110f, 42f), new Vector2(190f, 52f));
+            _skip.onClick.AddListener(() =>
+            {
+                _picked.Clear();
+                _splitCounts.Clear();
+                Confirm();
+            });
+
+            rect.gameObject.SetActive(false);
+        }
+
+        public void Show(DecisionRequest request, Func<int, string> optionLabel, Action<List<int>> onConfirm)
+        {
+            _request = request;
+            _onConfirm = onConfirm;
+            _picked.Clear();
+            _splitCounts.Clear();
+            _optionButtons.Clear();
+            _splitLabels.Clear();
+            foreach (Transform child in _body)
+                Destroy(child.gameObject);
+
+            _title.text = request.Title;
+            _skip.gameObject.SetActive(request.Min == 0);
+            _root.gameObject.SetActive(true);
+            _root.SetAsLastSibling();
+
+            if (request.Context == "soi.split")
+                BuildSplit(request);
+            else
+                BuildList(request, optionLabel);
+            RefreshConfirm();
+        }
+
+        public void Hide()
+        {
+            _root.gameObject.SetActive(false);
+            _request = null;
+        }
+
+        // ------------------------------------------------------------------ list mode
+
+        private void BuildList(DecisionRequest request, Func<int, string> optionLabel)
+        {
+            var scroll = UiFactory.CreateScrollView(_theme, "Options", _body, out var content);
+            UiFactory.Stretch((RectTransform)scroll.transform);
+
+            var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 6f;
+            layout.padding = new RectOffset(8, 8, 8, 8);
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            var fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            foreach (var option in request.Options)
+            {
+                string label = optionLabel != null ? optionLabel(option.Id) : option.Label;
+                var button = UiFactory.CreateButton(_theme, "Opt_" + option.Id, content, label, 15f);
+                var lrect = (RectTransform)button.transform;
+                lrect.sizeDelta = new Vector2(0f, 44f);
+                var le = button.gameObject.AddComponent<LayoutElement>();
+                le.preferredHeight = 44f;
+                int id = option.Id;
+                var bg = button.GetComponent<Image>();
+                button.onClick.AddListener(() => ToggleOption(id, bg));
+                _optionButtons.Add((button, bg, id));
+            }
+        }
+
+        private void ToggleOption(int id, Image bg)
+        {
+            if (_picked.Contains(id))
+            {
+                _picked.Remove(id);
+            }
+            else
+            {
+                if (_request.Max == 1)
+                    _picked.Clear(); // radio behavior for single-choice
+                if (_picked.Count >= _request.Max)
+                    return;
+                _picked.Add(id);
+            }
+            foreach (var (_, image, optionId) in _optionButtons)
+                image.color = _picked.Contains(optionId)
+                    ? new Color(0.5f, 0.42f, 0.2f, 1f)
+                    : UiPalette.PanelLight;
+            RefreshConfirm();
+        }
+
+        // ------------------------------------------------------------------ split mode
+
+        private void BuildSplit(DecisionRequest request)
+        {
+            float y = -20f;
+            foreach (var option in request.Options)
+            {
+                _splitCounts[option.Id] = 0;
+                var row = UiFactory.CreateRect("Split_" + option.Id, _body);
+                UiFactory.Place(row, new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(560f, 64f));
+                y -= 74f;
+
+                var name = UiFactory.CreateText(_theme, "Name", row, option.Label, 18f, UiPalette.TextMain,
+                    TextAlignmentOptions.Left, FontStyles.Bold);
+                UiFactory.Place(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(140f, 0f), new Vector2(260f, 40f));
+
+                var minus = UiFactory.CreateButton(_theme, "Minus", row, "−", 22f);
+                UiFactory.Place((RectTransform)minus.transform, new Vector2(1f, 0.5f), new Vector2(-160f, 0f), new Vector2(52f, 52f));
+
+                var count = UiFactory.CreateText(_theme, "Count", row, "0", 24f, UiPalette.Gold,
+                    TextAlignmentOptions.Center, FontStyles.Bold);
+                UiFactory.Place(count.rectTransform, new Vector2(1f, 0.5f), new Vector2(-100f, 0f), new Vector2(60f, 44f));
+                _splitLabels.Add(count);
+
+                var plus = UiFactory.CreateButton(_theme, "Plus", row, "+", 22f);
+                UiFactory.Place((RectTransform)plus.transform, new Vector2(1f, 0.5f), new Vector2(-40f, 0f), new Vector2(52f, 52f));
+
+                int id = option.Id;
+                var countLabel = count;
+                minus.onClick.AddListener(() => Bump(id, -1, countLabel));
+                plus.onClick.AddListener(() => Bump(id, +1, countLabel));
+            }
+
+            // "All on X" shortcuts save clicks for big pools.
+            float x = -(request.Options.Count - 1) * 100f;
+            foreach (var option in request.Options)
+            {
+                var all = UiFactory.CreateButton(_theme, "All_" + option.Id, _body,
+                    "ALL → " + option.Label.ToUpperInvariant(), 12f);
+                UiFactory.Place((RectTransform)all.transform, new Vector2(0.5f, 0f), new Vector2(x, 30f), new Vector2(190f, 40f));
+                x += 200f;
+                int id = option.Id;
+                all.onClick.AddListener(() =>
+                {
+                    foreach (var key in new List<int>(_splitCounts.Keys))
+                        _splitCounts[key] = key == id ? _request.Max : 0;
+                    RefreshSplitLabels();
+                    RefreshConfirm();
+                });
+            }
+        }
+
+        private void Bump(int id, int delta, TextMeshProUGUI label)
+        {
+            int total = 0;
+            foreach (var kv in _splitCounts) total += kv.Value;
+            if (delta > 0 && total >= _request.Max) return;
+            _splitCounts[id] = Mathf.Max(0, _splitCounts[id] + delta);
+            label.text = _splitCounts[id].ToString();
+            RefreshConfirm();
+        }
+
+        private void RefreshSplitLabels()
+        {
+            int i = 0;
+            foreach (var option in _request.Options)
+                _splitLabels[i++].text = _splitCounts[option.Id].ToString();
+        }
+
+        // ------------------------------------------------------------------ confirm
+
+        private void RefreshConfirm()
+        {
+            int count;
+            if (_request.Context == "soi.split")
+            {
+                count = 0;
+                foreach (var kv in _splitCounts) count += kv.Value;
+                _confirmLabel.text = $"CONFIRM ({count}/{_request.Max})";
+            }
+            else
+            {
+                count = _picked.Count;
+                _confirmLabel.text = _request.Max > 1 ? $"CONFIRM ({count})" : "CONFIRM";
+            }
+            _confirm.interactable = count >= _request.Min && count <= _request.Max;
+        }
+
+        private void Confirm()
+        {
+            var chosen = new List<int>();
+            if (_request.Context == "soi.split")
+            {
+                foreach (var option in _request.Options)
+                    for (int i = 0; i < _splitCounts[option.Id]; i++)
+                        chosen.Add(option.Id);
+            }
+            else
+            {
+                chosen.AddRange(_picked);
+            }
+            var callback = _onConfirm;
+            Hide();
+            callback?.Invoke(chosen);
+        }
+    }
+}

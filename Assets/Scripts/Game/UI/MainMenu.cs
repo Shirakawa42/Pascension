@@ -23,6 +23,7 @@ namespace Pascension.Game.UI
         private RectTransform _homePanel;
         private RectTransform _gameSelectPanel;
         private RectTransform _soloPanel;
+        private RectTransform _soiSoloPanel;
         private RectTransform _settingsPanel;
         /// <summary>True while the game-select panel routes to multiplayer (else solo).</summary>
         private bool _selectForMultiplayer;
@@ -54,6 +55,7 @@ namespace Pascension.Game.UI
             BuildHome();
             BuildGameSelect();
             BuildSolo();
+            BuildSoloShards();
             BuildSettings();
             ShowPanel(_homePanel);
         }
@@ -160,10 +162,149 @@ namespace Pascension.Game.UI
                 return;
             }
 
-            if (gameId == "pascension")
-                ShowPanel(_soloPanel);
+            if (gameId == "shards")
+                ShowPanel(_soiSoloPanel);
             else
-                ShowPanel(_gameSelectPanel); // per-game solo panels register in later milestones
+                ShowPanel(_soloPanel);
+        }
+
+        // ------------------------------------------------------------------ shards solo setup
+
+        private string _soiCharacter = "decima";
+        private int _soiDlc;
+        private int _soiBots = 1;
+        private RectTransform _soiCharacterRow;
+        private readonly List<Button> _soiBotButtons = new List<Button>();
+
+        private void BuildSoloShards()
+        {
+            _soiSoloPanel = UiFactory.CreateRect("SoiSoloPanel", Parent);
+            UiFactory.Stretch(_soiSoloPanel);
+
+            var title = UiFactory.CreateText(Theme, "Title", _soiSoloPanel, "SHARDS OF INFINITY — NEW GAME", 40f,
+                UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
+            title.characterSpacing = 4f;
+            UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(1100f, 52f));
+
+            var charLabel = UiFactory.CreateText(Theme, "CharLabel", _soiSoloPanel, "YOUR CHARACTER", 18f,
+                UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(charLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(600f, 26f));
+            _soiCharacterRow = UiFactory.CreateRect("Characters", _soiSoloPanel);
+            UiFactory.Place(_soiCharacterRow, new Vector2(0.5f, 1f), new Vector2(0f, -260f), new Vector2(1200f, 110f));
+
+            var dlcLabel = UiFactory.CreateText(Theme, "DlcLabel", _soiSoloPanel, "EXPANSIONS", 18f,
+                UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(dlcLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -360f), new Vector2(600f, 26f));
+            var module = Pascension.Net.GameCatalog.Get("shards");
+            float dy = -400f;
+            foreach (var dlc in module.DlcOptions)
+            {
+                var toggle = UiFactory.CreateToggle(Theme, "Dlc_" + dlc.Flag, _soiSoloPanel,
+                    dlc.Name + "  —  " + dlc.Description);
+                UiFactory.Place((RectTransform)toggle.transform, new Vector2(0.5f, 1f), new Vector2(-40f, dy), new Vector2(860f, 34f));
+                dy -= 42f;
+                int flag = dlc.Flag;
+                toggle.onValueChanged.AddListener(on =>
+                {
+                    if (on) _soiDlc |= flag;
+                    else _soiDlc &= ~flag;
+                    RebuildSoiCharacters(); // Rez appears only with Shadow of Salvation
+                });
+            }
+
+            var botsLabel = UiFactory.CreateText(Theme, "BotsLabel", _soiSoloPanel, "OPPONENTS (heuristic bots)", 18f,
+                UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(botsLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -560f), new Vector2(600f, 26f));
+            _soiBotButtons.Clear();
+            for (int i = 1; i <= 3; i++)
+            {
+                var button = UiFactory.CreateButton(Theme, "Bots_" + i, _soiSoloPanel, i.ToString(), 22f);
+                UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 1f),
+                    new Vector2((i - 2) * 90f, -614f), new Vector2(74f, 56f));
+                int count = i;
+                button.onClick.AddListener(() =>
+                {
+                    _soiBots = count;
+                    RefreshSoiBotButtons();
+                });
+                _soiBotButtons.Add(button);
+            }
+
+            var start = UiFactory.CreateButton(Theme, "Start", _soiSoloPanel, "START GAME", 24f,
+                UiPalette.Gold, UiPalette.Background);
+            UiFactory.Place((RectTransform)start.transform, new Vector2(0.5f, 0f), new Vector2(0f, 150f), new Vector2(360f, 64f));
+            start.onClick.AddListener(StartSoiSolo);
+
+            var back = UiFactory.CreateButton(Theme, "Back", _soiSoloPanel, "BACK", 20f);
+            UiFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0f, 70f), new Vector2(220f, 54f));
+            back.onClick.AddListener(() => ShowPanel(_gameSelectPanel));
+
+            RebuildSoiCharacters();
+            RefreshSoiBotButtons();
+        }
+
+        private void RebuildSoiCharacters()
+        {
+            foreach (Transform child in _soiCharacterRow)
+                Destroy(child.gameObject);
+            var module = Pascension.Net.GameCatalog.Get("shards");
+            var characters = module.CharactersFor(_soiDlc);
+            bool stillValid = false;
+            foreach (var c in characters)
+                if (c.Id == _soiCharacter)
+                    stillValid = true;
+            if (!stillValid) _soiCharacter = characters[0].Id;
+
+            float x = -(characters.Count - 1) * 110f;
+            foreach (var character in characters)
+            {
+                bool selected = character.Id == _soiCharacter;
+                var button = UiFactory.CreateButton(Theme, "Char_" + character.Id, _soiCharacterRow,
+                    character.DisplayName.ToUpperInvariant(), 16f,
+                    selected ? UiPalette.Gold : UiPalette.PanelLight, UiPalette.Background);
+                UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 0.5f), new Vector2(x, 0f), new Vector2(200f, 88f));
+                x += 220f;
+                string id = character.Id;
+                button.onClick.AddListener(() =>
+                {
+                    _soiCharacter = id;
+                    RebuildSoiCharacters();
+                });
+            }
+        }
+
+        private void RefreshSoiBotButtons()
+        {
+            for (int i = 0; i < _soiBotButtons.Count; i++)
+            {
+                var image = _soiBotButtons[i].GetComponent<Image>();
+                if (image != null)
+                    image.color = (i + 1) == _soiBots ? UiPalette.Gold : UiPalette.PanelLight;
+            }
+        }
+
+        private void StartSoiSolo()
+        {
+            var module = Pascension.Net.GameCatalog.Get("shards");
+            var characters = module.CharactersFor(_soiDlc);
+
+            MatchSetup.GameId = "shards";
+            MatchSetup.DlcFlags = _soiDlc;
+            MatchSetup.PlayerHeroId = _soiCharacter;
+            MatchSetup.PlayerName = "You";
+            MatchSetup.Opponents = new List<OpponentSetup>();
+            int next = 0;
+            for (int i = 0; i < _soiBots; i++)
+            {
+                // Cycle the roster, skipping the player's pick first time around.
+                while (characters[next % characters.Count].Id == _soiCharacter && characters.Count > 1)
+                    next++;
+                MatchSetup.Opponents.Add(new OpponentSetup(characters[next % characters.Count].Id, BotKind.Heuristic));
+                next++;
+            }
+            MatchSetup.Seed = (ulong)DateTime.UtcNow.Ticks;
+            MatchSetup.Configured = true;
+            SceneFlow.LoadGame(module.GameSceneName);
         }
 
         // ------------------------------------------------------------------ solo setup
@@ -420,7 +561,9 @@ namespace Pascension.Game.UI
         private void ShowPanel(RectTransform panel)
         {
             _homePanel.gameObject.SetActive(panel == _homePanel);
+            _gameSelectPanel.gameObject.SetActive(panel == _gameSelectPanel);
             _soloPanel.gameObject.SetActive(panel == _soloPanel);
+            _soiSoloPanel.gameObject.SetActive(panel == _soiSoloPanel);
             _settingsPanel.gameObject.SetActive(panel == _settingsPanel);
         }
     }

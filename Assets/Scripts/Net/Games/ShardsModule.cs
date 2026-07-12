@@ -23,7 +23,7 @@ namespace Pascension.Net
         public string GameSceneName => "GameShards";
         public int MinPlayers => 2;
         public int MaxPlayers => 4;
-        public bool Playable => false; // M6: flip when the SoI table scene exists
+        public bool Playable => true; // M6: GameShards scene + SoiGameScreen shipped
 
         public IGameCodec Codec { get; } = new ShardsCodec();
 
