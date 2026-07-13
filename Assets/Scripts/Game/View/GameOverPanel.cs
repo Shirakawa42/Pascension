@@ -28,7 +28,7 @@ namespace Pascension.Game.View
             var panel = UiFactory.CreatePanel(Theme, "Panel", Container);
             UiFactory.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560f, 520f));
 
-            _title = UiFactory.CreateText(Theme, "Title", panel.transform, "VICTORY", 44f,
+            _title = UiFactory.CreateText(Theme, "Title", panel.transform, Loc.T("VICTORY"), 44f,
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             _title.characterSpacing = 8f;
             _title.rectTransform.anchorMin = new Vector2(0f, 1f);
@@ -53,7 +53,7 @@ namespace Pascension.Game.View
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Stretch(_heroInitial.rectTransform);
 
-            var back = UiFactory.CreateButton(Theme, "BackButton", panel.transform, "BACK TO MENU", 22f,
+            var back = UiFactory.CreateButton(Theme, "BackButton", panel.transform, Loc.T("BACK TO MENU"), 22f,
                 UiPalette.Gold, UiPalette.Background);
             var backRt = (RectTransform)back.transform;
             backRt.anchorMin = new Vector2(0.5f, 0f);
@@ -73,9 +73,11 @@ namespace Pascension.Game.View
         public void Show(string winnerName, string heroId, bool localWon)
         {
             if (!_built) return;
-            _title.text = localWon ? "VICTORY" : "GAME OVER";
+            _title.text = localWon ? Loc.T("VICTORY") : Loc.T("GAME OVER");
             _title.color = localWon ? UiPalette.Gold : UiPalette.Danger;
-            _subtitle.text = string.IsNullOrEmpty(winnerName) ? "It is over." : $"{winnerName} wins!";
+            _subtitle.text = string.IsNullOrEmpty(winnerName)
+                ? Loc.T("It is over.")
+                : (Loc.French ? $"{winnerName} remporte la partie !" : $"{winnerName} wins!");
 
             var art = Theme.Art(heroId);
             if (art != null)

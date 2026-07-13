@@ -31,6 +31,7 @@ namespace Pascension.Game.Soi
 
         private DecisionRequest _request;
         private Action<List<int>> _onConfirm;
+        private Func<int, string> _captionFor;
         private readonly List<int> _picked = new List<int>();
         private readonly Dictionary<int, int> _splitCounts = new Dictionary<int, int>();
         private readonly List<(Button button, Image bg, int optionId)> _optionButtons = new();
@@ -66,13 +67,13 @@ namespace Pascension.Game.Soi
             _body = UiFactory.CreateRect("Body", _panel);
             UiFactory.Place(_body, new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(620f, 400f));
 
-            _confirm = UiFactory.CreateButton(theme, "Confirm", _panel, "CONFIRM", 18f,
+            _confirm = UiFactory.CreateButton(theme, "Confirm", _panel, UI.Loc.T("CONFIRM"), 18f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_confirm.transform, new Vector2(0.5f, 0f), new Vector2(-110f, 42f), new Vector2(190f, 52f));
             _confirm.onClick.AddListener(Confirm);
             _confirmLabel = UiFactory.ButtonLabel(_confirm);
 
-            _skip = UiFactory.CreateButton(theme, "Skip", _panel, "SKIP", 16f);
+            _skip = UiFactory.CreateButton(theme, "Skip", _panel, UI.Loc.T("SKIP"), 16f);
             UiFactory.Place((RectTransform)_skip.transform, new Vector2(0.5f, 0f), new Vector2(110f, 42f), new Vector2(190f, 52f));
             _skip.onClick.AddListener(() =>
             {
@@ -85,10 +86,14 @@ namespace Pascension.Game.Soi
         }
 
         /// <summary>Show a decision. `defIdResolver` maps a card instance id to its def id
-        /// so options that reference cards render as the real card face (null = no card).</summary>
+        /// so options that reference cards render as the real card face (null = no card).
+        /// `captionFor` maps a card instance id to a small caption under the card —
+        /// typically its source zone ("your hand" vs "your discard"), so multi-zone
+        /// choices like banish are unambiguous.</summary>
         public void Show(DecisionRequest request, Func<int, string> optionLabel, Action<List<int>> onConfirm,
-            Func<int, string> defIdResolver = null)
+            Func<int, string> defIdResolver = null, Func<int, string> captionFor = null)
         {
+            _captionFor = captionFor;
             _request = request;
             _onConfirm = onConfirm;
             _picked.Clear();
@@ -99,7 +104,7 @@ namespace Pascension.Game.Soi
             foreach (Transform child in _body)
                 Destroy(child.gameObject);
 
-            _title.text = request.Title;
+            _title.text = UI.Loc.DecisionTitle(request.Title);
             _skip.gameObject.SetActive(request.Min == 0);
             _root.gameObject.SetActive(true);
             _root.SetAsLastSibling();
@@ -147,9 +152,11 @@ namespace Pascension.Game.Soi
             var scroll = UiFactory.CreateScrollView(_theme, "Options", _body, out var content);
             UiFactory.Stretch((RectTransform)scroll.transform);
 
+            // Cells carry a caption band under the card (source zone); height covers
+            // the 0.6-scale card (~185) + a 22px caption line.
             var grid = content.gameObject.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(140f, 198f);
-            grid.spacing = new Vector2(12f, 12f);
+            grid.cellSize = new Vector2(140f, 220f);
+            grid.spacing = new Vector2(12f, 10f);
             grid.padding = new RectOffset(10, 10, 10, 10);
             grid.childAlignment = TextAnchor.UpperCenter;
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
@@ -165,14 +172,26 @@ namespace Pascension.Game.Soi
                 if (defId != null)
                 {
                     var card = CardViewFactory.Create(cell, _theme, 0.6f);
-                    card.Bind(new CardSnap { DefId = defId, InstanceId = option.CardInstanceId, EffectiveCost = -1 });
+                    // Pin to the cell TOP (pivot-scaled) so the caption band below stays clear.
+                    card.Rect.anchorMin = card.Rect.anchorMax = card.Rect.pivot = new Vector2(0.5f, 1f);
+                    card.Rect.anchoredPosition = Vector2.zero;
                     card.Clicked += _ => TogglePick(id);
+                    card.Bind(new CardSnap { DefId = defId, InstanceId = option.CardInstanceId, EffectiveCost = -1 });
                     _optionCards.Add((card, id));
+
+                    string caption = _captionFor != null && option.CardInstanceId > 0
+                        ? _captionFor(option.CardInstanceId) : null;
+                    if (!string.IsNullOrEmpty(caption))
+                    {
+                        var text = UiFactory.CreateText(_theme, "Caption", cell, caption, 12f,
+                            UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Italic);
+                        UiFactory.Place(text.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 2f), new Vector2(138f, 20f));
+                    }
                 }
                 else
                 {
                     // Non-card option in a mixed list (e.g. "Leave it on top") — text button.
-                    string label = optionLabel != null ? optionLabel(id) : option.Label;
+                    string label = UI.Loc.OptionLabel(optionLabel != null ? optionLabel(id) : option.Label);
                     var button = UiFactory.CreateButton(_theme, "OptTxt_" + id, cell, label, 13f);
                     UiFactory.Stretch((RectTransform)button.transform);
                     var bg = button.GetComponent<Image>();
@@ -199,7 +218,7 @@ namespace Pascension.Game.Soi
 
             foreach (var option in request.Options)
             {
-                string label = optionLabel != null ? optionLabel(option.Id) : option.Label;
+                string label = UI.Loc.OptionLabel(optionLabel != null ? optionLabel(option.Id) : option.Label);
                 var button = UiFactory.CreateButton(_theme, "Opt_" + option.Id, content, label, 15f);
                 var lrect = (RectTransform)button.transform;
                 lrect.sizeDelta = new Vector2(0f, 44f);
@@ -295,7 +314,7 @@ namespace Pascension.Game.Soi
             foreach (var option in playerOptions)
             {
                 var all = UiFactory.CreateButton(_theme, "All_" + option.Id, _body,
-                    "ALL → " + option.Label.ToUpperInvariant(), 12f);
+                    UI.Loc.T("ALL → ") + option.Label.ToUpperInvariant(), 12f);
                 UiFactory.Place((RectTransform)all.transform, new Vector2(0.5f, 0f), new Vector2(x, 24f), new Vector2(190f, 40f));
                 x += 200f;
                 int id = option.Id;
@@ -335,12 +354,12 @@ namespace Pascension.Game.Soi
             {
                 count = 0;
                 foreach (var kv in _splitCounts) count += kv.Value;
-                _confirmLabel.text = $"CONFIRM ({count}/{_request.Max})";
+                _confirmLabel.text = $"{UI.Loc.T("CONFIRM")} ({count}/{_request.Max})";
             }
             else
             {
                 count = _picked.Count;
-                _confirmLabel.text = _request.Max > 1 ? $"CONFIRM ({count})" : "CONFIRM";
+                _confirmLabel.text = _request.Max > 1 ? $"{UI.Loc.T("CONFIRM")} ({count})" : UI.Loc.T("CONFIRM");
             }
             _confirm.interactable = count >= _request.Min && count <= _request.Max;
         }

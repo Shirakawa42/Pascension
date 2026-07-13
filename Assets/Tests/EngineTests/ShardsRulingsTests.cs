@@ -397,6 +397,45 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void BloodForBlood_TriggersOnFivePlusUnblockedDamage_BanishesPlayedCard()
+        {
+            var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 51);
+            var p0 = engine.State.Players[0];
+            var p1 = engine.State.Players[1];
+            p1.Hand.RemoveAll(_ => true); // no shields — every point lands unblocked
+
+            // Own the destiny (white-box; acquisition rules are covered elsewhere).
+            var destiny = new ShardsCard
+            {
+                InstanceId = engine.State.NextInstanceId++,
+                DefId = "blood_for_blood",
+                Owner = 0,
+                Zone = ShardsZone.DestinyRow
+            };
+            p0.Destinies.Add(destiny);
+
+            // Play a card legitimately so PlayedThisTurn holds a banish candidate.
+            var played = p0.Hand[0];
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = played.InstanceId });
+
+            p0.Power = 6;
+            MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+
+            Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind,
+                "5+ unblocked damage must offer the Blood for Blood banish");
+            var request = engine.PendingInput.Decision;
+            Assert.AreEqual("soi.banish", request.Context);
+            Assert.AreEqual(0, engine.PendingInput.PlayerIndex, "the ATTACKER chooses");
+            Assert.AreEqual(50 - 6, p1.Health, "damage lands before the trigger resolves");
+
+            Answer(engine, played.InstanceId);
+            Assert.AreEqual(ShardsZone.Banished, played.Zone, "chosen card banished");
+            Assert.Contains(played, engine.State.Banished);
+            DrainDecisionsWithDefaults(engine);
+            Assert.AreEqual(1, engine.State.TurnPlayerIndex, "turn passes cleanly afterwards");
+        }
+
+        [Test]
         public void Destiny_TakeAtMastery5_OncePerGame_RowNeverRefills()
         {
             var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 31);

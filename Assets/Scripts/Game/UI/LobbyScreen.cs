@@ -80,7 +80,7 @@ namespace Pascension.Game.UI
                     _joinButton.interactable = !online;
                     if (online)
                         _connectStatus.text = manager.IsClient && !manager.IsConnectedClient
-                            ? "Connecting…" : "Waiting for the lobby…";
+                            ? Loc.T("Connecting…") : Loc.T("Waiting for the lobby…");
                     else
                     {
                         string reason = manager != null ? manager.DisconnectReason : null;
@@ -98,7 +98,7 @@ namespace Pascension.Game.UI
 
         private void RefreshLobby(NetworkManager manager, LobbyNetBehaviour lobby)
         {
-            _codeLabel.text = "GAME ID:  <color=#E8C15A>" + (NetLauncher.CurrentJoinCode ?? "LAN") + "</color>";
+            _codeLabel.text = Loc.T("GAME ID:  ") + "<color=#E8C15A>" + (NetLauncher.CurrentJoinCode ?? "LAN") + "</color>";
             RefreshGameRow(manager, lobby);
 
             var state = lobby.State;
@@ -121,22 +121,22 @@ namespace Pascension.Game.UI
 
                 if (slot == null || slot.Kind == LobbySlotKind.Empty)
                 {
-                    row.Label.text = "<color=#8A8377>Open seat</color>";
+                    row.Label.text = "<color=#8A8377>" + Loc.T("Open seat") + "</color>";
                     row.HeroButton.gameObject.SetActive(false);
                     row.ActionButton.gameObject.SetActive(isHost);
-                    row.ActionLabel.text = "ADD BOT";
+                    row.ActionLabel.text = Loc.T("ADD BOT");
                     continue;
                 }
 
                 bool isHostSlot = slot.Kind == LobbySlotKind.Human && slot.ClientId == state.HostClientId;
                 string tags = "";
-                if (isHostSlot) tags += "  <size=15><color=#E8C15A>HOST</color></size>";
-                if (i == mySlot) tags += "  <size=15><color=#8A8377>YOU</color></size>";
-                if (slot.Kind == LobbySlotKind.Bot) tags += "  <size=15><color=#8A8377>BOT</color></size>";
+                if (isHostSlot) tags += "  <size=15><color=#E8C15A>" + Loc.T("HOST") + "</color></size>";
+                if (i == mySlot) tags += "  <size=15><color=#8A8377>" + Loc.T("YOU") + "</color></size>";
+                if (slot.Kind == LobbySlotKind.Bot) tags += "  <size=15><color=#8A8377>" + Loc.T("BOT") + "</color></size>";
                 bool ready = slot.Kind == LobbySlotKind.Bot || isHostSlot || slot.Ready;
                 row.Label.text = slot.Name + tags +
-                    (ready ? "  <size=15><color=#71B356>READY</color></size>"
-                           : "  <size=15><color=#C24B3A>NOT READY</color></size>");
+                    (ready ? "  <size=15><color=#71B356>" + Loc.T("READY") + "</color></size>"
+                           : "  <size=15><color=#C24B3A>" + Loc.T("NOT READY") + "</color></size>");
 
                 row.HeroButton.gameObject.SetActive(true);
                 row.HeroLabel.text = HeroDisplayName(slot.HeroId);
@@ -144,18 +144,18 @@ namespace Pascension.Game.UI
 
                 bool showAction = isHost && !isHostSlot;
                 row.ActionButton.gameObject.SetActive(showAction);
-                row.ActionLabel.text = slot.Kind == LobbySlotKind.Bot ? "REMOVE" : "KICK";
+                row.ActionLabel.text = slot.Kind == LobbySlotKind.Bot ? Loc.T("REMOVE") : Loc.T("KICK");
             }
 
             bool canToggleReady = mySlot >= 0 && !isHost;
             _readyButton.gameObject.SetActive(canToggleReady);
             if (canToggleReady)
-                _readyLabel.text = state.Slots[mySlot].Ready ? "UNREADY" : "READY";
+                _readyLabel.text = state.Slots[mySlot].Ready ? Loc.T("UNREADY") : Loc.T("READY");
 
             _startButton.gameObject.SetActive(isHost);
             _startButton.interactable = occupied >= 2;
             if (!isHost)
-                _lobbyStatus.text = "Waiting for the host to start…";
+                _lobbyStatus.text = Loc.T("Waiting for the host to start…");
         }
 
         private string NextHero(string current)
@@ -193,7 +193,7 @@ namespace Pascension.Game.UI
             SavePlayerName();
             _busy = true;
             _hostButton.interactable = _joinButton.interactable = false;
-            _connectStatus.text = "Creating game…";
+            _connectStatus.text = Loc.T("Creating game…");
             try
             {
                 string code = await NetLauncher.HostAsync();
@@ -205,7 +205,7 @@ namespace Pascension.Game.UI
             }
             catch (System.Exception e)
             {
-                _connectStatus.text = "Unexpected error — see the log.";
+                _connectStatus.text = Loc.T("Unexpected error — see the log.");
                 Debug.LogException(e);
             }
             finally
@@ -221,11 +221,11 @@ namespace Pascension.Game.UI
             SavePlayerName();
             _busy = true;
             _hostButton.interactable = _joinButton.interactable = false;
-            _connectStatus.text = "Joining…";
+            _connectStatus.text = Loc.T("Joining…");
             try
             {
                 await NetLauncher.JoinAsync(_codeInput.text);
-                _connectStatus.text = "Connecting to the host…";
+                _connectStatus.text = Loc.T("Connecting to the host…");
             }
             catch (UgsException e)
             {
@@ -233,7 +233,7 @@ namespace Pascension.Game.UI
             }
             catch (System.Exception e)
             {
-                _connectStatus.text = "Unexpected error — see the log.";
+                _connectStatus.text = Loc.T("Unexpected error — see the log.");
                 Debug.LogException(e);
             }
             finally
@@ -294,7 +294,7 @@ namespace Pascension.Game.UI
             var lobby = LobbyNetBehaviour.Instance;
             if (lobby == null || !lobby.IsSpawned) return;
             string error = lobby.HostStartGame();
-            _lobbyStatus.text = error ?? "Starting…";
+            _lobbyStatus.text = error ?? Loc.T("Starting…");
         }
 
         private void OnLeaveClicked()
@@ -379,25 +379,25 @@ namespace Pascension.Game.UI
             var panel = UiFactory.CreatePanel(Theme, "Panel", _connectPanel.transform);
             UiFactory.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(680f, 520f));
 
-            var title = UiFactory.CreateText(Theme, "Title", panel.transform, "PLAY ONLINE", 36f,
+            var title = UiFactory.CreateText(Theme, "Title", panel.transform, Loc.T("PLAY ONLINE"), 36f,
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             title.characterSpacing = 4f;
             UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -26f), new Vector2(500f, 44f));
 
             var subtitle = UiFactory.CreateText(Theme, "Subtitle", panel.transform,
-                "host a game and share its ID — no port forwarding needed", 16f,
+                Loc.T("host a game and share its ID — no port forwarding needed"), 16f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Italic);
             UiFactory.Place(subtitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -72f), new Vector2(600f, 22f));
 
-            var nameLabel = UiFactory.CreateText(Theme, "NameLabel", panel.transform, "YOUR NAME", 15f,
+            var nameLabel = UiFactory.CreateText(Theme, "NameLabel", panel.transform, Loc.T("YOUR NAME"), 15f,
                 UiPalette.TextDim, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             UiFactory.Place(nameLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(-160f, -122f), new Vector2(180f, 22f));
-            _nameInput = UiFactory.CreateInputField(Theme, "NameInput", panel.transform, "Player name");
+            _nameInput = UiFactory.CreateInputField(Theme, "NameInput", panel.transform, Loc.T("Player name"));
             UiFactory.Place(((RectTransform)_nameInput.transform), new Vector2(0.5f, 1f), new Vector2(0f, -152f), new Vector2(500f, 48f));
             _nameInput.text = ClientIdentity.PlayerName;
             _nameInput.characterLimit = 20;
 
-            var codeLabel = UiFactory.CreateText(Theme, "CodeLabel", panel.transform, "GAME ID (TO JOIN A FRIEND)", 15f,
+            var codeLabel = UiFactory.CreateText(Theme, "CodeLabel", panel.transform, Loc.T("GAME ID (TO JOIN A FRIEND)"), 15f,
                 UiPalette.TextDim, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             UiFactory.Place(codeLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(-100f, -222f), new Vector2(300f, 22f));
             _codeInput = UiFactory.CreateInputField(Theme, "CodeInput", panel.transform, "e.g. AB3DEF");
@@ -409,12 +409,12 @@ namespace Pascension.Game.UI
                 if (upper != v) _codeInput.SetTextWithoutNotify(upper);
             });
 
-            _hostButton = UiFactory.CreateButton(Theme, "HostButton", panel.transform, "HOST GAME", 22f,
+            _hostButton = UiFactory.CreateButton(Theme, "HostButton", panel.transform, Loc.T("HOST GAME"), 22f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_hostButton.transform, new Vector2(0.5f, 1f), new Vector2(-130f, -340f), new Vector2(230f, 58f));
             _hostButton.onClick.AddListener(OnHostClicked);
 
-            _joinButton = UiFactory.CreateButton(Theme, "JoinButton", panel.transform, "JOIN GAME", 22f);
+            _joinButton = UiFactory.CreateButton(Theme, "JoinButton", panel.transform, Loc.T("JOIN GAME"), 22f);
             UiFactory.Place((RectTransform)_joinButton.transform, new Vector2(0.5f, 1f), new Vector2(130f, -340f), new Vector2(230f, 58f));
             _joinButton.onClick.AddListener(OnJoinClicked);
 
@@ -422,7 +422,7 @@ namespace Pascension.Game.UI
                 UiPalette.TextMain, TextAlignmentOptions.Center);
             UiFactory.Place(_connectStatus.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -412f), new Vector2(620f, 44f));
 
-            var back = UiFactory.CreateButton(Theme, "BackButton", panel.transform, "BACK", 18f);
+            var back = UiFactory.CreateButton(Theme, "BackButton", panel.transform, Loc.T("BACK"), 18f);
             UiFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0f, 20f), new Vector2(160f, 44f));
             back.onClick.AddListener(() =>
             {
@@ -439,22 +439,22 @@ namespace Pascension.Game.UI
             var panel = UiFactory.CreatePanel(Theme, "Panel", _lobbyPanel.transform);
             UiFactory.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1040f, 660f));
 
-            var title = UiFactory.CreateText(Theme, "Title", panel.transform, "LOBBY", 34f,
+            var title = UiFactory.CreateText(Theme, "Title", panel.transform, Loc.T("LOBBY"), 34f,
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             title.characterSpacing = 4f;
             UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(400f, 42f));
 
-            _codeLabel = UiFactory.CreateText(Theme, "Code", panel.transform, "GAME ID:", 24f,
+            _codeLabel = UiFactory.CreateText(Theme, "Code", panel.transform, Loc.T("GAME ID:"), 24f,
                 UiPalette.TextMain, TextAlignmentOptions.Center, FontStyles.Bold);
             _codeLabel.characterSpacing = 2f;
             UiFactory.Place(_codeLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(-60f, -74f), new Vector2(460f, 34f));
 
-            _copyButton = UiFactory.CreateButton(Theme, "CopyButton", panel.transform, "COPY", 16f);
+            _copyButton = UiFactory.CreateButton(Theme, "CopyButton", panel.transform, Loc.T("COPY"), 16f);
             UiFactory.Place((RectTransform)_copyButton.transform, new Vector2(0.5f, 1f), new Vector2(210f, -74f), new Vector2(100f, 36f));
             _copyButton.onClick.AddListener(OnCopyClicked);
 
             var share = UiFactory.CreateText(Theme, "ShareHint", panel.transform,
-                "friends join from the menu with this ID", 14f,
+                Loc.T("friends join from the menu with this ID"), 14f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Italic);
             UiFactory.Place(share.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -106f), new Vector2(500f, 20f));
 
@@ -472,18 +472,18 @@ namespace Pascension.Game.UI
             for (int i = 0; i < _rows.Length; i++)
                 _rows[i] = BuildSlotRow(panel.transform, i);
 
-            _readyButton = UiFactory.CreateButton(Theme, "ReadyButton", panel.transform, "READY", 20f,
+            _readyButton = UiFactory.CreateButton(Theme, "ReadyButton", panel.transform, Loc.T("READY"), 20f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_readyButton.transform, new Vector2(0.5f, 0f), new Vector2(-300f, 78f), new Vector2(220f, 54f));
             _readyButton.onClick.AddListener(OnReadyClicked);
             _readyLabel = UiFactory.ButtonLabel(_readyButton);
 
-            _startButton = UiFactory.CreateButton(Theme, "StartButton", panel.transform, "START GAME", 20f,
+            _startButton = UiFactory.CreateButton(Theme, "StartButton", panel.transform, Loc.T("START GAME"), 20f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_startButton.transform, new Vector2(0.5f, 0f), new Vector2(0f, 78f), new Vector2(240f, 54f));
             _startButton.onClick.AddListener(OnStartClicked);
 
-            var leave = UiFactory.CreateButton(Theme, "LeaveButton", panel.transform, "LEAVE", 20f);
+            var leave = UiFactory.CreateButton(Theme, "LeaveButton", panel.transform, Loc.T("LEAVE"), 20f);
             UiFactory.Place((RectTransform)leave.transform, new Vector2(0.5f, 0f), new Vector2(300f, 78f), new Vector2(220f, 54f));
             leave.onClick.AddListener(OnLeaveClicked);
 

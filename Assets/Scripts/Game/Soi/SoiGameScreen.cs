@@ -66,6 +66,7 @@ namespace Pascension.Game.Soi
         private PileWidget _drawPile, _playedPile, _discardPile, _banishPile, _centerDeckPile;
         private SoiDecisionModal _modal;
         private CardListModal _cardList;
+        private SoiOpponentDetailModal _opponentDetail;
         private PauseOverlayView _pauseOverlay;
         private CardView _preview;
         private RectTransform _gameOverPanel;
@@ -152,9 +153,9 @@ namespace Pascension.Game.Soi
             UiFactory.Place(_monsterRow, new Vector2(0.5f, 0.5f), new Vector2(400f, 268f), new Vector2(520f, 132f));
 
             // Center row: deck pile + 6 persistent card slots.
-            _centerDeckPile = CreatePile("CenterDeck", "Center", faceDown: true,
+            _centerDeckPile = CreatePile("CenterDeck", UI.Loc.T("Center"), faceDown: true,
                 new Vector2(0.5f, 0.5f), new Vector2(-590f, 84f));
-            _centerDeckPile.Clicked += () => _toast.Show("The shared center deck — row slots refill from here.");
+            _centerDeckPile.Clicked += () => _toast.Show(UI.Loc.T("The shared center deck — row slots refill from here."));
 
             _centerRow = UiFactory.CreateRect("CenterRow", root);
             UiFactory.Place(_centerRow, new Vector2(0.5f, 0.5f), new Vector2(60f, 90f), new Vector2(900f, 200f));
@@ -180,8 +181,8 @@ namespace Pascension.Game.Soi
             _portrait.Group.blocksRaycasts = false;
 
             // My champions + owned destinies (above the hand band).
-            _championRow = LabeledRow(root, "MY CHAMPIONS", new Vector2(-330f, -122f), new Vector2(620f, 140f));
-            _ownDestinyRow = LabeledRow(root, "MY DESTINIES", new Vector2(330f, -122f), new Vector2(560f, 140f));
+            _championRow = LabeledRow(root, UI.Loc.T("MY CHAMPIONS"), new Vector2(-330f, -122f), new Vector2(620f, 140f));
+            _ownDestinyRow = LabeledRow(root, UI.Loc.T("MY DESTINIES"), new Vector2(330f, -122f), new Vector2(560f, 140f));
 
             // Stats (left edge column) — icons instead of words.
             _statHealth = Stat(root, "soi_health", new Vector2(-690f, -116f), UiPalette.HealthyGreen, out _statHealthRect);
@@ -198,23 +199,25 @@ namespace Pascension.Game.Soi
 
             // StS corner piles: played over draw on the left (portrait sits below the
             // draw pile), banish over discard on the right.
-            _drawPile = CreatePile("DrawPile", "Draw", faceDown: true, new Vector2(0f, 0f), new Vector2(80f, 300f));
-            _playedPile = CreatePile("PlayedPile", "Played", faceDown: false, new Vector2(0f, 0f), new Vector2(80f, 488f));
-            _discardPile = CreatePile("DiscardPile", "Discard", faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 208f));
-            _banishPile = CreatePile("BanishPile", "Banish", faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 396f));
-            _drawPile.Clicked += () => _toast.Show("Your deck: " + (Me?.DeckCount ?? 0) + " cards (contents and order hidden).");
-            _playedPile.Clicked += () => ShowPile("Played this turn", Me != null ? ZoneSnaps(Me.PlayZone) : null);
-            _discardPile.Clicked += () => ShowPile("Discard pile", Me != null ? ZoneSnaps(Me.Discard) : null);
-            _banishPile.Clicked += () => ShowPile("Banished (removed from the game)", _snap != null ? ZoneSnaps(_snap.Banished) : null);
+            _drawPile = CreatePile("DrawPile", UI.Loc.T("Draw"), faceDown: true, new Vector2(0f, 0f), new Vector2(80f, 300f));
+            _playedPile = CreatePile("PlayedPile", UI.Loc.T("Played"), faceDown: false, new Vector2(0f, 0f), new Vector2(80f, 488f));
+            _discardPile = CreatePile("DiscardPile", UI.Loc.T("Discard"), faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 208f));
+            _banishPile = CreatePile("BanishPile", UI.Loc.T("Banish"), faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 396f));
+            _drawPile.Clicked += () => _toast.Show(UI.Loc.French
+                ? "Votre deck : " + (Me?.DeckCount ?? 0) + " cartes (contenu et ordre cachés)."
+                : "Your deck: " + (Me?.DeckCount ?? 0) + " cards (contents and order hidden).");
+            _playedPile.Clicked += () => ShowPile(UI.Loc.T("Played this turn"), Me != null ? ZoneSnaps(Me.PlayZone) : null);
+            _discardPile.Clicked += () => ShowPile(UI.Loc.T("Discard pile"), Me != null ? ZoneSnaps(Me.Discard) : null);
+            _banishPile.Clicked += () => ShowPile(UI.Loc.T("Banished (removed from the game)"), _snap != null ? ZoneSnaps(_snap.Banished) : null);
 
             // END TURN sits at the very bottom, below the discard pile (clear of its
             // title text); RECRUIT RELIC directly to its left, pulsing once usable.
-            _endTurn = UiFactory.CreateButton(Theme, "EndTurn", root, "END TURN", 21f,
+            _endTurn = UiFactory.CreateButton(Theme, "EndTurn", root, UI.Loc.T("END TURN"), 21f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0f), new Vector2(-108f, 62f), new Vector2(186f, 58f));
             _endTurn.onClick.AddListener(() => Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex }));
             _endTurnLabel = UiFactory.ButtonLabel(_endTurn);
-            _relics = UiFactory.CreateButton(Theme, "Relics", root, "RECRUIT RELIC", 14f);
+            _relics = UiFactory.CreateButton(Theme, "Relics", root, UI.Loc.T("RECRUIT RELIC"), 14f);
             UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0f), new Vector2(-306f, 62f), new Vector2(186f, 58f));
             _relics.onClick.AddListener(OnRelicsClicked);
             _relics.gameObject.SetActive(false);
@@ -255,6 +258,7 @@ namespace Pascension.Game.Soi
             _cardList = cardListRect.gameObject.AddComponent<CardListModal>();
             _cardList.Container = cardListRect;
             _cardList.Init(Theme);
+            _opponentDetail = SoiOpponentDetailModal.Create(root, Theme);
             _modal = SoiDecisionModal.Create(root, Theme);
 
             // Fixed hover preview (top-left, under the opponent strip).
@@ -276,13 +280,18 @@ namespace Pascension.Game.Soi
             _gameOverText = UiFactory.CreateText(Theme, "Text", goPanel.transform, "", 30f, UiPalette.Gold,
                 TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(_gameOverText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -70f), new Vector2(520f, 90f));
-            var menuButton = UiFactory.CreateButton(Theme, "Menu", goPanel.transform, "BACK TO MENU", 18f,
+            var menuButton = UiFactory.CreateButton(Theme, "Menu", goPanel.transform, UI.Loc.T("BACK TO MENU"), 18f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)menuButton.transform, new Vector2(0.5f, 0f), new Vector2(0f, 46f), new Vector2(260f, 56f));
             menuButton.onClick.AddListener(() =>
             {
-                SessionProvider.Current = null;
-                UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+                // Full network teardown, not just Current=null: a still-listening
+                // NetworkManager + stale NetLobbyData would rebuild the ONLINE match on
+                // the next solo start (NetBootstrap re-spawns HostMatchStarter, which
+                // waits its 10 s scene-sync failsafe = the "slow load", then re-seats
+                // the old opponents). Shutdown() is a no-op after solo games.
+                NetLauncher.Shutdown();
+                UnityEngine.SceneManagement.SceneManager.LoadScene(UI.SceneFlow.MenuScene);
             });
             _gameOverPanel.gameObject.SetActive(false);
         }
@@ -452,7 +461,7 @@ namespace Pascension.Game.Soi
         {
             if (!MyPriority)
             {
-                _toast.Show("Not your turn.");
+                _toast.Show(UI.Loc.T("Not your turn."));
                 return;
             }
             _hand.RemoveCardOptimistic(instanceId);
@@ -463,9 +472,9 @@ namespace Pascension.Game.Soi
         {
             var me = Me;
             if (!MyPriority || me == null) return;
-            if (me.CharacterExhausted) { _toast.Show("Your character is already exhausted."); return; }
-            if (me.FocusedThisTurn) { _toast.Show("You already focused this turn."); return; }
-            if (me.Gems < 1) { _toast.Show("Focus costs 1 gem."); return; }
+            if (me.CharacterExhausted) { _toast.Show(UI.Loc.T("Your character is already exhausted.")); return; }
+            if (me.FocusedThisTurn) { _toast.Show(UI.Loc.T("You already focused this turn.")); return; }
+            if (me.Gems < 1) { _toast.Show(UI.Loc.T("Focus costs 1 gem.")); return; }
             _portrait.SetTapped(true); // the portrait taps visually; the snapshot confirms
             Submit(new ShardsFocusAction { PlayerIndex = MyIndex });
         }
@@ -507,7 +516,7 @@ namespace Pascension.Game.Soi
                 var backdrop = UiFactory.CreatePanel(Theme, "Backdrop", holder, UiPalette.WithAlpha(UiPalette.Background, 0.92f));
                 UiFactory.Stretch((RectTransform)backdrop.transform, -6f, -6f, 6f, 6f);
 
-                var buy = UiFactory.CreateButton(Theme, "Buy", holder, "BUY", 19f,
+                var buy = UiFactory.CreateButton(Theme, "Buy", holder, UI.Loc.T("BUY"), 19f,
                     UiPalette.Gold, UiPalette.Background);
                 UiFactory.Place((RectTransform)buy.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 31f), new Vector2(150f, 52f));
                 buy.onClick.AddListener(() =>
@@ -516,7 +525,7 @@ namespace Pascension.Game.Soi
                     Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = _buyPopupSlot });
                 });
 
-                var use = UiFactory.CreateButton(Theme, "Use", holder, "USE", 19f,
+                var use = UiFactory.CreateButton(Theme, "Use", holder, UI.Loc.T("USE"), 19f,
                     UiPalette.Danger, UiPalette.TextMain);
                 UiFactory.Place((RectTransform)use.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, -31f), new Vector2(150f, 52f));
                 use.onClick.AddListener(() =>
@@ -543,7 +552,7 @@ namespace Pascension.Game.Soi
             {
                 Id = -1,
                 PlayerIndex = MyIndex,
-                Title = "Recruit a relic (free, once per game)",
+                Title = UI.Loc.T("Recruit a relic (free, once per game)"),
                 Context = "local.relic",
                 Min = 0,
                 Max = 1
@@ -558,7 +567,7 @@ namespace Pascension.Game.Soi
             {
                 if (chosen.Count > 0)
                     Submit(new ShardsRecruitRelicAction { PlayerIndex = MyIndex, CardInstanceId = chosen[0] });
-            }, FindDefId);
+            }, FindDefId, FindZoneName);
         }
 
         private void ShowDecision(DecisionRequest request)
@@ -568,7 +577,37 @@ namespace Pascension.Game.Soi
                 var answer = new DecisionAnswer { DecisionId = request.Id };
                 answer.ChosenOptionIds.AddRange(chosen);
                 Submit(new SubmitDecisionAction { PlayerIndex = MyIndex, Answer = answer });
-            }, FindDefId);
+            }, FindDefId, FindZoneName);
+        }
+
+        /// <summary>Where the viewer sees this card instance right now — shown as a
+        /// caption under the card in decision grids so multi-zone choices (banish from
+        /// hand OR discard) are unambiguous. Null when the zone is unknown/irrelevant.</summary>
+        private string FindZoneName(int instanceId)
+        {
+            if (_snap == null || instanceId <= 0) return null;
+            foreach (var c in _snap.CenterRow) if (c != null && c.InstanceId == instanceId) return UI.Loc.T("center row");
+            foreach (var c in _snap.DestinyRow) if (c.InstanceId == instanceId) return UI.Loc.T("destiny row");
+            foreach (var c in _snap.ActiveMonsters) if (c.InstanceId == instanceId) return UI.Loc.T("ingeminex");
+            foreach (var c in _snap.Banished) if (c.InstanceId == instanceId) return UI.Loc.T("banished");
+            foreach (var p in _snap.Players)
+            {
+                bool mine = p.Index == MyIndex;
+                if (p.Hand != null)
+                    foreach (var c in p.Hand) if (c.InstanceId == instanceId)
+                        return mine ? UI.Loc.T("your hand") : NameOf(p.Index) + UI.Loc.T(" — hand");
+                if (p.SetAside != null)
+                    foreach (var c in p.SetAside) if (c.InstanceId == instanceId) return UI.Loc.T("set aside");
+                foreach (var c in p.Discard) if (c.InstanceId == instanceId)
+                    return mine ? UI.Loc.T("your discard") : NameOf(p.Index) + UI.Loc.T(" — discard");
+                foreach (var c in p.PlayZone) if (c.InstanceId == instanceId)
+                    return mine ? UI.Loc.T("played this turn") : NameOf(p.Index) + UI.Loc.T(" — in play");
+                foreach (var c in p.Champions) if (c.InstanceId == instanceId)
+                    return mine ? UI.Loc.T("your champion") : NameOf(p.Index) + UI.Loc.T(" — champion");
+                foreach (var c in p.Destinies) if (c.InstanceId == instanceId)
+                    return mine ? UI.Loc.T("your destiny") : NameOf(p.Index) + UI.Loc.T(" — destiny");
+            }
+            return null;
         }
 
         /// <summary>Resolve a card instance to its def id through every zone the viewer
@@ -632,9 +671,15 @@ namespace Pascension.Game.Soi
             _hiddenSlots.Clear();
             RefreshHandLive();
 
-            _hudTurn.text = $"ROUND {_snap.Round}  ·  " +
-                (_snap.TurnPlayerIndex == MyIndex ? "YOUR TURN" : NameOf(_snap.TurnPlayerIndex).ToUpperInvariant() + "'S TURN");
-            _hudCounts.text = $"center deck {_snap.CenterDeckCount}  ·  banished {_snap.Banished.Count}";
+            string turnOwner = _snap.TurnPlayerIndex == MyIndex
+                ? UI.Loc.T("YOUR TURN")
+                : UI.Loc.French
+                    ? ("TOUR " + UI.Loc.De(NameOf(_snap.TurnPlayerIndex))).ToUpperInvariant()
+                    : NameOf(_snap.TurnPlayerIndex).ToUpperInvariant() + "'S TURN";
+            _hudTurn.text = (UI.Loc.French ? $"MANCHE {_snap.Round}" : $"ROUND {_snap.Round}") + "  ·  " + turnOwner;
+            _hudCounts.text = UI.Loc.French
+                ? $"pioche commune {_snap.CenterDeckCount}  ·  bannies {_snap.Banished.Count}"
+                : $"center deck {_snap.CenterDeckCount}  ·  banished {_snap.Banished.Count}";
 
             _boardViews.Clear();
             foreach (var view in _transient)
@@ -645,6 +690,7 @@ namespace Pascension.Game.Soi
 
             RenderCenterRow();
             RenderOpponents();
+            RefreshOpponentDetail();
             RenderDestinyAndMonsters();
             RenderMyBoard();
             RefreshInteractivity();
@@ -710,8 +756,10 @@ namespace Pascension.Game.Soi
 
         private string OpponentStatsLine(ShardsPlayerSnap player) =>
             $"<color=#6FDF8F>{player.Health}/{_maxHealth}</color><sprite name=\"soi_health\">  " +
-            $"<color=#D4AF37>{player.Mastery}</color><sprite name=\"soi_mastery\">  " +
-            $"hand {player.HandCount} · deck {player.DeckCount} · discard {player.Discard.Count}";
+            $"<color=#D4AF37>{player.Mastery}/30</color><sprite name=\"soi_mastery\">  " +
+            $"<color=#73AEF2>{player.Gems}</color><sprite name=\"soi_gem\">  " +
+            $"<color=#E06C55>{player.Power}</color><sprite name=\"soi_power\">\n" +
+            $"{UI.Loc.T("hand")} {player.HandCount} · {UI.Loc.T("deck")} {player.DeckCount} · {UI.Loc.T("discard")} {player.Discard.Count}";
 
         /// <summary>Life totals update the instant damage lands — never waiting for the
         /// animation queue to drain.</summary>
@@ -744,28 +792,51 @@ namespace Pascension.Game.Soi
                 x += 384f;
                 _opponentPanels[player.Index] = rect;
 
+                // Whole panel opens the full detail sheet (portrait, stats, champions,
+                // destinies, browsable piles) — the compact strip can't fit everything.
+                int detailIndex = player.Index;
+                var open = panel.gameObject.AddComponent<Button>();
+                open.targetGraphic = panel;
+                open.transition = Selectable.Transition.None;
+                open.onClick.AddListener(() => ShowOpponentDetail(detailIndex));
+
                 bool theirTurn = _snap.TurnPlayerIndex == player.Index;
                 var name = UiFactory.CreateText(Theme, "Name", rect, player.Name +
-                        (player.Eliminated ? "  · eliminated" : theirTurn ? "  ← turn" : ""),
+                        (player.Eliminated ? UI.Loc.T("  · eliminated") : theirTurn ? UI.Loc.T("  ← turn") : ""),
                     16f, theirTurn ? UiPalette.Gold : UiPalette.TextMain, TextAlignmentOptions.Left, FontStyles.Bold);
                 UiFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -15f), new Vector2(350f, 22f));
+                name.raycastTarget = false;
 
                 var stats = UiFactory.CreateText(Theme, "Stats", rect, OpponentStatsLine(player),
-                    13f, UiPalette.TextDim, TextAlignmentOptions.Left);
+                    13f, UiPalette.TextDim, TextAlignmentOptions.TopLeft);
                 if (Theme.Icons != null) stats.spriteAsset = Theme.Icons;
-                UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -38f), new Vector2(356f, 20f));
+                UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -36f), new Vector2(356f, 40f));
+                stats.raycastTarget = false;
                 _opponentStatTexts[player.Index] = stats;
 
-                float cx = 10f;
+                // Mini portrait (same sheet as ours), bottom-left of the panel.
+                var portrait = CardViewFactory.Create(rect, Theme, 0.3f);
+                portrait.Rect.anchorMin = portrait.Rect.anchorMax = new Vector2(0f, 0f);
+                portrait.Rect.pivot = new Vector2(0f, 0f);
+                portrait.Rect.anchoredPosition = new Vector2(10f, 4f);
+                portrait.BindDef(SoiCardFaces.CharacterPrefix + player.CharacterId);
+                portrait.SetTapped(player.CharacterExhausted);
+                portrait.SetRaycastable(false);
+                if (portrait.Group != null) portrait.Group.blocksRaycasts = false;
+
+                // Champions band, then DESTINIES (smaller) to their right — both
+                // compress instead of dropping cards.
+                float cx = 84f;
+                float championStep = player.Champions.Count > 1
+                    ? Mathf.Min(72f, (156f - 66f) / (player.Champions.Count - 1)) : 72f;
                 foreach (var champion in player.Champions)
                 {
-                    if (cx > 290f) break;
-                    var view = CardViewFactory.Create(rect, Theme, 0.36f);
+                    var view = CardViewFactory.Create(rect, Theme, 0.3f);
                     view.RotateWhenTapped = false;
                     view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0f);
                     view.Rect.pivot = new Vector2(0f, 0f);
-                    view.Rect.anchoredPosition = new Vector2(cx, 6f);
-                    cx += 86f;
+                    view.Rect.anchoredPosition = new Vector2(cx, 4f);
+                    cx += championStep;
                     view.BindDef(champion.DefId, champion.InstanceId);
                     view.SetTapped(champion.Exhausted);
                     view.SetMarkedDamage(champion.DamageThisTurn);
@@ -778,7 +849,48 @@ namespace Pascension.Game.Soi
                     });
                     _boardViews[champion.InstanceId] = view;
                 }
+
+                float dx = 254f;
+                float destinyStep = player.Destinies.Count > 1
+                    ? Mathf.Min(52f, (110f - 48f) / (player.Destinies.Count - 1)) : 52f;
+                foreach (var destiny in player.Destinies)
+                {
+                    var view = CardViewFactory.Create(rect, Theme, 0.22f);
+                    view.RotateWhenTapped = false;
+                    view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0f);
+                    view.Rect.pivot = new Vector2(0f, 0f);
+                    view.Rect.anchoredPosition = new Vector2(dx, 4f);
+                    dx += destinyStep;
+                    view.BindDef(destiny.DefId, destiny.InstanceId);
+                    view.SetTapped(destiny.Exhausted);
+                    view.Clicked += _ => ShowOpponentDetail(detailIndex); // don't swallow the panel click
+                    _boardViews[destiny.InstanceId] = view;
+                }
             }
+        }
+
+        private void ShowOpponentDetail(int playerIndex)
+        {
+            if (_snap == null || playerIndex < 0 || playerIndex >= _snap.Players.Count) return;
+            _opponentDetail.Show(_snap.Players[playerIndex], _maxHealth, (title, cards) =>
+            {
+                _cardList.Show(title, cards);
+                _cardList.Container.SetAsLastSibling(); // above the detail modal
+            });
+        }
+
+        /// <summary>Keep an open detail sheet live: re-bind it to the current snapshot
+        /// (its stats/rows would otherwise freeze at open time while the compact strip
+        /// underneath keeps updating).</summary>
+        private void RefreshOpponentDetail()
+        {
+            if (_opponentDetail == null || !_opponentDetail.Visible) return;
+            int shown = _opponentDetail.ShownIndex;
+            if (shown < 0 || _snap == null || shown >= _snap.Players.Count) return;
+            bool browserOpen = _cardList.Container.gameObject.activeSelf;
+            ShowOpponentDetail(shown);
+            if (browserOpen)
+                _cardList.Container.SetAsLastSibling(); // don't cover an open browser
         }
 
         private void RenderDestinyAndMonsters()
@@ -803,7 +915,7 @@ namespace Pascension.Game.Soi
                     if (MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5)
                         Submit(new ShardsTakeDestinyAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
                     else
-                        _toast.Show("Destinies unlock at Mastery 5 (one per game).");
+                        _toast.Show(UI.Loc.T("Destinies unlock at Mastery 5 (one per game)."));
                 };
                 _boardViews[destiny.InstanceId] = view;
             }
@@ -898,7 +1010,7 @@ namespace Pascension.Game.Soi
             bool canAct = myTurn && MyPriority && !over;
 
             _endTurn.interactable = canAct;
-            _endTurnLabel.text = myTurn || over ? "END TURN" : "NOT YOUR TURN";
+            _endTurnLabel.text = UI.Loc.T(myTurn || over ? "END TURN" : "NOT YOUR TURN");
             _relics.interactable = canAct && me != null && me.Mastery >= 10;
             SetRelicGlow(_relics.gameObject.activeSelf && _relics.interactable);
             _focusButton.interactable = canAct && me != null && me.Gems >= 1 &&
@@ -907,7 +1019,9 @@ namespace Pascension.Game.Soi
             // both an opponent's whole turn and an opponent's mid-my-turn decision
             // (e.g. shield reveals when I attack).
             bool waitingOther = _snap != null && _snap.Pending != null && _snap.Pending.PlayerIndex != MyIndex;
-            _statusLine.text = over || !waitingOther ? "" : "Waiting for " + NameOf(_snap.Pending.PlayerIndex) + "…";
+            _statusLine.text = over || !waitingOther ? "" : UI.Loc.French
+                ? "En attente " + UI.Loc.De(NameOf(_snap.Pending.PlayerIndex)) + "…"
+                : "Waiting for " + NameOf(_snap.Pending.PlayerIndex) + "…";
         }
 
         private void RenderGameOver()
@@ -916,9 +1030,11 @@ namespace Pascension.Game.Soi
             _gameOverShown = true;
             _gameOverPanel.gameObject.SetActive(true);
             _gameOverPanel.SetAsLastSibling();
-            _gameOverText.text = _snap.WinnerIndex < 0 ? "IT'S A TIE"
-                : _snap.WinnerIndex == MyIndex ? "VICTORY!"
-                : NameOf(_snap.WinnerIndex).ToUpperInvariant() + " WINS";
+            _gameOverText.text = _snap.WinnerIndex < 0 ? UI.Loc.T("IT'S A TIE")
+                : _snap.WinnerIndex == MyIndex ? UI.Loc.T("VICTORY!")
+                : UI.Loc.French
+                    ? NameOf(_snap.WinnerIndex).ToUpperInvariant() + " REMPORTE LA PARTIE !"
+                    : NameOf(_snap.WinnerIndex).ToUpperInvariant() + " WINS";
         }
 
         // ------------------------------------------------------------------ event playback
@@ -966,7 +1082,7 @@ namespace Pascension.Game.Soi
                 case ShardsMonsterRevealedEvent revealed:
                     return PlayMonsterRevealed(revealed);
                 case ShardsMonsterAttackedEvent attack:
-                    _toast.ShowBanner(DefName(attack.DefId) + " strikes every player!");
+                    _toast.ShowBanner(DefName(attack.DefId) + UI.Loc.T(" strikes every player!"));
                     return null;
                 case ShardsDamageAssignedEvent damage:
                     return PlayPlayerDamage(damage);
@@ -976,23 +1092,23 @@ namespace Pascension.Game.Soi
                     return PlayExhaust(exhausted);
                 case ShardsFocusedEvent focused:
                     if (focused.PlayerIndex != MyIndex)
-                        _toast.Show(NameOf(focused.PlayerIndex) + " focuses.");
+                        _toast.Show(NameOf(focused.PlayerIndex) + UI.Loc.T(" focuses."));
                     return null;
                 case ShardsDestinyTakenEvent destiny:
                     return PlayShowcase(destiny.PlayerIndex, destiny.DefId);
                 case ShardsRelicRecruitedEvent relic:
-                    _toast.Show(NameOf(relic.PlayerIndex) + " recruits " + DefName(relic.DefId));
+                    _toast.Show(NameOf(relic.PlayerIndex) + UI.Loc.T(" recruits ") + DefName(relic.DefId));
                     return PlayShowcase(relic.PlayerIndex, relic.DefId);
                 case ShardsCardBanishedEvent banished:
                     return PlayBanish(banished);
                 case ShardsCardReturnedEvent returned:
                     return PlayReturn(returned);
                 case ShardsPlayerEliminatedEvent eliminated:
-                    _toast.ShowBanner(NameOf(eliminated.PlayerIndex) + " has been eliminated!");
+                    _toast.ShowBanner(NameOf(eliminated.PlayerIndex) + UI.Loc.T(" has been eliminated!"));
                     return null;
                 case ShardsTurnStartedEvent turn:
                     if (turn.PlayerIndex == MyIndex)
-                        _toast.ShowBanner("YOUR TURN");
+                        _toast.ShowBanner(UI.Loc.T("YOUR TURN"));
                     return null;
                 default:
                     return null;
@@ -1147,7 +1263,7 @@ namespace Pascension.Game.Soi
 
         private IEnumerator PlayMonsterRevealed(ShardsMonsterRevealedEvent revealed)
         {
-            _toast.ShowBanner("An Ingeminex appears: " + DefName(revealed.DefId));
+            _toast.ShowBanner(UI.Loc.T("An Ingeminex appears: ") + DefName(revealed.DefId));
             yield return _showcase.Play(_queue, revealed.DefId, -1,
                 _showcase.ToLocal(_centerDeckPile.AnchorRect), _showcase.ToLocal(_monsterRow));
         }
@@ -1187,11 +1303,11 @@ namespace Pascension.Game.Soi
             Vector2 at = shields.PlayerIndex == MyIndex
                 ? _floats.ToLocal(_statHealthRect)
                 : (_opponentPanels.TryGetValue(shields.PlayerIndex, out var panel) ? _floats.ToLocal(panel) : Vector2.zero);
-            _floats.Spawn(at, "blocked " + shields.Prevented, new Color(0.7f, 0.72f, 0.78f), 28f);
+            _floats.Spawn(at, UI.Loc.T("blocked ") + shields.Prevented, new Color(0.7f, 0.72f, 0.78f), 28f);
             if (shields.DefIds.Count > 0)
                 yield return _showcase.Play(_queue, shields.DefIds[0], shields.PlayerIndex, at, at);
             if (shields.DefIds.Count > 1)
-                _toast.Show(NameOf(shields.PlayerIndex) + " reveals " + shields.DefIds.Count + " shields — blocks " + shields.Prevented);
+                _toast.Show(NameOf(shields.PlayerIndex) + UI.Loc.T(" reveals ") + shields.DefIds.Count + UI.Loc.T(" shields — blocks ") + shields.Prevented);
         }
 
         private IEnumerator PlayExhaust(ShardsCharacterExhaustedEvent exhausted)
@@ -1293,7 +1409,7 @@ namespace Pascension.Game.Soi
         {
             if (cards == null || cards.Count == 0)
             {
-                _toast.Show("Nothing there yet.");
+                _toast.Show(UI.Loc.T("Nothing there yet."));
                 return;
             }
             _cardList.Show(title, cards);
@@ -1304,6 +1420,6 @@ namespace Pascension.Game.Soi
                 ? _snap.Players[playerIndex].Name : "P" + playerIndex;
 
         private static string DefName(string defId) =>
-            ShardsCardDatabase.TryGet(defId, out var def) ? def.Name : defId;
+            ShardsCardDatabase.TryGet(defId, out var def) ? UI.Loc.CardName(defId, def.Name) : defId;
     }
 }

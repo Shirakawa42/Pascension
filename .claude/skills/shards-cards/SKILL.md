@@ -33,7 +33,12 @@ art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored
 - **Static hooks on `ShardsCardDef`** (`ShardsTypes.cs`): `Taunt` (Zetta), `CanBeAttacked`
   (Li Hin / Raidian / Drakonarius), `DefenseAura` (Ferrata Guard, One Mind One Army),
   `CostModifier` (Axia), `ShieldInPlay` + `DynamicShield` (Praetorian-02, Datic Robes),
-  `ReturnsFromDiscardOnChampionPlay` (Praetorian-01), `OnDamageDealt` (Blood for Blood),
+  `ReturnsFromDiscardOnChampionPlay` (Praetorian-01), `OnDamageDealt` (Blood for Blood —
+  ⚠ its effect is QUEUED by ApplyDamage during the defense chain, so `AfterDefenses` must
+  queue cleanup behind the effect queue whenever `_effectQueue.Count > 0`, never call
+  `FinishEndTurn` synchronously; otherwise cleanup empties the play zone before the
+  trigger resolves and the banish choice silently vanishes — shipped bug, now pinned by
+  `BloodForBlood_TriggersOnFivePlusUnblockedDamage_BanishesPlayedCard`),
   `KeepFastPlaysCharacter` (Swyft/Rez), `RecruitsToHand` (Breaker),
   `RedirectChampionRecruitsToDeckTop` (Maglev Tunnels),
   `ReturnFromDiscardOnFactionPlay` (The Dispossessed).

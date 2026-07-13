@@ -968,7 +968,12 @@ namespace Shards.Engine
                 queued = true;
             }
 
-            if (queued)
+            // Cleanup must run AFTER every effect the damage step queued — not only the
+            // ones queued right here. ApplyDamage queues owned-destiny triggers (Blood
+            // for Blood); finishing synchronously would discard the play zone before
+            // that trigger resolves, silently emptying its candidate list (hard-won:
+            // this exact bug shipped once).
+            if (queued || _effectQueue.Count > 0)
             {
                 // Queue only — no nested pump (see BeginEndTurn).
                 QueueEffect(new Custom(_ => FinishFlow(player)), player.Index, null);

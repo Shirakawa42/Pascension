@@ -1,3 +1,4 @@
+using Pascension.Game.UI;
 using Pascension.Net;
 using TMPro;
 using UnityEngine;
@@ -48,7 +49,7 @@ namespace Pascension.Game.View
             var panel = UiFactory.CreatePanel(theme, "Panel", transform);
             UiFactory.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(680f, 460f));
 
-            _title = UiFactory.CreateText(theme, "Title", panel.transform, "GAME PAUSED", 34f,
+            _title = UiFactory.CreateText(theme, "Title", panel.transform, Loc.T("GAME PAUSED"), 34f,
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             _title.characterSpacing = 4f;
             UiFactory.Place(_title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -30f), new Vector2(560f, 42f));
@@ -64,7 +65,7 @@ namespace Pascension.Game.View
                 UiPalette.TextMain, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(_footer.rectTransform, new Vector2(0.5f, 0f), new Vector2(-56f, 84f), new Vector2(440f, 34f));
 
-            _copyButton = UiFactory.CreateButton(theme, "CopyButton", panel.transform, "COPY", 15f);
+            _copyButton = UiFactory.CreateButton(theme, "CopyButton", panel.transform, Loc.T("COPY"), 15f);
             UiFactory.Place((RectTransform)_copyButton.transform, new Vector2(0.5f, 0f), new Vector2(200f, 84f), new Vector2(92f, 36f));
             _copyButton.onClick.AddListener(() =>
             {
@@ -72,13 +73,13 @@ namespace Pascension.Game.View
                     GUIUtility.systemCopyBuffer = NetLauncher.LastJoinCode;
             });
 
-            _rejoinButton = UiFactory.CreateButton(theme, "RejoinButton", panel.transform, "REJOIN", 20f,
+            _rejoinButton = UiFactory.CreateButton(theme, "RejoinButton", panel.transform, Loc.T("REJOIN"), 20f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_rejoinButton.transform, new Vector2(0.5f, 0f), new Vector2(-130f, 22f), new Vector2(220f, 52f));
             _rejoinButton.onClick.AddListener(OnRejoinClicked);
             _rejoinLabel = UiFactory.ButtonLabel(_rejoinButton);
 
-            _leaveButton = UiFactory.CreateButton(theme, "LeaveButton", panel.transform, "LEAVE", 20f);
+            _leaveButton = UiFactory.CreateButton(theme, "LeaveButton", panel.transform, Loc.T("LEAVE"), 20f);
             UiFactory.Place((RectTransform)_leaveButton.transform, new Vector2(0.5f, 0f), new Vector2(130f, 22f), new Vector2(220f, 52f));
             _leaveButton.onClick.AddListener(() =>
             {
@@ -94,9 +95,9 @@ namespace Pascension.Game.View
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
 
-            _title.text = "GAME PAUSED";
-            _subtitle.text = "The game resumes when everyone is back." +
-                             (info.CanKick ? "\nOr replace a missing player with a bot." : "");
+            _title.text = Loc.T("GAME PAUSED");
+            _subtitle.text = Loc.T("The game resumes when everyone is back.") +
+                             (info.CanKick ? Loc.T("\nOr replace a missing player with a bot.") : "");
             _rejoinButton.gameObject.SetActive(false);
             _leaveButton.gameObject.SetActive(false);
 
@@ -104,7 +105,7 @@ namespace Pascension.Game.View
             _footer.gameObject.SetActive(hasCode);
             _copyButton.gameObject.SetActive(hasCode);
             if (hasCode)
-                _footer.text = "GAME ID:  <color=#E8C15A>" + info.JoinCode + "</color>";
+                _footer.text = Loc.T("GAME ID:  ") + "<color=#E8C15A>" + info.JoinCode + "</color>";
 
             for (int i = _rows.childCount - 1; i >= 0; i--)
                 Destroy(_rows.GetChild(i).gameObject);
@@ -112,14 +113,15 @@ namespace Pascension.Game.View
             {
                 var seat = info.Waiting[i];
                 var label = UiFactory.CreateText(_theme, "Waiting" + i, _rows,
-                    "Waiting for  <b>" + seat.Name + "</b>…", 20f,
+                    Loc.French ? "En attente de  <b>" + seat.Name + "</b>…"
+                               : "Waiting for  <b>" + seat.Name + "</b>…", 20f,
                     UiPalette.TextMain, TextAlignmentOptions.MidlineLeft);
                 UiFactory.Place(label.rectTransform, new Vector2(0f, 1f), new Vector2(30f, -8f - i * 56f), new Vector2(360f, 44f));
 
                 if (info.CanKick)
                 {
                     int playerIndex = seat.PlayerIndex;
-                    var kick = UiFactory.CreateButton(_theme, "Kick" + i, _rows, "REPLACE WITH BOT", 14f);
+                    var kick = UiFactory.CreateButton(_theme, "Kick" + i, _rows, Loc.T("REPLACE WITH BOT"), 14f);
                     UiFactory.Place((RectTransform)kick.transform, new Vector2(1f, 1f), new Vector2(-10f, -8f - i * 56f), new Vector2(190f, 44f));
                     kick.onClick.AddListener(() => ReconnectService.KickToBot(playerIndex));
                 }
@@ -134,9 +136,9 @@ namespace Pascension.Game.View
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
 
-            _title.text = "CONNECTION LOST";
+            _title.text = Loc.T("CONNECTION LOST");
             _subtitle.text = string.IsNullOrEmpty(reason)
-                ? "The connection to the host was lost."
+                ? Loc.T("The connection to the host was lost.")
                 : reason;
             _footer.gameObject.SetActive(false);
             _copyButton.gameObject.SetActive(false);
@@ -146,7 +148,7 @@ namespace Pascension.Game.View
             bool canRejoin = !string.IsNullOrEmpty(NetLauncher.LastJoinCode);
             _rejoinButton.gameObject.SetActive(canRejoin);
             _rejoinButton.interactable = true;
-            _rejoinLabel.text = "REJOIN";
+            _rejoinLabel.text = Loc.T("REJOIN");
             _leaveButton.gameObject.SetActive(true);
         }
 
@@ -163,26 +165,26 @@ namespace Pascension.Game.View
             if (_busy) return;
             _busy = true;
             _rejoinButton.interactable = false;
-            _rejoinLabel.text = "REJOINING…";
+            _rejoinLabel.text = Loc.T("REJOINING…");
             try
             {
                 // NGO shut down on disconnect; a successful rejoin re-syncs us into the
                 // host's Game scene with a fresh session — this overlay dies with the scene.
                 await NetLauncher.RejoinAsync();
-                _subtitle.text = "Reconnecting to the host…";
+                _subtitle.text = Loc.T("Reconnecting to the host…");
             }
             catch (UgsException e)
             {
                 _subtitle.text = e.Message + "\nThe host may have ended the game.";
                 _rejoinButton.interactable = true;
-                _rejoinLabel.text = "REJOIN";
+                _rejoinLabel.text = Loc.T("REJOIN");
             }
             catch (System.Exception e)
             {
                 Debug.LogException(e);
-                _subtitle.text = "Rejoin failed — the host may have ended the game.";
+                _subtitle.text = Loc.T("Rejoin failed — the host may have ended the game.");
                 _rejoinButton.interactable = true;
-                _rejoinLabel.text = "REJOIN";
+                _rejoinLabel.text = Loc.T("REJOIN");
             }
             finally
             {

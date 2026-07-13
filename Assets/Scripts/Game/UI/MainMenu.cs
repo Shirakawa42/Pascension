@@ -41,6 +41,14 @@ namespace Pascension.Game.UI
 
         private void Start()
         {
+            // No legitimate flow reaches the menu with networking alive (host/join go
+            // straight to the Lobby scene) — a listening NetworkManager here is always
+            // a leak from a finished online match, and it would hijack the next solo
+            // start (NetBootstrap rebuilds the old networked match in the Game scene).
+            if (Unity.Netcode.NetworkManager.Singleton != null &&
+                Unity.Netcode.NetworkManager.Singleton.IsListening)
+                Pascension.Net.NetLauncher.Shutdown();
+
             ContentRegistry.RegisterAll();
             _heroes = HeroDatabase.All;
 
@@ -58,6 +66,17 @@ namespace Pascension.Game.UI
             BuildSoloShards();
             BuildSettings();
             ShowPanel(_homePanel);
+
+            // Language toggle — parented to the Root (not a panel) so ShowPanel never
+            // hides it; visible on every menu screen.
+            var lang = UiFactory.CreateButton(Theme, "LanguageToggle", Parent,
+                Loc.French ? "LANGUE : FR" : "LANGUAGE: EN", 15f);
+            UiFactory.Place((RectTransform)lang.transform, new Vector2(1f, 0f), new Vector2(-24f, 24f), new Vector2(190f, 44f));
+            lang.onClick.AddListener(() =>
+            {
+                Loc.SetFrench(!Loc.French);
+                SceneFlow.LoadMenu(); // rebuild the menu in the new language
+            });
         }
 
         private Transform Parent => Root != null ? (Transform)Root : transform;
@@ -78,7 +97,7 @@ namespace Pascension.Game.UI
             titleShadow.effectDistance = new Vector2(0f, -5f);
 
             var subtitle = UiFactory.CreateText(Theme, "Subtitle", _homePanel,
-                "race the board · build the deck · burst the boss", 22f,
+                Loc.T("race the board · build the deck · burst the boss"), 22f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Italic);
             UiFactory.Place(subtitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -215f), new Vector2(900f, 30f));
 
@@ -106,7 +125,9 @@ namespace Pascension.Game.UI
 
         private Button MenuButton(Transform parent, string label, ref float y)
         {
-            var button = UiFactory.CreateButton(Theme, label, parent, label, 26f);
+            // The GameObject NAME stays English (other code finds buttons by name);
+            // only the display text translates.
+            var button = UiFactory.CreateButton(Theme, label, parent, Loc.T(label), 26f);
             UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, y), new Vector2(380f, 64f));
             y -= 84f;
             return button;
@@ -119,7 +140,7 @@ namespace Pascension.Game.UI
             _gameSelectPanel = UiFactory.CreateRect("GameSelectPanel", Parent);
             UiFactory.Stretch(_gameSelectPanel);
 
-            var title = UiFactory.CreateText(Theme, "Title", _gameSelectPanel, "CHOOSE A GAME", 44f,
+            var title = UiFactory.CreateText(Theme, "Title", _gameSelectPanel, Loc.T("CHOOSE A GAME"), 44f,
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             title.characterSpacing = 6f;
             UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -120f), new Vector2(800f, 56f));
@@ -139,14 +160,14 @@ namespace Pascension.Game.UI
 
                 if (!module.Playable)
                 {
-                    var soon = UiFactory.CreateText(Theme, "Soon", banner.transform, "coming soon", 16f,
+                    var soon = UiFactory.CreateText(Theme, "Soon", banner.transform, Loc.T("coming soon"), 16f,
                         UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Italic);
                     UiFactory.Place(soon.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 18f), new Vector2(300f, 22f));
                 }
                 x += 480f;
             }
 
-            var back = UiFactory.CreateButton(Theme, "Back", _gameSelectPanel, "BACK", 20f);
+            var back = UiFactory.CreateButton(Theme, "Back", _gameSelectPanel, Loc.T("BACK"), 20f);
             UiFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(220f, 54f));
             back.onClick.AddListener(() => ShowPanel(_homePanel));
         }
@@ -181,18 +202,18 @@ namespace Pascension.Game.UI
             _soiSoloPanel = UiFactory.CreateRect("SoiSoloPanel", Parent);
             UiFactory.Stretch(_soiSoloPanel);
 
-            var title = UiFactory.CreateText(Theme, "Title", _soiSoloPanel, "SHARDS OF INFINITY — NEW GAME", 40f,
+            var title = UiFactory.CreateText(Theme, "Title", _soiSoloPanel, Loc.T("SHARDS OF INFINITY — NEW GAME"), 40f,
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             title.characterSpacing = 4f;
             UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(1100f, 52f));
 
-            var charLabel = UiFactory.CreateText(Theme, "CharLabel", _soiSoloPanel, "YOUR CHARACTER", 18f,
+            var charLabel = UiFactory.CreateText(Theme, "CharLabel", _soiSoloPanel, Loc.T("YOUR CHARACTER"), 18f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(charLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(600f, 26f));
             _soiCharacterRow = UiFactory.CreateRect("Characters", _soiSoloPanel);
             UiFactory.Place(_soiCharacterRow, new Vector2(0.5f, 1f), new Vector2(0f, -260f), new Vector2(1200f, 110f));
 
-            var dlcLabel = UiFactory.CreateText(Theme, "DlcLabel", _soiSoloPanel, "EXPANSIONS", 18f,
+            var dlcLabel = UiFactory.CreateText(Theme, "DlcLabel", _soiSoloPanel, Loc.T("EXPANSIONS"), 18f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(dlcLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -360f), new Vector2(600f, 26f));
             var module = Pascension.Net.GameCatalog.Get("shards");
@@ -212,7 +233,7 @@ namespace Pascension.Game.UI
                 });
             }
 
-            var botsLabel = UiFactory.CreateText(Theme, "BotsLabel", _soiSoloPanel, "OPPONENTS (heuristic bots)", 18f,
+            var botsLabel = UiFactory.CreateText(Theme, "BotsLabel", _soiSoloPanel, Loc.T("OPPONENTS (heuristic bots)"), 18f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(botsLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -560f), new Vector2(600f, 26f));
             _soiBotButtons.Clear();
@@ -230,12 +251,12 @@ namespace Pascension.Game.UI
                 _soiBotButtons.Add(button);
             }
 
-            var start = UiFactory.CreateButton(Theme, "Start", _soiSoloPanel, "START GAME", 24f,
+            var start = UiFactory.CreateButton(Theme, "Start", _soiSoloPanel, Loc.T("START GAME"), 24f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)start.transform, new Vector2(0.5f, 0f), new Vector2(0f, 150f), new Vector2(360f, 64f));
             start.onClick.AddListener(StartSoiSolo);
 
-            var back = UiFactory.CreateButton(Theme, "Back", _soiSoloPanel, "BACK", 20f);
+            var back = UiFactory.CreateButton(Theme, "Back", _soiSoloPanel, Loc.T("BACK"), 20f);
             UiFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0f, 70f), new Vector2(220f, 54f));
             back.onClick.AddListener(() => ShowPanel(_gameSelectPanel));
 
@@ -317,12 +338,12 @@ namespace Pascension.Game.UI
             var panel = UiFactory.CreatePanel(Theme, "Panel", _soloPanel);
             UiFactory.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1460f, 900f));
 
-            var title = UiFactory.CreateText(Theme, "Title", panel.transform, "SOLO GAME", 40f,
+            var title = UiFactory.CreateText(Theme, "Title", panel.transform, Loc.T("SOLO GAME"), 40f,
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             title.characterSpacing = 8f;
             UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(600f, 48f));
 
-            var heroLabel = UiFactory.CreateText(Theme, "HeroLabel", panel.transform, "CHOOSE YOUR HERO", 20f,
+            var heroLabel = UiFactory.CreateText(Theme, "HeroLabel", panel.transform, Loc.T("CHOOSE YOUR HERO"), 20f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(heroLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -74f), new Vector2(600f, 26f));
 
@@ -386,7 +407,7 @@ namespace Pascension.Game.UI
             }
 
             // Opponent configuration.
-            var oppLabel = UiFactory.CreateText(Theme, "OppLabel", panel.transform, "OPPONENTS", 20f,
+            var oppLabel = UiFactory.CreateText(Theme, "OppLabel", panel.transform, Loc.T("OPPONENTS"), 20f,
                 UiPalette.TextDim, TextAlignmentOptions.Left, FontStyles.Bold);
             UiFactory.Place(oppLabel.rectTransform, new Vector2(0.5f, 0f), new Vector2(-370f, 284f), new Vector2(300f, 26f));
 
@@ -423,12 +444,12 @@ namespace Pascension.Game.UI
                 _botRows.Add(row);
             }
 
-            var start = UiFactory.CreateButton(Theme, "Start", panel.transform, "START GAME", 26f,
+            var start = UiFactory.CreateButton(Theme, "Start", panel.transform, Loc.T("START GAME"), 26f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)start.transform, new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(340f, 64f));
             start.onClick.AddListener(StartSolo);
 
-            var back = UiFactory.CreateButton(Theme, "Back", panel.transform, "BACK", 18f);
+            var back = UiFactory.CreateButton(Theme, "Back", panel.transform, Loc.T("BACK"), 18f);
             UiFactory.Place((RectTransform)back.transform, new Vector2(0f, 0f), new Vector2(24f, 24f), new Vector2(140f, 48f));
             back.onClick.AddListener(() => ShowPanel(_homePanel));
 
@@ -508,7 +529,7 @@ namespace Pascension.Game.UI
             var panel = UiFactory.CreatePanel(Theme, "Panel", _settingsPanel);
             UiFactory.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(620f, 480f));
 
-            var title = UiFactory.CreateText(Theme, "Title", panel.transform, "SETTINGS", 34f,
+            var title = UiFactory.CreateText(Theme, "Title", panel.transform, Loc.T("SETTINGS"), 34f,
                 UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -20f), new Vector2(400f, 40f));
 
@@ -519,7 +540,7 @@ namespace Pascension.Game.UI
             BuildVolumeRow(panel.transform, "Music volume", -180f, SceneFlow.PrefMusicVolume, null);
 
             var toggle = UiFactory.CreateToggle(Theme, "FullControl", panel.transform,
-                "Full control (hold priority even when you can only pass)");
+                Loc.T("Full control (hold priority even when you can only pass)"));
             UiFactory.Place((RectTransform)toggle.transform, new Vector2(0.5f, 0.5f), new Vector2(-10f, -20f), new Vector2(520f, 32f));
             toggle.isOn = PlayerPrefs.GetInt(SceneFlow.PrefFullControl, 0) == 1;
             toggle.onValueChanged.AddListener(on =>
@@ -529,17 +550,17 @@ namespace Pascension.Game.UI
             });
 
             var note = UiFactory.CreateText(Theme, "Note", panel.transform,
-                "Audio hooks are stubs until sound lands.", 13f, UiPalette.TextDim, TextAlignmentOptions.Center);
+                Loc.T("Audio hooks are stubs until sound lands."), 13f, UiPalette.TextDim, TextAlignmentOptions.Center);
             UiFactory.Place(note.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 96f), new Vector2(500f, 18f));
 
-            var back = UiFactory.CreateButton(Theme, "Back", panel.transform, "BACK", 18f);
+            var back = UiFactory.CreateButton(Theme, "Back", panel.transform, Loc.T("BACK"), 18f);
             UiFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(160f, 48f));
             back.onClick.AddListener(() => ShowPanel(_homePanel));
         }
 
         private void BuildVolumeRow(Transform parent, string label, float y, string prefKey, Action<float> apply)
         {
-            var text = UiFactory.CreateText(Theme, label, parent, label, 18f,
+            var text = UiFactory.CreateText(Theme, label, parent, Loc.T(label), 18f,
                 UiPalette.TextMain, TextAlignmentOptions.MidlineLeft);
             UiFactory.Place(text.rectTransform, new Vector2(0.5f, 1f), new Vector2(-140f, y), new Vector2(220f, 26f));
 

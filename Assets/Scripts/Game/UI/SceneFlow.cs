@@ -11,6 +11,8 @@ namespace Pascension.Game.UI
         public const string PrefFullControl = "pascension.fullControl";
         public const string PrefMasterVolume = "pascension.volume.master";
         public const string PrefMusicVolume = "pascension.volume.music";
+        /// <summary>"en" (default) or "fr" — read through <see cref="Loc"/>.</summary>
+        public const string PrefLanguage = "pascension.lang";
 
         public static void LoadGame() => SceneManager.LoadScene(GameScene);
 
