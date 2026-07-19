@@ -37,6 +37,27 @@ namespace Pascension.Game.UI
                 "Contrôle total (garder la priorité même sans action possible)",
             ["Audio hooks are stubs until sound lands."] = "Le son n'est pas encore implémenté.",
 
+            // ---------------------------------------------------------- self-update
+            ["UPDATE AVAILABLE"] = "MISE À JOUR DISPONIBLE",
+            ["DOWNLOADING"] = "TÉLÉCHARGEMENT",
+            ["VERIFYING…"] = "VÉRIFICATION…",
+            ["INSTALLING…"] = "INSTALLATION…",
+            ["RESTARTING…"] = "REDÉMARRAGE…",
+            ["OPEN DOWNLOAD PAGE"] = "PAGE DE TÉLÉCHARGEMENT",
+            ["Download failed — check your connection."] =
+                "Échec du téléchargement — vérifiez votre connexion.",
+            ["File verification failed — try again."] =
+                "Échec de la vérification du fichier — réessayez.",
+            ["Not enough disk space for the update."] =
+                "Espace disque insuffisant pour la mise à jour.",
+            ["Automatic update unavailable — opening the download page."] =
+                "Mise à jour automatique indisponible — ouverture de la page de téléchargement.",
+            ["Update failed — see the log."] = "Échec de la mise à jour — voir le journal.",
+            ["Update required — use the UPDATE button in the main menu."] =
+                "Mise à jour requise — utilisez le bouton MISE À JOUR du menu principal.",
+            ["The host runs an older version — they need to update."] =
+                "L'hôte utilise une version plus ancienne — il doit la mettre à jour.",
+
             // ---------------------------------------------------------- lobby
             ["PLAY ONLINE"] = "JOUER EN LIGNE",
             ["host a game and share its ID — no port forwarding needed"] =

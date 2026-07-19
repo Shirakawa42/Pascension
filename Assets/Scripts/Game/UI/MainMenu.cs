@@ -75,6 +75,10 @@ namespace Pascension.Game.UI
                 Loc.SetFrench(!Loc.French);
                 SceneFlow.LoadMenu(); // rebuild the menu in the new language
             });
+
+            // Version label + self-update button — Root-parented corner widgets like
+            // the language toggle, so ShowPanel never hides them.
+            gameObject.AddComponent<Pascension.Game.Update.UpdateMenuControl>().Init(Theme, Parent);
         }
 
         private Transform Parent => Root != null ? (Transform)Root : transform;
