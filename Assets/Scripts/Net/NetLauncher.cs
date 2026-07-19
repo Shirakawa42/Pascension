@@ -162,7 +162,8 @@ namespace Pascension.Net
             Encoding.UTF8.GetBytes(EngineJson.Serialize(new ConnectionPayload
             {
                 ClientGuid = ClientIdentity.Guid,
-                PlayerName = ClientIdentity.PlayerName
+                PlayerName = ClientIdentity.PlayerName,
+                GameVersion = Application.version
             }));
     }
 }

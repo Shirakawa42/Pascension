@@ -121,6 +121,21 @@ namespace Pascension.Net
                 response.Reason = "Missing or malformed client identity";
                 return;
             }
+
+            // Version gate: the NGO wire + EngineJson snapshots are only guaranteed
+            // between identical builds, so reject ANY mismatch (older OR newer client)
+            // before the capacity checks — a mismatched client must always get the
+            // version message. Reasons stay English (wire strings); LobbyScreen
+            // localizes them by prefix on the client.
+            string clientVersion = string.IsNullOrEmpty(payload.GameVersion) ? "0" : payload.GameVersion;
+            if (Pascension.Core.VersionCompare.Compare(clientVersion, Application.version) != 0)
+            {
+                response.Reason = Pascension.Core.VersionCompare.IsNewer(Application.version, clientVersion)
+                    ? "Update required: you have v" + clientVersion + ", the host has v" + Application.version
+                    : "Host update required: the host has v" + Application.version + ", you have v" + clientVersion;
+                return;
+            }
+
             if (NetClientRegistry.IsGuidConnected(payload.ClientGuid))
             {
                 response.Reason = "This identity is already connected";

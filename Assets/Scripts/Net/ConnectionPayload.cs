@@ -8,5 +8,10 @@ namespace Pascension.Net
     {
         public string ClientGuid;
         public string PlayerName;
+
+        /// <summary>Application.version of the connecting build — checked at approval
+        /// (wire format is only guaranteed between identical builds). Null from
+        /// pre-update clients, which the gate treats as "0" and rejects.</summary>
+        public string GameVersion;
     }
 }

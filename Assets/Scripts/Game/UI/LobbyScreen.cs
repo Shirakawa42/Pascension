@@ -85,7 +85,16 @@ namespace Pascension.Game.UI
                     {
                         string reason = manager != null ? manager.DisconnectReason : null;
                         if (!string.IsNullOrEmpty(reason))
-                            _connectStatus.text = "Disconnected: " + reason;
+                        {
+                            // Version-gate reasons arrive as English wire strings
+                            // (NetBootstrap.ApproveConnection) — localize by prefix.
+                            if (reason.StartsWith("Update required"))
+                                _connectStatus.text = Loc.T("Update required — use the UPDATE button in the main menu.");
+                            else if (reason.StartsWith("Host update required"))
+                                _connectStatus.text = Loc.T("The host runs an older version — they need to update.");
+                            else
+                                _connectStatus.text = "Disconnected: " + reason;
+                        }
                     }
                 }
                 return;
