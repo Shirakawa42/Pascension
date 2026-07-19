@@ -1,0 +1,30 @@
+# Fast test gate for PRs and non-main branches: the Unity-free engine suite only.
+# Sparse checkout skips ~260 MB of Assets/Art; runs in ~1-2 minutes.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Engine tests (dotnet)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            Tools/EngineVerify
+            Assets/Scripts
+            Assets/Tests
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Run engine verification tests
+        working-directory: Tools/EngineVerify
+        run: dotnet test --nologo

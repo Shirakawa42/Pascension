@@ -66,7 +66,11 @@ namespace Pascension.Net
             if (_registered) return;
             _registered = true;
             Modules.Add(new PascensionModule());
+#if !PUBLIC_RELEASE
+            // Shards of Infinity is an unofficial fan re-implementation; CI can strip
+            // it from distributed builds by defining PUBLIC_RELEASE (see CiBuild).
             Modules.Add(new ShardsModule());
+#endif
         }
 
         public static IReadOnlyList<IGameModule> All

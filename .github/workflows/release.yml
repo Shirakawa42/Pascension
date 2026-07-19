@@ -1,0 +1,181 @@
+# Push to main → engine tests → Windows + macOS players (GameCI on ubuntu, Mono)
+# → one GitHub Release: pascension-windows-v<V>.zip, pascension-macos-v<V>.tar.gz,
+# latest.json (the in-game updater's manifest — schema in Core/Update/UpdateManifest).
+#
+# The release is created as a DRAFT and flipped to published only after every asset
+# (including latest.json) is uploaded: /releases/latest/download/... skips drafts, so
+# updaters can never see a half-published release.
+#
+# One-time setup (repo Settings → Secrets → Actions): UNITY_LICENSE (full .ulf XML),
+# UNITY_EMAIL, UNITY_PASSWORD. See the plan's checklist.
+name: release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-main
+  cancel-in-progress: true # safe: releases publish atomically (draft → publish)
+
+env:
+  # Flip to "true" to strip the Shards of Infinity mode from distributed builds
+  # (adds the PUBLIC_RELEASE define + drops the GameShards scene — see CiBuild.cs).
+  PUBLIC_RELEASE: "false"
+  VERSION: 1.0.${{ github.run_number }}
+
+jobs:
+  test:
+    name: Engine tests (dotnet)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            Tools/EngineVerify
+            Assets/Scripts
+            Assets/Tests
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Run engine verification tests
+        working-directory: Tools/EngineVerify
+        run: dotnet test --nologo
+
+  build:
+    name: Build ${{ matrix.targetPlatform }}
+    needs: test # hard gate: no build if tests fail
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - targetPlatform: StandaloneWindows64
+            artifact: pascension-windows
+          - targetPlatform: StandaloneOSX
+            artifact: pascension-macos
+    steps:
+      # Editor image + Library + build exceed the runner's ~14 GB free default.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          swap-storage: true
+
+      - uses: actions/checkout@v4
+
+      # unity-mcp is editor-only dev tooling: unpinned (#main) at the manifest level
+      # and it runs init code in batchmode — both flake sources. Strip it from CI.
+      - name: Strip editor-only MCP package
+        run: |
+          jq 'del(.dependencies["com.coplaydev.unity-mcp"])' Packages/manifest.json > m.tmp && mv m.tmp Packages/manifest.json
+          jq 'del(.dependencies["com.coplaydev.unity-mcp"])' Packages/packages-lock.json > l.tmp && mv l.tmp Packages/packages-lock.json
+
+      # After the strip so the hash keys on the CI-effective manifest.
+      - name: Restore Library cache
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectSettings.asset', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ matrix.targetPlatform }}-
+
+      - name: Unity build
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: auto # ProjectSettings/ProjectVersion.txt → 6000.3.7f1
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: pascension
+          buildMethod: Pascension.Editor.CiBuild.Build
+          versioning: Custom
+          version: ${{ env.VERSION }}
+          customParameters: -ciPublicRelease ${{ env.PUBLIC_RELEASE }}
+          allowDirtyBuild: true # required: we edited the package manifests above
+
+      - name: Fix ownership (docker build runs as root)
+        run: sudo chown -R $(id -u):$(id -g) build
+
+      - name: Package Windows zip
+        if: matrix.targetPlatform == 'StandaloneWindows64'
+        run: |
+          cd build/StandaloneWindows64
+          rm -rf *_BurstDebugInformation_DoNotShip *_BackUpThisFolder_ButDontShipItWithYourGame
+          # Zip root == install root: the updater extracts and copies over the install dir.
+          zip -r -X "$GITHUB_WORKSPACE/pascension-windows-v${VERSION}.zip" .
+
+      - name: Package macOS tar.gz (ad-hoc signed)
+        if: matrix.targetPlatform == 'StandaloneOSX'
+        run: |
+          cd build/StandaloneOSX
+          rm -rf *_BurstDebugInformation_DoNotShip *_BackUpThisFolder_ButDontShipItWithYourGame
+          APP=$(ls -d *.app | head -n1)
+          chmod +x "$APP/Contents/MacOS/"*
+          # Ad-hoc signature (rcodesign with no key): mandatory for arm64 slices on
+          # Apple Silicon; idempotent if Unity already signed. No Apple account needed.
+          curl -sSL -o /tmp/rcodesign.tar.gz \
+            "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F0.29.0/apple-codesign-0.29.0-x86_64-unknown-linux-musl.tar.gz"
+          tar -xzf /tmp/rcodesign.tar.gz -C /tmp
+          /tmp/apple-codesign-0.29.0-x86_64-unknown-linux-musl/rcodesign sign "$APP"
+          # tar preserves the exec bits that C# ZipFile would strip — the updater
+          # extracts this with /usr/bin/tar, never System.IO.Compression.
+          tar -czf "$GITHUB_WORKSPACE/pascension-macos-v${VERSION}.tar.gz" "$APP"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            pascension-*.zip
+            pascension-*.tar.gz
+          if-no-files-found: error
+          retention-days: 3
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: v1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true # both artifacts land flat in $PWD
+
+      - name: Generate latest.json
+        run: |
+          WIN="pascension-windows-v${VERSION}.zip"
+          MAC="pascension-macos-v${VERSION}.tar.gz"
+          BASE="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
+          jq -n \
+            --arg version "$VERSION" --arg tag "$TAG" \
+            --arg publishedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg winUrl "$BASE/$WIN" --arg winSha "$(sha256sum "$WIN" | cut -d' ' -f1)" --argjson winSize "$(stat -c%s "$WIN")" \
+            --arg macUrl "$BASE/$MAC" --arg macSha "$(sha256sum "$MAC" | cut -d' ' -f1)" --argjson macSize "$(stat -c%s "$MAC")" \
+            '{version:$version, tag:$tag, publishedAt:$publishedAt, platforms:{
+               windows:{url:$winUrl, sha256:$winSha, sizeBytes:$winSize},
+               macos:  {url:$macUrl, sha256:$macSha, sizeBytes:$macSize}}}' > latest.json
+          cat latest.json
+
+      - name: Create draft, upload all assets, then publish (atomic)
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists (re-run of a published run?). Push a new commit instead."
+            exit 1
+          fi
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --title "Pascension $TAG" --generate-notes --draft
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" \
+            "pascension-windows-v${VERSION}.zip" \
+            "pascension-macos-v${VERSION}.tar.gz" \
+            latest.json
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
