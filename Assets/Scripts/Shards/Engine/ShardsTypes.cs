@@ -95,6 +95,10 @@ namespace Shards.Engine
         public IShardsEffect PlayEffect;
         /// <summary>Champion/character once-per-turn exhaust ability.</summary>
         public IShardsEffect ExhaustEffect;
+        /// <summary>Gems paid as part of the exhaust COST ("Pay N gems, Exhaust:") —
+        /// the activation is illegal while unaffordable (Shard Defiant, Whatever it
+        /// Takes). Effects never check gems themselves.</summary>
+        public int ExhaustGemCost;
         /// <summary>Monster kill reward (Into the Horizon).</summary>
         public IShardsEffect RewardEffect;
         /// <summary>Ingeminex: fires once, end of the reveal turn, against ALL players.</summary>

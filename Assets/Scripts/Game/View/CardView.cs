@@ -23,6 +23,7 @@ namespace Pascension.Game.View
         [Header("Wired by CardViewFactory")]
         public UiTheme Theme;
         public Image Glow;
+        public Image OuterGlow;
         public Image Frame;
         public Image Art;
         public Image TopBar;
@@ -307,6 +308,26 @@ namespace Pascension.Game.View
             {
                 var c = Glow.color;
                 Glow.color = new Color(c.r, c.g, c.b, alpha);
+            }
+        }
+
+        /// <summary>Second, wider halo — independent of SetGlow so both can show at once
+        /// (river slots: faction "condition met" inner + gold "affordable" outer).</summary>
+        public void SetOuterGlow(bool on) => SetOuterGlow(on, UiPalette.Gold);
+
+        public void SetOuterGlow(bool on, Color color)
+        {
+            if (OuterGlow == null) return;
+            OuterGlow.gameObject.SetActive(on);
+            if (on) OuterGlow.color = UiPalette.WithAlpha(color, 0.5f);
+        }
+
+        public void SetOuterGlowAlpha(float alpha)
+        {
+            if (OuterGlow != null && OuterGlow.gameObject.activeSelf)
+            {
+                var c = OuterGlow.color;
+                OuterGlow.color = new Color(c.r, c.g, c.b, alpha);
             }
         }
 

@@ -23,6 +23,12 @@ namespace Pascension.Net
         /// <summary>Raised on pure clients when the bridge spawns (the host uses LocalSession).</summary>
         public static event Action<GameNetBridge> ClientSpawned;
 
+        /// <summary>Presentation-only hover feed — "what public card is that player
+        /// pointing at" (Hearthstone-style). (seat, cardInstanceId); instanceId &lt; 0
+        /// clears. Raised on every peer including the host; receivers filter out their
+        /// own seat. Never carries hidden information (public-zone cards only).</summary>
+        public static event Action<int, int> CardHoverChanged;
+
         private GameHost _host;
         private IGameCodec _codec;
         private Func<ulong, int> _seatOfClient;
@@ -95,6 +101,36 @@ namespace Pascension.Net
         [Rpc(SendTo.Server)]
         public void RequestResyncRpc(RpcParams rpcParams = default) =>
             _resyncRequested?.Invoke(rpcParams.Receive.SenderClientId);
+
+        // ---------------- hover feed (presentation only) ----------------
+
+        /// <summary>Entry point for the LOCAL player's hover on any peer: clients route
+        /// through the host (which stamps the seat and rebroadcasts); the host
+        /// broadcasts directly. `seat` is only trusted from the host itself.</summary>
+        public void SendCardHover(int seat, int instanceId)
+        {
+            if (!IsSpawned) return;
+            if (IsServer) BroadcastCardHover(seat, instanceId);
+            else CardHoverRpc(instanceId);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void CardHoverRpc(int instanceId, RpcParams rpcParams = default)
+        {
+            int seat = _seatOfClient?.Invoke(rpcParams.Receive.SenderClientId) ?? -1;
+            if (seat >= 0)
+                BroadcastCardHover(seat, instanceId);
+        }
+
+        private void BroadcastCardHover(int seat, int instanceId)
+        {
+            CardHoverBroadcastRpc(seat, instanceId);
+            CardHoverChanged?.Invoke(seat, instanceId); // the host hears it locally
+        }
+
+        [Rpc(SendTo.NotServer)]
+        private void CardHoverBroadcastRpc(int seat, int instanceId) =>
+            CardHoverChanged?.Invoke(seat, instanceId);
 
         // ---------------- host → one client (send helpers) ----------------
 

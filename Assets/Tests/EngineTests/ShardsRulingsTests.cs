@@ -781,5 +781,76 @@ namespace Pascension.Engine.Tests
                 Assert.GreaterOrEqual(adapter.WinnerIndex, -1);
             }
         }
+
+        [Test]
+        public void ShardDefiant_GemPaymentIsAnActivationCost_AndKeepOrBanishIsMandatory()
+        {
+            var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 61);
+            var p0 = engine.State.Players[0];
+            var destiny = new ShardsCard
+            {
+                InstanceId = engine.State.NextInstanceId++,
+                DefId = "shard_defiant",
+                Owner = 0,
+                Zone = ShardsZone.DestinyRow
+            };
+            p0.Destinies.Add(destiny);
+
+            // Unaffordable: the tap itself is illegal and the exhaust is NOT spent
+            // (user decision 2026-07-19 — the 2 gems are a cost, not part of the effect).
+            p0.Gems = 1;
+            var broke = engine.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = destiny.InstanceId });
+            Assert.IsFalse(broke.Accepted, "2-gem cost gates the activation");
+            Assert.IsFalse(destiny.Exhausted, "a rejected activation must not spend the exhaust");
+
+            p0.Gems = 3;
+            MustSubmit(engine, new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = destiny.InstanceId });
+            Assert.AreEqual(1, p0.Gems, "the cost is paid on activation");
+            Assert.IsTrue(destiny.Exhausted);
+
+            Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind);
+            var request = engine.PendingInput.Decision;
+            Assert.AreEqual("soi.defiant", request.Context);
+            Assert.AreEqual(1, request.Min, "keep-or-banish is mandatory (no decline)");
+            Assert.AreEqual(2, request.Options.Count, "exactly Keep and Banish");
+            foreach (var option in request.Options)
+            {
+                Assert.IsFalse(string.IsNullOrEmpty(option.DefId),
+                    "options carry the revealed card so the UI renders the CARD, never just a name");
+                Assert.Greater(option.CardInstanceId, 0);
+            }
+
+            int revealedId = request.Options[0].CardInstanceId;
+            Answer(engine, 2); // banish it
+            Assert.IsTrue(engine.State.Banished.Exists(c => c.InstanceId == revealedId),
+                "banish option removes the revealed card from the game");
+        }
+
+        [Test]
+        public void WhateverItTakes_SixGemCost_GatesActivation_AndPaysOnTap()
+        {
+            var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 62);
+            var p0 = engine.State.Players[0];
+            var destiny = new ShardsCard
+            {
+                InstanceId = engine.State.NextInstanceId++,
+                DefId = "whatever_it_takes",
+                Owner = 0,
+                Zone = ShardsZone.DestinyRow
+            };
+            p0.Destinies.Add(destiny);
+
+            p0.Gems = 5;
+            var broke = engine.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = destiny.InstanceId });
+            Assert.IsFalse(broke.Accepted, "6-gem cost gates the activation");
+            Assert.IsFalse(destiny.Exhausted);
+
+            p0.Gems = 6;
+            int powerBefore = p0.Power;
+            MustSubmit(engine, new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = destiny.InstanceId });
+            Assert.AreEqual(0, p0.Gems, "all 6 gems paid");
+            Assert.AreEqual(powerBefore + 9, p0.Power, "full effect fires — no gem check inside it");
+            Assert.IsTrue(destiny.Exhausted);
+        }
     }
 }

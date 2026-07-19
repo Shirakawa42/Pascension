@@ -425,7 +425,14 @@ namespace Shards.Engine
             if (card.Exhausted) return SubmitResult.Rejected("Already exhausted this turn");
             var def = card.Def;
             if (def.ExhaustEffect == null) return SubmitResult.Rejected("No exhaust ability");
+            if (player.Gems < def.ExhaustGemCost)
+                return SubmitResult.Rejected($"Costs {def.ExhaustGemCost} gems to activate");
 
+            if (def.ExhaustGemCost > 0)
+            {
+                player.Gems -= def.ExhaustGemCost;
+                Emit(new ShardsGemsChangedEvent { PlayerIndex = player.Index, Delta = -def.ExhaustGemCost, NewValue = player.Gems });
+            }
             card.Exhausted = true;
             Emit(new ShardsCharacterExhaustedEvent { PlayerIndex = player.Index, CardInstanceId = card.InstanceId });
             QueueEffect(def.ExhaustEffect, player.Index, card);
@@ -1290,10 +1297,12 @@ namespace Shards.Engine
                 actions.Add(new ShardsFocusAction { PlayerIndex = playerIndex });
 
             foreach (var champion in player.Champions)
-                if (!champion.Exhausted && champion.Def.ExhaustEffect != null)
+                if (!champion.Exhausted && champion.Def.ExhaustEffect != null &&
+                    player.Gems >= champion.Def.ExhaustGemCost)
                     actions.Add(new ShardsExhaustAction { PlayerIndex = playerIndex, CardInstanceId = champion.InstanceId });
             foreach (var destiny in player.Destinies)
-                if (!destiny.Exhausted && destiny.Def.ExhaustEffect != null)
+                if (!destiny.Exhausted && destiny.Def.ExhaustEffect != null &&
+                    player.Gems >= destiny.Def.ExhaustGemCost)
                     actions.Add(new ShardsExhaustAction { PlayerIndex = playerIndex, CardInstanceId = destiny.InstanceId });
 
             // Only completing attacks are advertised (partial marking stays legal via an

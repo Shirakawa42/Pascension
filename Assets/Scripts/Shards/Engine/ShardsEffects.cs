@@ -37,6 +37,38 @@ namespace Shards.Engine
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx) { yield break; }
     }
 
+    /// <summary>Effects that gate on a condition report it here so the UI can light a
+    /// card up ("condition glow") when its bonus is live. Implementations MUST be pure
+    /// state reads — the probe runs on every snapshot build. Probes set ctx.Source to
+    /// the card being probed; a not-yet-played card never counts itself.</summary>
+    public interface IShardsConditionalEffect
+    {
+        bool ConditionMet(ShardsContext ctx);
+    }
+
+    /// <summary>Walks an effect tree for the UI: does it contain at least one
+    /// conditional gate whose condition is satisfied right now?</summary>
+    public static class ShardsGlowProbe
+    {
+        public static bool ConditionLit(IShardsEffect effect, ShardsContext ctx)
+        {
+            switch (effect)
+            {
+                case null:
+                    return false;
+                case ShardsComposite composite:
+                    foreach (var part in composite.Parts)
+                        if (ConditionLit(part, ctx))
+                            return true;
+                    return false;
+                case IShardsConditionalEffect conditional:
+                    return conditional.ConditionMet(ctx);
+                default:
+                    return false;
+            }
+        }
+    }
+
     /// <summary>Run parts in order. Sequencing is rules-critical: a card's own mastery
     /// gain resolves BEFORE later threshold checks (the Fungal Hermit ruling).</summary>
     public sealed class ShardsComposite : IShardsEffect
@@ -56,12 +88,15 @@ namespace Shards.Engine
 
     /// <summary>Mastery Threshold wrapper: the inner effect fires only if the controller's
     /// mastery is at least N AT THIS MOMENT of resolution (never retro-checked).</summary>
-    public sealed class AtMastery : IShardsEffect
+    public sealed class AtMastery : IShardsEffect, IShardsConditionalEffect
     {
         private readonly int _threshold;
         private readonly IShardsEffect _inner;
         public int Threshold => _threshold;
         public IShardsEffect Inner => _inner;
+
+        public bool ConditionMet(ShardsContext ctx) =>
+            _threshold > 0 && ctx.Controller.Mastery >= _threshold;
 
         public AtMastery(int threshold, IShardsEffect inner)
         {
@@ -80,7 +115,7 @@ namespace Shards.Engine
     /// <summary>Faction trigger wrapper: fires only if the controller played another card
     /// of the faction this turn (fast-played mercenaries count). TODO-VERIFY exact
     /// Unify/Dominion conditions from rules-notes (M4) — condition kind is data.</summary>
-    public sealed class FactionTrigger : IShardsEffect
+    public sealed class FactionTrigger : IShardsEffect, IShardsConditionalEffect
     {
         private readonly ShardsFaction _faction;
         private readonly int _required; // cards of the faction played this turn (excluding this one)
@@ -92,6 +127,11 @@ namespace Shards.Engine
             _required = required;
             _inner = inner;
         }
+
+        /// <summary>Probe (card not yet played, so it doesn't count itself yet):
+        /// current faction plays already satisfy "excluding this one".</summary>
+        public bool ConditionMet(ShardsContext ctx) =>
+            ctx.Controller.FactionPlays(_faction) >= _required;
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {
@@ -138,11 +178,20 @@ namespace Shards.Engine
 
     /// <summary>"Gain N instead" mastery scaling: resolves the HIGHEST tier whose
     /// threshold the controller meets right now (Shard Reactor, Infinity Shard).</summary>
-    public sealed class BestByMastery : IShardsEffect
+    public sealed class BestByMastery : IShardsEffect, IShardsConditionalEffect
     {
         private readonly (int threshold, IShardsEffect effect)[] _tiers;
         public BestByMastery(params (int threshold, IShardsEffect effect)[] tiers) => _tiers = tiers;
         public IReadOnlyList<(int threshold, IShardsEffect effect)> Tiers => _tiers;
+
+        /// <summary>Lit when any UPGRADE tier (threshold > 0) is live.</summary>
+        public bool ConditionMet(ShardsContext ctx)
+        {
+            foreach (var (threshold, _) in _tiers)
+                if (threshold > 0 && ctx.Controller.Mastery >= threshold)
+                    return true;
+            return false;
+        }
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {
@@ -162,7 +211,7 @@ namespace Shards.Engine
 
     /// <summary>Gate on a simple state predicate (character identity, full health,
     /// champions in play — Inspire, Echo, character-affinity lines).</summary>
-    public sealed class If : IShardsEffect
+    public sealed class If : IShardsEffect, IShardsConditionalEffect
     {
         private readonly System.Func<ShardsContext, bool> _condition;
         private readonly IShardsEffect _inner;
@@ -172,6 +221,8 @@ namespace Shards.Engine
             _condition = condition;
             _inner = inner;
         }
+
+        public bool ConditionMet(ShardsContext ctx) => _condition(ctx);
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {
@@ -195,7 +246,7 @@ namespace Shards.Engine
     /// <summary>Unify: fires if the controller played ANOTHER ally of the faction this
     /// turn, or reveals one from hand (a decision when it matters). Champions never
     /// satisfy it; fast-played mercenaries do; the card never satisfies itself.</summary>
-    public sealed class Unify : IShardsEffect
+    public sealed class Unify : IShardsEffect, IShardsConditionalEffect
     {
         private readonly ShardsFaction _faction;
         private readonly IShardsEffect _inner;
@@ -204,6 +255,23 @@ namespace Shards.Engine
         {
             _inner = inner;
             _faction = faction;
+        }
+
+        /// <summary>Lit when another faction ally was already played OR a hand reveal
+        /// could satisfy it (the probed card itself never counts).</summary>
+        public bool ConditionMet(ShardsContext ctx)
+        {
+            var player = ctx.Controller;
+            int plays = player.FactionAllyPlays(_faction);
+            var source = ctx.Source;
+            if (source != null && ShardsEngine.CountsAs(player, source.Def, _faction) &&
+                !source.Def.IsChampion && player.PlayedThisTurn.Contains(source))
+                plays--;
+            if (plays >= 1) return true;
+            foreach (var card in player.Hand)
+                if (card != source && ShardsEngine.CountsAs(player, card.Def, _faction) && !card.Def.IsChampion)
+                    return true;
+            return false;
         }
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
@@ -245,13 +313,33 @@ namespace Shards.Engine
 
     /// <summary>Dominion: fires if the controller played and/or reveals from hand at
     /// least one card of EACH of the three non-Order base factions this turn.</summary>
-    public sealed class Dominion : IShardsEffect
+    public sealed class Dominion : IShardsEffect, IShardsConditionalEffect
     {
         private static readonly ShardsFaction[] Required =
             { ShardsFaction.Homodeus, ShardsFaction.Undergrowth, ShardsFaction.Wraethe };
         private readonly IShardsEffect _inner;
         public IShardsEffect Inner => _inner;
         public Dominion(IShardsEffect inner) => _inner = inner;
+
+        /// <summary>Lit when every required faction is covered by a play or a possible
+        /// hand reveal (the probed card itself never counts).</summary>
+        public bool ConditionMet(ShardsContext ctx)
+        {
+            var player = ctx.Controller;
+            foreach (var faction in Required)
+            {
+                if (player.FactionPlays(faction) >= 1) continue;
+                bool inHand = false;
+                foreach (var card in player.Hand)
+                    if (card != ctx.Source && card.Def.Faction == faction)
+                    {
+                        inHand = true;
+                        break;
+                    }
+                if (!inHand) return false;
+            }
+            return true;
+        }
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {
@@ -305,10 +393,13 @@ namespace Shards.Engine
 
     /// <summary>Count-scaled gains: counter(ctx) × the per-unit amounts (Scion of
     /// Nothingness, Additri, Evokatus, Terminal Crescents…).</summary>
-    public sealed class PerCount : IShardsEffect
+    public sealed class PerCount : IShardsEffect, IShardsConditionalEffect
     {
         private readonly System.Func<ShardsContext, int> _counter;
         private readonly int _gems, _power, _mastery, _health, _draw;
+
+        /// <summary>Lit when the count is non-zero (the card actually does something).</summary>
+        public bool ConditionMet(ShardsContext ctx) => _counter(ctx) > 0;
         /// <summary>Per-unit amounts (bot heuristics assume ~2 units).</summary>
         public (int gems, int power, int mastery, int health, int draw) PerUnit =>
             (_gems, _power, _mastery, _health, _draw);

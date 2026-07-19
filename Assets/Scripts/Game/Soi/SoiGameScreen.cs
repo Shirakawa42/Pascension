@@ -79,6 +79,22 @@ namespace Pascension.Game.Soi
         private readonly HashSet<int> _pendingReveal = new HashSet<int>();
         private readonly List<CardView> _transient = new List<CardView>();
 
+        // Snapshot-computed glow hints (host truth — see ShardsSnapshotBuilder).
+        private readonly HashSet<int> _conditionGlow = new HashSet<int>();
+        private readonly HashSet<int> _killable = new HashSet<int>();
+        private readonly HashSet<int> _buyable = new HashSet<int>();
+
+        // Remote hover (Hearthstone-style "what is the active player pointing at").
+        private int _lastHoverSent = -1;
+        private int _remoteHoverSeat = -1, _remoteHoverId = -1;
+        private RectTransform _remoteHoverMark;
+        private Image _remoteHoverImg;
+
+        // Kill attribution for the play log: a champion destroyed right after taking
+        // power damage was ATTACKED (own log entry only); destroyed without a preceding
+        // hit was killed by an effect (also attaches to its causing card).
+        private int _lastChampionHitId = -1;
+
         // ------------------------------------------------------------------ bind
 
         public void Bind(ISession session, object rules)
@@ -89,6 +105,7 @@ namespace Pascension.Game.Soi
             SoiCardFaces.Install();
 
             BuildLayout();
+            StartCoroutine(OuterGlowPulseLoop());
 
             session.SnapshotReceived += OnSnapshot;
             session.EventsReceived += OnEvents;
@@ -106,10 +123,12 @@ namespace Pascension.Game.Soi
                 OnPauseChanged(netSession.CurrentPause);
 
             CardView.AnyHovered += OnAnyCardHovered;
+            GameNetBridge.CardHoverChanged += OnRemoteHover;
         }
 
         private void OnDestroy()
         {
+            GameNetBridge.CardHoverChanged -= OnRemoteHover;
             CardView.AnyHovered -= OnAnyCardHovered;
             NetEvents.LocalClientDisconnected -= OnLocalClientDisconnected;
             if (_session != null)
@@ -145,6 +164,9 @@ namespace Pascension.Game.Soi
             _history = historyRect.gameObject.AddComponent<PlayHistoryBar>();
             _history.Container = historyRect;
             _history.Init(Theme);
+            // The affected-cards hover panel pops just right of the fixed card preview
+            // (preview: x 16..302 at y −192).
+            _history.AffectedAnchor = new Vector2(312f, -192f);
 
             // Destiny row + Ingeminex space (between opponents and the center row).
             _destinyRow = UiFactory.CreateRect("DestinyRow", root);
@@ -230,6 +252,16 @@ namespace Pascension.Game.Soi
             _hand.Theme = Theme;
             _hand.Container = _handRect;
             _hand.PlayRequested += OnHandPlayRequested;
+            _hand.GlowResolver = HandGlowFor;
+
+            // Remote-hover marker: a soft player-colored overlay repositioned in
+            // LateUpdate over whatever public card the active player is pointing at.
+            // Created BELOW the presentation layers so animations/modals draw over it.
+            _remoteHoverMark = UiFactory.CreateRect("RemoteHover", root);
+            _remoteHoverImg = UiFactory.CreateImage("Fill", _remoteHoverMark, Theme.Rounded,
+                UiPalette.WithAlpha(UiPalette.Gold, 0.3f), raycast: false);
+            UiFactory.Stretch(_remoteHoverImg.rectTransform);
+            _remoteHoverMark.gameObject.SetActive(false);
 
             // Presentation layers (z: flights below showcase below bursts/floats).
             _flights = Layer<FlightLayer>("Flights", root, out var flightsRect);
@@ -405,6 +437,12 @@ namespace Pascension.Game.Soi
         {
             _snap = snapshotBase as ShardsSnapshot;
             if (_snap == null) return;
+            _conditionGlow.Clear();
+            _killable.Clear();
+            _buyable.Clear();
+            if (_snap.ConditionGlowIds != null) _conditionGlow.UnionWith(_snap.ConditionGlowIds);
+            if (_snap.KillableIds != null) _killable.UnionWith(_snap.KillableIds);
+            if (_snap.BuyableSlots != null) _buyable.UnionWith(_snap.BuyableSlots);
             RefreshHandLive();
             if (_queue.IsIdle)
                 RefreshAll();
@@ -665,10 +703,10 @@ namespace Pascension.Game.Soi
             _drawPile.Render(me.DeckCount, null);
             _playedPile.Render(me.PlayZone.Count, TopSnap(me.PlayZone));
             _discardPile.Render(me.Discard.Count, TopSnap(me.Discard));
-            // Badge reads "total(yours)" so your own banished count is always visible.
+            // Two counters: gold = total banished, green = yours.
             int banishedMine = _snap.Banished.FindAll(c => c.Owner == MyIndex).Count;
             _banishPile.Render(_snap.Banished.Count, TopSnap(_snap.Banished),
-                $"{_snap.Banished.Count}({banishedMine})");
+                null, banishedMine.ToString());
             _centerDeckPile.Render(_snap.CenterDeckCount, null);
 
             RefreshControls(); // live turn/button gating (also runs on drain via RefreshInteractivity)
@@ -735,18 +773,37 @@ namespace Pascension.Game.Soi
                 }
                 slot.gameObject.SetActive(true);
                 slot.BindDef(card.DefId, card.InstanceId);
-                MarkMercenary(slot, card.DefId);
+                ApplyRowGlows(slot, card, s);
                 _boardViews[card.InstanceId] = slot;
             }
         }
 
-        /// <summary>Mercenaries get a red frame glow — buy them into your deck OR use
-        /// them once on the spot.</summary>
-        private static void MarkMercenary(CardView slot, string defId)
+        /// <summary>Row slot adornments — two independent channels:
+        /// inner glow = the card's CONDITION is met right now (faction color; falls
+        /// back to the red mercenary marker), outer pulse = the viewer can afford it.</summary>
+        private void ApplyRowGlows(CardView slot, ShardsCardSnap card, int slotIndex)
         {
-            bool mercenary = ShardsCardDatabase.TryGet(defId, out var def) &&
-                             def.Type == ShardsCardType.Mercenary;
-            slot.SetGlow(mercenary, UiPalette.Danger);
+            ShardsCardDatabase.TryGet(card.DefId, out var def);
+            bool mercenary = def != null && def.Type == ShardsCardType.Mercenary;
+            if (def != null && _conditionGlow.Contains(card.InstanceId))
+                slot.SetGlow(true, SoiCardFaces.FactionColor(def.Faction));
+            else
+                slot.SetGlow(mercenary, UiPalette.Danger);
+            slot.SetOuterGlow(_buyable.Contains(slotIndex));
+        }
+
+        /// <summary>Gentle shared pulse for every active "affordable" outer halo.</summary>
+        private IEnumerator OuterGlowPulseLoop()
+        {
+            while (true)
+            {
+                float alpha = 0.3f + 0.28f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3f));
+                if (_slots != null)
+                    foreach (var slot in _slots)
+                        if (slot != null && slot.gameObject.activeSelf)
+                            slot.SetOuterGlowAlpha(alpha);
+                yield return null;
+            }
         }
 
         /// <summary>RowRefilled reveal: bind + pop a slot as its flight lands (the full
@@ -760,7 +817,7 @@ namespace Pascension.Game.Soi
             if (card == null) { slot.gameObject.SetActive(false); return; }
             slot.gameObject.SetActive(true);
             slot.BindDef(card.DefId, card.InstanceId);
-            MarkMercenary(slot, card.DefId);
+            ApplyRowGlows(slot, card, slotIndex);
             _boardViews[card.InstanceId] = slot;
             if (isActiveAndEnabled)
                 StartCoroutine(Tween.Punch(slot.transform, 0.18f, 0.22f));
@@ -852,6 +909,7 @@ namespace Pascension.Game.Soi
                     view.BindDef(champion.DefId, champion.InstanceId);
                     view.SetTapped(champion.Exhausted);
                     view.SetMarkedDamage(champion.DamageThisTurn);
+                    ApplyBoardGlow(view, champion);
                     int target = player.Index;
                     view.Clicked += w => Submit(new ShardsAttackChampionAction
                     {
@@ -875,6 +933,7 @@ namespace Pascension.Game.Soi
                     dx += destinyStep;
                     view.BindDef(destiny.DefId, destiny.InstanceId);
                     view.SetTapped(destiny.Exhausted);
+                    ApplyBoardGlow(view, destiny);
                     view.Clicked += _ => ShowOpponentDetail(detailIndex); // don't swallow the panel click
                     _boardViews[destiny.InstanceId] = view;
                 }
@@ -942,6 +1001,7 @@ namespace Pascension.Game.Soi
                 x += xStep;
                 view.BindDef(monster.DefId, monster.InstanceId);
                 view.SetMarkedDamage(monster.DamageThisTurn);
+                ApplyBoardGlow(view, monster);
                 view.Clicked += w => Submit(new ShardsAttackMonsterAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
                 _boardViews[monster.InstanceId] = view;
             }
@@ -974,6 +1034,7 @@ namespace Pascension.Game.Soi
                 view.BindDef(champion.DefId, champion.InstanceId);
                 view.SetTapped(champion.Exhausted);
                 view.SetMarkedDamage(champion.DamageThisTurn);
+                ApplyBoardGlow(view, champion);
                 view.Clicked += w =>
                 {
                     if (MyPriority)
@@ -992,10 +1053,24 @@ namespace Pascension.Game.Soi
                 x += xStep;
                 view.BindDef(destiny.DefId, destiny.InstanceId);
                 view.SetTapped(destiny.Exhausted);
+                ApplyBoardGlow(view, destiny);
+                // Gem-cost-gated exhausts ("Pay N gems, Exhaust:") grey out while
+                // unaffordable — the engine rejects the tap as illegal.
+                int gemCost = ShardsCardDatabase.TryGet(destiny.DefId, out var destinyDef)
+                    ? destinyDef.ExhaustGemCost : 0;
+                bool unaffordable = !destiny.Exhausted && gemCost > 0 && me.Gems < gemCost;
+                view.SetGreyed(unaffordable);
                 view.Clicked += w =>
                 {
-                    if (MyPriority)
-                        Submit(new ShardsExhaustAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
+                    if (!MyPriority) return;
+                    if (gemCost > 0 && Me != null && Me.Gems < gemCost)
+                    {
+                        _toast.Show(UI.Loc.French
+                            ? $"Coûte {gemCost} cristaux pour l'activer."
+                            : $"Costs {gemCost} gems to activate.");
+                        return;
+                    }
+                    Submit(new ShardsExhaustAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
                 };
                 _boardViews[destiny.InstanceId] = view;
             }
@@ -1053,6 +1128,11 @@ namespace Pascension.Game.Soi
 
         private IEnumerator PlayEvent(GameEvent e)
         {
+            // Kill attribution (see field comment): remember whether the PREVIOUS event
+            // was a power hit on a champion — a destroy right after one is an attack.
+            int previousChampionHit = _lastChampionHitId;
+            _lastChampionHitId = e is ShardsChampionDamagedEvent championHit ? championHit.InstanceId : -1;
+
             switch (e)
             {
                 case ShardsCardPlayedEvent played:
@@ -1081,26 +1161,56 @@ namespace Pascension.Game.Soi
                     PlayStatFloat(mastery.PlayerIndex, mastery.Delta, "soi_mastery", UiPalette.Gold, _statMasteryRect);
                     return null;
                 case ShardsHealthChangedEvent health:
+                    // Damage/health losses get a log entry with old→new HP (gains are
+                    // frequent and already visible on the played card + floats).
+                    if (health.Delta < 0 && _snap != null &&
+                        health.PlayerIndex >= 0 && health.PlayerIndex < _snap.Players.Count)
+                        _history.Push(SoiCardFaces.CharacterPrefix + _snap.Players[health.PlayerIndex].CharacterId,
+                            health.PlayerIndex,
+                            $"−{-health.Delta} · {health.NewValue - health.Delta}→{health.NewValue}");
                     PlayStatFloat(health.PlayerIndex, health.Delta, "soi_health", UiPalette.HealthyGreen, _statHealthRect);
                     return null;
                 case ShardsChampionDamagedEvent hit:
                     return PlayChampionHit(hit.InstanceId, hit.Amount);
                 case ShardsChampionDestroyedEvent killed:
+                    // Destroy WITHOUT a preceding power hit = an effect kill — also show
+                    // the victim on its causing card's log entry.
+                    if (killed.InstanceId != previousChampionHit && killed.ByPlayerIndex >= 0)
+                        _history.AttachAffected(killed.ByPlayerIndex, killed.DefId);
+                    _history.Push(killed.DefId,
+                        killed.ByPlayerIndex >= 0 ? killed.ByPlayerIndex : killed.OwnerIndex,
+                        UI.Loc.T("destroyed"));
                     return PlayChampionDestroyed(killed);
                 case ShardsMonsterDamagedEvent monsterHit:
                     return PlayChampionHit(monsterHit.InstanceId, monsterHit.Amount);
                 case ShardsMonsterDefeatedEvent defeated:
+                    _history.Push(defeated.DefId, defeated.PlayerIndex, UI.Loc.T("defeated"));
                     return PlayMonsterDefeated(defeated);
                 case ShardsMonsterRevealedEvent revealed:
                     return PlayMonsterRevealed(revealed);
                 case ShardsMonsterAttackedEvent attack:
+                    _history.Push(attack.DefId, -1, UI.Loc.T("attacks!"));
                     _toast.ShowBanner(DefName(attack.DefId) + UI.Loc.T(" strikes every player!"));
+                    return null;
+                case ShardsCardsRevealedEvent reveals:
+                    // Reveals are always card-caused (Unify/Dominion, Shard Defiant…):
+                    // attach them to their causing entry rather than spamming the log.
+                    foreach (string defId in reveals.DefIds)
+                        _history.AttachAffected(reveals.PlayerIndex, defId);
                     return null;
                 case ShardsDamageAssignedEvent damage:
                     return PlayPlayerDamage(damage);
                 case ShardsShieldsRevealedEvent shields:
                     return PlayShields(shields);
                 case ShardsCharacterExhaustedEvent exhausted:
+                    // Champion/destiny activations are log-worthy causes (their effects
+                    // — banish, reveal, fetch — attach to this entry).
+                    if (exhausted.CardInstanceId > 0)
+                    {
+                        string exhaustedDef = FindDefId(exhausted.CardInstanceId);
+                        if (exhaustedDef != null)
+                            _history.Push(exhaustedDef, exhausted.PlayerIndex, UI.Loc.T("activated"), attachable: true);
+                    }
                     return PlayExhaust(exhausted);
                 case ShardsFocusedEvent focused:
                     if (focused.PlayerIndex != MyIndex)
@@ -1116,6 +1226,9 @@ namespace Pascension.Game.Soi
                 case ShardsCardReturnedEvent returned:
                     return PlayReturn(returned);
                 case ShardsPlayerEliminatedEvent eliminated:
+                    if (_snap != null && eliminated.PlayerIndex >= 0 && eliminated.PlayerIndex < _snap.Players.Count)
+                        _history.Push(SoiCardFaces.CharacterPrefix + _snap.Players[eliminated.PlayerIndex].CharacterId,
+                            eliminated.PlayerIndex, UI.Loc.T("eliminated"));
                     _toast.ShowBanner(NameOf(eliminated.PlayerIndex) + UI.Loc.T(" has been eliminated!"));
                     return null;
                 case ShardsTurnStartedEvent turn:
@@ -1136,7 +1249,7 @@ namespace Pascension.Game.Soi
 
         private IEnumerator PlayShowcase(int playerIndex, string defId)
         {
-            _history.Push(defId, playerIndex);
+            _history.Push(defId, playerIndex, null, attachable: true);
             Vector2 from = AnchorOf(playerIndex, _handRect);
             Vector2 to = playerIndex == MyIndex
                 ? _showcase.ToLocal(_playedPile.AnchorRect)
@@ -1179,14 +1292,21 @@ namespace Pascension.Game.Soi
                 ? _flights.ToLocal(_slots[bought.SlotIndex].Rect)
                 : _flights.ToLocal(_centerDeckPile.AnchorRect);
 
+            // Free acquisitions are effect-caused (warp, Portal Monk, Shard Defiant's
+            // keep…): show the card on its causing entry BEFORE logging its own entry.
+            if (bought.CostPaid == 0)
+                _history.AttachAffected(bought.PlayerIndex, bought.DefId);
+
             if (bought.FastPlay)
             {
-                _history.Push(bought.DefId, bought.PlayerIndex);
+                _history.Push(bought.DefId, bought.PlayerIndex, null, attachable: true);
                 yield return _showcase.Play(_queue, bought.DefId, bought.PlayerIndex, from,
                     bought.PlayerIndex == MyIndex ? _showcase.ToLocal(_playedPile.AnchorRect) : AnchorOf(bought.PlayerIndex, null));
                 if (bought.PlayerIndex == MyIndex) _playedPile.Pulse();
                 yield break;
             }
+
+            _history.Push(bought.DefId, bought.PlayerIndex, UI.Loc.T("recruited"));
 
             Vector2 to = bought.PlayerIndex == MyIndex
                 ? _flights.ToLocal(_discardPile.AnchorRect)
@@ -1275,6 +1395,7 @@ namespace Pascension.Game.Soi
 
         private IEnumerator PlayMonsterRevealed(ShardsMonsterRevealedEvent revealed)
         {
+            _history.Push(revealed.DefId, -1, UI.Loc.T("appears!"));
             _toast.ShowBanner(UI.Loc.T("An Ingeminex appears: ") + DefName(revealed.DefId));
             yield return _showcase.Play(_queue, revealed.DefId, -1,
                 _showcase.ToLocal(_centerDeckPile.AnchorRect), _showcase.ToLocal(_monsterRow));
@@ -1312,6 +1433,13 @@ namespace Pascension.Game.Soi
 
         private IEnumerator PlayShields(ShardsShieldsRevealedEvent shields)
         {
+            if (shields.DefIds.Count > 0)
+            {
+                _history.Push(shields.DefIds[0], shields.PlayerIndex,
+                    UI.Loc.T("blocks ") + shields.Prevented, attachable: true);
+                for (int i = 1; i < shields.DefIds.Count; i++)
+                    _history.AttachAffected(shields.PlayerIndex, shields.DefIds[i]);
+            }
             Vector2 at = shields.PlayerIndex == MyIndex
                 ? _floats.ToLocal(_statHealthRect)
                 : (_opponentPanels.TryGetValue(shields.PlayerIndex, out var panel) ? _floats.ToLocal(panel) : Vector2.zero);
@@ -1345,6 +1473,10 @@ namespace Pascension.Game.Soi
 
         private IEnumerator PlayBanish(ShardsCardBanishedEvent banished)
         {
+            // Banishes are card-caused: attach the victim to its cause; standalone
+            // entry only when no cause is on the log.
+            if (!_history.AttachAffected(banished.PlayerIndex, banished.DefId))
+                _history.Push(banished.DefId, banished.PlayerIndex, UI.Loc.T("banished"));
             Vector2 from = banished.PlayerIndex == MyIndex
                 ? _flights.ToLocal(_discardPile.AnchorRect)
                 : AnchorOf(banished.PlayerIndex, null);
@@ -1355,6 +1487,7 @@ namespace Pascension.Game.Soi
 
         private IEnumerator PlayReturn(ShardsCardReturnedEvent returned)
         {
+            _history.AttachAffected(returned.PlayerIndex, returned.DefId);
             if (returned.PlayerIndex != MyIndex) yield break;
             yield return _flights.Fly(_queue, returned.DefId,
                 _flights.ToLocal(_discardPile.AnchorRect), _flights.ToLocal(_handRect), 0.42f, 0.6f, 0.38f);
@@ -1366,13 +1499,61 @@ namespace Pascension.Game.Soi
         {
             if (view == _preview || _hand.IsDragging) return;
             if (!entered || string.IsNullOrEmpty(view.DefId))
-            {
                 _preview.gameObject.SetActive(false);
+            else
+            {
+                _preview.gameObject.SetActive(true);
+                _preview.transform.SetAsLastSibling();
+                _preview.BindDef(view.DefId);
+            }
+            BroadcastLocalHover(view, entered);
+        }
+
+        /// <summary>Tell everyone which PUBLIC board card we're pointing at — only while
+        /// it's our turn (receivers additionally gate on the turn owner). Hand cards are
+        /// hidden information and never broadcast.</summary>
+        private void BroadcastLocalHover(CardView view, bool entered)
+        {
+            if (_snap == null || _snap.TurnPlayerIndex != MyIndex) return;
+            int hoverId = entered && view.InstanceId > 0 && _boardViews.ContainsKey(view.InstanceId)
+                ? view.InstanceId : -1;
+            if (hoverId == _lastHoverSent) return;
+            _lastHoverSent = hoverId;
+            GameNetBridge.Instance?.SendCardHover(MyIndex, hoverId);
+        }
+
+        private void OnRemoteHover(int seat, int instanceId)
+        {
+            if (seat == MyIndex) return; // our own echo — the local hover already shows
+            _remoteHoverSeat = seat;
+            _remoteHoverId = instanceId;
+        }
+
+        /// <summary>Marker follow pass: board views are destroyed/rebuilt on every full
+        /// refresh, so resolve the hovered instance to its CURRENT view each frame.</summary>
+        private void LateUpdate()
+        {
+            if (_remoteHoverMark == null) return;
+            bool show = _remoteHoverId > 0 && _snap != null &&
+                        _remoteHoverSeat == _snap.TurnPlayerIndex &&
+                        _boardViews.TryGetValue(_remoteHoverId, out var view) &&
+                        view != null && view.gameObject.activeInHierarchy;
+            if (!show)
+            {
+                _remoteHoverMark.gameObject.SetActive(false);
                 return;
             }
-            _preview.gameObject.SetActive(true);
-            _preview.transform.SetAsLastSibling();
-            _preview.BindDef(view.DefId);
+
+            var target = _boardViews[_remoteHoverId];
+            _remoteHoverMark.gameObject.SetActive(true);
+            Vector2 local = UiRootRect.InverseTransformPoint(
+                target.Rect.TransformPoint(target.Rect.rect.center));
+            _remoteHoverMark.anchoredPosition = local;
+            float k = UiRootRect.lossyScale.x > 0f
+                ? target.Rect.lossyScale.x / UiRootRect.lossyScale.x : 1f;
+            _remoteHoverMark.sizeDelta = new Vector2(CardView.Width * k + 16f, CardView.Height * k + 16f);
+            float pulse = 0.28f + 0.18f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f));
+            _remoteHoverImg.color = UiPalette.WithAlpha(UiPalette.PlayerColor(_remoteHoverSeat), pulse);
         }
 
         // ------------------------------------------------------------------ data helpers
@@ -1393,6 +1574,33 @@ namespace Pascension.Game.Soi
                 foreach (var card in me.Hand)
                     result.Add(card.InstanceId);
             return result;
+        }
+
+        /// <summary>Steady faction-color glow for hand cards whose condition is met
+        /// (Unify/Dominion/thresholds/If) — fed to HandView.GlowResolver.</summary>
+        private Color? HandGlowFor(int instanceId)
+        {
+            if (_snap == null || !_conditionGlow.Contains(instanceId)) return null;
+            var me = Me;
+            if (me?.Hand == null) return null;
+            foreach (var card in me.Hand)
+                if (card.InstanceId == instanceId && ShardsCardDatabase.TryGet(card.DefId, out var def))
+                    return SoiCardFaces.FactionColor(def.Faction);
+            return null;
+        }
+
+        /// <summary>In-play glow for champions/destinies/Ingeminex: red = the viewer can
+        /// kill it right now (wins over everything), faction color = its exhaust
+        /// condition is met (ready cards only, host-checked).</summary>
+        private void ApplyBoardGlow(CardView view, ShardsCardSnap card)
+        {
+            if (_killable.Contains(card.InstanceId))
+                view.SetGlow(true, UiPalette.WoundedRed);
+            else if (!card.Exhausted && _conditionGlow.Contains(card.InstanceId) &&
+                     ShardsCardDatabase.TryGet(card.DefId, out var def))
+                view.SetGlow(true, SoiCardFaces.FactionColor(def.Faction));
+            else
+                view.SetGlow(false);
         }
 
         /// <summary>Synthetic CardSnap: DefId + InstanceId only — CardView resolves SoI

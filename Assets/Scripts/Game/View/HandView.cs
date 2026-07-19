@@ -24,6 +24,11 @@ namespace Pascension.Game.View
         /// <summary>Raised when a card is dragged past the play line and released.</summary>
         public event Action<int> PlayRequested;
 
+        /// <summary>Optional steady per-card glow (SoI condition glow): id → color,
+        /// null = none. Re-applied on every render; the response-window pulse and the
+        /// drag play-intent glow take precedence while active.</summary>
+        public Func<int, Color?> GlowResolver;
+
         private const float CardScale = 0.82f;
         private const float HoverScale = 1.05f;
         private const float HoverRaise = 96f;
@@ -34,6 +39,10 @@ namespace Pascension.Game.View
 
         private readonly List<CardView> _cards = new List<CardView>();
         private readonly Dictionary<int, Pose> _posesById = new Dictionary<int, Pose>();
+        // Invisible strip below each card, raycast-enabled ONLY while that card is
+        // hovered: the hover lift vacates the card's bottom edge, and without the pad
+        // the pointer there flip-flops enter/exit every frame (card bounces up/down).
+        private readonly Dictionary<int, UnityEngine.UI.Image> _padsById = new Dictionary<int, UnityEngine.UI.Image>();
         private readonly List<int> _order = new List<int>();
         private readonly HashSet<int> _pulseIds = new HashSet<int>();
         private HashSet<int> _playable = new HashSet<int>();
@@ -85,6 +94,7 @@ namespace Pascension.Game.View
                         UiLog.Log("Hand", $"dragged card #{_draggingId} left the hand — drag dropped");
                         _draggingId = -1;
                     }
+                    _padsById.Remove(view.InstanceId);
                     Destroy(view.gameObject);
                 }
                 _cards.RemoveAt(i);
@@ -107,6 +117,16 @@ namespace Pascension.Game.View
                 var drag = card.gameObject.AddComponent<HandCardDrag>();
                 drag.Bind(this, card);
                 card.Hovered += OnCardHovered;
+                // Hover pad: full card width, extending below the bottom edge far
+                // enough to cover the strip the hover lift vacates (96px ≈ 117 local).
+                var pad = UiFactory.CreateImage("HoverPad", card.transform, null,
+                    new Color(0f, 0f, 0f, 0.001f), raycast: false);
+                pad.rectTransform.anchorMin = new Vector2(0f, 0f);
+                pad.rectTransform.anchorMax = new Vector2(1f, 0f);
+                pad.rectTransform.pivot = new Vector2(0.5f, 1f);
+                pad.rectTransform.anchoredPosition = Vector2.zero;
+                pad.rectTransform.sizeDelta = new Vector2(0f, 150f);
+                _padsById[id] = pad;
                 _cards.Add(card);
                 changed = true;
             }
@@ -178,6 +198,7 @@ namespace Pascension.Game.View
             if (card == null) return;
             _order.Remove(instanceId);
             _cards.Remove(card);
+            _padsById.Remove(instanceId);
             Destroy(card.gameObject);
             if (_draggingId == instanceId) _draggingId = -1;
             ApplyPoses(instant: false);
@@ -234,6 +255,8 @@ namespace Pascension.Game.View
         internal void BeginDrag(CardView card)
         {
             _draggingId = card.InstanceId;
+            if (_padsById.TryGetValue(card.InstanceId, out var pad) && pad != null)
+                pad.raycastTarget = false;
             card.transform.SetAsLastSibling();
             card.transform.localRotation = Quaternion.identity;
             card.SetGlow(false);
@@ -290,6 +313,7 @@ namespace Pascension.Game.View
                 StartCoroutine(Tween.Move(card.Rect, pose.Position, 0.14f));
                 StartCoroutine(Tween.RotateZ(card.transform, pose.RotationZ, 0.14f));
             }
+            ApplyPulse(); // restore the steady/pulse glow the drag cleared
         }
 
         internal bool IsPlayable(int instanceId) => _playable.Contains(instanceId);
@@ -317,8 +341,18 @@ namespace Pascension.Game.View
         private void ApplyPulse()
         {
             foreach (var card in _cards)
-                if (card.InstanceId != _draggingId)
-                    card.SetGlow(_pulseIds.Contains(card.InstanceId));
+            {
+                if (card == null || card.InstanceId == _draggingId) continue;
+                if (_pulseIds.Contains(card.InstanceId))
+                {
+                    card.SetGlow(true);
+                    continue;
+                }
+                // No pulse: fall back to the steady condition glow, if any.
+                var steady = GlowResolver?.Invoke(card.InstanceId);
+                if (steady.HasValue) card.SetGlow(true, steady.Value);
+                else card.SetGlow(false);
+            }
             if (_pulse == null && _pulseIds.Count > 0 && isActiveAndEnabled)
                 _pulse = StartCoroutine(PulseLoop());
         }
@@ -359,6 +393,10 @@ namespace Pascension.Game.View
         {
             if (IsDragging || card == null) return;
             if (!_posesById.TryGetValue(card.InstanceId, out var pose)) return;
+            // The pad keeps the pointer inside the card's hierarchy while lifted, so
+            // resting the mouse where the (unlifted) bottom edge was doesn't oscillate.
+            if (_padsById.TryGetValue(card.InstanceId, out var pad) && pad != null)
+                pad.raycastTarget = entered;
             if (entered)
             {
                 card.transform.SetAsLastSibling();

@@ -29,6 +29,9 @@ namespace Shards.Content
         public SoiCard Character(string characterId) { _def.Character = characterId; return this; }
         public SoiCard Plays(IShardsEffect effect) { _def.PlayEffect = effect; return this; }
         public SoiCard Exhausts(IShardsEffect effect) { _def.ExhaustEffect = effect; return this; }
+        /// <summary>"Pay N gems, Exhaust:" — the gems are part of the activation COST
+        /// (unactivatable while unaffordable), never checked inside the effect.</summary>
+        public SoiCard ExhaustCosts(int gems) { _def.ExhaustGemCost = gems; return this; }
         public SoiCard Reward(IShardsEffect effect) { _def.RewardEffect = effect; return this; }
         public SoiCard MonsterAttack(IShardsEffect effect) { _def.MonsterAttackEffect = effect; return this; }
         public SoiCard Text(string rulesText) { _def.RulesText = rulesText; return this; }

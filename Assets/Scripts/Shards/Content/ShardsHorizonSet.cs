@@ -499,12 +499,14 @@ namespace Shards.Content
             Destiny("shard_defiant", "The Shard Defiant",
                 "Pay 2 gems, Exhaust: reveal the center deck's top card; recruit or banish it. If you played an Aion card this turn, you may repeat this once.",
                 "a lone shard hovering against a tide of grasping hands",
-                new Custom(ShardDefiantFlow));
+                new Custom(ShardDefiantFlow),
+                def => def.ExhaustGemCost = 2);
 
             Destiny("whatever_it_takes", "Whatever it Takes",
                 "Pay 6 gems, Exhaust: gain 9 power.",
                 "a gauntlet crushing a fortune in gems into raw force",
-                new Custom(ctx => PayFor(ctx, 6, E.Power(9))));
+                E.Power(9),
+                def => def.ExhaustGemCost = 6);
 
             Destiny("the_last_city", "The Last City",
                 "Exhaust: if you played 2+ mercenaries this turn, gain 2 gems.",
@@ -515,7 +517,8 @@ namespace Shards.Content
             Destiny("power_struggle", "Power Struggle",
                 "Exhaust: destroy a champion you control to gain 5 power.",
                 "two hands wrestling over a crown that cuts them both",
-                new Custom(PowerStruggleFlow));
+                // If wrapper = same gate the flow checks, exposed for the condition glow.
+                new If(ctx => ctx.Controller.Champions.Count > 0, new Custom(PowerStruggleFlow)));
 
             Destiny("unconditional_conscription", "Unconditional Conscription",
                 "Exhaust: if you played 2+ non-starter allies costing 2 or less this turn, gain 4 power.",
@@ -571,15 +574,6 @@ namespace Shards.Content
                 "M15 — Exhaust: draw a card.",
                 "two opposing energies braided into a single strand",
                 E.At(15, E.Draw(1)));
-        }
-
-        private static IEnumerable<ShardsStep> PayFor(ShardsContext ctx, int gems, IShardsEffect inner)
-        {
-            var player = ctx.Controller;
-            if (player.Gems < gems) yield break; // unaffordable: the exhaust does nothing
-            ctx.Engine.GainGems(player.Index, -gems);
-            foreach (var step in inner.Resolve(ctx))
-                yield return step;
         }
 
         private static IEnumerable<ShardsStep> BloodForBloodFlow(ShardsContext ctx)
@@ -660,10 +654,9 @@ namespace Shards.Content
 
         private static IEnumerable<ShardsStep> ShardDefiantFlow(ShardsContext ctx)
         {
+            // The 2-gem payment is the activation COST (ExhaustGemCost) — already paid.
             var player = ctx.Controller;
             var engine = ctx.Engine;
-            if (player.Gems < 2) yield break; // activation cost
-            engine.GainGems(player.Index, -2);
 
             for (int round = 0; round < 2; round++)
             {
@@ -671,33 +664,29 @@ namespace Shards.Content
                 if (card == null) yield break;
                 engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { card.DefId } });
 
+                // Mandatory keep-or-banish (user decision 2026-07-19). Both options
+                // carry the revealed card so the UI renders the CARD, never just a name.
                 var choice = new DecisionRequest
                 {
                     PlayerIndex = player.Index,
                     Kind = DecisionKind.ChooseMode,
-                    Title = $"{card.Def.Name}: recruit it, banish it, or leave it?",
+                    Title = $"{card.Def.Name}: recruit it or banish it?",
                     Context = "soi.defiant",
                     Min = 1,
                     Max = 1
                 };
-                choice.Options.Add(new DecisionOption(1, "Recruit"));
-                choice.Options.Add(new DecisionOption(2, "Banish"));
-                choice.Options.Add(new DecisionOption(3, "Leave it on top"));
+                choice.Options.Add(new DecisionOption(1, "Keep") { CardInstanceId = card.InstanceId, DefId = card.DefId });
+                choice.Options.Add(new DecisionOption(2, "Banish") { CardInstanceId = card.InstanceId, DefId = card.DefId });
                 yield return ShardsStep.AwaitDecision(choice);
-                switch (ctx.Answer.ChosenOptionIds[0])
+                if (ctx.Answer.ChosenOptionIds[0] == 1)
                 {
-                    case 1:
-                        engine.RecruitLoose(player, card);
-                        break;
-                    case 2:
-                        card.Zone = ShardsZone.Banished;
-                        engine.State.Banished.Add(card);
-                        engine.Emit(new ShardsCardBanishedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
-                        break;
-                    default: // "may recruit or banish" — declining both leaves it on top
-                        card.Zone = ShardsZone.CenterDeck;
-                        engine.State.CenterDeck.Add(card);
-                        break;
+                    engine.RecruitLoose(player, card);
+                }
+                else
+                {
+                    card.Zone = ShardsZone.Banished;
+                    engine.State.Banished.Add(card);
+                    engine.Emit(new ShardsCardBanishedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
                 }
 
                 if (round == 0 && ctx.Controller.FactionPlays(A) > 0)

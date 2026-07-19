@@ -25,6 +25,8 @@ namespace Pascension.Game.View
         private Image _emptyOutline;
         private Image _badge;
         private TextMeshProUGUI _badgeText;
+        private Image _badge2;
+        private TextMeshProUGUI _badge2Text;
         private TextMeshProUGUI _title;
         private int _lastCount = -1;
         // Punch/Flash capture their start state as "base" — overlapping calls on this
@@ -91,10 +93,24 @@ namespace Pascension.Game.View
             _badgeText = UiFactory.CreateText(Theme, "Count", _badge.transform, "0", 18f,
                 UiPalette.Background, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Stretch(_badgeText.rectTransform);
-            // Compound labels like "12(3)" (banish pile: total + yours) must shrink to fit.
             _badgeText.enableAutoSizing = true;
             _badgeText.fontSizeMin = 9f;
             _badgeText.fontSizeMax = 18f;
+
+            // Optional second counter under the first (banish pile: gold = total,
+            // green = the viewing player's own banished cards).
+            _badge2 = UiFactory.CreateImage("Badge2", Container, Theme.Circle, UiPalette.HealthyGreen);
+            UiFactory.Place(_badge2.rectTransform, new Vector2(1f, 1f), new Vector2(-6f, -38f), new Vector2(30f, 30f));
+            var badge2Outline = _badge2.gameObject.AddComponent<Outline>();
+            badge2Outline.effectColor = UiPalette.WithAlpha(Color.black, 0.7f);
+            badge2Outline.effectDistance = new Vector2(1.5f, -1.5f);
+            _badge2Text = UiFactory.CreateText(Theme, "Count2", _badge2.transform, "0", 15f,
+                UiPalette.Background, TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Stretch(_badge2Text.rectTransform);
+            _badge2Text.enableAutoSizing = true;
+            _badge2Text.fontSizeMin = 8f;
+            _badge2Text.fontSizeMax = 15f;
+            _badge2.gameObject.SetActive(false);
 
             // Title under the stack.
             _title = UiFactory.CreateText(Theme, "Title", Container, title.ToUpperInvariant(), 13f,
@@ -118,7 +134,7 @@ namespace Pascension.Game.View
             return new Color(basec.r * shade, basec.g * shade, basec.b * shade, 1f);
         }
 
-        public void Render(int count, CardSnap top, string badgeLabel = null)
+        public void Render(int count, CardSnap top, string badgeLabel = null, string badge2Label = null)
         {
             if (!_built) return;
             bool any = count > 0;
@@ -127,6 +143,8 @@ namespace Pascension.Game.View
                 _stack[i].gameObject.SetActive(any && count > i);
             _badgeText.text = badgeLabel ?? count.ToString();
             _badge.gameObject.SetActive(true);
+            _badge2.gameObject.SetActive(badge2Label != null);
+            if (badge2Label != null) _badge2Text.text = badge2Label;
 
             if (_topCard != null)
             {

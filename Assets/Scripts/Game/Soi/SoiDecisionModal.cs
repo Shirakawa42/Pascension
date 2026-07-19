@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Pascension.Engine.Decisions;
 using Pascension.Engine.Serialization;
 using Pascension.Game.View;
+using Shards.Engine;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -115,12 +116,18 @@ namespace Pascension.Game.Soi
                 Destroy(child.gameObject);
 
             _title.text = UI.Loc.DecisionTitle(request.Title);
-            _skip.gameObject.SetActive(request.Min == 0);
+            // Reveal mode ("soi.defiant") owns its buttons: clicking one submits
+            // immediately, so the shared CONFIRM/SKIP row hides entirely.
+            bool reveal = request.Context == "soi.defiant";
+            _confirm.gameObject.SetActive(!reveal);
+            _skip.gameObject.SetActive(!reveal && request.Min == 0);
             _root.gameObject.SetActive(true);
             _root.SetAsLastSibling();
 
             if (request.Context == "soi.split")
                 BuildSplit(request, playerInfo);
+            else if (reveal)
+                BuildReveal(request, defIdResolver);
             else
                 BuildList(request, optionLabel, defIdResolver);
             RefreshConfirm();
@@ -259,6 +266,54 @@ namespace Pascension.Game.Soi
                         _optionButtons.Add((button, bg, id));
                     }
                 }
+            }
+        }
+
+        /// <summary>Reveal mode ("soi.defiant"): the revealed card itself, big and
+        /// readable (red frame glow if it's a mercenary, like the center row), with one
+        /// large action button per option below it. The choice is mandatory and a click
+        /// submits immediately — no confirm/skip row.</summary>
+        private void BuildReveal(DecisionRequest request, Func<int, string> defIdResolver)
+        {
+            string defId = null;
+            foreach (var option in request.Options)
+            {
+                defId = OptionDefId(option, defIdResolver);
+                if (defId != null) break;
+            }
+
+            if (defId != null)
+            {
+                var card = CardViewFactory.Create(_body, _theme, 1.02f);
+                card.Rect.anchorMin = card.Rect.anchorMax = card.Rect.pivot = new Vector2(0.5f, 1f);
+                card.Rect.anchoredPosition = new Vector2(0f, -6f);
+                card.Bind(new CardSnap { DefId = defId, InstanceId = 0, EffectiveCost = -1 });
+                card.SetRaycastable(false);
+                if (card.Group != null) card.Group.blocksRaycasts = false;
+                if (ShardsCardDatabase.TryGet(defId, out var def) && def.Type == ShardsCardType.Mercenary)
+                    card.SetGlow(true, UiPalette.Danger);
+            }
+
+            int count = request.Options.Count;
+            const float buttonWidth = 200f, gap = 24f;
+            float x0 = -((count - 1) * (buttonWidth + gap)) / 2f;
+            for (int i = 0; i < count; i++)
+            {
+                var option = request.Options[i];
+                bool primary = i == 0; // first option (Keep) gold, the rest (Banish) red
+                var button = UiFactory.CreateButton(_theme, "Reveal_" + option.Id, _body,
+                    UI.Loc.OptionLabel(option.Label).ToUpperInvariant(), 19f,
+                    primary ? UiPalette.Gold : UiPalette.Danger,
+                    primary ? UiPalette.Background : UiPalette.TextMain);
+                UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 0f),
+                    new Vector2(x0 + i * (buttonWidth + gap), 34f), new Vector2(buttonWidth, 58f));
+                int id = option.Id;
+                button.onClick.AddListener(() =>
+                {
+                    _picked.Clear();
+                    _picked.Add(id);
+                    Confirm();
+                });
             }
         }
 

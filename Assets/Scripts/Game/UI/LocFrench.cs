@@ -128,6 +128,17 @@ namespace Pascension.Game.UI
             ["VICTORY"] = "VICTOIRE",
             ["It is over."] = "C'est terminé.",
 
+            // Play-log note lines (RECENT bar).
+            ["recruited"] = "recrutée",
+            ["activated"] = "activée",
+            ["destroyed"] = "détruit",
+            ["defeated"] = "vaincu",
+            ["attacks!"] = "attaque !",
+            ["appears!"] = "apparaît !",
+            ["eliminated"] = "éliminé",
+            ["banished"] = "bannie",
+            ["blocks "] = "pare ",
+
             // Event-toast fragments (string-concatenated at the call sites).
             [" strikes every player!"] = " frappe tous les joueurs !",
             [" focuses."] = " utilise la Concentration.",
@@ -199,6 +210,7 @@ namespace Pascension.Game.UI
         {
             ["Reveal"] = "Révéler",
             ["Recruit"] = "Recruter",
+            ["Keep"] = "Garder",
             ["Banish"] = "Bannir",
             ["Leave it on top"] = "Laisser dessus",
             ["Repeat"] = "Répéter",
@@ -275,8 +287,8 @@ namespace Pascension.Game.UI
                 "Révéler un allié $1 de votre main pour l'Union ?"),
             (new Regex(@"^Take a destiny \((\d+) of 2\)$"),
                 "Prenez une Destinée ($1 sur 2)"),
-            (new Regex(@"^(.+): recruit it, banish it, or leave it\?$"),
-                "$1 : la recruter, la bannir ou la laisser ?"),
+            (new Regex(@"^(.+): recruit it or banish it\?$"),
+                "$1 : la recruter ou la bannir ?"),
             (new Regex(@"^Warp: fast-play an ally costing (\d+) or less for free\?$"),
                 "Distorsion : enrôlez gratuitement un allié coûtant $1 ou moins ?"),
             (new Regex(@"^Warp: fast-play any ally from the row for free\?$"),

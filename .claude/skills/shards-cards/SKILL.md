@@ -37,7 +37,11 @@ art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored
   power > 1000 skips the split entirely and kills every opponent instantly), `CanBeAttacked`
   (Li Hin / Raidian / Drakonarius), `DefenseAura` (Ferrata Guard, One Mind One Army),
   `CostModifier` (Axia), `ShieldInPlay` + `DynamicShield` (Praetorian-02, Datic Robes),
-  `ReturnsFromDiscardOnChampionPlay` (Praetorian-01), `OnDamageDealt` (Blood for Blood —
+  `ExhaustGemCost` ("Pay N gems, Exhaust:" — the gems are part of the activation COST:
+  the tap is ILLEGAL while unaffordable, LegalActions filters it, the engine pays on
+  activation; effects never check gems. Shard Defiant 2, Whatever it Takes 6; UI greys
+  unaffordable destinies), `ReturnsFromDiscardOnChampionPlay` (Praetorian-01),
+  `OnDamageDealt` (Blood for Blood —
   ⚠ its effect is QUEUED by ApplyDamage during the defense chain, so `AfterDefenses` must
   queue cleanup behind the effect queue whenever `_effectQueue.Count > 0`, never call
   `FinishEndTurn` synchronously; otherwise cleanup empties the play zone before the
@@ -116,16 +120,17 @@ art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored
   RoutePriority passes the turn instead of deadlocking.
 - General Decurion M20 doubles Homodeus ally effects on EVERY play path (hand,
   fast-play, warp — fast-plays count as played allies).
-- Shard Defiant may decline both options (the revealed card stays on top).
+- Shard Defiant's keep-or-banish is MANDATORY (user decision 2026-07-19, replacing the
+  earlier may-decline reading — the 2 gems are a real activation cost now, so a paid
+  activation always resolves). Both options carry the revealed card's DefId/InstanceId
+  so the UI renders the CARD (rule: decisions must never reference a card by name
+  only). Pinned by ShardDefiant_GemPaymentIsAnActivationCost….
 - Numeri Drones / Anomaly Cleric redirects are COUNTERS (two exhausts = two redirects).
 
 ## Known simplifications (revisit in M8 polish)
 
 - Multi-defender shield order: clockwise from attacker (rulebook silent; outcome-equivalent).
 - Several bottom-of-center-deck returns stack in play order (rulebook silent).
-- Gem-cost-gated destiny exhausts (Shard Defiant, Whatever it Takes) no-op when
-  unaffordable instead of being unactivatable (the exhaust is still spent) — UI should
-  grey them out.
 - Giga's Dominion-gated exhaust: activating with the condition unmet wastes the exhaust
   (effect fizzles) rather than being illegal.
 - Ingeminex Malice's "highest-cost champion" tie-break: deterministic (lowest instance

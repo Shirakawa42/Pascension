@@ -64,6 +64,17 @@ namespace Shards.Engine
         public List<ShardsPlayerSnap> Players = new();
         public PendingSnapInfo Pending;
 
+        /// <summary>Instance ids whose conditional effect (Unify/Dominion/threshold/If…)
+        /// is satisfied RIGHT NOW: the viewer's hand + center row probed for the viewer,
+        /// every player's ready champions/destinies probed for their owner. Drives the
+        /// faction-color condition glow.</summary>
+        public List<int> ConditionGlowIds = new();
+        /// <summary>Champions/Ingeminex the VIEWER could destroy with their current
+        /// power (attack rules + effective defense applied) — red glow.</summary>
+        public List<int> KillableIds = new();
+        /// <summary>Center-row slots the viewer can afford to buy right now.</summary>
+        public List<int> BuyableSlots = new();
+
         public sealed class PendingSnapInfo
         {
             public int Kind;
@@ -134,7 +145,64 @@ namespace Shards.Engine
                     Kind = (int)pending.Kind,
                     PlayerIndex = pending.PlayerIndex
                 };
+
+            BuildGlowHints(engine, viewerIndex, snapshot);
             return snapshot;
+        }
+
+        /// <summary>UI affordances computed host-side (the client has no engine):
+        /// condition-met glow ids, viewer-killable targets, viewer-affordable slots.</summary>
+        private static void BuildGlowHints(ShardsEngine engine, int viewerIndex, ShardsSnapshot snapshot)
+        {
+            var state = engine.State;
+            if (viewerIndex < 0 || viewerIndex >= state.Players.Count) return;
+            var viewer = state.Players[viewerIndex];
+
+            bool Lit(IShardsEffect effect, int controllerIndex, ShardsCard source) =>
+                effect != null && ShardsGlowProbe.ConditionLit(effect,
+                    new ShardsContext { Engine = engine, ControllerIndex = controllerIndex, Source = source });
+
+            for (int s = 0; s < state.CenterRow.Length; s++)
+            {
+                var card = state.CenterRow[s];
+                if (card == null) continue;
+                if (viewer.Gems >= engine.EffectiveCost(viewer, card.Def))
+                    snapshot.BuyableSlots.Add(s);
+                if (Lit(card.Def.PlayEffect, viewerIndex, card))
+                    snapshot.ConditionGlowIds.Add(card.InstanceId);
+            }
+
+            foreach (var card in viewer.Hand)
+                if (Lit(card.Def.PlayEffect, viewerIndex, card))
+                    snapshot.ConditionGlowIds.Add(card.InstanceId);
+
+            foreach (var player in state.Players)
+            {
+                foreach (var card in player.Champions)
+                    if (!card.Exhausted && player.Gems >= card.Def.ExhaustGemCost &&
+                        Lit(card.Def.ExhaustEffect, player.Index, card))
+                        snapshot.ConditionGlowIds.Add(card.InstanceId);
+                foreach (var card in player.Destinies)
+                    if (!card.Exhausted && player.Gems >= card.Def.ExhaustGemCost &&
+                        Lit(card.Def.ExhaustEffect, player.Index, card))
+                        snapshot.ConditionGlowIds.Add(card.InstanceId);
+            }
+
+            if (viewer.Eliminated) return;
+            foreach (var opponent in state.LivingOpponentsOf(viewerIndex))
+                foreach (var champion in opponent.Champions)
+                {
+                    int remaining = engine.EffectiveDefense(opponent, champion) - champion.DamageThisTurn;
+                    if (remaining > 0 && viewer.Power >= remaining &&
+                        engine.CanAttackChampion(viewer, opponent, champion))
+                        snapshot.KillableIds.Add(champion.InstanceId);
+                }
+            foreach (var monster in state.ActiveMonsters)
+            {
+                int remaining = monster.Def.Defense - monster.DamageThisTurn;
+                if (remaining > 0 && viewer.Power >= remaining)
+                    snapshot.KillableIds.Add(monster.InstanceId);
+            }
         }
 
         private static ShardsCardSnap Snap(ShardsCard card) => new()
