@@ -25,8 +25,6 @@ namespace Pascension.Game.UI
         private RectTransform _soloPanel;
         private RectTransform _soiSoloPanel;
         private RectTransform _settingsPanel;
-        /// <summary>True while the game-select panel routes to multiplayer (else solo).</summary>
-        private bool _selectForMultiplayer;
 
         private IReadOnlyList<HeroDefinition> _heroes;
         private int _selectedHero;
@@ -103,18 +101,13 @@ namespace Pascension.Game.UI
 
             float y = -40f;
             var solo = MenuButton(_homePanel, "NEW GAME", ref y);
-            solo.onClick.AddListener(() =>
-            {
-                _selectForMultiplayer = false;
-                ShowPanel(_gameSelectPanel);
-            });
+            solo.onClick.AddListener(() => ShowPanel(_gameSelectPanel));
 
+            // Straight to the lobby: the game is picked THERE (host game-cycle button,
+            // replicated) — a pre-lobby choice was ignored and just confused people.
             var multi = MenuButton(_homePanel, "MULTIPLAYER", ref y);
             multi.onClick.AddListener(() =>
-            {
-                _selectForMultiplayer = true;
-                ShowPanel(_gameSelectPanel);
-            });
+                UnityEngine.SceneManagement.SceneManager.LoadScene(Pascension.Net.NetLauncher.LobbySceneName));
 
             var settings = MenuButton(_homePanel, "SETTINGS", ref y);
             settings.onClick.AddListener(() => ShowPanel(_settingsPanel));
@@ -176,13 +169,6 @@ namespace Pascension.Game.UI
         {
             MatchSetup.GameId = gameId;
             MatchSetup.DlcFlags = 0;
-            if (_selectForMultiplayer)
-            {
-                // The lobby host picks the game there too; preselect for convenience.
-                UnityEngine.SceneManagement.SceneManager.LoadScene(Pascension.Net.NetLauncher.LobbySceneName);
-                return;
-            }
-
             if (gameId == "shards")
                 ShowPanel(_soiSoloPanel);
             else

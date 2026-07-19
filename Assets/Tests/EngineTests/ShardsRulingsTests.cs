@@ -206,6 +206,69 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void Split_LethalOnZetta_UnlocksOwnerInSameAnswer()
+        {
+            var engine = NewGame(seed: 71);
+            var p0 = engine.State.Players[0];
+            var p1 = engine.State.Players[1];
+            p1.Hand.RemoveAll(_ => true); // no shields
+            var zetta = Give(engine, p1, "zetta_encryptor", ShardsZone.Champions); // defense 5, Taunt
+
+            p0.Power = 8;
+            MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+            Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind, "split decision offered");
+            var request = engine.PendingInput.Decision;
+            Assert.AreEqual(0, request.Min, "everyone protected — waste allowed");
+            var zettaOption = request.Options.Find(o => o.CardInstanceId == zetta.InstanceId);
+            Assert.IsTrue(zettaOption.Required, "taunt champion is marked Required");
+            Assert.AreEqual(5, zettaOption.Amount, "remaining effective HP rides the option");
+
+            // 5 on Zetta (lethal) + 3 on the owner — legal in one answer.
+            Answer(engine, zettaOption.Id, zettaOption.Id, zettaOption.Id, zettaOption.Id, zettaOption.Id,
+                p1.Index, p1.Index, p1.Index);
+            Assert.AreEqual(0, p1.Champions.Count, "Zetta died to the split");
+            Assert.AreEqual(50 - 3, p1.Health, "remainder reached the owner");
+        }
+
+        [Test]
+        public void Split_NoLethalOnZetta_OwnerAssignmentsDropped()
+        {
+            var engine = NewGame(seed: 73);
+            var p0 = engine.State.Players[0];
+            var p1 = engine.State.Players[1];
+            p1.Hand.RemoveAll(_ => true);
+            var zetta = Give(engine, p1, "zetta_encryptor", ShardsZone.Champions);
+
+            p0.Power = 3; // not enough to kill Zetta (5)
+            MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+            Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind);
+
+            // Try to hit the protected owner directly — the rule guard wastes it.
+            Answer(engine, p1.Index, p1.Index, p1.Index);
+            Assert.AreEqual(50, p1.Health, "taunt still protects the owner");
+            Assert.Contains(zetta, p1.Champions);
+            Assert.AreEqual(1, engine.State.TurnPlayerIndex, "turn still ends cleanly");
+        }
+
+        [Test]
+        public void Split_OverwhelmingPower_KillsAllOpponentsInstantly()
+        {
+            var engine = NewGame(seed: 75, players: 3);
+            var p0 = engine.State.Players[0];
+            engine.State.Players[1].Hand.Clear();
+            engine.State.Players[2].Hand.Clear();
+            Give(engine, engine.State.Players[1], "zetta_encryptor", ShardsZone.Champions); // even taunt can't help
+
+            p0.Power = 5000; // infinite Infinity Shard
+            MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+
+            Assert.IsTrue(engine.State.Players[1].Eliminated, "no split window — instant kill");
+            Assert.IsTrue(engine.State.Players[2].Eliminated);
+            Assert.IsTrue(engine.State.GameOver);
+            Assert.AreEqual(0, engine.State.WinnerIndex);
+        }
+
+        [Test]
         public void LiHin_UnattackableWithPower_ButDestroyEffectsKillIt()
         {
             var engine = NewGame(seed: 13);
@@ -366,6 +429,69 @@ namespace Pascension.Engine.Tests
             MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
             DrainDecisionsWithDefaults(engine);
             Assert.AreEqual(50, engine.State.Players[1].Health, "cancelled attack never fired");
+        }
+
+        [Test]
+        public void Malice_AttackDestroysHighestCostChampion_EvenOnTies()
+        {
+            var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 61);
+            var p0 = engine.State.Players[0];
+            var p1 = engine.State.Players[1];
+
+            // Reveal Malice via a refill on p0's turn; its attack fires at p0's end turn.
+            var malice = new ShardsCard { InstanceId = engine.State.NextInstanceId++, DefId = "ingeminex_malice", Owner = -1, Zone = ShardsZone.CenterDeck };
+            engine.State.CenterDeck.Add(malice);
+            p0.Gems = 20;
+            MustSubmit(engine, new ShardsBuyCardAction { PlayerIndex = 0, SlotIndex = 0 });
+            Assert.Contains(malice, engine.State.ActiveMonsters);
+
+            // p1 owns TWO champions with the SAME cost (the playtest tie report) and one
+            // cheaper one; p0 owns one champion.
+            var tieA = Give(engine, p1, "general_decurion", ShardsZone.Champions); // cost 7
+            var tieB = Give(engine, p1, "general_decurion", ShardsZone.Champions); // cost 7
+            var small = Give(engine, p1, "korvus_legionnaire", ShardsZone.Champions);
+            var mine = Give(engine, p0, "korvus_legionnaire", ShardsZone.Champions);
+
+            MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+            DrainDecisionsWithDefaults(engine);
+
+            Assert.AreEqual(2, p1.Champions.Count, "exactly ONE of p1's champions died");
+            Assert.IsFalse(p1.Champions.Contains(tieA), "tie breaks to the lowest instance id");
+            Assert.Contains(tieB, p1.Champions);
+            Assert.Contains(small, p1.Champions);
+            Assert.AreEqual(0, p0.Champions.Count, "EVERY player destroys their biggest");
+            Assert.AreEqual(ShardsZone.Discard, tieA.Zone);
+            Assert.Contains(tieA, p1.Discard);
+            Assert.Contains(mine, p0.Discard);
+        }
+
+        [Test]
+        public void Malice_DefeatGrantsReturnAndBonusDestiny()
+        {
+            var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 63);
+            var p0 = engine.State.Players[0];
+            var malice = new ShardsCard { InstanceId = engine.State.NextInstanceId++, DefId = "ingeminex_malice", Owner = -1, Zone = ShardsZone.CenterDeck };
+            engine.State.CenterDeck.Add(malice);
+            p0.Gems = 20;
+            MustSubmit(engine, new ShardsBuyCardAction { PlayerIndex = 0, SlotIndex = 0 });
+
+            var dead = Give(engine, p0, "general_decurion", ShardsZone.Discard);
+            p0.Power = 10;
+            MustSubmit(engine, new ShardsAttackMonsterAction { PlayerIndex = 0, CardInstanceId = malice.InstanceId });
+
+            // Reward part 1: optional champion return from discard.
+            Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind, "return decision pending");
+            Assert.AreEqual("soi.return", engine.PendingInput.Decision.Context);
+            Answer(engine, dead.InstanceId);
+            Assert.Contains(dead, p0.Hand, "champion returned to hand");
+
+            // Reward part 2: bonus destiny from the row (bypasses M5 + once-per-game).
+            Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind, "destiny decision pending");
+            Assert.AreEqual("soi.destiny", engine.PendingInput.Decision.Context);
+            int before = engine.State.DestinyRow.Count;
+            Answer(engine, engine.State.DestinyRow[0].InstanceId);
+            Assert.AreEqual(1, p0.Destinies.Count, "bonus destiny granted");
+            Assert.AreEqual(before - 1, engine.State.DestinyRow.Count);
         }
 
         [Test]

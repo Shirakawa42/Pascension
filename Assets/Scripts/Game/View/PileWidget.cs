@@ -91,6 +91,10 @@ namespace Pascension.Game.View
             _badgeText = UiFactory.CreateText(Theme, "Count", _badge.transform, "0", 18f,
                 UiPalette.Background, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Stretch(_badgeText.rectTransform);
+            // Compound labels like "12(3)" (banish pile: total + yours) must shrink to fit.
+            _badgeText.enableAutoSizing = true;
+            _badgeText.fontSizeMin = 9f;
+            _badgeText.fontSizeMax = 18f;
 
             // Title under the stack.
             _title = UiFactory.CreateText(Theme, "Title", Container, title.ToUpperInvariant(), 13f,
@@ -114,14 +118,14 @@ namespace Pascension.Game.View
             return new Color(basec.r * shade, basec.g * shade, basec.b * shade, 1f);
         }
 
-        public void Render(int count, CardSnap top)
+        public void Render(int count, CardSnap top, string badgeLabel = null)
         {
             if (!_built) return;
             bool any = count > 0;
             _emptyOutline.gameObject.SetActive(!any);
             for (int i = 0; i < _stack.Length; i++)
                 _stack[i].gameObject.SetActive(any && count > i);
-            _badgeText.text = count.ToString();
+            _badgeText.text = badgeLabel ?? count.ToString();
             _badge.gameObject.SetActive(true);
 
             if (_topCard != null)

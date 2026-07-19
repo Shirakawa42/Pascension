@@ -704,23 +704,42 @@ namespace Shards.Engine
         {
             _endTurnInProgress = true;
 
-            var opponents = new List<ShardsPlayer>(State.LivingOpponentsOf(player.Index));
-            opponents.RemoveAll(o => !CanAssignDamageTo(o)); // Taunt champions protect their owner
+            var living = new List<ShardsPlayer>(State.LivingOpponentsOf(player.Index));
 
-            // Enemy champions are assignable too (same power pool; marks accumulate
-            // and reset at end of turn exactly like mid-turn attacks).
-            var championTargets = new List<(ShardsPlayer owner, ShardsCard champion)>();
-            foreach (var championOwner in State.LivingOpponentsOf(player.Index))
-                foreach (var champion in championOwner.Champions)
-                    if (CanAttackChampion(player, championOwner, champion))
-                        championTargets.Add((championOwner, champion));
-
-            if (player.Power > 0 && (opponents.Count > 0 || championTargets.Count > 0))
+            // Overwhelming power (the infinite Infinity Shard): no split window —
+            // every opponent dies instantly. Shields cap out around 30; against
+            // 1000+ they cannot matter, so no reveal prompts either.
+            if (player.Power > 1000 && living.Count > 0)
             {
-                if (opponents.Count == 1 && championTargets.Count == 0)
+                foreach (var opponent in living)
+                    ApplyDamage(player.Index, opponent, player.Power, 0, revealed: null);
+                AfterDefenses(player);
+                return;
+            }
+
+            var assignable = new List<ShardsPlayer>(living);
+            assignable.RemoveAll(o => !CanAssignDamageTo(o)); // Taunt (Zetta) protects its owner
+
+            // Enemy champions share the power pool (marks accumulate and reset at end
+            // of turn exactly like mid-turn attacks). Per-card vetoes (Li Hin…) always
+            // exclude; the TAUNT block is expressed as a Required option instead —
+            // the split may reach the owner's other targets ONLY by killing the taunt
+            // champion in the same answer (validated in SplitDamageFlow).
+            var championTargets = new List<(ShardsPlayer owner, ShardsCard champion)>();
+            foreach (var championOwner in living)
+                foreach (var champion in championOwner.Champions)
+                {
+                    var veto = champion.Def.CanBeAttacked;
+                    if (veto == null || veto(State, player, championOwner, champion))
+                        championTargets.Add((championOwner, champion));
+                }
+
+            if (player.Power > 0 && (assignable.Count > 0 || championTargets.Count > 0))
+            {
+                if (assignable.Count == 1 && championTargets.Count == 0)
                 {
                     // Only one possible target — skip the split decision.
-                    _splitTargets = new List<int> { opponents[0].Index };
+                    _splitTargets = new List<int> { assignable[0].Index };
                     _splitAmounts = new List<int> { player.Power };
                     BeginDefenses(player);
                     return;
@@ -734,23 +753,34 @@ namespace Shards.Engine
                     Title = $"Assign {player.Power} damage between your opponents",
                     Context = "soi.split",
                     // Full assignment among PLAYERS is mandatory (rulebook: assign
-                    // ALL remaining power); champion-only assignment (every player
-                    // taunt-protected) is optional.
-                    Min = opponents.Count > 0 ? player.Power : 0,
+                    // ALL remaining power) as long as someone is directly assignable;
+                    // with every player behind a taunt, waste is allowed.
+                    Min = assignable.Count > 0 ? player.Power : 0,
                     Max = player.Power,
                     Ordered = true
                 };
-                foreach (var opponent in opponents)
-                    request.Options.Add(new DecisionOption(opponent.Index, opponent.Name));
+                foreach (var opponent in living)
+                    request.Options.Add(new DecisionOption(opponent.Index, opponent.Name)
+                    { OwnerIndex = opponent.Index });
                 foreach (var (championOwner, champion) in championTargets)
                     request.Options.Add(new DecisionOption(ChampionSplitBase + champion.InstanceId,
                         champion.Def.Name + " (" + championOwner.Name + ")")
-                    { CardInstanceId = champion.InstanceId, DefId = champion.DefId });
+                    {
+                        CardInstanceId = champion.InstanceId,
+                        DefId = champion.DefId,
+                        OwnerIndex = championOwner.Index,
+                        Amount = System.Math.Max(1,
+                            EffectiveDefense(championOwner, champion) - champion.DamageThisTurn),
+                        Required = champion.Def.Taunt
+                    });
                 // Defaults pad with DISTINCT options only — pre-fill a full assignment
-                // (everything on the first opponent) so timeouts/bot-takeovers stay legal.
-                if (opponents.Count > 0)
+                // (everything on the first ASSIGNABLE opponent) so timeouts and
+                // bot-takeovers stay legal. With everyone taunt-protected the default
+                // is deliberately EMPTY (waste): a timed-out player should not be
+                // volunteered into killing champions.
+                if (assignable.Count > 0)
                     for (int i = 0; i < player.Power; i++)
-                        request.DefaultOptionIds.Add(opponents[0].Index);
+                        request.DefaultOptionIds.Add(assignable[0].Index);
                 // Answer format: one option id per damage point (repeats allowed).
                 // Queue only — Submit's pump picks it up. NEVER pump from inside the
                 // end-turn chain: these methods also run inside effect iterators, and a
@@ -788,6 +818,29 @@ namespace Shards.Engine
                 {
                     _splitAmounts[index]++;
                 }
+            }
+
+            // Taunt (Zetta): assignments to a protected owner — the player itself or
+            // any of their OTHER champions — only count when the taunt champion
+            // receives LETHAL in this same answer; otherwise those points are dropped
+            // (wasted). The UI enforces this up front; this guards the rule against
+            // ill-behaved clients.
+            foreach (var defender in State.Players)
+            {
+                var taunt = defender.Champions.Find(c => c.Def.Taunt);
+                if (taunt == null || defender.Eliminated) continue;
+                championHits.TryGetValue(taunt.InstanceId, out int assigned);
+                if (assigned >= EffectiveDefense(defender, taunt) - taunt.DamageThisTurn)
+                    continue; // the taunt champion dies — everything behind it unlocks
+                int index = _splitTargets.IndexOf(defender.Index);
+                if (index >= 0)
+                {
+                    _splitTargets.RemoveAt(index);
+                    _splitAmounts.RemoveAt(index);
+                }
+                foreach (var other in defender.Champions)
+                    if (other != taunt)
+                        championHits.Remove(other.InstanceId);
             }
 
             // Champion damage lands first (shields never protect champions).

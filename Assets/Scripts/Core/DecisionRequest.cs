@@ -25,6 +25,17 @@ namespace Pascension.Engine.Decisions
         /// (center-deck reveals, market exile). Decisions only reach the deciding
         /// player, so this leaks nothing. Null-omitted on the wire.</summary>
         public string DefId;
+        /// <summary>UI hint — the exact quantum this option assigns when picked
+        /// (SoI damage split: a champion's REMAINING effective HP, kill-or-nothing).
+        /// 0 = freeform amount.</summary>
+        public int Amount;
+        /// <summary>UI hint — this option must be fully assigned (its Amount) before
+        /// any other option with the same OwnerIndex may receive anything
+        /// (SoI Taunt champion: Zetta).</summary>
+        public bool Required;
+        /// <summary>UI hint — grouping key (SoI damage split: the owning player's
+        /// index, so targets render in per-player sections). -1 = ungrouped.</summary>
+        public int OwnerIndex = -1;
         /// <summary>Set when the option is a target.</summary>
         public TargetRef? Target;
 

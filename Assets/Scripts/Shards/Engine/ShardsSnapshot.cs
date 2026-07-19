@@ -10,6 +10,9 @@ namespace Shards.Engine
         public bool Exhausted;
         /// <summary>Champion/Ingeminex damage marked this turn.</summary>
         public int DamageThisTurn;
+        /// <summary>Owning player (-1 = market card). Lets the banish browser group
+        /// cards by who banished them.</summary>
+        public int Owner = -1;
     }
 
     public sealed class ShardsPlayerSnap
@@ -139,7 +142,8 @@ namespace Shards.Engine
             InstanceId = card.InstanceId,
             DefId = card.DefId,
             Exhausted = card.Exhausted,
-            DamageThisTurn = card.DamageThisTurn
+            DamageThisTurn = card.DamageThisTurn,
+            Owner = card.Owner
         };
     }
 }

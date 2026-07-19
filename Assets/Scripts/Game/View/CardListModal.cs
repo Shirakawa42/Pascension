@@ -6,11 +6,18 @@ using UnityEngine.UI;
 
 namespace Pascension.Game.View
 {
-    /// <summary>Scrollable card-grid modal used for browsing discard/exile/relics/etc.</summary>
+    /// <summary>Scrollable card-grid modal used for browsing discard/exile/relics/etc.
+    /// Supports flat lists and GROUPED lists (per-player banished cards…): each group
+    /// renders a separator + header line above its own card grid. SoI mercenaries get
+    /// the same red halo as in the center row (no-op for Pascension ids — the Shards
+    /// database lookup simply misses).</summary>
     public sealed class CardListModal : MonoBehaviour
     {
         public UiTheme Theme;
         public RectTransform Container;
+
+        private const int Columns = 5;
+        private const float CellW = 140f, CellH = 194f, Gap = 10f;
 
         private bool _built;
         private TextMeshProUGUI _title;
@@ -42,12 +49,13 @@ namespace Pascension.Game.View
             var scroll = UiFactory.CreateScrollView(Theme, "Grid", panel.transform, out _content);
             UiFactory.Stretch((RectTransform)scroll.transform, 16, 70, 16, 52);
 
-            var grid = _content.gameObject.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(140f, 194f);
-            grid.spacing = new Vector2(10f, 10f);
-            grid.childAlignment = TextAnchor.UpperCenter;
-            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = 5;
+            var layout = _content.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 6f;
+            layout.padding = new RectOffset(14, 14, 10, 10);
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
             var fitter = _content.gameObject.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
@@ -65,24 +73,83 @@ namespace Pascension.Game.View
 
         public void Show(string title, IReadOnlyList<CardSnap> cards)
         {
+            var groups = new List<(string, IReadOnlyList<CardSnap>)>();
+            if (cards != null && cards.Count > 0)
+                groups.Add((null, cards));
+            ShowGroups(title, groups);
+        }
+
+        /// <summary>Grouped browse: one separator + header per group, empty groups are
+        /// skipped. Total count for the title sums every group.</summary>
+        public void ShowGroups(string title, IReadOnlyList<(string Header, IReadOnlyList<CardSnap> Cards)> groups)
+        {
             if (!_built) return;
-            _title.text = cards == null || cards.Count == 0 ? $"{title} — empty" : $"{title} ({cards.Count})";
+
+            int total = 0;
+            if (groups != null)
+                foreach (var group in groups)
+                    total += group.Cards?.Count ?? 0;
+            _title.text = total == 0 ? $"{title} — empty" : $"{title} ({total})";
 
             for (int i = _content.childCount - 1; i >= 0; i--)
                 Destroy(_content.GetChild(i).gameObject);
 
-            if (cards != null)
+            if (groups == null) { Container.gameObject.SetActive(true); return; }
+
+            foreach (var group in groups)
             {
-                foreach (var snap in cards)
+                var cards = group.Cards;
+                if (cards == null || cards.Count == 0) continue;
+
+                if (!string.IsNullOrEmpty(group.Header))
                 {
-                    var cell = UiFactory.CreateRect("Cell", _content);
+                    var header = UiFactory.CreateRect("Header", _content);
+                    header.sizeDelta = new Vector2(0f, 30f); // childControlHeight=false positions by RECT height
+                    var he = header.gameObject.AddComponent<LayoutElement>();
+                    he.preferredHeight = 30f;
+                    var line = UiFactory.CreateImage("Line", header, null,
+                        UiPalette.WithAlpha(UiPalette.PanelLight, 0.9f), raycast: false);
+                    line.rectTransform.anchorMin = new Vector2(0f, 0f);
+                    line.rectTransform.anchorMax = new Vector2(1f, 0f);
+                    line.rectTransform.pivot = new Vector2(0.5f, 0f);
+                    line.rectTransform.anchoredPosition = new Vector2(0f, 2f);
+                    line.rectTransform.sizeDelta = new Vector2(0f, 2f);
+                    var label = UiFactory.CreateText(Theme, "Label", header,
+                        $"{group.Header}  ({cards.Count})", 14f, UiPalette.TextDim,
+                        TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+                    UiFactory.Stretch(label.rectTransform);
+                }
+
+                int rows = (cards.Count + Columns - 1) / Columns;
+                var grid = UiFactory.CreateRect("Group", _content);
+                grid.sizeDelta = new Vector2(0f, rows * (CellH + Gap) - Gap);
+                var ge = grid.gameObject.AddComponent<LayoutElement>();
+                ge.preferredHeight = rows * (CellH + Gap) - Gap;
+                for (int i = 0; i < cards.Count; i++)
+                {
+                    var cell = UiFactory.CreateRect("Cell", grid);
+                    cell.anchorMin = cell.anchorMax = cell.pivot = new Vector2(0f, 1f);
+                    cell.anchoredPosition = new Vector2(i % Columns * (CellW + Gap), -(i / Columns) * (CellH + Gap));
+                    cell.sizeDelta = new Vector2(CellW, CellH);
                     var card = CardViewFactory.Create(cell, Theme, 0.61f);
-                    card.Bind(snap);
+                    card.Bind(cards[i]);
                     card.SetRaycastable(false);
+                    MarkMercenary(card, cards[i]);
                 }
             }
 
             Container.gameObject.SetActive(true);
+        }
+
+        /// <summary>Same red halo mercenaries carry in the SoI center row, so they are
+        /// recognizable inside any pile. Pascension def ids miss the Shards database
+        /// and fall straight through.</summary>
+        private static void MarkMercenary(CardView card, CardSnap snap)
+        {
+            if (snap?.DefId != null &&
+                Shards.Engine.ShardsCardDatabase.TryGet(snap.DefId, out var def) &&
+                def.Type == Shards.Engine.ShardsCardType.Mercenary)
+                card.SetGlow(true, UiPalette.Danger);
         }
 
         public void Hide()

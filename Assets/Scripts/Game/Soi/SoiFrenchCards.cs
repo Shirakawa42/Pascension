@@ -117,11 +117,11 @@ namespace Pascension.Game.Soi
             ["the_dispossessed"] = ("Les Dépossédés", "Gagnez 3 puissance. Tant que cette carte est dans votre défausse : quand vous jouez une carte Spectra, vous pouvez la renvoyer dans votre main."),
 
             // ------------------------------------------------------------- Into the Horizon — Ingeminex
-            ["ingeminex_brutality"] = ("Ingeminex : Brutalité", "Attaque : chaque joueur perd 5 santé (les boucliers ne peuvent pas l'empêcher). Récompense (10 puissance) : gagnez 20 santé."),
-            ["ingeminex_corruption"] = ("Ingeminex : Corruption", "Attaque : chaque joueur perd 3 santé et 1 maîtrise. Récompense (10 puissance) : recrutez une relique supplémentaire directement dans votre main. (Retirée si Les Reliques du Futur est désactivé.)"),
-            ["ingeminex_torment"] = ("Ingeminex : Tourment", "Attaque : chaque joueur perd 2 maîtrise. Récompense (10 puissance) : gagnez 4 maîtrise."),
-            ["ingeminex_agony"] = ("Ingeminex : Agonie", "Attaque : chaque joueur défausse 2 cartes. Récompense (10 puissance) : piochez 2 cartes et prenez une Destinée supplémentaire."),
-            ["ingeminex_malice"] = ("Ingeminex : Malice", "Attaque : chaque joueur détruit son champion au coût le plus élevé. Récompense (10 puissance) : renvoyez un champion de votre défausse dans votre main et prenez une Destinée supplémentaire."),
+            ["ingeminex_brutality"] = ("Ingeminex : Brutalité", "Attaque — à la fin du tour où il apparaît (annulée s'il est vaincu avant) : chaque joueur perd 5 santé (les boucliers ne peuvent pas l'empêcher). Récompense (10 puissance) : gagnez 20 santé."),
+            ["ingeminex_corruption"] = ("Ingeminex : Corruption", "Attaque — à la fin du tour où il apparaît (annulée s'il est vaincu avant) : chaque joueur perd 3 santé et 1 maîtrise. Récompense (10 puissance) : recrutez une relique supplémentaire directement dans votre main. (Retirée si Les Reliques du Futur est désactivé.)"),
+            ["ingeminex_torment"] = ("Ingeminex : Tourment", "Attaque — à la fin du tour où il apparaît (annulée s'il est vaincu avant) : chaque joueur perd 2 maîtrise. Récompense (10 puissance) : gagnez 4 maîtrise."),
+            ["ingeminex_agony"] = ("Ingeminex : Agonie", "Attaque — à la fin du tour où il apparaît (annulée s'il est vaincu avant) : chaque joueur défausse 2 cartes. Récompense (10 puissance) : piochez 2 cartes et prenez une Destinée supplémentaire."),
+            ["ingeminex_malice"] = ("Ingeminex : Malice", "Attaque — à la fin du tour où il apparaît (annulée s'il est vaincu avant) : chaque joueur détruit son champion au coût le plus élevé. Récompense (10 puissance) : renvoyez un champion de votre défausse dans votre main et prenez une Destinée supplémentaire."),
 
             // ------------------------------------------------------------- Into the Horizon — Destinées
             ["datic_secrets"] = ("Secrets Datiques", "Activez : si vous avez joué 2 alliés Ordre ou plus ce tour-ci, gagnez 2 cristaux."),

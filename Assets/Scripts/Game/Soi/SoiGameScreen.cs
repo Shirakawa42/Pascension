@@ -208,7 +208,7 @@ namespace Pascension.Game.Soi
                 : "Your deck: " + (Me?.DeckCount ?? 0) + " cards (contents and order hidden).");
             _playedPile.Clicked += () => ShowPile(UI.Loc.T("Played this turn"), Me != null ? ZoneSnaps(Me.PlayZone) : null);
             _discardPile.Clicked += () => ShowPile(UI.Loc.T("Discard pile"), Me != null ? ZoneSnaps(Me.Discard) : null);
-            _banishPile.Clicked += () => ShowPile(UI.Loc.T("Banished (removed from the game)"), _snap != null ? ZoneSnaps(_snap.Banished) : null);
+            _banishPile.Clicked += ShowBanishedByPlayer;
 
             // END TURN sits at the very bottom, below the discard pile (clear of its
             // title text); RECRUIT RELIC directly to its left, pulsing once usable.
@@ -577,7 +577,16 @@ namespace Pascension.Game.Soi
                 var answer = new DecisionAnswer { DecisionId = request.Id };
                 answer.ChosenOptionIds.AddRange(chosen);
                 Submit(new SubmitDecisionAction { PlayerIndex = MyIndex, Answer = answer });
-            }, FindDefId, FindZoneName);
+            }, FindDefId, FindZoneName, PlayerInfo);
+        }
+
+        /// <summary>Live name/health/portrait per player for the damage-split picker.</summary>
+        private (string Name, int Health, int MaxHealth, string PortraitDefId) PlayerInfo(int playerIndex)
+        {
+            if (_snap == null || playerIndex < 0 || playerIndex >= _snap.Players.Count)
+                return ("P" + playerIndex, 0, 0, null);
+            var player = _snap.Players[playerIndex];
+            return (player.Name, player.Health, _maxHealth, SoiCardFaces.CharacterPrefix + player.CharacterId);
         }
 
         /// <summary>Where the viewer sees this card instance right now — shown as a
@@ -656,7 +665,10 @@ namespace Pascension.Game.Soi
             _drawPile.Render(me.DeckCount, null);
             _playedPile.Render(me.PlayZone.Count, TopSnap(me.PlayZone));
             _discardPile.Render(me.Discard.Count, TopSnap(me.Discard));
-            _banishPile.Render(_snap.Banished.Count, TopSnap(_snap.Banished));
+            // Badge reads "total(yours)" so your own banished count is always visible.
+            int banishedMine = _snap.Banished.FindAll(c => c.Owner == MyIndex).Count;
+            _banishPile.Render(_snap.Banished.Count, TopSnap(_snap.Banished),
+                $"{_snap.Banished.Count}({banishedMine})");
             _centerDeckPile.Render(_snap.CenterDeckCount, null);
 
             RefreshControls(); // live turn/button gating (also runs on drain via RefreshInteractivity)
@@ -1413,6 +1425,30 @@ namespace Pascension.Game.Soi
                 return;
             }
             _cardList.Show(title, cards);
+        }
+
+        /// <summary>Banished cards grouped by owning player (market cards last), so
+        /// "who banished what" is readable at a glance.</summary>
+        private void ShowBanishedByPlayer()
+        {
+            if (_snap == null || _snap.Banished.Count == 0)
+            {
+                _toast.Show(UI.Loc.T("Nothing there yet."));
+                return;
+            }
+
+            var groups = new List<(string, IReadOnlyList<CardSnap>)>();
+            foreach (var player in _snap.Players)
+            {
+                var mine = _snap.Banished.FindAll(c => c.Owner == player.Index);
+                if (mine.Count > 0)
+                    groups.Add((player.Name, ZoneSnaps(mine)));
+            }
+            var market = _snap.Banished.FindAll(c => c.Owner < 0);
+            if (market.Count > 0)
+                groups.Add((UI.Loc.T("center row"), ZoneSnaps(market)));
+
+            _cardList.ShowGroups(UI.Loc.T("Banished (removed from the game)"), groups);
         }
 
         private string NameOf(int playerIndex) =>

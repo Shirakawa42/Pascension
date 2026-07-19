@@ -30,7 +30,11 @@ art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored
   `BanishUpTo`, `ReturnFromDiscard`, `DestroyEnemyChampions`, `WarpUpTo`, `RecruitFromRow`,
   `CopyPlayedEffect`, `AllPlayersLoseHealth/LoseMastery/Discard/DestroyBiggestChampion`,
   `Custom`/`Do`.
-- **Static hooks on `ShardsCardDef`** (`ShardsTypes.cs`): `Taunt` (Zetta), `CanBeAttacked`
+- **Static hooks on `ShardsCardDef`** (`ShardsTypes.cs`): `Taunt` (Zetta — mid-turn attacks
+  on other targets stay blocked; the END-TURN split may reach the owner/other champions
+  ONLY when the same answer assigns Zetta lethal — options carry `Required`/`Amount`/
+  `OwnerIndex` UI hints and `SplitDamageFlow` drops assignments that violate the rule;
+  power > 1000 skips the split entirely and kills every opponent instantly), `CanBeAttacked`
   (Li Hin / Raidian / Drakonarius), `DefenseAura` (Ferrata Guard, One Mind One Army),
   `CostModifier` (Axia), `ShieldInPlay` + `DynamicShield` (Praetorian-02, Datic Robes),
   `ReturnsFromDiscardOnChampionPlay` (Praetorian-01), `OnDamageDealt` (Blood for Blood —

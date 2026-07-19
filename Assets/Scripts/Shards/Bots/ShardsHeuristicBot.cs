@@ -226,11 +226,19 @@ namespace Shards.Bots
             {
                 case "soi.split":
                 {
-                    // Concentrate everything on the weakest living opponent (finish kills).
+                    // Concentrate everything on the weakest living opponent WITHOUT a
+                    // taunt champion; if every opponent hides behind a taunt (Zetta),
+                    // kill the cheapest killable taunt and dump the rest on its owner.
+                    var protectedOwners = new HashSet<int>();
+                    foreach (var option in request.Options)
+                        if (option.Required)
+                            protectedOwners.Add(option.OwnerIndex);
+
                     int target = -1, lowest = int.MaxValue;
                     foreach (var option in request.Options)
                     {
                         if (option.Id >= ShardsEngine.ChampionSplitBase) continue; // champions: mid-turn business
+                        if (protectedOwners.Contains(option.Id)) continue;
                         var opponent = _engine.State.Players[option.Id];
                         if (!opponent.Eliminated && opponent.Health < lowest)
                         {
@@ -239,8 +247,22 @@ namespace Shards.Bots
                         }
                     }
                     if (target >= 0)
+                    {
                         for (int i = 0; i < request.Max; i++)
                             answer.ChosenOptionIds.Add(target);
+                    }
+                    else
+                    {
+                        foreach (var option in request.Options)
+                            if (option.Required && option.Amount <= request.Max)
+                            {
+                                for (int i = 0; i < option.Amount; i++)
+                                    answer.ChosenOptionIds.Add(option.Id);
+                                for (int i = option.Amount; i < request.Max; i++)
+                                    answer.ChosenOptionIds.Add(option.OwnerIndex);
+                                break;
+                            }
+                    }
                     break;
                 }
                 case "soi.shields":
