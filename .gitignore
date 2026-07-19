@@ -40,6 +40,6 @@ Library/MCPForUnity/
 Tools/**/obj/
 Tools/**/bin/
 
-# Shards of Infinity imported card art — PERSONAL USE ONLY, never distribute/commit.
-Assets/Art/Shards/
-Assets/Art/Shards.meta
+# Assets/Art/Shards/ holds ORIGINAL Anima-generated card art (committed).
+# If official card images are ever imported over it (Pascension/Setup/Shards
+# Art Import), those are PERSONAL USE ONLY — re-add the ignore, never commit them.
