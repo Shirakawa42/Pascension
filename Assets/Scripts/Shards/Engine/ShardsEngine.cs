@@ -241,8 +241,10 @@ namespace Shards.Engine
                     return Focus(player);
                 case ShardsExhaustAction exhaust:
                     return ExhaustCard(player, exhaust.CardInstanceId);
-                case ShardsAttackChampionAction attack:
-                    return AttackChampion(player, attack.TargetPlayerIndex, attack.CardInstanceId, attack.Amount);
+                case ShardsAttackChampionAction:
+                    // Champions die ONLY in the end-of-turn damage assignment (user
+                    // decision 2026-07-20). Mid-turn power attacks target Ingeminex alone.
+                    return SubmitResult.Rejected("Champions can only be destroyed in the end-of-turn damage assignment");
                 case ShardsAttackMonsterAction monster:
                     return AttackMonster(player, monster.CardInstanceId, monster.Amount);
                 case ShardsTakeDestinyAction destiny:
@@ -439,30 +441,6 @@ namespace Shards.Engine
             return SubmitResult.Ok();
         }
 
-        private SubmitResult AttackChampion(ShardsPlayer player, int targetPlayer, int instanceId, int amount)
-        {
-            if (targetPlayer < 0 || targetPlayer >= State.Players.Count || targetPlayer == player.Index)
-                return SubmitResult.Rejected("Invalid target player");
-            var owner = State.Players[targetPlayer];
-            var champion = owner.Champions.Find(c => c.InstanceId == instanceId);
-            if (champion == null) return SubmitResult.Rejected("Champion not in play");
-            if (!CanAttackChampion(player, owner, champion))
-                return SubmitResult.Rejected("That champion can't be attacked");
-            var def = champion.Def;
-
-            // Within-turn accumulation: damage marks persist across attacks this turn and
-            // evaporate at end of turn — a champion dies only if ONE player deals its full
-            // defense within a single turn. Amount 0 = spend exactly what's still needed.
-            int remaining = EffectiveDefense(owner, champion) - champion.DamageThisTurn;
-            int spend = amount <= 0 ? remaining : System.Math.Min(amount, remaining);
-            if (spend <= 0) return SubmitResult.Rejected("Champion already fully damaged");
-            if (player.Power < spend) return SubmitResult.Rejected("Not enough power");
-
-            player.Power -= spend;
-            Emit(new ShardsPowerChangedEvent { PlayerIndex = player.Index, Delta = -spend, NewValue = player.Power });
-            ApplyPowerToChampion(player.Index, owner, champion, spend);
-            return SubmitResult.Ok();
-        }
 
         private SubmitResult AttackMonster(ShardsPlayer player, int instanceId, int amount)
         {
@@ -1305,19 +1283,8 @@ namespace Shards.Engine
                     player.Gems >= destiny.Def.ExhaustGemCost)
                     actions.Add(new ShardsExhaustAction { PlayerIndex = playerIndex, CardInstanceId = destiny.InstanceId });
 
-            // Only completing attacks are advertised (partial marking stays legal via an
-            // explicit Amount — bots and defaults shouldn't waste power on partial hits).
-            foreach (var opponent in State.LivingOpponentsOf(playerIndex))
-                foreach (var champion in opponent.Champions)
-                    if (CanAttackChampion(player, opponent, champion) &&
-                        player.Power >= EffectiveDefense(opponent, champion) - champion.DamageThisTurn)
-                        actions.Add(new ShardsAttackChampionAction
-                        {
-                            PlayerIndex = playerIndex,
-                            TargetPlayerIndex = opponent.Index,
-                            CardInstanceId = champion.InstanceId
-                        });
-
+            // Champions are NOT attackable mid-turn (they die only in the end-of-turn
+            // damage assignment); Ingeminex are the only mid-turn power targets.
             foreach (var monster in State.ActiveMonsters)
                 if (player.Power >= monster.Def.Defense - monster.DamageThisTurn)
                     actions.Add(new ShardsAttackMonsterAction { PlayerIndex = playerIndex, CardInstanceId = monster.InstanceId });

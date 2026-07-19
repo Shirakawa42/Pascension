@@ -11,9 +11,12 @@ namespace Pascension.Game.View
     /// each with a player-color stripe (red for the game itself, e.g. Ingeminex),
     /// an art tile, the card name and an optional note line ("recruited", "−4 · 29→25").
     /// Event-driven (Push), never rebuilt by RefreshAll.
+    /// Every entry is also kept in an unbounded record; the small ALL button above the
+    /// bar opens a scrollable window with the whole game's log.
     /// Effects that touch other cards attach them to their causing entry
     /// (AttachAffected); hovering such an entry shows "→ [the affected cards]" beside
-    /// the big preview. Hovering any entry drives the preview via CardView.AnyHovered.
+    /// the big preview. While a bar entry is hovered a grey spotlight mask dims
+    /// everything except the log, the preview and the affected panel.
     /// </summary>
     public sealed class PlayHistoryBar : MonoBehaviour
     {
@@ -33,14 +36,21 @@ namespace Pascension.Game.View
 
         private sealed class Entry
         {
-            public RectTransform Rect;
+            public string DefId;
             public int PlayerIndex;
+            public string Note;
             public bool Attachable;
             public readonly List<string> Affected = new List<string>();
+            /// <summary>Live bar row; null once the entry scrolled off the bar.</summary>
+            public RectTransform Rect;
         }
 
-        private readonly List<Entry> _entries = new List<Entry>();
+        private readonly List<Entry> _entries = new List<Entry>();  // on the bar (≤ 10)
+        private readonly List<Entry> _all = new List<Entry>();      // whole game, newest first
         private RectTransform _affectedPanel;
+        private RectTransform _fullLog;
+        private Image _spotlight;
+        private int _containerSiblingBackup = -1;
 
         public void Init(UiTheme theme)
         {
@@ -49,9 +59,18 @@ namespace Pascension.Game.View
             _built = true;
 
             var title = UiFactory.CreateText(Theme, "Title", Container, "RECENT", 12f,
-                UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
+                UiPalette.TextDim, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             title.characterSpacing = 3f;
-            UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -2f), new Vector2(96f, 18f));
+            UiFactory.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(4f, -2f), new Vector2(60f, 18f));
+
+            // The full-log window trigger. Autosize keeps ALL/TOUT on one line.
+            var all = UiFactory.CreateButton(Theme, "AllLogs", Container, UI.Loc.T("ALL"), 10f);
+            UiFactory.Place((RectTransform)all.transform, new Vector2(1f, 1f), new Vector2(-2f, -2f), new Vector2(40f, 18f));
+            var allLabel = UiFactory.ButtonLabel(all);
+            allLabel.enableAutoSizing = true;
+            allLabel.fontSizeMin = 6f;
+            allLabel.fontSizeMax = 10f;
+            all.onClick.AddListener(ShowFullLog);
         }
 
         /// <summary>Record an event. defId must be non-null (logged cards are always
@@ -61,78 +80,19 @@ namespace Pascension.Game.View
         {
             if (!_built || string.IsNullOrEmpty(defId)) return;
 
-            var rect = UiFactory.CreateRect("Entry", Container);
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 1f);
-            rect.sizeDelta = new Vector2(88f, EntryHeight - 4f);
-            rect.anchoredPosition = new Vector2(0f, TopOffset);
-
-            var stripe = UiFactory.CreateImage("Stripe", rect, Theme.Rounded,
-                playerIndex < 0 ? UiPalette.Danger : UiPalette.PlayerColor(playerIndex));
-            stripe.rectTransform.anchorMin = new Vector2(0f, 0f);
-            stripe.rectTransform.anchorMax = new Vector2(0f, 1f);
-            stripe.rectTransform.pivot = new Vector2(0f, 0.5f);
-            stripe.rectTransform.anchoredPosition = Vector2.zero;
-            stripe.rectTransform.sizeDelta = new Vector2(4f, 0f);
-
-            // Mini art tile + name — a full CardView at 0.18 is unreadable; a tile reads better.
-            var tile = UiFactory.CreateImage("Art", rect, null, UiPalette.PanelLight, raycast: true);
-            tile.rectTransform.anchorMin = new Vector2(0f, 0f);
-            tile.rectTransform.anchorMax = new Vector2(0f, 1f);
-            tile.rectTransform.pivot = new Vector2(0f, 0.5f);
-            tile.rectTransform.anchoredPosition = new Vector2(6f, 0f);
-            tile.rectTransform.sizeDelta = new Vector2(38f, 0f);
-
-            // Non-Pascension ids (Shards of Infinity, character portraits) resolve name
-            // AND art through the shared external-face hook.
-            CardDatabase.TryGet(defId, out var def);
-            string displayName = def?.Name;
-            var external = displayName == null ? CardView.ExternalFaceResolver?.Invoke(defId) : null;
-            if (displayName == null)
-                displayName = external?.Name ?? defId;
-            var art = Theme.Art(defId);
-            if (art == null && external?.ArtId != null)
-                art = Theme.Art(external.Value.ArtId);
-            if (art != null)
-            {
-                tile.sprite = art;
-                tile.color = Color.white;
-            }
-
-            bool hasNote = !string.IsNullOrEmpty(note);
-            var name = UiFactory.CreateText(Theme, "Name", rect, displayName, 10f,
-                UiPalette.TextMain, TextAlignmentOptions.MidlineLeft);
-            UiFactory.Stretch(name.rectTransform, 48, hasNote ? 18 : 2, 2, 2);
-            name.enableAutoSizing = true;
-            name.fontSizeMin = 7f;
-            name.fontSizeMax = 10f;
-            if (hasNote)
-            {
-                var noteText = UiFactory.CreateText(Theme, "Note", rect, note, 8f,
-                    UiPalette.GoldDim, TextAlignmentOptions.MidlineLeft);
-                noteText.rectTransform.anchorMin = new Vector2(0f, 0f);
-                noteText.rectTransform.anchorMax = new Vector2(1f, 0f);
-                noteText.rectTransform.pivot = new Vector2(0.5f, 0f);
-                noteText.rectTransform.offsetMin = new Vector2(48f, 1f);
-                noteText.rectTransform.offsetMax = new Vector2(-2f, 17f);
-                noteText.enableAutoSizing = true;
-                noteText.fontSizeMin = 6f;
-                noteText.fontSizeMax = 8f;
-            }
-
-            var entry = new Entry { Rect = rect, PlayerIndex = playerIndex, Attachable = attachable };
-
-            // The hover proxy drives the big preview + the affected-cards panel.
-            var hover = tile.gameObject.AddComponent<HistoryHover>();
-            hover.DefId = defId;
-            hover.Bar = this;
-            hover.Affected = entry.Affected; // same list instance — later attaches show up
+            var entry = new Entry { DefId = defId, PlayerIndex = playerIndex, Note = note, Attachable = attachable };
+            _all.Insert(0, entry);
+            entry.Rect = BuildRow(Container, entry, 88f, EntryHeight - 4f, compact: true);
+            entry.Rect.anchorMin = entry.Rect.anchorMax = entry.Rect.pivot = new Vector2(0.5f, 1f);
+            entry.Rect.anchoredPosition = new Vector2(0f, TopOffset);
 
             _entries.Insert(0, entry);
             while (_entries.Count > MaxEntries)
             {
                 var oldest = _entries[_entries.Count - 1];
                 _entries.RemoveAt(_entries.Count - 1);
-                if (oldest?.Rect != null) Destroy(oldest.Rect.gameObject);
+                if (oldest.Rect != null) Destroy(oldest.Rect.gameObject);
+                oldest.Rect = null; // the record itself lives on in _all
             }
 
             // Slide everything to its slot (newest at the top).
@@ -146,13 +106,81 @@ namespace Pascension.Game.View
             }
         }
 
+        /// <summary>One log row (shared by the bar and the full-log window): stripe,
+        /// art tile, name and note. The tile carries the hover proxy (preview +
+        /// affected panel + spotlight).</summary>
+        private RectTransform BuildRow(Transform parent, Entry entry, float width, float height, bool compact)
+        {
+            var rect = UiFactory.CreateRect("Entry", parent);
+            rect.sizeDelta = new Vector2(width, height);
+
+            var stripe = UiFactory.CreateImage("Stripe", rect, Theme.Rounded,
+                entry.PlayerIndex < 0 ? UiPalette.Danger : UiPalette.PlayerColor(entry.PlayerIndex));
+            stripe.rectTransform.anchorMin = new Vector2(0f, 0f);
+            stripe.rectTransform.anchorMax = new Vector2(0f, 1f);
+            stripe.rectTransform.pivot = new Vector2(0f, 0.5f);
+            stripe.rectTransform.anchoredPosition = Vector2.zero;
+            stripe.rectTransform.sizeDelta = new Vector2(4f, 0f);
+
+            var tile = UiFactory.CreateImage("Art", rect, null, UiPalette.PanelLight, raycast: true);
+            tile.rectTransform.anchorMin = new Vector2(0f, 0f);
+            tile.rectTransform.anchorMax = new Vector2(0f, 1f);
+            tile.rectTransform.pivot = new Vector2(0f, 0.5f);
+            tile.rectTransform.anchoredPosition = new Vector2(6f, 0f);
+            tile.rectTransform.sizeDelta = new Vector2(38f, 0f);
+
+            // Non-Pascension ids (Shards of Infinity, character portraits) resolve name
+            // AND art through the shared external-face hook.
+            CardDatabase.TryGet(entry.DefId, out var def);
+            string displayName = def?.Name;
+            var external = displayName == null ? CardView.ExternalFaceResolver?.Invoke(entry.DefId) : null;
+            if (displayName == null)
+                displayName = external?.Name ?? entry.DefId;
+            var art = Theme.Art(entry.DefId);
+            if (art == null && external?.ArtId != null)
+                art = Theme.Art(external.Value.ArtId);
+            if (art != null)
+            {
+                tile.sprite = art;
+                tile.color = Color.white;
+            }
+
+            bool hasNote = !string.IsNullOrEmpty(entry.Note);
+            var name = UiFactory.CreateText(Theme, "Name", rect, displayName, compact ? 10f : 13f,
+                UiPalette.TextMain, TextAlignmentOptions.MidlineLeft);
+            UiFactory.Stretch(name.rectTransform, 48, hasNote ? 18 : 2, 2, 2);
+            name.enableAutoSizing = true;
+            name.fontSizeMin = 7f;
+            name.fontSizeMax = compact ? 10f : 13f;
+            if (hasNote)
+            {
+                var note = UiFactory.CreateText(Theme, "Note", rect, entry.Note, compact ? 8f : 11f,
+                    UiPalette.GoldDim, TextAlignmentOptions.MidlineLeft);
+                note.rectTransform.anchorMin = new Vector2(0f, 0f);
+                note.rectTransform.anchorMax = new Vector2(1f, 0f);
+                note.rectTransform.pivot = new Vector2(0.5f, 0f);
+                note.rectTransform.offsetMin = new Vector2(48f, 1f);
+                note.rectTransform.offsetMax = new Vector2(-2f, 17f);
+                note.enableAutoSizing = true;
+                note.fontSizeMin = 6f;
+                note.fontSizeMax = compact ? 8f : 11f;
+            }
+
+            var hover = tile.gameObject.AddComponent<HistoryHover>();
+            hover.DefId = entry.DefId;
+            hover.Bar = this;
+            hover.Affected = entry.Affected; // same list instance — later attaches show up
+            hover.SuppressSpotlight = !compact; // the window brings its own dimmer
+            return rect;
+        }
+
         /// <summary>Attach a card an effect touched (banished, revealed, fetched…) to the
         /// newest ATTACHABLE entry of that player — its cause. False when no cause entry
-        /// is on the board (caller may push a standalone entry instead).</summary>
+        /// exists yet (caller may push a standalone entry instead).</summary>
         public bool AttachAffected(int playerIndex, string affectedDefId)
         {
             if (string.IsNullOrEmpty(affectedDefId)) return false;
-            foreach (var entry in _entries)
+            foreach (var entry in _all)
             {
                 if (!entry.Attachable || entry.PlayerIndex != playerIndex) continue;
                 // Dedupe: one effect often reports the same card twice (revealed AND
@@ -164,7 +192,70 @@ namespace Pascension.Game.View
             return false;
         }
 
-        // ------------------------------------------------------------------ affected panel
+        // ------------------------------------------------------------------ full log window
+
+        /// <summary>Scrollable window with EVERY log entry of the game, newest first.</summary>
+        public void ShowFullLog()
+        {
+            HideFullLog();
+            HideSpotlight();
+
+            _fullLog = UiFactory.CreateRect("FullLog", Container.parent);
+            UiFactory.Stretch(_fullLog);
+            _fullLog.SetAsLastSibling();
+
+            var dimmer = UiFactory.CreateDimmer("Dimmer", _fullLog);
+            var dismiss = dimmer.gameObject.AddComponent<Button>();
+            dismiss.targetGraphic = dimmer;
+            dismiss.transition = Selectable.Transition.None;
+            dismiss.onClick.AddListener(HideFullLog);
+
+            var panel = UiFactory.CreatePanel(Theme, "Panel", _fullLog, UiPalette.Panel);
+            var panelRect = (RectTransform)panel.transform;
+            UiFactory.Place(panelRect, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(520f, 980f));
+
+            var title = UiFactory.CreateText(Theme, "Title", panelRect,
+                UI.Loc.T("GAME LOG") + "  ·  " + _all.Count, 20f, UiPalette.Gold,
+                TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -28f), new Vector2(400f, 30f));
+
+            var close = UiFactory.CreateButton(Theme, "Close", panelRect, "X", 16f);
+            UiFactory.Place((RectTransform)close.transform, new Vector2(1f, 1f), new Vector2(-30f, -28f), new Vector2(44f, 36f));
+            close.onClick.AddListener(HideFullLog);
+
+            var scroll = UiFactory.CreateScrollView(Theme, "Entries", panelRect, out var content);
+            var scrollRect = (RectTransform)scroll.transform;
+            UiFactory.Stretch(scrollRect, 14, 14, 14, 56);
+
+            var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 4f;
+            layout.padding = new RectOffset(4, 4, 4, 4);
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            var fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            foreach (var entry in _all)
+            {
+                var row = BuildRow(content, entry, 0f, 46f, compact: false);
+                var le = row.gameObject.AddComponent<LayoutElement>();
+                le.preferredHeight = 46f;
+            }
+        }
+
+        public void HideFullLog()
+        {
+            if (_fullLog != null)
+            {
+                Destroy(_fullLog.gameObject);
+                _fullLog = null;
+            }
+            HideAffected();
+        }
+
+        // ------------------------------------------------------------------ hover chrome
 
         /// <summary>"→ [cards]" beside the big preview while an entry with affected
         /// cards is hovered. Rebuilt per show; purely visual (no raycasts).</summary>
@@ -208,16 +299,48 @@ namespace Pascension.Game.View
                 _affectedPanel = null;
             }
         }
+
+        /// <summary>Grey mask over everything except the log while a bar entry is
+        /// hovered: mask on top, then the bar above it; the preview and the affected
+        /// panel raise themselves above both.</summary>
+        internal void ShowSpotlight()
+        {
+            if (_fullLog != null) return; // the window already dims the table
+            if (_spotlight == null)
+            {
+                _spotlight = UiFactory.CreateImage("LogSpotlight", Container.parent, null,
+                    new Color(0.06f, 0.06f, 0.07f, 0.72f), raycast: false);
+                UiFactory.Stretch(_spotlight.rectTransform);
+            }
+            _spotlight.gameObject.SetActive(true);
+            _spotlight.rectTransform.SetAsLastSibling();
+            if (_containerSiblingBackup < 0)
+                _containerSiblingBackup = Container.GetSiblingIndex();
+            Container.SetAsLastSibling();
+        }
+
+        internal void HideSpotlight()
+        {
+            if (_spotlight != null)
+                _spotlight.gameObject.SetActive(false);
+            if (_containerSiblingBackup >= 0)
+            {
+                Container.SetSiblingIndex(_containerSiblingBackup);
+                _containerSiblingBackup = -1;
+            }
+        }
     }
 
-    /// <summary>Forwards history-entry hovers into the global card-preview feed and
-    /// pops the affected-cards panel when the entry has any.</summary>
+    /// <summary>Forwards log-entry hovers into the global card-preview feed, pops the
+    /// affected-cards panel when the entry has any, and (bar entries only) raises the
+    /// grey spotlight mask over the rest of the table.</summary>
     public sealed class HistoryHover : MonoBehaviour,
         UnityEngine.EventSystems.IPointerEnterHandler, UnityEngine.EventSystems.IPointerExitHandler
     {
         public string DefId;
         public PlayHistoryBar Bar;
         public List<string> Affected;
+        public bool SuppressSpotlight;
         private CardView _proxy;
 
         private CardView Proxy()
@@ -236,6 +359,10 @@ namespace Pascension.Game.View
 
         public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData)
         {
+            // Order matters: the mask (and the bar above it) go up FIRST so the
+            // preview's own SetAsLastSibling lands above both.
+            if (Bar != null && !SuppressSpotlight)
+                Bar.ShowSpotlight();
             var proxy = Proxy();
             proxy.SetPreviewDef(DefId);
             proxy.RaiseHover(true);
@@ -246,12 +373,20 @@ namespace Pascension.Game.View
         public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData)
         {
             if (_proxy != null) _proxy.RaiseHover(false);
-            if (Bar != null) Bar.HideAffected();
+            if (Bar != null)
+            {
+                Bar.HideAffected();
+                Bar.HideSpotlight();
+            }
         }
 
         private void OnDisable()
         {
-            if (Bar != null) Bar.HideAffected();
+            if (Bar != null)
+            {
+                Bar.HideAffected();
+                Bar.HideSpotlight();
+            }
         }
     }
 }

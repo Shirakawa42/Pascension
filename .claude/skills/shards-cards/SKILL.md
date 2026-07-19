@@ -30,10 +30,10 @@ art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored
   `BanishUpTo`, `ReturnFromDiscard`, `DestroyEnemyChampions`, `WarpUpTo`, `RecruitFromRow`,
   `CopyPlayedEffect`, `AllPlayersLoseHealth/LoseMastery/Discard/DestroyBiggestChampion`,
   `Custom`/`Do`.
-- **Static hooks on `ShardsCardDef`** (`ShardsTypes.cs`): `Taunt` (Zetta — mid-turn attacks
-  on other targets stay blocked; the END-TURN split may reach the owner/other champions
-  ONLY when the same answer assigns Zetta lethal — options carry `Required`/`Amount`/
-  `OwnerIndex` UI hints and `SplitDamageFlow` drops assignments that violate the rule;
+- **Static hooks on `ShardsCardDef`** (`ShardsTypes.cs`): `Taunt` (Zetta — the END-TURN
+  split may reach the owner/other champions ONLY when the same answer assigns Zetta
+  lethal — options carry `Required`/`Amount`/`OwnerIndex` UI hints and `SplitDamageFlow`
+  drops assignments that violate the rule;
   power > 1000 skips the split entirely and kills every opponent instantly), `CanBeAttacked`
   (Li Hin / Raidian / Drakonarius), `DefenseAura` (Ferrata Guard, One Mind One Army),
   `CostModifier` (Axia), `ShieldInPlay` + `DynamicShield` (Praetorian-02, Datic Robes),
@@ -75,8 +75,12 @@ art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored
 
 - Staggered start mastery 0/1/2/3; cap 30; thresholds check AT PLAY/EXHAUST time and a
   card's own mastery gain counts for its own threshold (Fungal Hermit / Cache Warden).
-- Champion damage accumulates WITHIN a turn (partial hits legal), evaporates at end
-  phase; destroyed only by one player reaching full (effective) defense in one turn.
+- Champions can be damaged/destroyed ONLY in the attacker's end-of-turn damage
+  assignment or by destroy-EFFECTS (user decision 2026-07-20 — mid-turn power attacks
+  are illegal and never advertised; Ingeminex are the only mid-turn power targets).
+  Damage marks evaporate at end phase; destruction needs full (effective) defense
+  assigned in one split. `CanBeAttacked` vetoes (Li Hin/Raidian/Drakonarius) apply to
+  the split's target list.
 - Champion printed shields are INERT in play — shields reveal from HAND, are NOT
   discarded, and never protect champions. Praetorian-02 is the one in-play exception
   (and never works from hand). Ru Bo Vai M10 pierces all shields for the turn.

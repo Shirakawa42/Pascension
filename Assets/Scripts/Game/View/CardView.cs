@@ -300,6 +300,7 @@ namespace Pascension.Game.View
             if (Glow == null) return;
             Glow.gameObject.SetActive(on);
             if (on) Glow.color = UiPalette.WithAlpha(color, 0.85f);
+            ApplyGlowLayout();
         }
 
         public void SetGlowAlpha(float alpha)
@@ -311,7 +312,7 @@ namespace Pascension.Game.View
             }
         }
 
-        /// <summary>Second, wider halo — independent of SetGlow so both can show at once
+        /// <summary>Second halo — independent of SetGlow so both can show at once
         /// (river slots: faction "condition met" inner + gold "affordable" outer).</summary>
         public void SetOuterGlow(bool on) => SetOuterGlow(on, UiPalette.Gold);
 
@@ -320,6 +321,17 @@ namespace Pascension.Game.View
             if (OuterGlow == null) return;
             OuterGlow.gameObject.SetActive(on);
             if (on) OuterGlow.color = UiPalette.WithAlpha(color, 0.5f);
+            ApplyGlowLayout();
+        }
+
+        /// <summary>Halo stacking: the outer ring sits OUTSIDE the inner glow only when
+        /// both are lit; alone it hugs the card at the inner ring's distance.</summary>
+        private void ApplyGlowLayout()
+        {
+            if (OuterGlow == null) return;
+            float extent = Glow != null && Glow.gameObject.activeSelf ? 9f : 4f;
+            OuterGlow.rectTransform.offsetMin = new Vector2(-extent, -extent);
+            OuterGlow.rectTransform.offsetMax = new Vector2(extent, extent);
         }
 
         public void SetOuterGlowAlpha(float alpha)

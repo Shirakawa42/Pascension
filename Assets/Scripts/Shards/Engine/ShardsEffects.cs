@@ -88,15 +88,14 @@ namespace Shards.Engine
 
     /// <summary>Mastery Threshold wrapper: the inner effect fires only if the controller's
     /// mastery is at least N AT THIS MOMENT of resolution (never retro-checked).</summary>
-    public sealed class AtMastery : IShardsEffect, IShardsConditionalEffect
+    // NOTE deliberately NOT IShardsConditionalEffect: once a player passes a mastery
+    // threshold every such card would glow forever — pure noise (user call 2026-07-20).
+    public sealed class AtMastery : IShardsEffect
     {
         private readonly int _threshold;
         private readonly IShardsEffect _inner;
         public int Threshold => _threshold;
         public IShardsEffect Inner => _inner;
-
-        public bool ConditionMet(ShardsContext ctx) =>
-            _threshold > 0 && ctx.Controller.Mastery >= _threshold;
 
         public AtMastery(int threshold, IShardsEffect inner)
         {
@@ -178,20 +177,12 @@ namespace Shards.Engine
 
     /// <summary>"Gain N instead" mastery scaling: resolves the HIGHEST tier whose
     /// threshold the controller meets right now (Shard Reactor, Infinity Shard).</summary>
-    public sealed class BestByMastery : IShardsEffect, IShardsConditionalEffect
+    // Not IShardsConditionalEffect — mastery tiers must not glow (see AtMastery).
+    public sealed class BestByMastery : IShardsEffect
     {
         private readonly (int threshold, IShardsEffect effect)[] _tiers;
         public BestByMastery(params (int threshold, IShardsEffect effect)[] tiers) => _tiers = tiers;
         public IReadOnlyList<(int threshold, IShardsEffect effect)> Tiers => _tiers;
-
-        /// <summary>Lit when any UPGRADE tier (threshold > 0) is live.</summary>
-        public bool ConditionMet(ShardsContext ctx)
-        {
-            foreach (var (threshold, _) in _tiers)
-                if (threshold > 0 && ctx.Controller.Mastery >= threshold)
-                    return true;
-            return false;
-        }
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {

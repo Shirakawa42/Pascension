@@ -128,7 +128,12 @@ namespace Pascension.Game.UI
             ["VICTORY"] = "VICTOIRE",
             ["It is over."] = "C'est terminé.",
 
-            // Play-log note lines (RECENT bar).
+            // Play-log chrome + notes (RECENT bar / full-log window).
+            ["ALL"] = "TOUT",
+            ["GAME LOG"] = "JOURNAL DE PARTIE",
+            ["Champions are destroyed in the end-of-turn damage assignment."] =
+                "Les champions ne peuvent être détruits que lors de la répartition des dégâts en fin de tour.",
+
             ["recruited"] = "recrutée",
             ["activated"] = "activée",
             ["destroyed"] = "détruit",

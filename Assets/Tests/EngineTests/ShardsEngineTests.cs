@@ -216,47 +216,48 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void ChampionAttack_DamageAccumulatesWithinTurn_ResetsAtEndOfTurn()
+        public void ChampionAttack_MidTurnIsIllegal_ChampionsDieInTheEndTurnSplit()
         {
             var engine = NewGame(seed: 23);
             var p0 = engine.State.Players[0];
             var p1 = engine.State.Players[1];
+            p1.Hand.RemoveAll(_ => true); // no shields — deterministic split resolution
 
             var champion = new ShardsCard { InstanceId = 9100, DefId = "guard_champ", Owner = 1, Zone = ShardsZone.Champions };
             p1.Champions.Add(champion);
 
-            // Partial hit is legal — marks accumulate within the turn (digital-adaptation
-            // ruling; defense 4). Explicit Amount = spend that much.
-            p0.Power = 3;
-            MustSubmit(engine, new ShardsAttackChampionAction
+            // Mid-turn power attacks on champions are illegal (user decision 2026-07-20:
+            // champions die ONLY in the end-of-turn damage assignment).
+            p0.Power = 10;
+            var rejected = engine.Submit(new ShardsAttackChampionAction
             {
                 PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = champion.InstanceId, Amount = 3
             });
-            Assert.AreEqual(0, p0.Power);
-            Assert.AreEqual(3, champion.DamageThisTurn, "partial damage marked, champion survives");
-            Assert.AreEqual(1, p1.Champions.Count);
+            Assert.IsFalse(rejected.Accepted, "champions can't be attacked mid-turn");
+            Assert.AreEqual(10, p0.Power, "no power spent on the rejected attack");
+            Assert.IsEmpty(engine.LegalActions(0).FindAll(a => a is ShardsAttackChampionAction),
+                "champion attacks are never advertised");
 
-            // Finish it later the same turn: Amount 0 = exactly what's still needed (1).
-            p0.Power = 5;
-            MustSubmit(engine, new ShardsAttackChampionAction
-            {
-                PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = champion.InstanceId
-            });
-            Assert.AreEqual(4, p0.Power, "spent only the remaining 1 of defense 4");
-            Assert.AreEqual(0, p1.Champions.Count);
-            Assert.IsTrue(p1.Discard.Contains(champion), "destroyed champion goes to owner's discard");
-
-            // Marks on a survivor evaporate at end of turn.
-            var second = new ShardsCard { InstanceId = 9101, DefId = "guard_champ", Owner = 1, Zone = ShardsZone.Champions };
-            p1.Champions.Add(second);
-            MustSubmit(engine, new ShardsAttackChampionAction
-            {
-                PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = second.InstanceId, Amount = 2
-            });
-            Assert.AreEqual(2, second.DamageThisTurn);
+            // The end-turn split CAN kill it: 4 on the champion (defense 4) + 6 face.
             MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+            Assert.AreEqual("soi.split", engine.PendingInput.Decision.Context);
+            var request = engine.PendingInput.Decision;
+            var champOption = request.Options.Find(o => o.CardInstanceId == champion.InstanceId);
+            Assert.IsNotNull(champOption, "the champion is a split target");
+            Assert.AreEqual(4, champOption.Amount, "option carries the remaining defense");
+
+            var answer = new Pascension.Engine.Decisions.DecisionAnswer { DecisionId = request.Id };
+            answer.ChosenOptionIds.AddRange(new[]
+            {
+                champOption.Id, champOption.Id, champOption.Id, champOption.Id,
+                p1.Index, p1.Index, p1.Index, p1.Index, p1.Index, p1.Index
+            });
+            MustSubmit(engine, new SubmitDecisionAction { PlayerIndex = 0, Answer = answer });
             ResolveAllDecisionsWithDefaults(engine);
-            Assert.AreEqual(0, second.DamageThisTurn, "champion damage never persists between turns");
+
+            Assert.AreEqual(0, p1.Champions.Count, "the split killed the champion");
+            Assert.IsTrue(p1.Discard.Contains(champion), "destroyed champion goes to owner's discard");
+            Assert.AreEqual(50 - 6, p1.Health, "the remainder reached the owner");
         }
 
         [Test]

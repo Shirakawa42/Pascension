@@ -88,25 +88,9 @@ namespace Shards.Bots
                 if (action is ShardsRecruitRelicAction relic)
                     return relic;
 
-            // 5. Champion kills — only cheap ones; face damage usually matters more.
-            ShardsAttackChampionAction bestKill = null;
-            int bestDefense = int.MaxValue;
-            foreach (var action in legal)
-            {
-                if (action is not ShardsAttackChampionAction attack) continue;
-                var champion = _engine.State.FindCard(attack.CardInstanceId);
-                if (champion == null) continue;
-                int defense = champion.Def.Defense;
-                if (defense < bestDefense)
-                {
-                    bestDefense = defense;
-                    bestKill = attack;
-                }
-            }
-            if (bestKill != null && (bestDefense <= 3 || player.Power >= bestDefense * 2))
-                return bestKill;
+            // (Champion kills happen in the end-of-turn damage split, not mid-turn.)
 
-            // 6. Buy the best value per gem (recruit; fast-play late when the deck is set).
+            // 5. Buy the best value per gem (recruit; fast-play late when the deck is set).
             ShardsBuyCardAction bestBuy = null;
             double bestBuyScore = 0.6; // don't buy junk just because it's affordable
             foreach (var action in legal)
@@ -127,7 +111,7 @@ namespace Shards.Bots
             }
             if (bestBuy != null) return bestBuy;
 
-            // 7. Focus with a spare gem (mastery is the long game).
+            // 6. Focus with a spare gem (mastery is the long game).
             foreach (var action in legal)
                 if (action is ShardsFocusAction focus)
                     return focus;

@@ -368,6 +368,9 @@ namespace Pascension.Game.Soi
             Func<int, (string Name, int Health, int MaxHealth, string PortraitDefId)> playerInfo)
         {
             var content = ScrollContent(out _);
+            const float scale = 0.6f; // normal decision-card size (same as the card grid)
+            const float cardWidth = CardView.Width * scale;
+            const float rowHeight = 198f;
 
             // Section order = order of first option per owner.
             var owners = new List<int>();
@@ -383,52 +386,68 @@ namespace Pascension.Game.Soi
                     : info.Name);
 
                 var row = UiFactory.CreateRect("Owner_" + owner, content);
-                row.sizeDelta = new Vector2(0f, 168f);
+                row.sizeDelta = new Vector2(0f, rowHeight);
                 var le = row.gameObject.AddComponent<LayoutElement>();
-                le.preferredHeight = 168f;
+                le.preferredHeight = rowHeight;
 
-                // Hero portrait + freeform assignment (0 / − / + / MAX).
                 DecisionOption playerOption = null;
+                int targets = 0;
                 foreach (var option in request.Options)
-                    if (option.OwnerIndex == owner && option.CardInstanceId <= 0)
+                {
+                    if (option.OwnerIndex != owner) continue;
+                    targets++;
+                    if (option.CardInstanceId <= 0)
                         playerOption = option;
+                }
+                // Compress the step when a row would overflow (cards overlap, none drop).
+                float step = targets > 1 ? Mathf.Min(cardWidth + 14f, (656f - cardWidth) / (targets - 1)) : cardWidth + 14f;
 
                 float x = 8f;
                 if (playerOption != null)
                 {
-                    var portrait = CardViewFactory.Create(row, _theme, 0.32f);
+                    var portrait = CardViewFactory.Create(row, _theme, scale);
                     portrait.Rect.anchorMin = portrait.Rect.anchorMax = new Vector2(0f, 1f);
                     portrait.Rect.pivot = new Vector2(0f, 1f);
                     portrait.Rect.anchoredPosition = new Vector2(x, 0f);
                     if (!string.IsNullOrEmpty(info.PortraitDefId))
                         portrait.BindDef(info.PortraitDefId);
-                    portrait.SetRaycastable(false);
-                    if (portrait.Group != null) portrait.Group.blocksRaycasts = false;
+                    portrait.SetRaycastable(false); // the face must not eat the button clicks
 
                     _heroAssign[playerOption.Id] = 0;
-                    var assigned = UiFactory.CreateText(_theme, "Assigned", row, "0", 26f, UiPalette.Gold,
-                        TextAlignmentOptions.Center, FontStyles.Bold);
-                    UiFactory.Place(assigned.rectTransform, new Vector2(0f, 1f), new Vector2(x + 78f, -26f), new Vector2(70f, 34f));
+                    // Assigned amount + 0/−/+/MAX live ON the portrait (card-local
+                    // units, scaled with it): amount centered, button row on the bottom.
+                    var assigned = UiFactory.CreateText(_theme, "Assigned", portrait.Rect, "0", 64f,
+                        UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
+                    UiFactory.Place(assigned.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(150f, 84f));
+                    var assignedOutline = assigned.gameObject.AddComponent<Outline>();
+                    assignedOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+                    assignedOutline.effectDistance = new Vector2(2f, -2f);
+                    assigned.raycastTarget = false;
                     _heroAssignLabels[playerOption.Id] = assigned;
 
                     int pid = playerOption.Id;
                     string[] labels = { "0", "−", "+", "MAX" };
                     for (int b = 0; b < 4; b++)
                     {
-                        var button = UiFactory.CreateButton(_theme, "H" + labels[b], row, labels[b], 13f);
-                        UiFactory.Place((RectTransform)button.transform, new Vector2(0f, 1f),
-                            new Vector2(x + 76f + b % 2 * 48f, -66f - b / 2 * 40f), new Vector2(46f, 36f));
+                        var button = UiFactory.CreateButton(_theme, "H" + labels[b], portrait.Rect, labels[b], 18f);
+                        UiFactory.Place((RectTransform)button.transform, new Vector2(0f, 0f),
+                            new Vector2(5f + b * 53f, 8f), new Vector2(50f, 46f));
+                        // Autosize keeps "MAX" on one line inside the narrow button.
+                        var bumpLabel = UiFactory.ButtonLabel(button);
+                        bumpLabel.enableAutoSizing = true;
+                        bumpLabel.fontSizeMin = 10f;
+                        bumpLabel.fontSizeMax = 20f;
                         int kind = b;
                         button.onClick.AddListener(() => HeroBump(pid, kind));
                     }
-                    x += 160f;
+                    x += step;
                 }
 
-                // Champions: live HP caption, exact-HP toggle.
+                // Champions: live HP pill ON the card, exact-HP toggle.
                 foreach (var option in request.Options)
                 {
                     if (option.OwnerIndex != owner || option.CardInstanceId <= 0) continue;
-                    var card = CardViewFactory.Create(row, _theme, 0.32f);
+                    var card = CardViewFactory.Create(row, _theme, scale);
                     card.Rect.anchorMin = card.Rect.anchorMax = new Vector2(0f, 1f);
                     card.Rect.pivot = new Vector2(0f, 1f);
                     card.Rect.anchoredPosition = new Vector2(x, 0f);
@@ -438,12 +457,16 @@ namespace Pascension.Game.Soi
                     card.Bind(new CardSnap { DefId = option.DefId, InstanceId = option.CardInstanceId, EffectiveCost = -1 });
                     _champViews.Add((card, option));
 
-                    var hp = UiFactory.CreateText(_theme, "Hp", row,
-                        (UI.Loc.French ? "PV " : "HP ") + option.Amount, 13f,
-                        option.Required ? UiPalette.Gold : UiPalette.TextDim,
+                    var hp = UiFactory.CreateText(_theme, "Hp", card.Rect,
+                        (UI.Loc.French ? "PV " : "HP ") + option.Amount, 24f,
+                        option.Required ? UiPalette.Gold : Color.white,
                         TextAlignmentOptions.Center, FontStyles.Bold);
-                    UiFactory.Place(hp.rectTransform, new Vector2(0f, 1f), new Vector2(x, -102f), new Vector2(72f, 18f));
-                    x += 84f;
+                    UiFactory.Place(hp.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(170f, 34f));
+                    var hpOutline = hp.gameObject.AddComponent<Outline>();
+                    hpOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+                    hpOutline.effectDistance = new Vector2(1.6f, -1.6f);
+                    hp.raycastTarget = false;
+                    x += step;
                 }
             }
 

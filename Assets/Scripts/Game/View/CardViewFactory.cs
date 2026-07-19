@@ -20,16 +20,17 @@ namespace Pascension.Game.View
             view.Theme = theme;
             view.Group = UiFactory.AddGroup(root.gameObject);
 
-            // Wider second halo — an independent channel (e.g. "affordable" pulse on
-            // river slots) that can stack with the inner condition/selection glow.
+            // Second halo — an independent channel (e.g. "affordable" pulse on river
+            // slots) that stacks OUTSIDE the inner glow when both are lit, and hugs
+            // the card when it shows alone (CardView.ApplyGlowLayout repositions it).
             var outerGlow = UiFactory.CreateImage("OuterGlow", root, theme.Rounded, UiPalette.WithAlpha(UiPalette.Gold, 0.5f));
-            UiFactory.Stretch(outerGlow.rectTransform, -18, -18, -18, -18);
+            UiFactory.Stretch(outerGlow.rectTransform, -9, -9, -9, -9);
             outerGlow.gameObject.SetActive(false);
             view.OuterGlow = outerGlow;
 
-            // Glow halo (behind the frame, slightly larger).
+            // Thin glow halo (behind the frame, slightly larger).
             var glow = UiFactory.CreateImage("Glow", root, theme.Rounded, UiPalette.WithAlpha(UiPalette.Gold, 0.85f));
-            UiFactory.Stretch(glow.rectTransform, -9, -9, -9, -9);
+            UiFactory.Stretch(glow.rectTransform, -4, -4, -4, -4);
             glow.gameObject.SetActive(false);
             view.Glow = glow;
 

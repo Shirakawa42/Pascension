@@ -198,7 +198,7 @@ namespace Pascension.Engine.Tests
             {
                 PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = other.InstanceId
             });
-            Assert.IsFalse(blocked.Accepted, "other champions can't be attacked while Zetta is in play");
+            Assert.IsFalse(blocked.Accepted, "mid-turn champion attacks are illegal (split-window only)");
 
             MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
             DrainDecisionsWithDefaults(engine);
@@ -281,7 +281,7 @@ namespace Pascension.Engine.Tests
             {
                 PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = liHin.InstanceId
             });
-            Assert.IsFalse(rejected.Accepted, "Li Hin can't be attacked with power");
+            Assert.IsFalse(rejected.Accepted, "Li Hin can't be attacked with power (and mid-turn champion attacks are gone entirely — the CanBeAttacked veto still excludes it from the end-turn split)");
 
             // Thorn Zealot's Unify destroy-effect bypasses defense AND unattackability (FAQ).
             Give(engine, p0, "spore_cleric", ShardsZone.Hand);

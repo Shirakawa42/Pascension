@@ -910,13 +910,10 @@ namespace Pascension.Game.Soi
                     view.SetTapped(champion.Exhausted);
                     view.SetMarkedDamage(champion.DamageThisTurn);
                     ApplyBoardGlow(view, champion);
-                    int target = player.Index;
-                    view.Clicked += w => Submit(new ShardsAttackChampionAction
-                    {
-                        PlayerIndex = MyIndex,
-                        TargetPlayerIndex = target,
-                        CardInstanceId = w.InstanceId
-                    });
+                    // Champions can't be attacked mid-turn — they die in the end-of-turn
+                    // damage assignment (the red glow means "your split can kill this").
+                    view.Clicked += _ => _toast.Show(
+                        UI.Loc.T("Champions are destroyed in the end-of-turn damage assignment."));
                     _boardViews[champion.InstanceId] = view;
                 }
 
@@ -1519,6 +1516,10 @@ namespace Pascension.Game.Soi
                 ? view.InstanceId : -1;
             if (hoverId == _lastHoverSent) return;
             _lastHoverSent = hoverId;
+            // The active player sees their own marker too (Hearthstone parity) — echo
+            // locally and immediately; peers get it via the bridge (absent in solo).
+            _remoteHoverSeat = MyIndex;
+            _remoteHoverId = hoverId;
             GameNetBridge.Instance?.SendCardHover(MyIndex, hoverId);
         }
 

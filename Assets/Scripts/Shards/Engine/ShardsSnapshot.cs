@@ -64,9 +64,10 @@ namespace Shards.Engine
         public List<ShardsPlayerSnap> Players = new();
         public PendingSnapInfo Pending;
 
-        /// <summary>Instance ids whose conditional effect (Unify/Dominion/threshold/If…)
-        /// is satisfied RIGHT NOW: the viewer's hand + center row probed for the viewer,
-        /// every player's ready champions/destinies probed for their owner. Drives the
+        /// <summary>Instance ids whose conditional effect (Unify/Dominion/If/per-count…;
+        /// mastery thresholds deliberately excluded — they'd glow forever) is satisfied
+        /// RIGHT NOW: the viewer's hand + center row probed for the viewer, every
+        /// player's ready champions/destinies probed for their owner. Drives the
         /// faction-color condition glow.</summary>
         public List<int> ConditionGlowIds = new();
         /// <summary>Champions/Ingeminex the VIEWER could destroy with their current
