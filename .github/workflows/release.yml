@@ -31,10 +31,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # ProjectSettings: WireFormatGoldenTests finds the repo root via
+          # ProjectSettings/ProjectVersion.txt; ShardsData: export tests write there.
           sparse-checkout: |
             Tools/EngineVerify
+            Tools/ShardsData
             Assets/Scripts
             Assets/Tests
+            ProjectSettings
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x

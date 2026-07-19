@@ -37,6 +37,8 @@ namespace Pascension.Engine.Tests
             foreach (var def in defs)
                 sb.AppendLine($"| {def.Id} | {def.Name} | {def.Set} | {def.Faction} | {def.Type} | {def.Cost} | {def.Quantity} | " +
                               $"{(def.Defense > 0 ? def.Defense.ToString() : "–")} | {(def.Shield > 0 ? def.Shield.ToString() : "–")} | {def.RulesText.Replace("|", "/")} |");
+            // CI runs on a sparse checkout — the output dir may not exist there.
+            Directory.CreateDirectory(Path.Combine(root, "Tools", "ShardsData"));
             File.WriteAllText(Path.Combine(root, "Tools", "ShardsData", "cards-table.md"), sb.ToString());
 
             // Art-source manifest skeleton (M7): user fills url-or-path per id; personal use only.
