@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Headless mirror of the Unity asmdefs: compiles Engine+Content+Bots sources and runs
+       the same NUnit tests without the Unity editor. See the playtesting skill. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>Pascension.EngineVerify</AssemblyName>
+    <RootNamespace>Pascension</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\Scripts\Core\**\*.cs" LinkBase="Core" />
+    <Compile Include="..\..\Assets\Scripts\Shards\**\*.cs" LinkBase="Shards" />
+    <Compile Include="..\..\Assets\Scripts\Engine\**\*.cs" LinkBase="Engine" />
+    <Compile Include="..\..\Assets\Scripts\Content\**\*.cs" LinkBase="Content" />
+    <Compile Include="..\..\Assets\Scripts\Bots\**\*.cs" LinkBase="Bots" />
+    <Compile Include="..\..\Assets\Scripts\Net\Host\**\*.cs" LinkBase="NetHost" />
+    <Compile Include="..\..\Assets\Tests\EngineTests\**\*.cs" LinkBase="Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+</Project>
