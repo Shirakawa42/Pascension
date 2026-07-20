@@ -73,17 +73,29 @@ namespace Pascension.Game
                 });
             }
 
-            var config = ContentRegistry.StandardConfig(MatchSetup.Seed, players);
+            // Random first player: the engine always gives seat 0 the first turn, so
+            // shuffle who occupies each seat — the staggered-start compensation is
+            // keyed by seat index, so it follows turn position automatically.
+            var order = new List<int>();
+            for (int i = 0; i < players.Count; i++) order.Add(i);
+            new DeterministicRng(MatchSetup.Seed, sequence: 131UL).Shuffle(order);
+            var seated = new List<PlayerConfig>();
+            foreach (int o in order) seated.Add(players[o]);
+            int humanSeat = order.IndexOf(0);
+
+            var config = ContentRegistry.StandardConfig(MatchSetup.Seed, seated);
             var adapter = new PascensionEngineAdapter(config);
 
-            Host = new GameHost(adapter, players.Count, config.Rules.ResponseTimerSeconds);
-            Session = new LocalSession(Host, 0);
+            Host = new GameHost(adapter, seated.Count, config.Rules.ResponseTimerSeconds);
+            Session = new LocalSession(Host, humanSeat);
             Host.AttachSeat(Session, isHuman: true);
 
-            for (int i = 1; i < players.Count; i++)
+            for (int i = 0; i < seated.Count; i++)
             {
-                var opp = MatchSetup.Opponents[i - 1];
-                ulong botSeed = MatchSetup.Seed ^ ((ulong)i * 0x9E3779B97F4A7C15UL);
+                if (i == humanSeat) continue;
+                var opp = MatchSetup.Opponents[order[i] - 1];
+                // (i + 1): a bot in seat 0 must never share the engine's own seed.
+                ulong botSeed = MatchSetup.Seed ^ (((ulong)i + 1) * 0x9E3779B97F4A7C15UL);
                 ISyncAgent agent = opp.Bot == BotKind.Random
                     ? new RandomBot(botSeed)
                     : (ISyncAgent)new HeuristicBot(botSeed);

@@ -150,14 +150,38 @@ namespace Pascension.Net
             };
         }
 
-        private string DefaultHeroFor(int index) =>
-            GameCatalog.Get(State.GameId).DefaultCharacterFor(index, State.DlcFlags);
+        private string DefaultHeroFor(int index)
+        {
+            // First roster hero nobody else holds — defaults must respect the
+            // no-duplicate rule too (a joiner's index-based default could collide
+            // with a hero the host already cycled to).
+            foreach (var character in GameCatalog.Get(State.GameId).CharactersFor(State.DlcFlags))
+                if (!HeroTakenByOther(index, character.Id))
+                    return character.Id;
+            return Pascension.Core.CharacterPick.RandomId; // roster < lobby size — resolves at start
+        }
 
         private bool IsKnownHero(string heroId)
         {
             if (string.IsNullOrEmpty(heroId)) return false;
             foreach (var character in GameCatalog.Get(State.GameId).CharactersFor(State.DlcFlags))
                 if (character.Id == heroId)
+                    return true;
+            return false;
+        }
+
+        /// <summary>A legal pick = a roster hero or the RANDOM sentinel (resolved at start).</summary>
+        private bool IsValidPick(string heroId) =>
+            Pascension.Core.CharacterPick.IsRandom(heroId) || IsKnownHero(heroId);
+
+        /// <summary>No-duplicate rule: does another occupied slot hold this hero?
+        /// The RANDOM sentinel never collides (any number of slots may pick it).</summary>
+        private bool HeroTakenByOther(int slotIndex, string heroId)
+        {
+            if (Pascension.Core.CharacterPick.IsRandom(heroId)) return false;
+            for (int i = 0; i < State.Slots.Count; i++)
+                if (i != slotIndex && State.Slots[i].Kind != LobbySlotKind.Empty &&
+                    State.Slots[i].HeroId == heroId)
                     return true;
             return false;
         }
@@ -179,7 +203,7 @@ namespace Pascension.Net
         public void SetHeroRpc(string heroId, RpcParams rpcParams = default)
         {
             int slot = SlotOfClient(rpcParams.Receive.SenderClientId);
-            if (slot < 0 || !IsKnownHero(heroId)) return;
+            if (slot < 0 || !IsValidPick(heroId) || HeroTakenByOther(slot, heroId)) return;
             State.Slots[slot].HeroId = heroId;
             BroadcastState();
         }
@@ -239,7 +263,8 @@ namespace Pascension.Net
         public void HostSetBotHero(int slotIndex, string heroId)
         {
             if (!IsServer || slotIndex is < 0 or >= MaxSlots) return;
-            if (State.Slots[slotIndex].Kind != LobbySlotKind.Bot || !IsKnownHero(heroId)) return;
+            if (State.Slots[slotIndex].Kind != LobbySlotKind.Bot ||
+                !IsValidPick(heroId) || HeroTakenByOther(slotIndex, heroId)) return;
             State.Slots[slotIndex].HeroId = heroId;
             BroadcastState();
         }
@@ -255,12 +280,18 @@ namespace Pascension.Net
                     picked.Add(slot);
 
             if (picked.Count < 2) return "Need at least 2 players (add a bot?)";
-            foreach (var slot in picked)
+            for (int i = 0; i < picked.Count; i++)
             {
+                var slot = picked[i];
                 if (slot.Kind == LobbySlotKind.Human && slot.ClientId != State.HostClientId && !slot.Ready)
                     return slot.Name + " is not ready";
                 if (string.IsNullOrEmpty(slot.HeroId))
                     return slot.Name + " has no hero";
+                // Defensive — the pick paths already reject duplicates.
+                for (int j = 0; j < i; j++)
+                    if (!Pascension.Core.CharacterPick.IsRandom(slot.HeroId) &&
+                        picked[j].HeroId == slot.HeroId)
+                        return slot.Name + " and " + picked[j].Name + " have the same hero";
             }
 
             var module = GameCatalog.Get(State.GameId);
@@ -272,6 +303,20 @@ namespace Pascension.Net
             // Lobby-level seed generation (config input, not engine randomness).
             ulong seed = unchecked((ulong)DateTime.UtcNow.Ticks);
 
+            // Random first player: the engine always gives seat 0 the first turn, so
+            // shuffle WHO occupies each seat — players and seats are built from the
+            // same shuffled list, so identity (ClientId/Guid) travels with its seat
+            // and the staggered-start compensation stays keyed to turn position.
+            new DeterministicRng(seed, sequence: 131UL).Shuffle(picked);
+
+            // Resolve RANDOM picks to concrete, distinct heroes (seeded — the resolved
+            // ids land in both the config and the seat assignments).
+            var pickIds = new List<string>();
+            foreach (var slot in picked) pickIds.Add(slot.HeroId);
+            var roster = new List<string>();
+            foreach (var character in module.CharactersFor(State.DlcFlags)) roster.Add(character.Id);
+            var heroIds = Pascension.Core.CharacterPick.ResolveRandoms(pickIds, roster, seed);
+
             var players = new List<Pascension.Core.PlayerSpec>();
             var seats = new List<SeatAssignment>();
             for (int i = 0; i < picked.Count; i++)
@@ -280,7 +325,7 @@ namespace Pascension.Net
                 players.Add(new Pascension.Core.PlayerSpec
                 {
                     Name = slot.Name,
-                    CharacterId = slot.HeroId,
+                    CharacterId = heroIds[i],
                     IsBot = slot.Kind == LobbySlotKind.Bot,
                     BotKind = slot.BotKind
                 });
@@ -291,7 +336,7 @@ namespace Pascension.Net
                     ClientId = slot.ClientId,
                     ClientGuid = slot.ClientGuid,
                     PlayerName = slot.Name,
-                    HeroId = slot.HeroId,
+                    HeroId = heroIds[i],
                     BotKind = slot.BotKind,
                     IsHostHuman = slot.Kind == LobbySlotKind.Human && slot.ClientId == State.HostClientId
                 });
@@ -338,7 +383,7 @@ namespace Pascension.Net
             {
                 var slot = State.Slots[i];
                 if (slot.Kind == LobbySlotKind.Empty) continue;
-                if (!IsKnownHero(slot.HeroId))
+                if (!IsValidPick(slot.HeroId) || HeroTakenByOther(i, slot.HeroId))
                     slot.HeroId = DefaultHeroFor(i);
                 if (slot.Kind == LobbySlotKind.Human && slot.ClientId != State.HostClientId)
                     slot.Ready = false;

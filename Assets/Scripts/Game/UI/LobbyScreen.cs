@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Pascension.Content;
+using Pascension.Core;
 using Pascension.Engine.Heroes;
 using Pascension.Game.View;
 using Pascension.Net;
@@ -167,21 +168,43 @@ namespace Pascension.Game.UI
                 _lobbyStatus.text = Loc.T("Waiting for the host to start…");
         }
 
-        private string NextHero(string current)
+        private string NextHero(int slotIndex, string current)
         {
             var lobby = LobbyNetBehaviour.Instance;
             var module = GameCatalog.Get(lobby != null ? lobby.State.GameId : GameCatalog.DefaultGameId);
             var heroes = module.CharactersFor(lobby != null ? lobby.State.DlcFlags : 0);
             if (heroes.Count == 0) return current;
-            for (int i = 0; i < heroes.Count; i++)
-                if (heroes[i].Id == current)
-                    return heroes[(i + 1) % heroes.Count].Id;
-            return heroes[0].Id;
+
+            // Cycle = roster + RANDOM, skipping heroes other occupied slots hold
+            // (the no-duplicate rule; the host validates again server-side).
+            var ids = new List<string>(heroes.Count + 1);
+            foreach (var hero in heroes) ids.Add(hero.Id);
+            ids.Add(CharacterPick.RandomId);
+
+            int at = ids.IndexOf(current); // -1 (unknown) → starts the scan at ids[0]
+            for (int step = 1; step <= ids.Count; step++)
+            {
+                string candidate = ids[(at + step + ids.Count) % ids.Count];
+                if (candidate != current && !HeroTakenByOtherSlot(lobby, slotIndex, candidate))
+                    return candidate;
+            }
+            return current;
+        }
+
+        private static bool HeroTakenByOtherSlot(LobbyNetBehaviour lobby, int slotIndex, string heroId)
+        {
+            if (lobby == null || CharacterPick.IsRandom(heroId)) return false;
+            var slots = lobby.State.Slots;
+            for (int i = 0; i < slots.Count; i++)
+                if (i != slotIndex && slots[i].Kind != LobbySlotKind.Empty && slots[i].HeroId == heroId)
+                    return true;
+            return false;
         }
 
         private string HeroDisplayName(string heroId)
         {
             if (string.IsNullOrEmpty(heroId)) return "—";
+            if (CharacterPick.IsRandom(heroId)) return Loc.T("Random") + " ?";
             var lobby = LobbyNetBehaviour.Instance;
             var module = GameCatalog.Get(lobby != null ? lobby.State.GameId : GameCatalog.DefaultGameId);
             return module.CharacterDisplayName(heroId);
@@ -265,7 +288,7 @@ namespace Pascension.Game.UI
             if (lobby == null || !lobby.IsSpawned || manager == null) return;
 
             var slot = lobby.State.Slots[slotIndex];
-            string next = NextHero(slot.HeroId);
+            string next = NextHero(slotIndex, slot.HeroId);
             if (slot.Kind == LobbySlotKind.Bot)
                 lobby.HostSetBotHero(slotIndex, next);
             else if (slot.Kind == LobbySlotKind.Human && slot.ClientId == manager.LocalClientId)

@@ -92,6 +92,10 @@ namespace Pascension.Game.UI
             ["Connecting to the host…"] = "Connexion à l'hôte…",
             ["Unexpected error — see the log."] = "Erreur inattendue — voir le journal.",
             ["Starting…"] = "Lancement…",
+            ["RANDOM"] = "ALÉATOIRE",
+            ["Random"] = "Aléatoire",
+            ["A random hero is assigned when the game starts — never one another player already has."] =
+                "Un héros aléatoire vous est attribué au lancement — jamais celui d'un autre joueur.",
 
             // ---------------------------------------------------------- SoI table
             ["MY CHAMPIONS"] = "MES CHAMPIONS",

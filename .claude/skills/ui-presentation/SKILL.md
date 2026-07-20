@@ -46,7 +46,7 @@ Everything renders `ClientGameView`/snapshots + filtered `GameEvent`s; every int
 - **`GameScreenBase` deliberately NOT extracted** — GameScreen untouched by the SoI work.
 - `SoiDecisionModal`: list mode, `"soi.split"` stepper mode (cards at 0.6; assigned amount big gold + 0/−/+/MAX buttons ON the hero portrait in card-local units, face raycast off so buttons win; champions carry an outlined HP pill; row compresses on overflow; autosized button labels — 8px insets or tiny buttons wrap), and a reveal mode for Context `"soi.defiant"` (revealed card big with red mercenary glow + one immediate-submit button per option, no confirm/skip).
 - `SoiOpponentDetailModal`: opponent panels (portrait + stat lines + champions 0.30 + destinies 0.22, compress-not-drop) clickable → full sheet, browsable discard/played, re-bound live each snapshot via `ShownIndex`. Decision card-grids carry a source-zone caption (`FindZoneName`).
-- Menu: SoI solo setup panel — character grid expanding per enabled DLC, 3 DLC toggles, 1-3 bots. `SoiBootstrap` (solo via module; networked binds SessionProvider).
+- Menu: SoI solo setup panel — character grid expanding per enabled DLC (+ a RANDOM button; row spacing compresses when Rez pushes past 1200px), 3 DLC toggles, 1-3 bots. `SoiBootstrap` (solo via module; networked binds SessionProvider; shuffles seat order for a random first player — mirror of GameBootstrap).
 - Gotchas: `MainMenu.ShowPanel` must list EVERY panel; `CardListModal` needs its own Container child rect (Init deactivates it — attaching to the root hides the whole UI).
 - Champion click = explanatory toast (champions die only in the end-turn split — see shards-engine).
 - Verified live via MCP-over-HTTP driving REAL UI events end-to-end incl. mid-animation screenshots.

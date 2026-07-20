@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Pascension.Content;
+using Pascension.Core;
 using Pascension.Engine.Heroes;
 using Pascension.Game.View;
 using TMPro;
@@ -260,25 +261,31 @@ namespace Pascension.Game.UI
                 Destroy(child.gameObject);
             var module = Pascension.Net.GameCatalog.Get("shards");
             var characters = module.CharactersFor(_soiDlc);
-            bool stillValid = false;
+            bool stillValid = CharacterPick.IsRandom(_soiCharacter);
             foreach (var c in characters)
                 if (c.Id == _soiCharacter)
                     stillValid = true;
             if (!stillValid) _soiCharacter = characters[0].Id;
 
-            float x = -(characters.Count - 1) * 110f;
-            foreach (var character in characters)
+            // Roster buttons + a RANDOM button; spacing compresses when Rez (SoS)
+            // pushes the row past its 1200-wide container.
+            int total = characters.Count + 1;
+            float step = Mathf.Min(220f, (1200f - 200f) / (total - 1));
+            float x = -(total - 1) * step * 0.5f;
+            for (int i = 0; i < total; i++)
             {
-                bool selected = character.Id == _soiCharacter;
-                var button = UiFactory.CreateButton(Theme, "Char_" + character.Id, _soiCharacterRow,
-                    character.DisplayName.ToUpperInvariant(), 16f,
+                bool isRandom = i == characters.Count;
+                string id = isRandom ? CharacterPick.RandomId : characters[i].Id;
+                string label = isRandom ? Loc.T("RANDOM") + " ?" : characters[i].DisplayName.ToUpperInvariant();
+                bool selected = id == _soiCharacter;
+                var button = UiFactory.CreateButton(Theme, "Char_" + id, _soiCharacterRow, label, 16f,
                     selected ? UiPalette.Gold : UiPalette.PanelLight, UiPalette.Background);
                 UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 0.5f), new Vector2(x, 0f), new Vector2(200f, 88f));
-                x += 220f;
-                string id = character.Id;
+                x += step;
+                string picked = id;
                 button.onClick.AddListener(() =>
                 {
-                    _soiCharacter = id;
+                    _soiCharacter = picked;
                     RebuildSoiCharacters();
                 });
             }
@@ -299,21 +306,28 @@ namespace Pascension.Game.UI
             var module = Pascension.Net.GameCatalog.Get("shards");
             var characters = module.CharactersFor(_soiDlc);
 
+            MatchSetup.Seed = (ulong)DateTime.UtcNow.Ticks;
+
+            // A RANDOM pick resolves here (seeded) before the bots are assigned.
+            var roster = new List<string>(characters.Count);
+            foreach (var c in characters) roster.Add(c.Id);
+            string playerCharacter = CharacterPick.ResolveRandoms(
+                new List<string> { _soiCharacter }, roster, MatchSetup.Seed)[0];
+
             MatchSetup.GameId = "shards";
             MatchSetup.DlcFlags = _soiDlc;
-            MatchSetup.PlayerHeroId = _soiCharacter;
+            MatchSetup.PlayerHeroId = playerCharacter;
             MatchSetup.PlayerName = "You";
             MatchSetup.Opponents = new List<OpponentSetup>();
             int next = 0;
             for (int i = 0; i < _soiBots; i++)
             {
                 // Cycle the roster, skipping the player's pick first time around.
-                while (characters[next % characters.Count].Id == _soiCharacter && characters.Count > 1)
+                while (characters[next % characters.Count].Id == playerCharacter && characters.Count > 1)
                     next++;
                 MatchSetup.Opponents.Add(new OpponentSetup(characters[next % characters.Count].Id, BotKind.Heuristic));
                 next++;
             }
-            MatchSetup.Seed = (ulong)DateTime.UtcNow.Ticks;
             MatchSetup.Configured = true;
             SceneFlow.LoadGame(module.GameSceneName);
         }
@@ -337,9 +351,11 @@ namespace Pascension.Game.UI
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(heroLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -74f), new Vector2(600f, 26f));
 
-            // Hero picker cards.
-            float heroCardW = 320f, spacing = 24f;
-            float startX = -((_heroes.Count - 1) * (heroCardW + spacing)) * 0.5f;
+            // Hero picker cards (+ a RANDOM card at the end) — width shrinks to fit.
+            int pickCount = _heroes.Count + 1;
+            float spacing = 24f;
+            float heroCardW = Mathf.Min(320f, (1408f - (pickCount - 1) * spacing) / pickCount);
+            float startX = -((pickCount - 1) * (heroCardW + spacing)) * 0.5f;
             for (int i = 0; i < _heroes.Count; i++)
             {
                 var hero = _heroes[i];
@@ -393,6 +409,49 @@ namespace Pascension.Game.UI
                 button.targetGraphic = card;
                 button.transition = Selectable.Transition.None;
                 int index = i;
+                button.onClick.AddListener(() => SelectHero(index));
+            }
+
+            // The RANDOM card — resolved to a hero nobody else has at game start.
+            {
+                int index = _heroes.Count;
+                var card = UiFactory.CreatePanel(Theme, "Hero_random", panel.transform, UiPalette.PanelLight);
+                UiFactory.Place(card.rectTransform, new Vector2(0.5f, 1f),
+                    new Vector2(startX + index * (heroCardW + spacing), -112f), new Vector2(heroCardW, 470f));
+
+                var outline = card.gameObject.AddComponent<Outline>();
+                outline.effectColor = UiPalette.Gold;
+                outline.effectDistance = new Vector2(3f, -3f);
+                outline.enabled = index == _selectedHero;
+                _heroOutlines.Add(outline);
+
+                var portraitFrame = UiFactory.CreateImage("PortraitFrame", card.transform, Theme.Rounded, UiPalette.Border);
+                UiFactory.Place(portraitFrame.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -12f), new Vector2(160f, 160f));
+                var portrait = UiFactory.CreateImage("Portrait", portraitFrame.transform, null, UiPalette.Panel);
+                UiFactory.Stretch(portrait.rectTransform, 3, 3, 3, 3);
+                var question = UiFactory.CreateText(Theme, "Initial", portraitFrame.transform, "?", 64f,
+                    UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
+                UiFactory.Stretch(question.rectTransform);
+
+                var nameText = UiFactory.CreateText(Theme, "Name", card.transform, Loc.T("RANDOM"), 21f,
+                    UiPalette.TextMain, TextAlignmentOptions.Center, FontStyles.Bold);
+                UiFactory.Place(nameText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(heroCardW - 20f, 26f));
+
+                var archetype = UiFactory.CreateText(Theme, "Archetype", card.transform, "???", 15f,
+                    UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Italic);
+                UiFactory.Place(archetype.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -208f), new Vector2(heroCardW - 20f, 20f));
+
+                var details = UiFactory.CreateText(Theme, "Details", card.transform,
+                    Loc.T("A random hero is assigned when the game starts — never one another player already has."), 13f,
+                    UiPalette.TextDim, TextAlignmentOptions.TopLeft);
+                UiFactory.Place(details.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -234f), new Vector2(heroCardW - 28f, 224f));
+                details.enableAutoSizing = true;
+                details.fontSizeMin = 10f;
+                details.fontSizeMax = 14f;
+
+                var button = card.gameObject.AddComponent<Button>();
+                button.targetGraphic = card;
+                button.transition = Selectable.Transition.None;
                 button.onClick.AddListener(() => SelectHero(index));
             }
 
@@ -463,20 +522,49 @@ namespace Pascension.Game.UI
         private void SelectHero(int index)
         {
             _selectedHero = index;
+            // No-duplicate rule: a bot holding the newly picked hero moves to RANDOM.
+            if (index < _heroes.Count)
+                for (int b = 0; b < _botHero.Length; b++)
+                    if (_botHero[b] == index)
+                        _botHero[b] = _heroes.Count;
             for (int i = 0; i < _heroOutlines.Count; i++)
                 _heroOutlines[i].enabled = i == index;
+            RefreshSoloControls();
         }
 
         private void SetBotCount(int count)
         {
             _botCount = Mathf.Clamp(count, 1, 3);
+            // A newly revealed row may hold a hero someone picked meanwhile.
+            for (int b = 0; b < _botCount; b++)
+                if (_botHero[b] < _heroes.Count && HeroIndexTaken(_botHero[b], b))
+                    _botHero[b] = _heroes.Count;
             RefreshSoloControls();
         }
 
         private void CycleBotHero(int bot)
         {
-            _botHero[bot] = (_botHero[bot] + 1) % _heroes.Count;
+            int total = _heroes.Count + 1; // roster + RANDOM
+            for (int step = 1; step <= total; step++)
+            {
+                int candidate = (_botHero[bot] + step) % total;
+                if (candidate == _heroes.Count || !HeroIndexTaken(candidate, bot))
+                {
+                    _botHero[bot] = candidate;
+                    break;
+                }
+            }
             RefreshSoloControls();
+        }
+
+        /// <summary>Is this roster index held by the player or another active bot row?</summary>
+        private bool HeroIndexTaken(int heroIndex, int exceptBot)
+        {
+            if (_selectedHero == heroIndex) return true;
+            for (int b = 0; b < _botCount; b++)
+                if (b != exceptBot && _botHero[b] == heroIndex)
+                    return true;
+            return false;
         }
 
         private void CycleBotKind(int bot)
@@ -492,19 +580,34 @@ namespace Pascension.Game.UI
             for (int b = 0; b < _botRows.Count; b++)
             {
                 _botRows[b].gameObject.SetActive(b < _botCount);
-                _botHeroLabels[b].text = "Hero: " + _heroes[_botHero[b]].Name;
+                _botHeroLabels[b].text = "Hero: " + HeroPickName(_botHero[b]);
                 _botKindLabels[b].text = "AI: " + _botKind[b];
             }
         }
 
+        private string HeroPickName(int index) =>
+            index >= _heroes.Count ? Loc.T("RANDOM") : _heroes[index].Name;
+
+        private string HeroPickId(int index) =>
+            index >= _heroes.Count ? CharacterPick.RandomId : _heroes[index].Id;
+
         private void StartSolo()
         {
-            MatchSetup.PlayerHeroId = _heroes[_selectedHero].Id;
+            MatchSetup.Seed = (ulong)DateTime.UtcNow.Ticks;
+
+            // RANDOM picks resolve here (seeded), each to a hero nobody else has.
+            var roster = new List<string>(_heroes.Count);
+            foreach (var hero in _heroes) roster.Add(hero.Id);
+            var picks = new List<string> { HeroPickId(_selectedHero) };
+            for (int b = 0; b < _botCount; b++)
+                picks.Add(HeroPickId(_botHero[b]));
+            var resolved = CharacterPick.ResolveRandoms(picks, roster, MatchSetup.Seed);
+
+            MatchSetup.PlayerHeroId = resolved[0];
             MatchSetup.PlayerName = "You";
             MatchSetup.Opponents = new List<OpponentSetup>();
             for (int b = 0; b < _botCount; b++)
-                MatchSetup.Opponents.Add(new OpponentSetup(_heroes[_botHero[b]].Id, _botKind[b]));
-            MatchSetup.Seed = (ulong)DateTime.UtcNow.Ticks;
+                MatchSetup.Opponents.Add(new OpponentSetup(resolved[b + 1], _botKind[b]));
             MatchSetup.Configured = true;
             SceneFlow.LoadGame();
         }

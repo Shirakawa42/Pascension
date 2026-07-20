@@ -64,16 +64,27 @@ namespace Pascension.Game.Soi
                 });
             }
 
-            var config = module.BuildConfig(MatchSetup.Seed, specs, MatchSetup.DlcFlags);
+            // Random first player: seat 0 always starts, so shuffle who sits where —
+            // the Mastery stagger is keyed by seat index and follows automatically.
+            var order = new List<int>();
+            for (int i = 0; i < specs.Count; i++) order.Add(i);
+            new Pascension.Engine.Core.DeterministicRng(MatchSetup.Seed, sequence: 131UL).Shuffle(order);
+            var seated = new List<PlayerSpec>();
+            foreach (int o in order) seated.Add(specs[o]);
+            int humanSeat = order.IndexOf(0);
+
+            var config = module.BuildConfig(MatchSetup.Seed, seated, MatchSetup.DlcFlags);
             var adapter = module.CreateEngine(config);
 
-            Host = new GameHost(adapter, specs.Count, module.ResponseTimeoutOf(config));
-            Session = new LocalSession(Host, 0);
+            Host = new GameHost(adapter, seated.Count, module.ResponseTimeoutOf(config));
+            Session = new LocalSession(Host, humanSeat);
             Host.AttachSeat(Session, isHuman: true);
 
-            for (int i = 1; i < specs.Count; i++)
+            for (int i = 0; i < seated.Count; i++)
             {
-                ulong botSeed = MatchSetup.Seed ^ ((ulong)i * 0x9E3779B97F4A7C15UL);
+                if (i == humanSeat) continue;
+                // (i + 1): a bot in seat 0 must never share the engine's own seed.
+                ulong botSeed = MatchSetup.Seed ^ (((ulong)i + 1) * 0x9E3779B97F4A7C15UL);
                 var seat = new BotSeat(i, module.CreateBot("heuristic", botSeed, adapter), BotThinkDelay);
                 seat.Bind(Host);
                 Host.AttachSeat(seat, isHuman: false);
