@@ -128,6 +128,80 @@ namespace Pascension.Engine.Tests
             Assert.AreEqual(expected, UpdateSwapScripts.FindAppBundleRoot(dataPath));
         }
 
+        // ------------------------------------------------------------ translocation
+
+        private const string TransApp =
+            "/private/var/folders/y9/f44t3_k11nld1g60xxxrk3p00000gn/T/AppTranslocation/25B790BB-0BDE-44C3-8E4E-2C8AD06B1D0B/d/pascension.app";
+
+        private static string MountLine(
+            string source = "/Users/p/Downloads/pascension.app",
+            string mountPoint = "/private/var/folders/y9/f44t3_k11nld1g60xxxrk3p00000gn/T/AppTranslocation/25B790BB-0BDE-44C3-8E4E-2C8AD06B1D0B",
+            string fs = "nullfs") =>
+            source + " on " + mountPoint + " (" + fs + ", local, nodev, nosuid, read-only, nobrowse, mounted by p)";
+
+        private static string MountOutput(params string[] extraLines)
+        {
+            var lines = new System.Collections.Generic.List<string>
+            {
+                "/dev/disk3s1s1 on / (apfs, sealed, local, read-only, journaled)",
+                "devfs on /dev (devfs, local, nobrowse)",
+                "/dev/disk3s5 on /System/Volumes/Data (apfs, local, journaled, nobrowse)",
+            };
+            lines.AddRange(extraLines);
+            return string.Join("\n", lines);
+        }
+
+        [Test]
+        public void Translocation_Detects()
+        {
+            Assert.IsTrue(TranslocationResolver.IsTranslocated(TransApp));
+            Assert.IsFalse(TranslocationResolver.IsTranslocated("/Applications/pascension.app"));
+            Assert.IsFalse(TranslocationResolver.IsTranslocated(null));
+        }
+
+        [Test]
+        public void Translocation_ResolvesOriginalFromMountTable()
+        {
+            Assert.AreEqual("/Users/p/Downloads/pascension.app",
+                TranslocationResolver.ResolveOriginalAppPath(TransApp, MountOutput(MountLine())));
+        }
+
+        [Test]
+        public void Translocation_ResolvesWithSpacesInOriginalPath()
+        {
+            Assert.AreEqual("/Users/p/My Games on disk/pascension.app",
+                TranslocationResolver.ResolveOriginalAppPath(TransApp,
+                    MountOutput(MountLine(source: "/Users/p/My Games on disk/pascension.app"))));
+        }
+
+        [Test]
+        public void Translocation_BridgesVarPrivateVarSpelling()
+        {
+            // Unity reports /var/… (the symlink); the kernel mounts under /private/var/…
+            string varApp = TransApp.Substring("/private".Length);
+            Assert.AreEqual("/Users/p/Downloads/pascension.app",
+                TranslocationResolver.ResolveOriginalAppPath(varApp, MountOutput(MountLine())));
+        }
+
+        [Test]
+        public void Translocation_RejectsWhenMountTableDisagrees()
+        {
+            // no matching mount line at all
+            Assert.IsNull(TranslocationResolver.ResolveOriginalAppPath(TransApp, MountOutput()));
+            // right mount point, wrong filesystem type
+            Assert.IsNull(TranslocationResolver.ResolveOriginalAppPath(TransApp,
+                MountOutput(MountLine(fs: "apfs"))));
+            // source basename doesn't match the running bundle (stale/foreign mount)
+            Assert.IsNull(TranslocationResolver.ResolveOriginalAppPath(TransApp,
+                MountOutput(MountLine(source: "/Users/p/Downloads/other.app"))));
+            // not translocated → nothing to resolve
+            Assert.IsNull(TranslocationResolver.ResolveOriginalAppPath(
+                "/Applications/pascension.app", MountOutput(MountLine())));
+            // translocated path missing the /d/<name> shape
+            Assert.IsNull(TranslocationResolver.ResolveOriginalAppPath(
+                "/private/var/folders/y9/x/T/AppTranslocation/UUID-ONLY", MountOutput(MountLine())));
+        }
+
         [Test]
         public void ResolveStagedRoot_Works()
         {

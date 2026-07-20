@@ -52,7 +52,8 @@ namespace Pascension.Game.Update
         }
 
         /// <summary>Can this install self-swap? False (→ OPEN DOWNLOAD PAGE fallback)
-        /// when the install dir isn't writable or the macOS app is translocated.</summary>
+        /// when the install dir isn't writable, or the macOS app is translocated and
+        /// the original bundle can't be recovered from the mount table.</summary>
         public static bool CanSelfInstall(out string installRoot)
         {
             installRoot = null;
@@ -60,7 +61,16 @@ namespace Pascension.Game.Update
             if (IsMac && !Application.isEditor)
             {
                 string app = UpdateSwapScripts.FindAppBundleRoot(Application.dataPath);
-                if (app == null || app.Contains("/AppTranslocation/")) return false;
+                if (app == null) return false;
+                if (TranslocationResolver.IsTranslocated(app))
+                {
+                    // Gatekeeper runs quarantined apps from a read-only nullfs mount;
+                    // the mount's source is the real bundle — swap that one instead of
+                    // giving up. The swap script's xattr -dr then ends translocation
+                    // for good on the replaced app.
+                    app = ResolveTranslocatedOriginal(app);
+                    if (app == null || TranslocationResolver.IsTranslocated(app)) return false;
+                }
                 installRoot = app;
                 probeDir = Path.GetDirectoryName(app);
             }
@@ -79,6 +89,30 @@ namespace Pascension.Game.Update
             catch
             {
                 return false;
+            }
+        }
+
+        /// <summary>Original .app path of a translocated bundle via the mount table
+        /// (/sbin/mount + TranslocationResolver); null when it can't be resolved.</summary>
+        private static string ResolveTranslocatedOriginal(string translocatedApp)
+        {
+            try
+            {
+                var info = new ProcessStartInfo
+                {
+                    FileName = "/sbin/mount",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                };
+                using var proc = Process.Start(info);
+                string output = proc.StandardOutput.ReadToEnd();
+                proc.WaitForExit();
+                return TranslocationResolver.ResolveOriginalAppPath(translocatedApp, output);
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -221,8 +255,11 @@ namespace Pascension.Game.Update
             ProcessStartInfo start;
             if (IsMac)
             {
-                string installedApp = UpdateSwapScripts.FindAppBundleRoot(Application.dataPath)
-                    ?? throw new UpdateFailedException("Automatic update unavailable — opening the download page.");
+                // Re-resolve (and re-probe writability) right before the swap: when
+                // translocated this returns the ORIGINAL bundle, never the read-only
+                // nullfs copy Application.dataPath points into.
+                if (!CanSelfInstall(out string installedApp))
+                    throw new UpdateFailedException("Automatic update unavailable — opening the download page.");
                 string stagedApp = FindStagedApp(stagedRoot)
                     ?? throw new UpdateFailedException("Update failed — see the log.",
                         new Exception("no .app found in the staged update"));

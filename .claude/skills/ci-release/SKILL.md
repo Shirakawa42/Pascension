@@ -24,6 +24,7 @@ Secrets (set once): `UNITY_LICENSE` (.ulf XML) / `UNITY_EMAIL` / `UNITY_PASSWORD
 - Pure logic in `Assets/Scripts/Core/Update/{VersionCompare,UpdateManifest,UpdateSwapScripts}` (headless-tested — `UpdateLogicTests`); Unity side in `Assets/Scripts/Game/Update/{UpdateChecker,UpdateInstaller,UpdateMenuControl}`.
 - Menu shows a version label (bottom-left) and, when `latest.json` is newer than Application.version, a gold UPDATE button above the language toggle (Root-parented widgets, MainMenu.Start hook).
 - Click → UWR streams to `persistentDataPath/updates/` → sha256 verify (manifest re-fetched pre-download so a stale hash never mismatches) → extract → swap script in %TEMP% (waits for our PID; Windows robocopy /E **no /PURGE**; mac .app mv-with-rollback + `xattr -dr`; relaunches; self-deletes) → quit.
+- **macOS translocation (2026-07-20)**: Gatekeeper runs a quarantined browser-downloaded .app from a read-only nullfs mount (`/AppTranslocation/`) — the norm for a fresh mac install. `CanSelfInstall` now recovers the REAL bundle from the mount table (`Core/Update/TranslocationResolver` parses `/sbin/mount`: the nullfs source IS the original path — same data Apple's private SecTranslocate SPI reads) and the swap targets it; its `xattr -dr` ends translocation for good. OPEN DOWNLOAD PAGE remains the fallback when resolution or the writability probe fails. The updater's own downloads are never quarantined (plain POSIX writes, no LSFileQuarantineEnabled), so a self-updated app never re-triggers Gatekeeper.
 - Editor = dry-run to staging ("editor — swap skipped"). Check is once per app run and silent on ANY failure. `-updateurl <url>` overrides the manifest URL for testing.
 - Verified live: fake-server loop in the editor (fetch→button→download→verify→extract) AND the generated .cmd standalone on real cmd.exe (French locale; no-purge + self-delete observed).
 - Multiplayer version gate (mismatch rejected at connection approval) — see the networking skill.
@@ -36,5 +37,5 @@ Secrets (set once): `UNITY_LICENSE` (.ulf XML) / `UNITY_EMAIL` / `UNITY_PASSWORD
 - Run 3 green end-to-end; downloaded zip hash-matched latest.json; installed build logged "installed v1.0.3, latest v1.0.3 → UpToDate" against the real GitHub manifest.
 
 ## Still unverified
-- The macOS artifact on real Apple hardware.
+- The macOS artifact on real Apple hardware — including the translocated-swap path (`mv`-ing the source dir of a live nullfs mount right after the game quits; the swap script rolls back on failure).
 - A real button-click self-update against a newer release (any next push to main makes installed copies show the button).
