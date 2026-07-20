@@ -7,7 +7,7 @@ using static Pascension.Content.CardBuilder;
 
 namespace Pascension.Content.Sets
 {
-    /// <summary>Elite pile (32 cards, level ≥8): see the cards skill for copies per card.</summary>
+    /// <summary>Elite pile (32 cards, level ≥8): see the pascension-cards skill for copies per card.</summary>
     public static class EliteCards
     {
         public static void Register()

@@ -43,7 +43,7 @@ namespace Pascension.Engine.Cards
         public List<IStaticAbility> StaticAbilities = new();
 
         public string RulesText = "";
-        /// <summary>Subject part of the Anima prompt — see the card-art skill.</summary>
+        /// <summary>Subject part of the Anima prompt — see the art-pipeline skill.</summary>
         public string ArtPrompt = "";
 
         public bool IsMonster => Type == CardType.Monster;

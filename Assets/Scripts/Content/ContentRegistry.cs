@@ -7,7 +7,7 @@ namespace Pascension.Content
 {
     /// <summary>
     /// Registers all card and hero definitions, and builds the standard game configuration
-    /// (pile compositions live here and are mirrored in .claude/skills/cards/SKILL.md).
+    /// (pile compositions live here and are mirrored in .claude/skills/pascension-cards/SKILL.md).
     /// </summary>
     public static class ContentRegistry
     {

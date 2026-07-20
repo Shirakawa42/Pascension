@@ -6,7 +6,7 @@ using static Pascension.Content.CardBuilder;
 
 namespace Pascension.Content.Sets
 {
-    /// <summary>Basic pile (36 cards): see the cards skill for copies per card.</summary>
+    /// <summary>Basic pile (36 cards): see the pascension-cards skill for copies per card.</summary>
     public static class BasicCards
     {
         public static void Register()

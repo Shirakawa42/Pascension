@@ -6,7 +6,7 @@ using static Pascension.Content.CardBuilder;
 
 namespace Pascension.Content.Sets
 {
-    /// <summary>Advanced pile (48 cards, level ≥4): see the cards skill for copies per card.</summary>
+    /// <summary>Advanced pile (48 cards, level ≥4): see the pascension-cards skill for copies per card.</summary>
     public static class AdvancedCards
     {
         public static void Register()

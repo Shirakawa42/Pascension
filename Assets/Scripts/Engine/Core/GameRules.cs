@@ -1,6 +1,6 @@
 namespace Pascension.Engine.Core
 {
-    /// <summary>Tunable rule constants. Balance knobs live here first — see the playtesting skill.</summary>
+    /// <summary>Tunable rule constants. Balance knobs live here first — see the pascension-balance skill.</summary>
     public sealed class GameRules
     {
         public int HandSize = 5;

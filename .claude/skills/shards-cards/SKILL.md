@@ -9,7 +9,9 @@ Personal fan re-implementation of the tabletop game (Stone Blade Entertainment).
 mechanics compiled from the official public rulebooks + photo-verified card research
 (reports referenced from `Tools/ShardsData/rules-notes.md`); every rules text in the code
 is OUR functional paraphrase — never copy printed card prose or flavor text. Official
-art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored).
+art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored —
+see the art-pipeline skill). Engine architecture (pump, end-turn chain, the three
+pump gotchas, glow hints): see the shards-engine skill.
 
 ## Where things live
 
@@ -70,6 +72,11 @@ art, if imported, is for PERSONAL USE ONLY (M7 import window; images git-ignored
 4. Regenerate `Tools/ShardsData/cards-table.md` (command above).
 5. `cd Tools/EngineVerify && dotnet test` — all green.
 6. Update this file's rulings list if a new ruling was encoded.
+7. **Add/update the French entry** in `Assets/Scripts/Game/Soi/SoiFrenchCards.cs`
+   (official IELLO terminology — see the localization skill). A new card without a
+   FR name/text is a bug.
+8. If the card needs art: the table regen (step 4) also exports its ArtPrompt to
+   `Tools/ShardsData/art-prompts.json`; generate original art via the art-pipeline skill.
 
 ## Encoded rulings (each pinned by a test in ShardsRulingsTests / ShardsEngineTests)
 

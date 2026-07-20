@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Headless mirror of the Unity asmdefs: compiles Engine+Content+Bots sources and runs
-       the same NUnit tests without the Unity editor. See the playtesting skill. -->
+       the same NUnit tests without the Unity editor. See the pascension-balance skill. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>9.0</LangVersion>

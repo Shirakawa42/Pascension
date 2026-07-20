@@ -1,6 +1,6 @@
-﻿---
-name: cards
-description: The Pascension card registry — every card's exact rules text, cost, tier, copies, art prompt, and implementation status. Use when adding, changing, removing, or looking up any card, hero, or the boss. MUST be updated on every card change.
+---
+name: pascension-cards
+description: The Pascension card registry — every card's exact rules text, cost, tier, copies, art prompt, and implementation status. Use when adding, changing, removing, or looking up any Pascension card, hero, or the boss. MUST be updated on every Pascension card change.
 ---
 
 # Pascension Card Registry
@@ -8,10 +8,10 @@ description: The Pascension card registry — every card's exact rules text, cos
 ⚠️ **This file is the single source of truth for the card list. Whenever a card is added, changed, or removed — in code, in balance numbers, or in rules text — update this file in the same change.** Status legend: `planned` → `coded` → `tested` → `art` (has generated art).
 
 ## How to add a card (checklist)
-1. If the effect can't be expressed with existing effects in `Assets/Scripts/Engine/Effects/Common/`, add a new `IEffect` class in `Assets/Scripts/Content/Effects/` (~30 lines, iterator style; see rules-engine skill).
-2. Add one builder entry in the matching set file: `Assets/Scripts/Content/Sets/{DefaultCards,BasicCards,AdvancedCards,EliteCards,Boss}.cs` — include `.Art("…")` prompt (see card-art skill for prompt style).
+1. If the effect can't be expressed with existing effects in `Assets/Scripts/Engine/Effects/Common/`, add a new `IEffect` class in `Assets/Scripts/Content/Effects/` (~30 lines, iterator style; see pascension-engine skill).
+2. Add one builder entry in the matching set file: `Assets/Scripts/Content/Sets/{DefaultCards,BasicCards,AdvancedCards,EliteCards,Boss}.cs` — include `.Art("…")` prompt (see art-pipeline skill for prompt style).
 3. Add/extend a test in `Assets/Tests/EngineTests/` exercising the new effect.
-4. Run the art tool (Window > Pascension > Card Art Generator) — it detects the missing PNG by card id.
+4. Run the art tool (`Pascension/Card Art Generator`) — it detects the missing PNG by card id.
 5. **Update this file** (row + status).
 
 Card ids are `snake_case` of the English name (e.g. `random_bullshit_go`). Art files: `Assets/Art/Cards/{id}.png`.

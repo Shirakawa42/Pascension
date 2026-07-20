@@ -13,7 +13,7 @@ namespace Pascension.Editor.ArtPipeline
     /// synchronous calls inside a progress-bar loop are fine here). Loads the Anima
     /// API-format workflow template, patches prompt/size/seed/output nodes, submits,
     /// polls history, downloads the PNG into Assets and imports it.
-    /// See .claude/skills/card-art/SKILL.md for the pipeline contract.
+    /// See .claude/skills/art-pipeline/SKILL.md for the pipeline contract.
     /// </summary>
     public sealed class ComfyUiClient : IDisposable
     {
@@ -21,7 +21,7 @@ namespace Pascension.Editor.ArtPipeline
         public const string TemplatePath = "Assets/Scripts/Editor/ArtPipeline/anima_card_workflow_api.json";
         public const string LaunchHint = "ComfyUI is not running. Launch it with F:\\comfyuiauto\\Windows_Run_GPU_venv_p312_cu130.bat";
 
-        // Prompting standards — copied EXACTLY from the card-art skill.
+        // Prompting standards — copied EXACTLY from the art-pipeline skill.
         public const string StylePrefix =
             "masterpiece, best quality, score_7, safe, year 2025, newest, highres, " +
             "painterly, fantasy, detailed illustration, dramatic lighting, trading card game art, ";

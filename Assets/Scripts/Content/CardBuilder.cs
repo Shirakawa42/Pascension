@@ -9,7 +9,7 @@ namespace Pascension.Content
 {
     /// <summary>
     /// Fluent card authoring. Every card is one builder chain ending in Register().
-    /// See .claude/skills/cards/SKILL.md for the registry and the add-a-card checklist.
+    /// See .claude/skills/pascension-cards/SKILL.md for the registry and the add-a-card checklist.
     /// </summary>
     public sealed class CardBuilder
     {
@@ -56,7 +56,7 @@ namespace Pascension.Content
         public CardBuilder ExilesAfterResolve() { _def.ExileAfterResolve = true; return this; }
 
         /// <summary>Mana-ability rule: the card's ONLY effect is gaining AP — it bypasses the
-        /// stack and cannot be responded to. See the cards skill for the qualifying list.</summary>
+        /// stack and cannot be responded to. See the pascension-cards skill for the qualifying list.</summary>
         public CardBuilder ManaAbility() { _def.IsManaAbility = true; return this; }
 
         public CardBuilder TapAbility(string description, IEffect effect, TargetSpec target = null, bool manaAbility = false)
