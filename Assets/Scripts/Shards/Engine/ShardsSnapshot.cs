@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Pascension.Core;
+using Pascension.Engine.Core;
 
 namespace Shards.Engine
 {
@@ -163,11 +164,20 @@ namespace Shards.Engine
                 effect != null && ShardsGlowProbe.ConditionLit(effect,
                     new ShardsContext { Engine = engine, ControllerIndex = controllerIndex, Source = source });
 
+            // "Affordable" only exists while the viewer can actually still buy: their
+            // own turn, holding PRIORITY. The moment END TURN is submitted the pending
+            // input flips to the end-phase decisions and the halos die with it — even
+            // though gems are only reset later, at cleanup.
+            var pendingInput = engine.PendingInput;
+            bool viewerCanBuy = !state.GameOver && state.TurnPlayerIndex == viewerIndex &&
+                                pendingInput != null && pendingInput.PlayerIndex == viewerIndex &&
+                                pendingInput.Kind == PendingInputKind.Priority;
+
             for (int s = 0; s < state.CenterRow.Length; s++)
             {
                 var card = state.CenterRow[s];
                 if (card == null) continue;
-                if (viewer.Gems >= engine.EffectiveCost(viewer, card.Def))
+                if (viewerCanBuy && viewer.Gems >= engine.EffectiveCost(viewer, card.Def))
                     snapshot.BuyableSlots.Add(s);
                 if (Lit(card.Def.PlayEffect, viewerIndex, card))
                     snapshot.ConditionGlowIds.Add(card.InstanceId);

@@ -124,6 +124,8 @@ Plan: `C:\Users\Shira\.claude\plans\this-is-an-empty-quirky-sunbeam.md` (approve
 - **Hover marker for everyone**: the active player now sees their own marker too (local echo in `BroadcastLocalHover`, works solo — no bridge needed).
 - **Full game log**: PlayHistoryBar keeps EVERY entry in an unbounded `_all` record (bar shows 10); the small ALL button (top of RECENT) opens a scrollable GAME LOG window (dimmer-dismiss + X), rows share `BuildRow` with the bar; `AttachAffected` searches `_all`, so attaches land even after entries scroll off.
 - **Log hover spotlight**: hovering a BAR entry raises a grey mask (raycast-transparent) over everything, then the bar above it; preview + affected panel raise themselves above both (order matters in `HistoryHover.OnPointerEnter`: spotlight FIRST, then RaiseHover). Container's sibling index is backed up/restored on exit; window rows suppress the spotlight (own dimmer).
+- **Hover halo is a third RING** (not an overlay): `CardView.HoverGlow` + `SetHoverGlow` — stacks outside the other two (`ApplyGlowLayout`: each active ring one 5px step out — 4/9/14 with all three lit). `SoiGameScreen.LateUpdate` re-resolves the hovered instance to its current view each frame (`_hoverGlowView` cleared when the target changes/dies).
+- **Affordable halos die INSTANTLY on END TURN**: engine only fills `BuyableSlots` while the viewer holds PRIORITY on their own turn (pinned by `SnapshotBuyableSlots_OnlyWhileTheViewerHoldsPriority` — gems persist until cleanup, the halo must not), the UI applies outer rings LIVE on every snapshot (RefreshHandLive), and the END TURN click clears them optimistically before the submit (no network-round-trip linger).
 
 ## CI/CD + in-game self-update (2026-07-19)
 

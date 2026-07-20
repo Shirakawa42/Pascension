@@ -20,6 +20,13 @@ namespace Pascension.Game.View
             view.Theme = theme;
             view.Group = UiFactory.AddGroup(root.gameObject);
 
+            // Hearthstone hover halo (the pointing player's color) — the OUTERMOST of
+            // the three rings, so it is created first (drawn behind the others).
+            var hoverGlow = UiFactory.CreateImage("HoverGlow", root, theme.Rounded, UiPalette.WithAlpha(UiPalette.Gold, 0.6f));
+            UiFactory.Stretch(hoverGlow.rectTransform, -14, -14, -14, -14);
+            hoverGlow.gameObject.SetActive(false);
+            view.HoverGlow = hoverGlow;
+
             // Second halo — an independent channel (e.g. "affordable" pulse on river
             // slots) that stacks OUTSIDE the inner glow when both are lit, and hugs
             // the card when it shows alone (CardView.ApplyGlowLayout repositions it).

@@ -261,6 +261,31 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void SnapshotBuyableSlots_OnlyWhileTheViewerHoldsPriority()
+        {
+            var engine = NewGame(seed: 41);
+            var p0 = engine.State.Players[0];
+            var p1 = engine.State.Players[1];
+            p0.Gems = 99;
+            p1.Gems = 99;
+
+            Assert.IsNotEmpty(ShardsSnapshotBuilder.Build(engine, 0).BuyableSlots,
+                "the turn player with priority sees affordable slots");
+            Assert.IsEmpty(ShardsSnapshotBuilder.Build(engine, 1).BuyableSlots,
+                "gems or not, it isn't P1's turn — nothing is buyable");
+
+            // Submitting END TURN parks an end-phase decision (split): the affordable
+            // halos must die instantly even though gems only reset at cleanup.
+            p1.Hand.RemoveAll(_ => true);
+            p1.Champions.Add(new ShardsCard { InstanceId = 9300, DefId = "guard_champ", Owner = 1, Zone = ShardsZone.Champions });
+            p0.Power = 2;
+            MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+            Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind, "split parked");
+            Assert.IsEmpty(ShardsSnapshotBuilder.Build(engine, 0).BuyableSlots,
+                "end phase — buying is over, gems notwithstanding");
+        }
+
+        [Test]
         public void Elimination_LastSurvivorWins()
         {
             var engine = NewGame(players: 3, seed: 29);

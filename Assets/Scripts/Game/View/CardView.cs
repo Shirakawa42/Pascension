@@ -24,6 +24,7 @@ namespace Pascension.Game.View
         public UiTheme Theme;
         public Image Glow;
         public Image OuterGlow;
+        public Image HoverGlow;
         public Image Frame;
         public Image Art;
         public Image TopBar;
@@ -324,14 +325,47 @@ namespace Pascension.Game.View
             ApplyGlowLayout();
         }
 
-        /// <summary>Halo stacking: the outer ring sits OUTSIDE the inner glow only when
-        /// both are lit; alone it hugs the card at the inner ring's distance.</summary>
+        /// <summary>Hearthstone hover halo (the color of whoever is pointing at the
+        /// card) — an independent third ring stacking OUTSIDE the other two.</summary>
+        public void SetHoverGlow(bool on) => SetHoverGlow(on, UiPalette.Gold);
+
+        public void SetHoverGlow(bool on, Color color)
+        {
+            if (HoverGlow == null) return;
+            HoverGlow.gameObject.SetActive(on);
+            if (on) HoverGlow.color = UiPalette.WithAlpha(color, 0.6f);
+            ApplyGlowLayout();
+        }
+
+        public void SetHoverGlowAlpha(float alpha)
+        {
+            if (HoverGlow != null && HoverGlow.gameObject.activeSelf)
+            {
+                var c = HoverGlow.color;
+                HoverGlow.color = new Color(c.r, c.g, c.b, alpha);
+            }
+        }
+
+        /// <summary>Halo stacking: each active ring sits one 5px step outside the ones
+        /// beneath it; unused slots collapse so the visible rings always hug the card.
+        /// Order inward→out: Glow (condition/selection), OuterGlow (affordable),
+        /// HoverGlow (pointing player).</summary>
         private void ApplyGlowLayout()
         {
-            if (OuterGlow == null) return;
-            float extent = Glow != null && Glow.gameObject.activeSelf ? 9f : 4f;
-            OuterGlow.rectTransform.offsetMin = new Vector2(-extent, -extent);
-            OuterGlow.rectTransform.offsetMax = new Vector2(extent, extent);
+            bool innerOn = Glow != null && Glow.gameObject.activeSelf;
+            bool outerOn = OuterGlow != null && OuterGlow.gameObject.activeSelf;
+            if (OuterGlow != null)
+            {
+                float extent = innerOn ? 9f : 4f;
+                OuterGlow.rectTransform.offsetMin = new Vector2(-extent, -extent);
+                OuterGlow.rectTransform.offsetMax = new Vector2(extent, extent);
+            }
+            if (HoverGlow != null)
+            {
+                float extent = 4f + (innerOn ? 5f : 0f) + (outerOn ? 5f : 0f);
+                HoverGlow.rectTransform.offsetMin = new Vector2(-extent, -extent);
+                HoverGlow.rectTransform.offsetMax = new Vector2(extent, extent);
+            }
         }
 
         public void SetOuterGlowAlpha(float alpha)

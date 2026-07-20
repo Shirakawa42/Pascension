@@ -84,11 +84,10 @@ namespace Pascension.Game.Soi
         private readonly HashSet<int> _killable = new HashSet<int>();
         private readonly HashSet<int> _buyable = new HashSet<int>();
 
-        // Remote hover (Hearthstone-style "what is the active player pointing at").
+        // Hover halo (Hearthstone-style "what is the active player pointing at").
         private int _lastHoverSent = -1;
         private int _remoteHoverSeat = -1, _remoteHoverId = -1;
-        private RectTransform _remoteHoverMark;
-        private Image _remoteHoverImg;
+        private CardView _hoverGlowView; // view currently carrying the hover halo
 
         // Kill attribution for the play log: a champion destroyed right after taking
         // power damage was ATTACKED (own log entry only); destroyed without a preceding
@@ -237,7 +236,13 @@ namespace Pascension.Game.Soi
             _endTurn = UiFactory.CreateButton(Theme, "EndTurn", root, UI.Loc.T("END TURN"), 21f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0f), new Vector2(-108f, 62f), new Vector2(186f, 58f));
-            _endTurn.onClick.AddListener(() => Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex }));
+            _endTurn.onClick.AddListener(() =>
+            {
+                // Optimistic: buying is over the moment END TURN is clicked — the
+                // affordable halos must not linger for the snapshot round-trip.
+                ClearAffordableGlows();
+                Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex });
+            });
             _endTurnLabel = UiFactory.ButtonLabel(_endTurn);
             _relics = UiFactory.CreateButton(Theme, "Relics", root, UI.Loc.T("RECRUIT RELIC"), 14f);
             UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0f), new Vector2(-306f, 62f), new Vector2(186f, 58f));
@@ -253,15 +258,6 @@ namespace Pascension.Game.Soi
             _hand.Container = _handRect;
             _hand.PlayRequested += OnHandPlayRequested;
             _hand.GlowResolver = HandGlowFor;
-
-            // Remote-hover marker: a soft player-colored overlay repositioned in
-            // LateUpdate over whatever public card the active player is pointing at.
-            // Created BELOW the presentation layers so animations/modals draw over it.
-            _remoteHoverMark = UiFactory.CreateRect("RemoteHover", root);
-            _remoteHoverImg = UiFactory.CreateImage("Fill", _remoteHoverMark, Theme.Rounded,
-                UiPalette.WithAlpha(UiPalette.Gold, 0.3f), raycast: false);
-            UiFactory.Stretch(_remoteHoverImg.rectTransform);
-            _remoteHoverMark.gameObject.SetActive(false);
 
             // Presentation layers (z: flights below showcase below bursts/floats).
             _flights = Layer<FlightLayer>("Flights", root, out var flightsRect);
@@ -709,7 +705,22 @@ namespace Pascension.Game.Soi
                 null, banishedMine.ToString());
             _centerDeckPile.Render(_snap.CenterDeckCount, null);
 
+            // Affordable halos track every snapshot LIVE — the engine clears
+            // BuyableSlots the instant the viewer loses priority (end turn), and the
+            // ring must die with it, not at animation drain.
+            for (int s = 0; s < _slots.Length; s++)
+                if (_slots[s] != null && _slots[s].gameObject.activeSelf)
+                    _slots[s].SetOuterGlow(_buyable.Contains(s));
+
             RefreshControls(); // live turn/button gating (also runs on drain via RefreshInteractivity)
+        }
+
+        private void ClearAffordableGlows()
+        {
+            if (_slots == null) return;
+            foreach (var slot in _slots)
+                if (slot != null)
+                    slot.SetOuterGlow(false);
         }
 
         // ------------------------------------------------------------------ full refresh (on drain)
@@ -1530,31 +1541,25 @@ namespace Pascension.Game.Soi
             _remoteHoverId = instanceId;
         }
 
-        /// <summary>Marker follow pass: board views are destroyed/rebuilt on every full
-        /// refresh, so resolve the hovered instance to its CURRENT view each frame.</summary>
+        /// <summary>Hover-halo follow pass: board views are destroyed/rebuilt on every
+        /// full refresh, so re-resolve the hovered instance to its CURRENT view each
+        /// frame and move the third halo ring along with it (it stacks outside the
+        /// condition/affordable rings — see CardView.ApplyGlowLayout).</summary>
         private void LateUpdate()
         {
-            if (_remoteHoverMark == null) return;
-            bool show = _remoteHoverId > 0 && _snap != null &&
-                        _remoteHoverSeat == _snap.TurnPlayerIndex &&
-                        _boardViews.TryGetValue(_remoteHoverId, out var view) &&
-                        view != null && view.gameObject.activeInHierarchy;
-            if (!show)
-            {
-                _remoteHoverMark.gameObject.SetActive(false);
-                return;
-            }
+            CardView target = null;
+            if (_remoteHoverId > 0 && _snap != null &&
+                _remoteHoverSeat == _snap.TurnPlayerIndex &&
+                _boardViews.TryGetValue(_remoteHoverId, out var view) &&
+                view != null && view.gameObject.activeInHierarchy)
+                target = view;
 
-            var target = _boardViews[_remoteHoverId];
-            _remoteHoverMark.gameObject.SetActive(true);
-            Vector2 local = UiRootRect.InverseTransformPoint(
-                target.Rect.TransformPoint(target.Rect.rect.center));
-            _remoteHoverMark.anchoredPosition = local;
-            float k = UiRootRect.lossyScale.x > 0f
-                ? target.Rect.lossyScale.x / UiRootRect.lossyScale.x : 1f;
-            _remoteHoverMark.sizeDelta = new Vector2(CardView.Width * k + 16f, CardView.Height * k + 16f);
-            float pulse = 0.28f + 0.18f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f));
-            _remoteHoverImg.color = UiPalette.WithAlpha(UiPalette.PlayerColor(_remoteHoverSeat), pulse);
+            if (_hoverGlowView != null && _hoverGlowView != target)
+                _hoverGlowView.SetHoverGlow(false);
+            _hoverGlowView = target;
+            if (target == null) return;
+            target.SetHoverGlow(true, UiPalette.PlayerColor(_remoteHoverSeat));
+            target.SetHoverGlowAlpha(0.4f + 0.25f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f)));
         }
 
         // ------------------------------------------------------------------ data helpers
