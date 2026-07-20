@@ -203,7 +203,14 @@ namespace Pascension.Net
         public void SetHeroRpc(string heroId, RpcParams rpcParams = default)
         {
             int slot = SlotOfClient(rpcParams.Receive.SenderClientId);
-            if (slot < 0 || !IsValidPick(heroId) || HeroTakenByOther(slot, heroId)) return;
+            if (slot < 0) return;
+            if (!IsValidPick(heroId) || HeroTakenByOther(slot, heroId))
+            {
+                // Lost a pick race: the sender computed this hero from a stale replica.
+                // Rebroadcast so its next click works from the authoritative state.
+                BroadcastState();
+                return;
+            }
             State.Slots[slot].HeroId = heroId;
             BroadcastState();
         }

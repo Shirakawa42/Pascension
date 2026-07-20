@@ -39,8 +39,11 @@ namespace Pascension.Core
             foreach (string candidate in MountPointSpellings(mountPoint))
             {
                 string source = NullfsSourceForMountPoint(mountOutput, candidate);
-                if (source != null && Basename(source) == name)
-                    return source;
+                if (source == null) continue;
+                // Trimmed: a trailing '/' would break Path.GetDirectoryName upstream.
+                string original = source.TrimEnd('/');
+                if (Basename(original) == name)
+                    return original;
             }
             return null;
         }

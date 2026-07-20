@@ -61,6 +61,18 @@ namespace Pascension.Game.UI
             return LocalizeInterpolations(title);
         }
 
+        /// <summary>Lobby start-validation errors arrive as English text with
+        /// interpolated player names; translate the known templates, pass through
+        /// the rest. Display-only (the strings never cross the wire).</summary>
+        public static string LobbyError(string error)
+        {
+            if (!French || string.IsNullOrEmpty(error)) return error;
+            foreach (var (pattern, replacement) in LocFrench.LobbyErrors)
+                if (pattern.IsMatch(error))
+                    return pattern.Replace(error, replacement);
+            return error;
+        }
+
         /// <summary>Fixed decision-option labels ("Reveal", "Banish", "Yes"…).</summary>
         public static string OptionLabel(string english)
         {

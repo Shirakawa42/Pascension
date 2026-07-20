@@ -326,7 +326,7 @@ namespace Pascension.Game.UI
             var lobby = LobbyNetBehaviour.Instance;
             if (lobby == null || !lobby.IsSpawned) return;
             string error = lobby.HostStartGame();
-            _lobbyStatus.text = error ?? Loc.T("Starting…");
+            _lobbyStatus.text = error != null ? Loc.LobbyError(error) : Loc.T("Starting…");
         }
 
         private void OnLeaveClicked()

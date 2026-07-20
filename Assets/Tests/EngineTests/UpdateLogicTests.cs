@@ -184,6 +184,36 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void Translocation_BridgesPrivateVarToVarSpelling()
+        {
+            // …and the reverse: app path in /private form, mount table in /var form.
+            string varMount = MountLine(mountPoint:
+                "/var/folders/y9/f44t3_k11nld1g60xxxrk3p00000gn/T/AppTranslocation/25B790BB-0BDE-44C3-8E4E-2C8AD06B1D0B");
+            Assert.AreEqual("/Users/p/Downloads/pascension.app",
+                TranslocationResolver.ResolveOriginalAppPath(TransApp, MountOutput(varMount)));
+        }
+
+        [Test]
+        public void Translocation_TrimsTrailingSlashOnSource()
+        {
+            // A trailing '/' would break Path.GetDirectoryName on the caller side.
+            Assert.AreEqual("/Users/p/Downloads/pascension.app",
+                TranslocationResolver.ResolveOriginalAppPath(TransApp,
+                    MountOutput(MountLine(source: "/Users/p/Downloads/pascension.app/"))));
+        }
+
+        [Test]
+        public void Translocation_HandlesOnInTheAppName()
+        {
+            // " on " inside the bundle name must not confuse the mount-line split.
+            const string mnt =
+                "/private/var/folders/y9/f44t3_k11nld1g60xxxrk3p00000gn/T/AppTranslocation/25B790BB-0BDE-44C3-8E4E-2C8AD06B1D0B";
+            Assert.AreEqual("/Users/p/Games/Game on Fire.app",
+                TranslocationResolver.ResolveOriginalAppPath(mnt + "/d/Game on Fire.app",
+                    MountOutput(MountLine(source: "/Users/p/Games/Game on Fire.app"))));
+        }
+
+        [Test]
         public void Translocation_RejectsWhenMountTableDisagrees()
         {
             // no matching mount line at all

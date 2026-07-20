@@ -227,6 +227,20 @@ namespace Pascension.Game.UI
             ["No"] = "Non",
         };
 
+        /// <summary>Lobby start-validation error templates (host-local strings with
+        /// interpolated player names) → French. First match wins.</summary>
+        public static readonly List<(Regex, string)> LobbyErrors = new()
+        {
+            (new Regex(@"^(.+) and (.+) have the same hero$"), "$1 et $2 ont le même héros"),
+            (new Regex(@"^(.+) is not ready$"), "$1 n'est pas prêt"),
+            (new Regex(@"^(.+) has no hero$"), "$1 n'a pas de héros"),
+            (new Regex(@"^Need at least 2 players \(add a bot\?\)$"),
+                "Il faut au moins 2 joueurs (ajoutez une IA ?)"),
+            (new Regex(@"^(.+) needs at least (\d+) players$"), "$1 nécessite au moins $2 joueurs"),
+            (new Regex(@"^(.+) supports at most (\d+) players$"), "$1 accepte au plus $2 joueurs"),
+            (new Regex(@"^Only the host can start the game$"), "Seul l'hôte peut lancer la partie"),
+        };
+
         /// <summary>Engine decision-title templates (English, values interpolated) →
         /// French. Checked in order; first match wins. Keep the more specific
         /// patterns ("Return a …") before the general ones ("Return …").</summary>

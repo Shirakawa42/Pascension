@@ -267,10 +267,12 @@ namespace Pascension.Game.UI
                     stillValid = true;
             if (!stillValid) _soiCharacter = characters[0].Id;
 
-            // Roster buttons + a RANDOM button; spacing compresses when Rez (SoS)
-            // pushes the row past its 1200-wide container.
+            // Roster buttons + a RANDOM button; buttons shrink (keeping a fixed gap)
+            // when Rez (SoS) pushes the row past its 1200-wide container.
             int total = characters.Count + 1;
-            float step = Mathf.Min(220f, (1200f - 200f) / (total - 1));
+            const float gap = 20f;
+            float buttonW = Mathf.Min(200f, (1200f - (total - 1) * gap) / total);
+            float step = buttonW + gap;
             float x = -(total - 1) * step * 0.5f;
             for (int i = 0; i < total; i++)
             {
@@ -280,7 +282,7 @@ namespace Pascension.Game.UI
                 bool selected = id == _soiCharacter;
                 var button = UiFactory.CreateButton(Theme, "Char_" + id, _soiCharacterRow, label, 16f,
                     selected ? UiPalette.Gold : UiPalette.PanelLight, UiPalette.Background);
-                UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 0.5f), new Vector2(x, 0f), new Vector2(200f, 88f));
+                UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 0.5f), new Vector2(x, 0f), new Vector2(buttonW, 88f));
                 x += step;
                 string picked = id;
                 button.onClick.AddListener(() =>
@@ -534,9 +536,11 @@ namespace Pascension.Game.UI
 
         private void SetBotCount(int count)
         {
+            int previous = _botCount;
             _botCount = Mathf.Clamp(count, 1, 3);
-            // A newly revealed row may hold a hero someone picked meanwhile.
-            for (int b = 0; b < _botCount; b++)
+            // Only newly REVEALED rows re-check — a stale hidden default must yield
+            // to the visible picks, never evict one.
+            for (int b = previous; b < _botCount; b++)
                 if (_botHero[b] < _heroes.Count && HeroIndexTaken(_botHero[b], b))
                     _botHero[b] = _heroes.Count;
             RefreshSoloControls();
