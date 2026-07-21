@@ -1,17 +1,17 @@
 using Pascension.Core;
 using Pascension.Engine.Actions;
 using Pascension.Engine.Core;
+using Pascension.Engine.Decisions;
 using Pascension.Engine.Serialization;
 using Shards.Engine;
 
 namespace Shards.Bots
 {
-    /// <summary>The strong SoI seat: SO-ISMCTS at priority points, tuned-model answers
-    /// at decision points (a fresh tree per priority decision; decision-point search
-    /// lands with the shadow/suffix-replay milestone). Fair by construction — every
-    /// state the search inspects passed through the determinizer; the live engine is
-    /// only touched to Fork.
-
+    /// <summary>The strong SoI seat: SO-ISMCTS at priority points; follow-up decisions
+    /// in the chosen action's chain (damage splits, warps, reveals) are served from the
+    /// searched subtree via the plan cursor, anything unplanned falls back to the tuned
+    /// model. Fair by construction — every state the search inspects passed through the
+    /// determinizer; the live engine is only touched to Fork.
     /// Deterministic given (seed, engine state, config) in Iterations mode.</summary>
     public sealed class ShardsSearchBot : IBotAgent
     {
@@ -20,6 +20,7 @@ namespace Shards.Bots
         private readonly ShardsSearchConfig _config;
         private readonly ulong _seed;
         private ulong _searches;
+        private ShardsIsmcts.PlanCursor _plan;
 
         public string Descriptor =>
             $"ismcts-{WeightsName()}-" +
@@ -42,16 +43,20 @@ namespace Shards.Bots
         {
             if (pending == null) return null;
             if (pending.Kind == PendingInputKind.Decision)
-                return new SubmitDecisionAction
-                {
-                    PlayerIndex = pending.PlayerIndex,
-                    Answer = _model.ChooseAnswer(_engine, pending.Decision)
-                };
+            {
+                var answer = new DecisionAnswer { DecisionId = pending.Decision.Id };
+                if (ShardsIsmcts.TryPlannedAnswer(ref _plan, pending.Decision, out var planned))
+                    answer.ChosenOptionIds.AddRange(planned);
+                else
+                    answer = _model.ChooseAnswer(_engine, pending.Decision);
+                return new SubmitDecisionAction { PlayerIndex = pending.PlayerIndex, Answer = answer };
+            }
 
             var search = new ShardsIsmcts(_engine, pending.PlayerIndex, _model, _config,
                 _seed ^ (++_searches * 0x9E3779B97F4A7C15UL));
             var action = search.Search();
             LastIterations = search.IterationsRun;
+            _plan = search.LastChosenPlan;
             return action;
         }
 

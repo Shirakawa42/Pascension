@@ -17,7 +17,7 @@ namespace Shards.Bots
     /// counts; rollouts are ε-greedy tuned-model playouts to terminal.</summary>
     public sealed class ShardsIsmcts
     {
-        private sealed class Child
+        internal sealed class Child
         {
             public PlayerAction Action;       // template; decision ids re-stamped on submit
             public List<int> AnswerIds;       // decision answers: the chosen option multiset
@@ -28,7 +28,7 @@ namespace Shards.Bots
             public double Prior;
         }
 
-        private sealed class Node
+        internal sealed class Node
         {
             public readonly Dictionary<string, Child> Children = new();
         }
@@ -73,7 +73,61 @@ namespace Shards.Bots
             foreach (var child in root.Children.Values)
                 if (best == null || child.Visits > best.Visits)
                     best = child;
+            LastChosenPlan = best == null ? null : new PlanCursor { Node = best.Node };
             return best?.Action ?? _model.ChooseAction(_live, _viewer);
+        }
+
+        // ------------------------------------------------------------ plan cursor
+
+        /// <summary>The subtree of the action Search() just returned. Follow-up
+        /// decisions in the SAME chain (damage split after End Turn, a warp/reveal
+        /// after a play) were already searched inside it — the cursor serves those
+        /// answers by visit count instead of falling back to the static model.</summary>
+        public PlanCursor LastChosenPlan { get; private set; }
+
+        public sealed class PlanCursor
+        {
+            internal Node Node;
+        }
+
+        /// <summary>Answer a decision from the plan subtree, advancing the cursor.
+        /// Valid only when every chosen id exists in the REAL request's options and the
+        /// count fits Min/Max (option ids reference public objects — champions, row
+        /// slots, the bot's own hand — so they are stable between the search's
+        /// determinizations and reality). Returns false to fall back to the model.</summary>
+        public static bool TryPlannedAnswer(ref PlanCursor cursor, DecisionRequest request, out List<int> ids)
+        {
+            ids = null;
+            if (cursor?.Node == null) return false;
+
+            var optionIds = new HashSet<int>();
+            foreach (var option in request.Options)
+                optionIds.Add(option.Id);
+
+            Child best = null;
+            foreach (var child in cursor.Node.Children.Values)
+            {
+                if (child.AnswerIds == null || child.Visits < 2) continue;
+                if (child.AnswerIds.Count < request.Min || child.AnswerIds.Count > request.Max) continue;
+                bool valid = true;
+                foreach (int id in child.AnswerIds)
+                    if (!optionIds.Contains(id))
+                    {
+                        valid = false;
+                        break;
+                    }
+                if (valid && (best == null || child.Visits > best.Visits))
+                    best = child;
+            }
+
+            if (best == null)
+            {
+                cursor = null;
+                return false;
+            }
+            ids = best.AnswerIds;
+            cursor = new PlanCursor { Node = best.Node };
+            return true;
         }
 
         private void RunIteration(Node root, int players)
