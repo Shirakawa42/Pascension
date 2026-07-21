@@ -136,7 +136,10 @@ namespace SoiSim
                     }
                     Interlocked.Add(ref positions, reservoir.Count);
                     int d = Interlocked.Increment(ref done);
-                    if (d % 500 == 0 && worker == 0)
+                    // ANY thread reports on round numbers of the SHARED counter — the
+                    // previous "&& worker == 0" gate almost never coincided with the
+                    // multiple, so neither status nor console updated.
+                    if (d % 100 == 0)
                     {
                         double perSec = d / sw.Elapsed.TotalSeconds;
                         CampaignStatus.Update($"selfplay → {Path.GetFileName(outDir)}",
@@ -144,8 +147,8 @@ namespace SoiSim
                             $"{perSec:F1} games/s · ETA {(games - d) / Math.Max(0.1, perSec) / 60:F0} min\n\n" +
                             $"**Positions**: {Interlocked.Read(ref positions):N0} · " +
                             (budget > 0 ? $"search budget {budget} iters" : "greedy bootstrap"));
-                        if (d % 5000 == 0)
-                            Console.WriteLine($"  {d}/{games}  {positions} positions  {perSec:F0} games/s");
+                        if (d % 1000 == 0)
+                            Console.WriteLine($"  {d}/{games}  {positions} positions  {perSec:F1} games/s");
                     }
                 }
             });
