@@ -771,6 +771,17 @@ namespace Pascension.Game.Soi
             _statGems.text = me.Gems.ToString();
             _statPower.text = me.Power.ToString();
 
+            // Portrait + opponent strip render LIVE too: a bot streaming plays keeps
+            // the animation queue busy for whole turns, and the drain-gated path left
+            // the hero art unloaded and opponent health frozen until our turn.
+            string portraitDef = SoiCardFaces.CharacterPrefix + me.CharacterId;
+            if (_portrait.DefId != portraitDef)
+                _portrait.BindDef(portraitDef);
+            _portrait.SetTapped(me.CharacterExhausted);
+            _portrait.SetGreyed(me.CharacterExhausted);
+            RenderOpponents();
+            RefreshOpponentDetail();
+
             _drawPile.Render(me.DeckCount, null);
             _playedPile.Render(me.PlayZone.Count, TopSnap(me.PlayZone));
             _discardPile.Render(me.Discard.Count, TopSnap(me.Discard));
@@ -822,7 +833,6 @@ namespace Pascension.Game.Soi
                 if (view != null)
                     Destroy(view.gameObject);
             _transient.Clear();
-            foreach (Transform child in _opponentStrip) Destroy(child.gameObject);
 
             RenderCenterRow();
             RenderOpponents();
@@ -927,6 +937,7 @@ namespace Pascension.Game.Soi
 
         private void RenderOpponents()
         {
+            foreach (Transform child in _opponentStrip) Destroy(child.gameObject);
             _opponentPanels.Clear();
             _opponentStatTexts.Clear();
             int count = 0;
@@ -1631,6 +1642,11 @@ namespace Pascension.Game.Soi
                 // Right of the 1.3x preview card at (16,-192).
                 _keywordTips.anchoredPosition = new Vector2(318f, -196f);
                 _keywordTips.sizeDelta = new Vector2(250f, 10f);
+                // Never raycastable: a tooltip appearing under the pointer would
+                // hover-exit the source card and flicker the whole stack.
+                var group = _keywordTips.gameObject.AddComponent<CanvasGroup>();
+                group.blocksRaycasts = false;
+                group.interactable = false;
             }
             // ACTIVE before building: TMP under an inactive parent isn't initialized
             // and preferredHeight under-measures (the leaking-tooltip bug).

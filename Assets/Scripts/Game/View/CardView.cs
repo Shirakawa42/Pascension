@@ -294,6 +294,17 @@ namespace Pascension.Game.View
                 Group.alpha = greyed ? 0.45f : 1f;
         }
 
+        /// <summary>Override the HP badge value/color after a bind — the SoI split
+        /// window shows each champion's modifier-adjusted HP on its own red disc
+        /// (green above printed, red below) instead of a separate label.</summary>
+        public void SetBadge(string text, Color color)
+        {
+            if (HpGroup != null) HpGroup.SetActive(true);
+            if (HpText == null) return;
+            HpText.text = text;
+            HpText.color = color;
+        }
+
         public void SetGlow(bool on) => SetGlow(on, UiPalette.Gold);
 
         public void SetGlow(bool on, Color color)

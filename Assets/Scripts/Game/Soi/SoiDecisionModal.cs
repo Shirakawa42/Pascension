@@ -385,11 +385,6 @@ namespace Pascension.Game.Soi
                     ? $"{info.Name}   <color=#6FDF8F>{info.Health}/{info.MaxHealth}</color>"
                     : info.Name);
 
-                var row = UiFactory.CreateRect("Owner_" + owner, content);
-                row.sizeDelta = new Vector2(0f, rowHeight);
-                var le = row.gameObject.AddComponent<LayoutElement>();
-                le.preferredHeight = rowHeight;
-
                 DecisionOption playerOption = null;
                 int targets = 0;
                 foreach (var option in request.Options)
@@ -399,6 +394,13 @@ namespace Pascension.Game.Soi
                     if (option.CardInstanceId <= 0)
                         playerOption = option;
                 }
+
+                // The hero row is taller: the 0/−/+/MAX strip sits BELOW the portrait.
+                float ownerRowHeight = playerOption != null ? rowHeight + 48f : rowHeight;
+                var row = UiFactory.CreateRect("Owner_" + owner, content);
+                row.sizeDelta = new Vector2(0f, ownerRowHeight);
+                var le = row.gameObject.AddComponent<LayoutElement>();
+                le.preferredHeight = ownerRowHeight;
                 // Compress the step when a row would overflow (cards overlap, none drop).
                 float step = targets > 1 ? Mathf.Min(cardWidth + 14f, (656f - cardWidth) / (targets - 1)) : cardWidth + 14f;
 
@@ -414,8 +416,12 @@ namespace Pascension.Game.Soi
                     portrait.SetRaycastable(false); // the face must not eat the button clicks
 
                     _heroAssign[playerOption.Id] = 0;
-                    // Assigned amount + 0/−/+/MAX live ON the portrait (card-local
-                    // units, scaled with it): amount centered, button row on the bottom.
+                    // Assigned amount centered ON the portrait, over a backdrop so it
+                    // never disappears into a bright card art.
+                    var assignedBg = UiFactory.CreateImage("AssignedBg", portrait.Rect, _theme.Rounded,
+                        UiPalette.WithAlpha(UiPalette.Background, 0.72f));
+                    UiFactory.Place(assignedBg.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(112f, 78f));
+                    assignedBg.raycastTarget = false;
                     var assigned = UiFactory.CreateText(_theme, "Assigned", portrait.Rect, "0", 64f,
                         UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
                     UiFactory.Place(assigned.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(150f, 84f));
@@ -425,18 +431,21 @@ namespace Pascension.Game.Soi
                     assigned.raycastTarget = false;
                     _heroAssignLabels[playerOption.Id] = assigned;
 
+                    // 0/−/+/MAX strip BELOW the portrait (row-local, unscaled).
                     int pid = playerOption.Id;
+                    float cardHeight = CardView.Height * scale;
                     string[] labels = { "0", "−", "+", "MAX" };
                     for (int b = 0; b < 4; b++)
                     {
-                        var button = UiFactory.CreateButton(_theme, "H" + labels[b], portrait.Rect, labels[b], 18f);
-                        UiFactory.Place((RectTransform)button.transform, new Vector2(0f, 0f),
-                            new Vector2(5f + b * 53f, 8f), new Vector2(50f, 46f));
-                        // Autosize keeps "MAX" on one line inside the narrow button.
+                        var button = UiFactory.CreateButton(_theme, "H" + labels[b], row, labels[b], 16f);
+                        UiFactory.Place((RectTransform)button.transform, new Vector2(0f, 1f),
+                            new Vector2(x + b * 36f, -(cardHeight + 4f)), new Vector2(34f, 40f));
+                        // NoWrap + autosize: "MAX" shrinks to fit instead of wrapping.
                         var bumpLabel = UiFactory.ButtonLabel(button);
+                        bumpLabel.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
                         bumpLabel.enableAutoSizing = true;
-                        bumpLabel.fontSizeMin = 10f;
-                        bumpLabel.fontSizeMax = 20f;
+                        bumpLabel.fontSizeMin = 9f;
+                        bumpLabel.fontSizeMax = 18f;
                         int kind = b;
                         button.onClick.AddListener(() => HeroBump(pid, kind));
                     }
@@ -457,15 +466,14 @@ namespace Pascension.Game.Soi
                     card.Bind(new CardSnap { DefId = option.DefId, InstanceId = option.CardInstanceId, EffectiveCost = -1 });
                     _champViews.Add((card, option));
 
-                    var hp = UiFactory.CreateText(_theme, "Hp", card.Rect,
-                        (UI.Loc.French ? "PV " : "HP ") + option.Amount, 24f,
-                        option.Required ? UiPalette.Gold : Color.white,
-                        TextAlignmentOptions.Center, FontStyles.Bold);
-                    UiFactory.Place(hp.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(170f, 34f));
-                    var hpOutline = hp.gameObject.AddComponent<Outline>();
-                    hpOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
-                    hpOutline.effectDistance = new Vector2(1.6f, -1.6f);
-                    hp.raycastTarget = false;
+                    // Modifier-adjusted HP on the card's own red disc: green when
+                    // buffed above the printed defense, red when below.
+                    int printed = Shards.Engine.ShardsCardDatabase.TryGet(option.DefId, out var champDef)
+                        ? champDef.Defense : option.Amount;
+                    card.SetBadge(option.Amount.ToString(),
+                        option.Amount > printed ? UiPalette.HealthyGreen
+                        : option.Amount < printed ? UiPalette.WoundedRed
+                        : Color.white);
                     x += step;
                 }
             }
