@@ -41,19 +41,41 @@ namespace Shards.Bots
 
         // ---- per-(def, masteryBucket) property vectors, cached like ShardsValueModel ----
 
-        private static readonly Dictionary<ShardsCardDef, float[][]> CardVecCache = new();
+        // Copy-on-write cache: reads are LOCK-FREE (an unmutated Dictionary is safe for
+        // concurrent reads; misses swap in a rebuilt copy under the lock). The naive
+        // lock-per-lookup version serialized 15 selfplay threads on one global lock
+        // (~200 lookups per encode × ~100 evals/decision) and cost 10× throughput.
+        private static volatile Dictionary<ShardsCardDef, float[][]> _cardVecCache = new();
         private static readonly object CacheLock = new();
+
+        /// <summary>Builds vectors for every registered def up front — call once before
+        /// heavy multi-threaded encoding (ShardsNeuralEval does this on load).</summary>
+        public static void Prewarm()
+        {
+            lock (CacheLock)
+            {
+                var fresh = new Dictionary<ShardsCardDef, float[][]>(_cardVecCache);
+                foreach (var def in ShardsCardDatabase.All)
+                    if (!fresh.ContainsKey(def))
+                        fresh[def] = BuildCardVecs(def);
+                _cardVecCache = fresh;
+            }
+        }
 
         private static float[] CardVec(ShardsCardDef def, int mastery)
         {
             int bucket = CardStatics.BucketOf(mastery);
-            float[][] perBucket;
+            if (_cardVecCache.TryGetValue(def, out var perBucket))
+                return perBucket[bucket];
             lock (CacheLock)
             {
-                if (!CardVecCache.TryGetValue(def, out perBucket))
+                if (!_cardVecCache.TryGetValue(def, out perBucket))
                 {
-                    perBucket = BuildCardVecs(def);
-                    CardVecCache[def] = perBucket;
+                    var fresh = new Dictionary<ShardsCardDef, float[][]>(_cardVecCache)
+                    {
+                        [def] = perBucket = BuildCardVecs(def)
+                    };
+                    _cardVecCache = fresh;
                 }
             }
             return perBucket[bucket];

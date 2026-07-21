@@ -74,6 +74,9 @@ namespace Shards.Bots
             }
             if (offset != f16Blob.Length)
                 throw new InvalidOperationException($"net blob size mismatch: consumed {offset} of {f16Blob.Length}");
+
+            // Lock-free encoding under multi-threaded search/selfplay.
+            ShardsStateEncoder.Prewarm();
         }
 
         public double Evaluate(ShardsState state, int playerIndex)
