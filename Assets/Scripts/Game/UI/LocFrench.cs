@@ -94,6 +94,7 @@ namespace Pascension.Game.UI
             ["Starting…"] = "Lancement…",
             ["RANDOM"] = "ALÉATOIRE",
             ["Random"] = "Aléatoire",
+            ["CHANGELOG"] = "NOUVEAUTÉS",
             ["A random hero is assigned when the game starts — never one another player already has."] =
                 "Un héros aléatoire vous est attribué au lancement — jamais celui d'un autre joueur.",
 
@@ -107,24 +108,28 @@ namespace Pascension.Game.UI
             ["Shield"] = "Bouclier",
             ["Mercenary"] = "Mercenaire",
             ["Mastery threshold"] = "Seuil de maîtrise",
-            ["While in hand: when an opponent's attack hits you, reveal this to prevent that much damage — it stays in your hand."] =
-                "Depuis votre main : quand l'attaque d'un adversaire vous touche, révélez cette carte pour prévenir autant de dégâts — elle reste dans votre main.",
-            ["Recruit it normally, or fast-play it for its cost: the effect happens now, then it goes to the bottom of the center deck at end of turn."] =
-                "Recrutez-le normalement, ou enrôlez-le pour son coût : effet immédiat, puis il retourne sous la pioche commune à la fin du tour.",
-            ["Tap this ready card on your turn to use the ability; it readies again at your end phase."] =
-                "Activez cette carte prête pendant votre tour pour utiliser sa capacité ; elle se redresse à votre phase de fin.",
-            ["Active if you played another card of this faction this turn, or reveal one from your hand as you play it."] =
-                "Actif si vous avez joué une autre carte de cette faction ce tour-ci, ou en révélant une carte de votre main au moment de la jouer.",
-            ["Active if you played or revealed a Homodeus, an Undergrowth AND a Wraethe card this turn."] =
-                "Actif si vous avez joué ou révélé une carte Homodeus, une Maquis ET une Spectra ce tour-ci.",
-            ["Active while you control at least one champion."] =
-                "Actif tant que vous contrôlez au moins un champion.",
-            ["Counts the matching faction cards in your discard pile."] =
-                "Compte les cartes de la même faction dans votre défausse.",
-            ["Fast-play an ally from the row for free: its effect happens now, then it returns to the bottom of the center deck at end of turn."] =
-                "Enrôlez un allié de la rivière gratuitement : son effet s'applique immédiatement, puis il retourne sous la pioche commune à la fin du tour.",
-            ["Mn effects need Mastery n or more, checked the moment you play or exhaust the card."] =
-                "Les effets Mn requièrent une maîtrise de n ou plus, vérifiée au moment où vous jouez ou activez la carte.",
+            // Faction names for the {0} slot in faction-scoped tooltips.
+            ["Undergrowth"] = "Maquis",
+            ["Wraethe"] = "Spectra",
+            ["Order"] = "Ordre",
+            ["Reveal it from your hand when attacked to prevent that much damage. It stays in your hand."] =
+                "Révélez-la de votre main quand on vous attaque pour prévenir autant de dégâts. Elle reste dans votre main.",
+            ["Recruit it, or fast-play it for its cost: effect now, then under the center deck."] =
+                "Recrutez-le, ou enrôlez-le pour son coût : effet immédiat, puis sous la pioche commune.",
+            ["Tap this ready card to use its ability. It readies at your end phase."] =
+                "Activez cette carte prête pour utiliser sa capacité. Elle se redresse en fin de tour.",
+            ["Active if you played or reveal another {0} ally as you play this card."] =
+                "Actif si vous avez joué ou que vous révélez un autre allié {0} en jouant cette carte.",
+            ["Active if you played or revealed a Homodeus, an Undergrowth and a Wraethe card this turn."] =
+                "Actif si vous avez joué ou révélé une carte Homodeus, une Maquis et une Spectra ce tour-ci.",
+            ["Active while you control a champion."] =
+                "Actif tant que vous contrôlez un champion.",
+            ["Grows with each {0} card in your discard pile."] =
+                "Augmente avec chaque carte {0} dans votre défausse.",
+            ["Fast-play an ally from the row for free; it goes under the center deck at end of turn."] =
+                "Enrôlez un allié de la rivière gratuitement ; il retourne sous la pioche commune en fin de tour.",
+            ["Needs that much Mastery when you play or exhaust this card."] =
+                "Requiert autant de maîtrise au moment de jouer ou d'activer la carte.",
 
             // ---------------------------------------------------------- SoI table
             ["Pick a destiny from the glowing row."] = "Choisissez une destinée dans la rangée en surbrillance.",

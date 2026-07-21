@@ -26,6 +26,8 @@ namespace Pascension.Game.UI
         private RectTransform _soloPanel;
         private RectTransform _soiSoloPanel;
         private RectTransform _settingsPanel;
+        private RectTransform _changelogPanel;
+        private RectTransform _changelogContent;
 
         private IReadOnlyList<HeroDefinition> _heroes;
         private int _selectedHero;
@@ -64,6 +66,7 @@ namespace Pascension.Game.UI
             BuildSolo();
             BuildSoloShards();
             BuildSettings();
+            BuildChangelog();
             ShowPanel(_homePanel);
 
             // Language toggle — parented to the Root (not a panel) so ShowPanel never
@@ -116,6 +119,9 @@ namespace Pascension.Game.UI
 
             var settings = MenuButton(_homePanel, "SETTINGS", ref y);
             settings.onClick.AddListener(() => ShowPanel(_settingsPanel));
+
+            var changelog = MenuButton(_homePanel, "CHANGELOG", ref y);
+            changelog.onClick.AddListener(() => ShowPanel(_changelogPanel));
 
             var quit = MenuButton(_homePanel, "QUIT", ref y);
             quit.onClick.AddListener(Application.Quit);
@@ -683,6 +689,84 @@ namespace Pascension.Game.UI
             _soloPanel.gameObject.SetActive(panel == _soloPanel);
             _soiSoloPanel.gameObject.SetActive(panel == _soiSoloPanel);
             _settingsPanel.gameObject.SetActive(panel == _settingsPanel);
+            _changelogPanel.gameObject.SetActive(panel == _changelogPanel);
+        }
+
+        // ------------------------------------------------------------------ changelog
+
+        private void BuildChangelog()
+        {
+            _changelogPanel = UiFactory.CreateRect("ChangelogPanel", Parent);
+            UiFactory.Stretch(_changelogPanel);
+
+            var panel = UiFactory.CreatePanel(Theme, "Panel", _changelogPanel);
+            UiFactory.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(980f, 860f));
+
+            var title = UiFactory.CreateText(Theme, "Title", panel.transform, Loc.T("CHANGELOG"), 38f,
+                UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(600f, 46f));
+
+            // One tab per registered game (SoI absent in PUBLIC_RELEASE builds).
+            var modules = Pascension.Net.GameCatalog.All;
+            var tabs = new List<Button>();
+            float tabX = -(modules.Count - 1) * 160f;
+            foreach (var module in modules)
+            {
+                var tab = UiFactory.CreateButton(Theme, "Tab_" + module.GameId, panel.transform,
+                    module.DisplayName.ToUpperInvariant(), 17f);
+                UiFactory.Place((RectTransform)tab.transform, new Vector2(0.5f, 1f),
+                    new Vector2(tabX, -76f), new Vector2(300f, 46f));
+                tabX += 320f;
+                string gameId = module.GameId;
+                var captured = tab;
+                tab.onClick.AddListener(() =>
+                {
+                    foreach (var other in tabs)
+                        other.image.color = other == captured ? UiPalette.Gold : UiPalette.PanelLight;
+                    RenderChangelog(gameId);
+                });
+                tabs.Add(tab);
+            }
+
+            var scroll = UiFactory.CreateScrollView(Theme, "Entries", panel.transform, out _changelogContent);
+            UiFactory.Place((RectTransform)scroll.transform, new Vector2(0.5f, 1f),
+                new Vector2(0f, -134f), new Vector2(920f, 630f));
+
+            var back = UiFactory.CreateButton(Theme, "Back", panel.transform, Loc.T("BACK"), 18f);
+            UiFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0f, 22f), new Vector2(180f, 50f));
+            back.onClick.AddListener(() => ShowPanel(_homePanel));
+
+            if (tabs.Count > 0)
+            {
+                tabs[0].image.color = UiPalette.Gold;
+                RenderChangelog(modules[0].GameId);
+            }
+        }
+
+        private void RenderChangelog(string gameId)
+        {
+            foreach (Transform child in _changelogContent)
+                Destroy(child.gameObject);
+
+            var entries = gameId == "shards" ? Changelog.Shards : Changelog.Pascension;
+            const float width = 880f, pad = 14f;
+            float y = -10f;
+            foreach (var entry in entries)
+            {
+                var date = UiFactory.CreateText(Theme, "Date", _changelogContent, entry.Date, 18f,
+                    UiPalette.Gold, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+                UiFactory.Place(date.rectTransform, new Vector2(0f, 1f), new Vector2(pad, y), new Vector2(width, 24f));
+                y -= 28f;
+
+                // Width first, then preferredHeight — it wraps against the actual rect.
+                var body = UiFactory.CreateText(Theme, "Body", _changelogContent,
+                    Loc.French ? entry.Fr : entry.En, 15f, UiPalette.TextMain, TextAlignmentOptions.TopLeft);
+                UiFactory.Place(body.rectTransform, new Vector2(0f, 1f), new Vector2(pad + 8f, y), new Vector2(width - 16f, 10f));
+                float bodyH = body.preferredHeight + 6f;
+                body.rectTransform.sizeDelta = new Vector2(width - 16f, bodyH);
+                y -= bodyH + 22f;
+            }
+            _changelogContent.sizeDelta = new Vector2(0f, -y + 10f);
         }
     }
 }

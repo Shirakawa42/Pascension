@@ -1639,15 +1639,23 @@ namespace Pascension.Game.Soi
             foreach (var entry in entries)
             {
                 if (shown++ >= 4) break; // a card never carries more in practice
+                string tip = entry.Arg == null
+                    ? UI.Loc.T(entry.Text)
+                    : string.Format(UI.Loc.T(entry.Text), UI.Loc.T(entry.Arg));
+
                 var panel = UiFactory.CreatePanel(Theme, "Tip_" + entry.Title, _keywordTips,
                     UiPalette.WithAlpha(UiPalette.Background, 0.94f));
                 var title = UiFactory.CreateText(Theme, "Title", panel.transform,
                     UI.Loc.T(entry.Title), 14f, UiPalette.Gold, TextAlignmentOptions.TopLeft, FontStyles.Bold);
                 UiFactory.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(pad, -6f), new Vector2(width - pad * 2f, 18f));
+
+                // Size the rect FIRST, then read preferredHeight — it wraps against the
+                // actual rect width (GetPreferredValues under-measured, leaking text).
                 var text = UiFactory.CreateText(Theme, "Text", panel.transform,
-                    UI.Loc.T(entry.Text), 12.5f, UiPalette.TextDim, TextAlignmentOptions.TopLeft);
-                float textH = text.GetPreferredValues(UI.Loc.T(entry.Text), width - pad * 2f, 0f).y + 4f;
-                UiFactory.Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(pad, -26f), new Vector2(width - pad * 2f, textH));
+                    tip, 12.5f, UiPalette.TextDim, TextAlignmentOptions.TopLeft);
+                UiFactory.Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(pad, -26f), new Vector2(width - pad * 2f, 10f));
+                float textH = text.preferredHeight + 4f;
+                text.rectTransform.sizeDelta = new Vector2(width - pad * 2f, textH);
 
                 float panelH = 26f + textH + pad;
                 var panelRect = panel.rectTransform;

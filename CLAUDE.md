@@ -44,6 +44,7 @@ Rules sources of truth: Pascension — `Assets/GDD.txt` + the decisions log in t
 ## Conventions
 
 - C# 9, explicit namespaces matching assemblies (`Pascension.*`, `Shards.*`), one public type per file.
+- **Changelog** (`Assets/Scripts/Game/UI/Changelog.cs`, one list per game, shown from the main menu): every user-visible change adds a dated entry — newest first, EN + FR inline — to the affected game's list IN THE SAME CHANGE.
 - New card → follow the matching registry skill's checklist end-to-end.
 - Commit per milestone or coherent unit of work; never commit `Library/`.
 - **This file is a lean index.** Session history, gotchas, and dated logs live in the skills — do NOT append dated session sections here.
