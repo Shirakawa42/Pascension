@@ -232,9 +232,10 @@ namespace Pascension.Game.Soi
             _drawPile.Clicked += ShowFullDeck;
 
             // The zone-blind "what is in my deck" list (also opened by the draw pile).
-            // y=2: tucked under the portrait (bottom edge ~35) without overlapping it.
+            // y=2: tucked under the portrait (bottom edge ~35) without overlapping it;
+            // 170 wide so "LISTE DU DECK" stays on one line.
             var deckList = UiFactory.CreateButton(Theme, "DeckList", root, UI.Loc.T("DECK LIST"), 15f);
-            UiFactory.Place((RectTransform)deckList.transform, new Vector2(0f, 0f), new Vector2(80f, 2f), new Vector2(140f, 30f));
+            UiFactory.Place((RectTransform)deckList.transform, new Vector2(0f, 0f), new Vector2(65f, 2f), new Vector2(170f, 30f));
             deckList.onClick.AddListener(ShowFullDeck);
             _playedPile.Clicked += () => ShowPile(UI.Loc.T("Played this turn"), Me != null ? ZoneSnaps(Me.PlayZone) : null);
             _discardPile.Clicked += () => ShowPile(UI.Loc.T("Discard pile"), Me != null ? ZoneSnaps(Me.Discard) : null);
@@ -1631,6 +1632,10 @@ namespace Pascension.Game.Soi
                 _keywordTips.anchoredPosition = new Vector2(318f, -196f);
                 _keywordTips.sizeDelta = new Vector2(250f, 10f);
             }
+            // ACTIVE before building: TMP under an inactive parent isn't initialized
+            // and preferredHeight under-measures (the leaking-tooltip bug).
+            _keywordTips.gameObject.SetActive(true);
+            _keywordTips.SetAsLastSibling();
             foreach (Transform child in _keywordTips) Destroy(child.gameObject);
 
             const float width = 250f, pad = 8f;
@@ -1649,12 +1654,14 @@ namespace Pascension.Game.Soi
                     UI.Loc.T(entry.Title), 14f, UiPalette.Gold, TextAlignmentOptions.TopLeft, FontStyles.Bold);
                 UiFactory.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(pad, -6f), new Vector2(width - pad * 2f, 18f));
 
-                // Size the rect FIRST, then read preferredHeight — it wraps against the
-                // actual rect width (GetPreferredValues under-measured, leaking text).
+                // Rect width FIRST, then force a mesh pass, then read the height —
+                // preferredHeight wraps against the actual rect only once TMP has
+                // initialized (hence the SetActive(true) above).
                 var text = UiFactory.CreateText(Theme, "Text", panel.transform,
                     tip, 12.5f, UiPalette.TextDim, TextAlignmentOptions.TopLeft);
                 UiFactory.Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(pad, -26f), new Vector2(width - pad * 2f, 10f));
-                float textH = text.preferredHeight + 4f;
+                text.ForceMeshUpdate();
+                float textH = Mathf.Max(text.preferredHeight, text.GetRenderedValues(true).y) + 4f;
                 text.rectTransform.sizeDelta = new Vector2(width - pad * 2f, textH);
 
                 float panelH = 26f + textH + pad;
@@ -1665,8 +1672,6 @@ namespace Pascension.Game.Soi
                 panelRect.sizeDelta = new Vector2(width, panelH);
                 y -= panelH + 6f;
             }
-            _keywordTips.gameObject.SetActive(true);
-            _keywordTips.SetAsLastSibling();
         }
 
         private void HideKeywordTips()
