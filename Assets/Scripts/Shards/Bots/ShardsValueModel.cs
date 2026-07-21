@@ -81,6 +81,91 @@ namespace Shards.Bots
             resources[2] * _w[W.Mastery] + resources[3] * _w[W.Health] +
             resources[4] * _w[W.Draw];
 
+        /// <summary>Weights added after a vector was tuned fall back to a default so
+        /// older ShardsEvalWeights versions stay loadable (layout contract).</summary>
+        private double WeightAt(int index, double fallback) =>
+            index < _w.Length ? _w[index] : fallback;
+
+        /// <summary>Resources in this card's play effect that would NOT fire if played
+        /// right now: unlit conditional lines (exact ConditionMet probes) and unlit
+        /// self-excluding PerCounts. This is the play-ORDER signal — an enabler in hand
+        /// can still light them, so playing this card now wastes that value.</summary>
+        private double[] UnlitPotential(ShardsEngine engine, ShardsPlayer player, ShardsCard card)
+        {
+            var res = new double[5];
+            if (card.Def.PlayEffect == null) return res;
+            var ctx = new ShardsContext { Engine = engine, ControllerIndex = player.Index, Source = card };
+            WalkPotential(card.Def.PlayEffect, ctx, player.Mastery, res, underUnlit: false);
+            return res;
+        }
+
+        private void WalkPotential(IShardsEffect effect, ShardsContext ctx, int mastery,
+            double[] res, bool underUnlit)
+        {
+            switch (effect)
+            {
+                case null:
+                    return;
+                case ShardsComposite composite:
+                    foreach (var part in composite.Parts)
+                        WalkPotential(part, ctx, mastery, res, underUnlit);
+                    return;
+                case AtMastery tier:
+                    if (mastery >= tier.Threshold)
+                        WalkPotential(tier.Inner, ctx, mastery, res, underUnlit);
+                    return;
+                case BestByMastery best:
+                {
+                    IShardsEffect chosen = null;
+                    int chosenThreshold = int.MinValue;
+                    foreach (var (threshold, inner) in best.Tiers)
+                        if (mastery >= threshold && threshold >= chosenThreshold)
+                        {
+                            chosenThreshold = threshold;
+                            chosen = inner;
+                        }
+                    WalkPotential(chosen, ctx, mastery, res, underUnlit);
+                    return;
+                }
+                case Unify unify:
+                    WalkPotential(unify.Inner, ctx, mastery, res, underUnlit || !unify.ConditionMet(ctx));
+                    return;
+                case Dominion dominion:
+                    WalkPotential(dominion.Inner, ctx, mastery, res, underUnlit || !dominion.ConditionMet(ctx));
+                    return;
+                case If conditional:
+                    WalkPotential(conditional.Inner, ctx, mastery, res, underUnlit || !conditional.ConditionMet(ctx));
+                    return;
+                case FactionTrigger trigger:
+                    WalkPotential(trigger.Inner, ctx, mastery, res, underUnlit || !trigger.ConditionMet(ctx));
+                    return;
+                case Gain gain:
+                    if (underUnlit)
+                    {
+                        res[0] += gain.Gems;
+                        res[1] += gain.Power;
+                        res[2] += gain.Mastery;
+                        res[3] += gain.Health;
+                        res[4] += gain.Draw;
+                    }
+                    return;
+                case PerCount per:
+                    if (underUnlit || !per.ConditionMet(ctx))
+                    {
+                        var unit = per.PerUnit;
+                        double units = _w[W.PerCountUnits];
+                        res[0] += unit.gems * units;
+                        res[1] += unit.power * units;
+                        res[2] += unit.mastery * units;
+                        res[3] += unit.health * units;
+                        res[4] += unit.draw * units;
+                    }
+                    return;
+                default:
+                    return; // structural/custom nodes carry no ordering signal
+            }
+        }
+
         /// <summary>Deck-quality value of owning this card (play + recurring exhaust).</summary>
         public double CardValue(ShardsCardDef def, int mastery)
         {
@@ -138,6 +223,15 @@ namespace Shards.Bots
                     if (def.PlayEffect != null && ShardsGlowProbe.ConditionLit(def.PlayEffect,
                             new ShardsContext { Engine = engine, ControllerIndex = player.Index, Source = card }))
                         score += _w[W.PlayConditionLit];
+                    // Play-ORDER synergy: while other cards remain in hand, defer plays
+                    // whose conditional/PerCount value is currently unlit — an enabler
+                    // may still light it (the Carnivorous Vine fix).
+                    if (player.Hand.Count > 1)
+                    {
+                        double potential = ResourceValue(UnlitPotential(engine, player, card));
+                        if (potential > 0)
+                            score -= potential * WeightAt(W.PlayDeferPotential, 0.6);
+                    }
                     return score;
                 }
                 case ShardsBuyCardAction buy:

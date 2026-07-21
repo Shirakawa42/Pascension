@@ -28,7 +28,12 @@ namespace Shards.Bots
         public const int DiscardShieldKeep = 36, BanishStarterValue = 37,
             SplitFaceBias = 38, SplitKillPerCost = 39;
         public const int PlayBase = 40, BuyBase = 41;
+        // Play-order synergy: penalty on a play's currently-UNLIT conditional value
+        // while other hand cards could still enable it (defers Carnivorous Vine-style
+        // cards behind their enablers). Added 2026-07-21; older vectors lack it —
+        // ShardsValueModel falls back to the default via WeightAt.
+        public const int PlayDeferPotential = 42;
 
-        public const int Count = 42;
+        public const int Count = 43;
     }
 }

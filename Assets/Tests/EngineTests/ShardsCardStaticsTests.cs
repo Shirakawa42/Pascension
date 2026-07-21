@@ -62,6 +62,65 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void PlayOrdering_DefersCarnivorousVineBehindItsEnabler()
+        {
+            // The reported blunder: Carnivorous Vine (bonus per OTHER Undergrowth ally
+            // played this turn) was played BEFORE another U ally, wasting the bonus.
+            // With the deferral weight, the plain ally must outscore the Vine while
+            // both sit in hand; once the Vine is alone, its penalty vanishes.
+            var specs = new List<PlayerSpec>
+            {
+                new() { Name = "A", CharacterId = "volos" },
+                new() { Name = "B", CharacterId = "decima" }
+            };
+            var adapter = new ShardsEngineAdapter(ShardsContentRegistry.StandardConfig(95, specs, AllDlc));
+            var engine = adapter.Inner;
+            var p0 = engine.State.Players[0];
+            var model = new ShardsValueModel();
+
+            // Clean hand: the dealt starters would otherwise count as potential
+            // enablers and keep the deferral penalty active in the "alone" probe.
+            foreach (var dealt in p0.Hand)
+            {
+                dealt.Zone = ShardsZone.Deck;
+                p0.Deck.Add(dealt);
+            }
+            p0.Hand.Clear();
+
+            var vine = new ShardsCard
+            {
+                InstanceId = engine.State.NextInstanceId++,
+                DefId = "carnivorous_vine",
+                Owner = 0,
+                Zone = ShardsZone.Hand
+            };
+            var enabler = new ShardsCard
+            {
+                InstanceId = engine.State.NextInstanceId++,
+                DefId = "hounds_of_volos",
+                Owner = 0,
+                Zone = ShardsZone.Hand
+            };
+            p0.Hand.Add(vine);
+            p0.Hand.Add(enabler);
+
+            double vineScore = model.ScoreAction(engine, p0,
+                new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = vine.InstanceId });
+            double enablerScore = model.ScoreAction(engine, p0,
+                new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = enabler.InstanceId });
+            Assert.Greater(enablerScore, vineScore,
+                "the enabler ally must play BEFORE the PerCount card");
+
+            // Alone in hand (last play of the chain) the deferral penalty is gone.
+            p0.Hand.Remove(enabler);
+            engine.State.InvalidateCardIndex();
+            double vineAlone = model.ScoreAction(engine, p0,
+                new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = vine.InstanceId });
+            Assert.Greater(vineAlone, vineScore,
+                "the penalty must only apply while other hand cards could enable");
+        }
+
+        [Test]
         public void GreedyEvalBot_FullGames_TerminateWithAWinner()
         {
             for (ulong seed = 31; seed <= 33; seed++)
