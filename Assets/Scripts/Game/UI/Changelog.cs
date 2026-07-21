@@ -52,7 +52,8 @@ namespace Pascension.Game.UI
                 "· Damage assignment: buttons below the heroes, champion HP on its red disc (green boosted / red reduced), assigned numbers on a backdrop.\n" +
                 "· Health, portraits and opponent stats now update live during animations.\n" +
                 "· Each hit floats a single damage number (the duplicate smaller one is gone).\n" +
-                "· Fixed a crash when Duplication Fabricator copied a revealed Duplication Fabricator (infinite copy loop).",
+                "· Fixed a crash when Duplication Fabricator copied a revealed Duplication Fabricator (infinite copy loop).\n" +
+                "· New bot difficulties: NORMAL (the old bots), HARD (tuned instant AI) and MASTER (search AI that thinks ~1 second per move and plays without seeing your hand).",
                 "· Les Ingeminex attaquent après la pioche de votre nouvelle main — leurs défausses touchent la main que vous gardez.\n" +
                 "· Les destinées se choisissent sur le plateau : la rangée s'illumine et vos piles restent consultables pendant la décision.\n" +
                 "· Bouton LISTE DU DECK : toutes vos cartes, de la moins chère à la plus chère, quelle que soit leur zone.\n" +
@@ -60,7 +61,8 @@ namespace Pascension.Game.UI
                 "· Répartition des dégâts : boutons sous les héros, PV des champions sur leur disque rouge (vert si augmentés / rouge si réduits), dégâts assignés sur un fond sombre.\n" +
                 "· Santé, portraits et statistiques adverses se mettent à jour en direct pendant les animations.\n" +
                 "· Chaque coup n'affiche plus qu'un seul nombre de dégâts (le doublon plus petit a disparu).\n" +
-                "· Correction d'un plantage quand le Duplicateur copiait un Duplicateur révélé (boucle de copie infinie)."),
+                "· Correction d'un plantage quand le Duplicateur copiait un Duplicateur révélé (boucle de copie infinie).\n" +
+                "· Nouvelles difficultés d'IA : NORMALE (les anciens bots), DIFFICILE (IA optimisée instantanée) et MAÎTRE (IA à recherche qui réfléchit ~1 seconde par coup, sans voir votre main)."),
             new Entry("2026-07-20",
                 "· RANDOM character option; no duplicate characters; random first player.",
                 "· Option personnage ALÉATOIRE ; plus de personnages en double ; premier joueur tiré au sort."),

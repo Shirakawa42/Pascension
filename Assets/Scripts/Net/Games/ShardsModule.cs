@@ -64,8 +64,28 @@ namespace Pascension.Net
         public string CharacterDisplayName(string characterId) =>
             ShardsContentRegistry.CharacterDisplayName(characterId);
 
-        public IBotAgent CreateBot(string botKind, ulong seed, IEngineAdapter engine) =>
-            new ShardsHeuristicBot(seed, ((ShardsEngineAdapter)engine).Inner, random: botKind == "random");
+        /// <summary>Shared read-only value model for greedy/strong seats (weights are
+        /// static; card statics are immutable after registration).</summary>
+        private static readonly Lazy<ShardsValueModel> Model = new(() =>
+        {
+            ShardsContentRegistry.EnsureRegistered();
+            return new ShardsValueModel();
+        });
+
+        public IBotAgent CreateBot(string botKind, ulong seed, IEngineAdapter engine)
+        {
+            var inner = ((ShardsEngineAdapter)engine).Inner;
+            return botKind switch
+            {
+                "random" => new ShardsHeuristicBot(seed, inner, random: true),
+                "greedy" => new ShardsGreedyEvalBot(seed, inner, Model.Value),
+                "strong" => new ShardsSearchBot(seed, inner,
+                    ShardsSearchConfig.ForRealGames(1.0), Model.Value),
+                "strong-fast" => new ShardsSearchBot(seed, inner,
+                    ShardsSearchConfig.ForRealGames(0.25), Model.Value),
+                _ => new ShardsHeuristicBot(seed, inner)
+            };
+        }
 
         public CardFace CardDisplay(string defId)
         {

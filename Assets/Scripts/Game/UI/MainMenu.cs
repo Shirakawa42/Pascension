@@ -191,8 +191,10 @@ namespace Pascension.Game.UI
         private string _soiCharacter = "decima";
         private int _soiDlc;
         private int _soiBots = 1;
+        private BotKind _soiDifficulty = BotKind.Greedy;
         private RectTransform _soiCharacterRow;
         private readonly List<Button> _soiBotButtons = new List<Button>();
+        private TextMeshProUGUI _soiDifficultyLabel;
 
         private void BuildSoloShards()
         {
@@ -230,15 +232,15 @@ namespace Pascension.Game.UI
                 });
             }
 
-            var botsLabel = UiFactory.CreateText(Theme, "BotsLabel", _soiSoloPanel, Loc.T("OPPONENTS (heuristic bots)"), 18f,
+            var botsLabel = UiFactory.CreateText(Theme, "BotsLabel", _soiSoloPanel, Loc.T("OPPONENTS"), 18f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
-            UiFactory.Place(botsLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -560f), new Vector2(600f, 26f));
+            UiFactory.Place(botsLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(-160f, -560f), new Vector2(320f, 26f));
             _soiBotButtons.Clear();
             for (int i = 1; i <= 3; i++)
             {
                 var button = UiFactory.CreateButton(Theme, "Bots_" + i, _soiSoloPanel, i.ToString(), 22f);
                 UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 1f),
-                    new Vector2((i - 2) * 90f, -614f), new Vector2(74f, 56f));
+                    new Vector2(-250f + (i - 1) * 90f, -614f), new Vector2(74f, 56f));
                 int count = i;
                 button.onClick.AddListener(() =>
                 {
@@ -247,6 +249,16 @@ namespace Pascension.Game.UI
                 });
                 _soiBotButtons.Add(button);
             }
+
+            var difficultyLabel = UiFactory.CreateText(Theme, "DifficultyLabel", _soiSoloPanel, Loc.T("DIFFICULTY"), 18f,
+                UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(difficultyLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(180f, -560f), new Vector2(320f, 26f));
+            var difficultyButton = UiFactory.CreateButton(Theme, "DifficultyCycle", _soiSoloPanel, "", 18f);
+            UiFactory.Place((RectTransform)difficultyButton.transform, new Vector2(0.5f, 1f),
+                new Vector2(180f, -614f), new Vector2(300f, 56f));
+            difficultyButton.onClick.AddListener(CycleSoiDifficulty);
+            _soiDifficultyLabel = UiFactory.ButtonLabel(difficultyButton);
+            RefreshSoiDifficulty();
 
             var start = UiFactory.CreateButton(Theme, "Start", _soiSoloPanel, Loc.T("START GAME"), 24f,
                 UiPalette.Gold, UiPalette.Background);
@@ -309,6 +321,28 @@ namespace Pascension.Game.UI
             }
         }
 
+        private void CycleSoiDifficulty()
+        {
+            _soiDifficulty = _soiDifficulty switch
+            {
+                BotKind.Heuristic => BotKind.Greedy,
+                BotKind.Greedy => BotKind.Strong,
+                _ => BotKind.Heuristic
+            };
+            RefreshSoiDifficulty();
+        }
+
+        private void RefreshSoiDifficulty()
+        {
+            if (_soiDifficultyLabel == null) return;
+            _soiDifficultyLabel.text = _soiDifficulty switch
+            {
+                BotKind.Heuristic => Loc.T("NORMAL"),
+                BotKind.Greedy => Loc.T("HARD"),
+                _ => Loc.T("MASTER (thinks ~1s)")
+            };
+        }
+
         private void StartSoiSolo()
         {
             var module = Pascension.Net.GameCatalog.Get("shards");
@@ -333,7 +367,7 @@ namespace Pascension.Game.UI
                 // Cycle the roster, skipping the player's pick first time around.
                 while (characters[next % characters.Count].Id == playerCharacter && characters.Count > 1)
                     next++;
-                MatchSetup.Opponents.Add(new OpponentSetup(characters[next % characters.Count].Id, BotKind.Heuristic));
+                MatchSetup.Opponents.Add(new OpponentSetup(characters[next % characters.Count].Id, _soiDifficulty));
                 next++;
             }
             MatchSetup.Configured = true;

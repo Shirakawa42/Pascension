@@ -85,10 +85,24 @@ namespace Pascension.Game.Soi
                 if (i == humanSeat) continue;
                 // (i + 1): a bot in seat 0 must never share the engine's own seed.
                 ulong botSeed = MatchSetup.Seed ^ (((ulong)i + 1) * 0x9E3779B97F4A7C15UL);
-                var seat = new BotSeat(i, module.CreateBot("heuristic", botSeed, adapter), BotThinkDelay);
-                seat.Bind(Host);
-                Host.AttachSeat(seat, isHuman: false);
-                _botSeats.Add(seat);
+                // order[i] maps the seat back to its spec: 0 = human, 1.. = opponents.
+                int opponentIndex = order[i] - 1;
+                var kind = opponentIndex >= 0 && opponentIndex < MatchSetup.Opponents.Count
+                    ? MatchSetup.Opponents[opponentIndex].Bot
+                    : BotKind.Heuristic;
+                var agent = module.CreateBot(KindString(kind), botSeed, adapter);
+                if (kind == BotKind.Strong)
+                {
+                    // The search thinks ~1s per decision — run it off the main thread.
+                    Host.AttachSeat(new SearchBotSeat(i, agent, Host), isHuman: false);
+                }
+                else
+                {
+                    var seat = new BotSeat(i, agent, BotThinkDelay);
+                    seat.Bind(Host);
+                    Host.AttachSeat(seat, isHuman: false);
+                    _botSeats.Add(seat);
+                }
             }
 
             if (Screen != null)
@@ -98,6 +112,14 @@ namespace Pascension.Game.Soi
 
             Host.Start();
         }
+
+        private static string KindString(BotKind kind) => kind switch
+        {
+            BotKind.Random => "random",
+            BotKind.Greedy => "greedy",
+            BotKind.Strong => "strong",
+            _ => "heuristic"
+        };
 
         private static string ValidCharacter(IGameModule module, string requested, int slot)
         {

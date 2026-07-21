@@ -4,6 +4,10 @@ namespace Pascension.Game
     public enum BotKind
     {
         Heuristic,
-        Random
+        Random,
+        /// <summary>SoI: tuned value-model argmax (instant, strong).</summary>
+        Greedy,
+        /// <summary>SoI: ISMCTS search, ~1s of thinking per decision (strongest).</summary>
+        Strong
     }
 }
