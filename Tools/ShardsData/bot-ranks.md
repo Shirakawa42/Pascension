@@ -69,7 +69,11 @@
   (and ~2× cheaper per simulation on top).
 - **Frozen**: hard-pinned to generation 0 — future nets mint new ranks instead.
 
-## PLATINUM (PLATINE) — net generation 1 *(training tonight)*
+## PLATINUM (PLATINE) — *(gate not yet passed — campaign in progress)*
+> Attempt 1 (net gen 1, 86% bootstrap-dominated window): **48.3% [39.6–57.2] vs
+> gen 0 — REJECTED** (needs ≥55% + Wilson LB >50%). The net re-learned gen-0's
+> function. Attempt 2 (gen 2) trains on search-quality data ONLY (~280k positions).
+> Original spec below stands for whichever generation first clears the gate.
 - **Net**: same architecture; trained on the sliding window = gen-0 bootstrap +
   ~120,000 positions from 6,000 *search-quality* self-play games (GOLD-level play,
   100 simulations/decision, root moves temperature-sampled for the first 8 turns).
