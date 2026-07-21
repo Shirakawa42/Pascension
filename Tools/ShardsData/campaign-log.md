@@ -8,4 +8,5 @@
 - **2026-07-21 19:15** — perspective bug found by 0%-probe and fixed (net must be queried from the turn player's seat)
 - **2026-07-21 19:25** — probe: net-truncated search vs SILVER-style full rollouts → **78.3% [66.4–86.9]** at equal iterations → **GOLD minted** (gen-0 net, 1.0s)
 - **2026-07-21 19:50** — gen-1 selfplay started: 9,000 ISMCTS-100 games with net-0 leaf eval, temperature 8 turns
-- **2026-07-21 21:44** - selfplay: 9000 games, budget 100 iters, 12 positions/game, threads=15 -> Tools\ShardsData\selfplay\gen1
+- **2026-07-21 21:44** — (watcher misfire: matched the startup banner, not completion — gen-1 selfplay still running at this time)
+- **2026-07-21 21:46** — trained generation 1: val acc 74.6%, 728,625 positions

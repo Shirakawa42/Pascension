@@ -34,18 +34,22 @@ RECORD_DTYPE = np.dtype([
 ])
 
 
-def load_dir(path: str) -> np.ndarray:
+def load_dir(paths: str) -> np.ndarray:
+    """Comma-separated dirs = the sliding training window (e.g. gen0,gen1)."""
     parts = []
-    for file in sorted(glob.glob(os.path.join(path, "*.soip"))):
+    files = []
+    for path in paths.split(","):
+        files += sorted(glob.glob(os.path.join(path.strip(), "*.soip")))
+    for file in files:
         with open(file, "rb") as f:
             magic, fmt, schema, feat, rec = struct.unpack("<IHHII", f.read(16))
         assert magic == 0x50494F53, f"{file}: bad magic"
         assert schema == 1 and feat == FEATURES, f"{file}: schema {schema}/{feat} != 1/{FEATURES}"
         assert rec == RECORD_DTYPE.itemsize, f"{file}: record size {rec} != {RECORD_DTYPE.itemsize}"
         parts.append(np.fromfile(file, dtype=RECORD_DTYPE, offset=32))
-    assert parts, f"no .soip files under {path}"
+    assert parts, f"no .soip files under {paths}"
     data = np.concatenate(parts)
-    print(f"loaded {len(data):,} positions from {path}")
+    print(f"loaded {len(data):,} positions from {paths}")
     return data
 
 

@@ -32,14 +32,16 @@ namespace SoiSim
                 : 0;
             int workersA = cli.GetInt("--workers-a", 1);
             int workersB = cli.GetInt("--workers-b", 1);
+            int netA = cli.GetInt("--net-a", -1);
+            int netB = cli.GetInt("--net-b", -1);
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
             var factoryA = new BotFactory(kindA, budgetA)
-                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclock, RootWorkers = workersA };
+                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclock, RootWorkers = workersA, NetGeneration = netA };
             var factoryB = new BotFactory(kindB, budgetB)
-                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclock, RootWorkers = workersB };
+                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclock, RootWorkers = workersB, NetGeneration = netB };
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
 
             var work = new List<(ulong Seed, bool AFirst, string C0, string C1)>();

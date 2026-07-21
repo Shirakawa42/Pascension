@@ -23,6 +23,10 @@ namespace SoiSim
         /// <summary>&gt;1: root-parallel worker trees (probe outer threads accordingly).</summary>
         public int RootWorkers { get; set; } = 1;
 
+        /// <summary>≥0: pin "strong" to a specific FROZEN net generation instead of
+        /// Current — the promotion-duel knob (gen N vs gen N-1).</summary>
+        public int NetGeneration { get; set; } = -1;
+
         /// <summary>Shared read-only model for greedy seats (built once, thread-safe).</summary>
         private static readonly System.Lazy<ShardsValueModel> GreedyModel =
             new(() => new ShardsValueModel());
@@ -71,8 +75,9 @@ namespace SoiSim
             "random" => new ShardsHeuristicBot(gameSeed * 100 + (ulong)seat, engine, random: true),
             "greedy" => new ShardsGreedyEvalBot(gameSeed * 100 + (ulong)seat, engine, GreedyModel.Value),
             "strong" => new ShardsSearchBot(gameSeed * 100 + (ulong)seat, engine,
-                StrongConfig(), GreedyModel.Value),
-            _ => throw new CliError($"unknown bot kind '{Kind}'")
+                StrongConfig(), GreedyModel.Value,
+                NetGeneration >= 0 ? ShardsNeuralEval.LoadGeneration(NetGeneration) : null),
+            _ => ShardsBotRanks.Create(Kind, gameSeed * 100 + (ulong)seat, engine)
         };
     }
 }
