@@ -27,12 +27,19 @@ namespace SoiSim
                 : -1;
             int truncateA = cli.GetInt("--truncate-a", 0);
             int truncateB = cli.GetInt("--truncate-b", 0);
+            double wallclock = cli.Has("--wallclock")
+                ? double.Parse(cli.GetStr("--wallclock", "0"), System.Globalization.CultureInfo.InvariantCulture)
+                : 0;
+            int workersA = cli.GetInt("--workers-a", 1);
+            int workersB = cli.GetInt("--workers-b", 1);
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
-            var factoryA = new BotFactory(kindA, budgetA) { Epsilon = epsilon, TruncateEndTurns = truncateA };
-            var factoryB = new BotFactory(kindB, budgetB) { Epsilon = epsilon, TruncateEndTurns = truncateB };
+            var factoryA = new BotFactory(kindA, budgetA)
+                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclock, RootWorkers = workersA };
+            var factoryB = new BotFactory(kindB, budgetB)
+                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclock, RootWorkers = workersB };
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
 
             var work = new List<(ulong Seed, bool AFirst, string C0, string C1)>();

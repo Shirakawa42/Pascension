@@ -54,6 +54,7 @@ namespace Pascension.Game.UI
                 "· Each hit floats a single damage number (the duplicate smaller one is gone).\n" +
                 "· Fixed a crash when Duplication Fabricator copied a revealed Duplication Fabricator (infinite copy loop).\n" +
                 "· Bots now climb a ranked ladder: IRON (the old bots), BRONZE (tuned instant AI) and SILVER (search AI that thinks ~1 second per move and plays without seeing your hand) — higher ranks unlock as the AI trains.\n" +
+                "· First unlock: GOLD — the search AI now imagines each future with a neural network trained on 60,000 of its own games, and beats SILVER about 4 games out of 5.\n" +
                 "· The status line shows when a search bot is thinking, and a bug that could freeze the game during a bot's turn was fixed.\n" +
                 "· Returning after a long alt-tab now fast-forwards the replay instead of animating every missed move.",
                 "· Les Ingeminex attaquent après la pioche de votre nouvelle main — leurs défausses touchent la main que vous gardez.\n" +
@@ -65,6 +66,7 @@ namespace Pascension.Game.UI
                 "· Chaque coup n'affiche plus qu'un seul nombre de dégâts (le doublon plus petit a disparu).\n" +
                 "· Correction d'un plantage quand le Duplicateur copiait un Duplicateur révélé (boucle de copie infinie).\n" +
                 "· Les bots grimpent désormais un classement : FER (les anciens bots), BRONZE (IA optimisée instantanée) et ARGENT (IA à recherche qui réfléchit ~1 seconde par coup, sans voir votre main) — les rangs supérieurs se débloqueront au fil de l'entraînement.\n" +
+                "· Premier déblocage : OR — l'IA à recherche imagine désormais chaque futur avec un réseau de neurones entraîné sur 60 000 de ses propres parties, et bat ARGENT environ 4 parties sur 5.\n" +
                 "· La ligne d'état indique quand un bot réfléchit, et un bug pouvant geler la partie pendant le tour d'un bot a été corrigé.\n" +
                 "· Revenir après un long alt-tab avance rapidement le replay au lieu d'animer chaque coup manqué."),
             new Entry("2026-07-20",

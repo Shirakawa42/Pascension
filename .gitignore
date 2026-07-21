@@ -49,6 +49,11 @@ graphify-out/
 
 # SoiSim raw simulation output (reproducible from seeds; reports are committed instead)
 Tools/ShardsData/sim/
+# Neural self-play position data (gigabytes; regenerable from seeds)
+Tools/ShardsData/selfplay/
+# Python env + raw training outputs (weights are committed via ShardsNetWeights.g.cs)
+Tools/ShardsML/.venv/
+Tools/ShardsML/out/
 
 # Assets/Art/Shards/ holds ORIGINAL Anima-generated card art (committed).
 # If official card images are ever imported over it (Pascension/Setup/Shards

@@ -17,6 +17,12 @@ namespace SoiSim
         /// baseline evaluator (the B2 experiment knob).</summary>
         public int TruncateEndTurns { get; set; }
 
+        /// <summary>&gt;0: wall-clock budget in seconds (replaces the iteration budget).</summary>
+        public double WallClockSeconds { get; set; }
+
+        /// <summary>&gt;1: root-parallel worker trees (probe outer threads accordingly).</summary>
+        public int RootWorkers { get; set; } = 1;
+
         /// <summary>Shared read-only model for greedy seats (built once, thread-safe).</summary>
         private static readonly System.Lazy<ShardsValueModel> GreedyModel =
             new(() => new ShardsValueModel());
@@ -48,11 +54,14 @@ namespace SoiSim
 
         private ShardsSearchConfig StrongConfig()
         {
-            var config = ShardsSearchConfig.ForSims(Budget > 0 ? Budget : 200);
+            var config = WallClockSeconds > 0
+                ? ShardsSearchConfig.ForRealGames(WallClockSeconds)
+                : ShardsSearchConfig.ForSims(Budget > 0 ? Budget : 200);
             if (Epsilon >= 0)
                 config.RolloutEpsilon = Epsilon;
             if (TruncateEndTurns > 0)
                 config.RolloutEndTurns = TruncateEndTurns;
+            config.RootWorkers = RootWorkers;
             return config;
         }
 

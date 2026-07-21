@@ -29,6 +29,12 @@ namespace SoiSim
                         return EvaluateCommand.Run(cli);
                     case "probe":
                         return ProbeCommand.Run(cli);
+                    case "selfplay":
+                        return SelfplayCommand.Run(cli);
+                    case "emit-net":
+                        return EmitNetCommand.RunEmit(cli);
+                    case "netfixture":
+                        return EmitNetCommand.RunFixture(cli);
                     case "smoke":
                         return SmokeCommand.Run(cli);
                     default:

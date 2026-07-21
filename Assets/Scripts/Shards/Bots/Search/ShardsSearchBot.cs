@@ -39,8 +39,11 @@ namespace Shards.Bots
             _engine = engine;
             _config = config ?? ShardsSearchConfig.ForSims(200);
             _model = model ?? new ShardsValueModel();
-            _evaluator = evaluator ??
-                         (_config.RolloutEndTurns > 0 ? new ShardsBaselineEvaluator(_model) : null);
+            _evaluator = evaluator ?? (_config.RolloutEndTurns > 0
+                ? ShardsNetWeights.Available
+                    ? (IShardsValueEvaluator)ShardsNeuralEval.LoadCurrent()
+                    : new ShardsBaselineEvaluator(_model)
+                : null);
         }
 
         public PlayerAction Choose(PendingSnap pending, SnapshotBase view)
@@ -56,8 +59,17 @@ namespace Shards.Bots
                 return new SubmitDecisionAction { PlayerIndex = pending.PlayerIndex, Answer = answer };
             }
 
+            ulong searchSeed = _seed ^ (++_searches * 0x9E3779B97F4A7C15UL);
+            if (_config.RootWorkers > 1)
+            {
+                var parallelAction = ShardsRootParallelSearch.Search(_engine, pending.PlayerIndex,
+                    _model, _config, searchSeed, _evaluator, out _plan, out int iterations);
+                LastIterations = iterations;
+                return parallelAction;
+            }
+
             var search = new ShardsIsmcts(_engine, pending.PlayerIndex, _model, _config,
-                _seed ^ (++_searches * 0x9E3779B97F4A7C15UL), _evaluator);
+                searchSeed, _evaluator);
             var action = search.Search();
             LastIterations = search.IterationsRun;
             _plan = search.LastChosenPlan;

@@ -30,6 +30,11 @@ namespace Shards.Bots
         /// Only applies to 2-player games with an evaluator wired.</summary>
         public int RolloutEndTurns = 0;
 
+        /// <summary>Root-parallel worker trees (real games; sims stay 1 for
+        /// bit-reproducibility). Each worker forks + searches independently; root
+        /// visits merge by action key.</summary>
+        public int RootWorkers = 1;
+
         public static ShardsSearchConfig ForSims(int iterations) => new()
         {
             Mode = BudgetMode.Iterations,

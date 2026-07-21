@@ -1,0 +1,17 @@
+[project]
+name = "shards-ml"
+version = "0.1.0"
+description = "SoI value-net training (RTX 5090 / Blackwell needs torch cu128 builds)"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "torch>=2.7",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

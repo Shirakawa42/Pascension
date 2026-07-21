@@ -56,7 +56,22 @@ namespace Shards.Bots
             Rank("silver", "SILVER", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
                     ShardsSearchConfig.ForRealGames(1.0), Model.Value)),
+            // GOLD — minted 2026-07-21 from the generation-0 value net (74.6% val acc,
+            // trained on 720k bootstrap positions): ISMCTS with net-truncated rollouts
+            // (2 end-turns) at the same 1.0s budget. Promotion probe: 78.3%
+            // [66.4–86.9] vs SILVER's search at EQUAL iterations (and ~2× cheaper
+            // per iteration on top). Higher ranks pin future net generations.
+            Rank("gold", "GOLD", isSearch: true,
+                (seed, engine) => new ShardsSearchBot(seed, engine,
+                    GoldConfig(), Model.Value)),
         };
+
+        private static ShardsSearchConfig GoldConfig()
+        {
+            var config = ShardsSearchConfig.ForRealGames(1.0);
+            config.RolloutEndTurns = 2; // net-truncated rollouts (ShardsNetWeights)
+            return config;
+        }
 
         public static RankSpec Find(string kindString)
         {

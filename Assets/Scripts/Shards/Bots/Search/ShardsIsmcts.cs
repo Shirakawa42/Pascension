@@ -58,6 +58,20 @@ namespace Shards.Bots
         /// most-visited root action.</summary>
         public PlayerAction Search()
         {
+            var root = RunSearch();
+
+            Child best = null;
+            foreach (var child in root.Children.Values)
+                if (best == null || child.Visits > best.Visits)
+                    best = child;
+            LastChosenPlan = best == null ? null : new PlanCursor { Node = best.Node };
+            return best?.Action ?? _model.ChooseAction(_live, _viewer);
+        }
+
+        /// <summary>Runs the iteration loop and returns the raw root — the merge surface
+        /// for root-parallel workers (per-child visit counts keyed by canonical action).</summary>
+        internal Node RunSearch()
+        {
             var root = new Node();
             var sw = _config.Mode == ShardsSearchConfig.BudgetMode.WallClock ? Stopwatch.StartNew() : null;
             int players = _live.State.Players.Count;
@@ -70,13 +84,7 @@ namespace Shards.Bots
                 RunIteration(root, players);
                 IterationsRun++;
             }
-
-            Child best = null;
-            foreach (var child in root.Children.Values)
-                if (best == null || child.Visits > best.Visits)
-                    best = child;
-            LastChosenPlan = best == null ? null : new PlanCursor { Node = best.Node };
-            return best?.Action ?? _model.ChooseAction(_live, _viewer);
+            return root;
         }
 
         // ------------------------------------------------------------ plan cursor
@@ -182,7 +190,13 @@ namespace Shards.Bots
             if (truncated && !clone.State.GameOver)
             {
                 // Truncated leaf: the evaluator's win-prob replaces the playout tail.
-                double v = _evaluator.Evaluate(clone.State, _viewer);
+                // ALWAYS query from the TURN player's perspective — training positions
+                // are sampled at priority points from the acting seat, so that is the
+                // only in-distribution viewpoint (querying the off-turn view scored 0%
+                // in the adoption probe before this flip).
+                int turn = clone.State.TurnPlayerIndex;
+                double vTurn = _evaluator.Evaluate(clone.State, turn);
+                double v = turn == _viewer ? vTurn : 1 - vTurn;
                 scores = new double[players];
                 scores[_viewer] = v;
                 scores[1 - _viewer] = 1 - v;
