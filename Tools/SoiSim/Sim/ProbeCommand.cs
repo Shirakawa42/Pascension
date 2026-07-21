@@ -106,8 +106,16 @@ namespace SoiSim
                     aDecisionMs += localAMs;
                     aDecisions += localADecisions;
                     done++;
-                    if (done % 50 == 0)
-                        Console.WriteLine($"  {done}/{work.Count}  {done / sw.Elapsed.TotalSeconds:F2} games/s");
+                    if (done % 10 == 0)
+                    {
+                        double perSec = done / sw.Elapsed.TotalSeconds;
+                        CampaignStatus.Update($"probe: {factoryA.Descriptor} vs {factoryB.Descriptor}",
+                            $"**Progress**: {done} / {work.Count} games · {perSec:F2} games/s · " +
+                            $"ETA {(work.Count - done) / Math.Max(0.01, perSec) / 60:F0} min\n\n" +
+                            $"**A running win rate**: {totalScore / Math.Max(1, done - failures):P1}");
+                        if (done % 50 == 0)
+                            Console.WriteLine($"  {done}/{work.Count}  {perSec:F2} games/s");
+                    }
                 }
             });
             sw.Stop();
@@ -118,6 +126,8 @@ namespace SoiSim
             Console.WriteLine($"probe: {factoryA.Descriptor} vs {factoryB.Descriptor}, {done} games" +
                               (failures > 0 ? $" ({failures} FAILURES)" : ""));
             Console.WriteLine($"  A win rate: {wr:P1} [{lo:P1}–{hi:P1}]");
+            CampaignStatus.Log($"probe: {factoryA.Descriptor} vs {factoryB.Descriptor} → " +
+                               $"{wr:P1} [{lo:P1}–{hi:P1}] over {done} games");
             Console.WriteLine($"  wall: {sw.Elapsed.TotalSeconds:F1}s ({done / sw.Elapsed.TotalSeconds:F2} games/s on {threads} threads)");
             Console.WriteLine($"  A think time: {(aDecisions == 0 ? 0 : aDecisionMs / (double)aDecisions):F0} ms/decision ({aDecisions} decisions)");
             return failures == 0 ? 0 : 1;

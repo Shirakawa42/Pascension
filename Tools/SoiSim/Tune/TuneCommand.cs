@@ -102,6 +102,9 @@ namespace SoiSim
                     Console.WriteLine($"  gen {gen,4}  best {fitness[best]:F3}  champ {championFitness:F3}  " +
                                       $"σ {cma.Sigma:F3}  vsHeuristic {championVsHeuristic:P1}  " +
                                       $"{sw.Elapsed.TotalSeconds:F0}s");
+                    CampaignStatus.Update("weight tune (CMA-ES)",
+                        $"**Progress**: generation {gen} / {generations} · σ {cma.Sigma:F3}\n\n" +
+                        $"**Champion vs heuristic**: {championVsHeuristic:P1}");
                 }
             }
             sw.Stop();
@@ -110,6 +113,8 @@ namespace SoiSim
                 (ulong)(seed * 9_000_041));
             Console.WriteLine($"tune: done after {gen} generations in {sw.Elapsed.TotalMinutes:F1} min; " +
                               $"champion vs heuristic-v1: {championVsHeuristic:P1} (gate ≥ 65%)");
+            CampaignStatus.Complete("weight tune",
+                $"CMA-ES tune: {gen} generations, champion {championVsHeuristic:P1} vs heuristic-v1");
 
             if (emit)
             {

@@ -100,13 +100,21 @@ namespace SoiSim
 
             var scheduler = new SimScheduler(factory, threads);
             var (done, failures) = scheduler.Run(work, writer, errors, cts.Token,
-                (d, total, perSec) => Console.WriteLine(
-                    $"  {d}/{total}  {perSec:F0} games/s  ETA {(total - d) / Math.Max(1.0, perSec):F0}s"));
+                (d, total, perSec) =>
+                {
+                    Console.WriteLine(
+                        $"  {d}/{total}  {perSec:F0} games/s  ETA {(total - d) / Math.Max(1.0, perSec):F0}s");
+                    CampaignStatus.Update($"stats run ({factory.Descriptor})",
+                        $"**Progress**: {d:N0} / {total:N0} games · {perSec:F1} games/s · " +
+                        $"ETA {(total - d) / Math.Max(0.1, perSec) / 60:F0} min");
+                });
 
             sw.Stop();
             Console.WriteLine($"  done: {done}/{work.Count} in {sw.Elapsed.TotalSeconds:F1}s " +
                               $"({done / sw.Elapsed.TotalSeconds:F0} games/s), {failures} failures" +
                               (failures > 0 ? $" — see {outPath}.errors.jsonl" : ""));
+            CampaignStatus.Complete("stats run",
+                $"stats run ({factory.Descriptor}): {done:N0} games, {failures} failures → {Path.GetFileName(outPath)}");
             return failures == 0 && done == work.Count ? 0 : 1;
         }
 

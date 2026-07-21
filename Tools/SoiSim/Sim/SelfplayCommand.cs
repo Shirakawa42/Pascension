@@ -136,14 +136,26 @@ namespace SoiSim
                     }
                     Interlocked.Add(ref positions, reservoir.Count);
                     int d = Interlocked.Increment(ref done);
-                    if (d % 5000 == 0)
-                        Console.WriteLine($"  {d}/{games}  {positions} positions  {d / sw.Elapsed.TotalSeconds:F0} games/s");
+                    if (d % 500 == 0 && worker == 0)
+                    {
+                        double perSec = d / sw.Elapsed.TotalSeconds;
+                        CampaignStatus.Update($"selfplay → {Path.GetFileName(outDir)}",
+                            $"**Progress**: {d:N0} / {games:N0} games ({100.0 * d / games:F0}%) · " +
+                            $"{perSec:F1} games/s · ETA {(games - d) / Math.Max(0.1, perSec) / 60:F0} min\n\n" +
+                            $"**Positions**: {Interlocked.Read(ref positions):N0} · " +
+                            (budget > 0 ? $"search budget {budget} iters" : "greedy bootstrap"));
+                        if (d % 5000 == 0)
+                            Console.WriteLine($"  {d}/{games}  {positions} positions  {perSec:F0} games/s");
+                    }
                 }
             });
 
             sw.Stop();
             Console.WriteLine($"selfplay: {done} games, {positions} positions in {sw.Elapsed.TotalSeconds:F1}s " +
                               $"-> {outDir} (schema v{ShardsStateEncoder.SchemaVersion})");
+            CampaignStatus.Complete("selfplay",
+                $"selfplay {Path.GetFileName(outDir)}: {done:N0} games → {positions:N0} positions " +
+                $"({(budget > 0 ? $"search {budget}it" : "greedy bootstrap")}, {sw.Elapsed.TotalMinutes:F0} min)");
             return 0;
         }
     }

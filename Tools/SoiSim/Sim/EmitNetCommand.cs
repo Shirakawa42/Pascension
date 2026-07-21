@@ -57,6 +57,7 @@ namespace SoiSim
             entries.Sort((a, b) => a.Generation.CompareTo(b.Generation));
 
             File.WriteAllText(outPath, Render(entries), new UTF8Encoding(false));
+            CampaignStatus.Log($"net generation {incoming.Generation} embedded ({incoming.Note})");
             Console.WriteLine($"emit-net: generation {incoming.Generation} embedded " +
                               $"({blob.Length:N0} bytes); file now holds generations " +
                               string.Join(", ", entries.ConvertAll(e => e.Generation.ToString())) +

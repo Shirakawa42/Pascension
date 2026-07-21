@@ -154,6 +154,14 @@ def main() -> None:
     with open(os.path.join(args.out, "weights.json"), "w") as f:
         json.dump(header, f, indent=2)
     print(f"exported {len(blob):,} bytes -> {bin_path}  (val acc {val_acc:.3f})")
+    try:  # campaign log (best-effort; path relative to Tools/ShardsML)
+        from datetime import datetime
+        with open(os.path.join(os.path.dirname(__file__), "..", "ShardsData", "campaign-log.md"),
+                  "a", encoding="utf-8") as log:
+            log.write(f"- **{datetime.now():%Y-%m-%d %H:%M}** — trained generation "
+                      f"{args.generation}: val acc {val_acc:.1%}, {len(data):,} positions\n")
+    except OSError:
+        pass
 
     if args.fixtures:
         fixtures = np.fromfile(args.fixtures, dtype=RECORD_DTYPE, offset=32)
