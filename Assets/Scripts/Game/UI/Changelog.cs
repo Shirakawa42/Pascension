@@ -27,8 +27,10 @@ namespace Pascension.Game.UI
         public static readonly IReadOnlyList<Entry> Pascension = new[]
         {
             new Entry("2026-07-21",
-                "· This changelog — one per game, from the main menu.",
-                "· Ce journal des modifications — un par jeu, depuis le menu principal."),
+                "· This changelog — one per game, from the main menu.\n" +
+                "· Leaving an online lobby no longer shows a scary \"Disconnected\" message.",
+                "· Ce journal des modifications — un par jeu, depuis le menu principal.\n" +
+                "· Quitter un salon en ligne n'affiche plus de message « Disconnected » inquiétant."),
             new Entry("2026-07-20",
                 "· RANDOM hero option in solo setup and the online lobby.\n" +
                 "· Two players can no longer pick the same hero.\n" +

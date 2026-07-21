@@ -93,6 +93,14 @@ namespace Pascension.Game.UI
                                 _connectStatus.text = Loc.T("Update required — use the UPDATE button in the main menu.");
                             else if (reason.StartsWith("Host update required"))
                                 _connectStatus.text = Loc.T("The host runs an older version — they need to update.");
+                            else if (reason.Contains("[TransportShutdown]"))
+                            {
+                                // NGO 2.x records a technical reason even for OUR OWN
+                                // Shutdown() (LEAVE button) — a voluntary exit is not
+                                // a disconnect, say nothing.
+                            }
+                            else if (reason.StartsWith("[Disconnect Event]"))
+                                _connectStatus.text = Loc.T("Connection lost.");
                             else
                                 _connectStatus.text = "Disconnected: " + reason;
                         }

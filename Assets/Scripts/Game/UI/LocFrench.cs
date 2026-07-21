@@ -92,6 +92,7 @@ namespace Pascension.Game.UI
             ["Connecting to the host…"] = "Connexion à l'hôte…",
             ["Unexpected error — see the log."] = "Erreur inattendue — voir le journal.",
             ["Starting…"] = "Lancement…",
+            ["Connection lost."] = "Connexion perdue.",
             ["RANDOM"] = "ALÉATOIRE",
             ["Random"] = "Aléatoire",
             ["CHANGELOG"] = "NOUVEAUTÉS",
