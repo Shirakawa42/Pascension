@@ -27,6 +27,8 @@ namespace SoiSim
                         return TuneCommand.Run(cli);
                     case "evaluate":
                         return EvaluateCommand.Run(cli);
+                    case "probe":
+                        return ProbeCommand.Run(cli);
                     case "smoke":
                         return SmokeCommand.Run(cli);
                     default:
@@ -55,6 +57,7 @@ namespace SoiSim
             Console.WriteLine("  soisim tune  [--generations 300] [--games-per-candidate 240] [--lambda 16]");
             Console.WriteLine("               [--sigma 0.15] [--seed 1] [--threads N-1] [--no-emit] [--out path]");
             Console.WriteLine("  soisim evaluate [--games 1000] [--seed-base 424242] [--threads N-1]");
+            Console.WriteLine("  soisim probe [--a strong] [--budget 200] [--b greedy] [--games 100] [--threads N-1]");
             Console.WriteLine("  soisim smoke");
         }
     }

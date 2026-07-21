@@ -10,6 +10,8 @@ namespace SoiSim
     {
         public string Kind { get; }
         public int Budget { get; }
+        /// <summary>Optional rollout-ε override for "strong" (-1 = config default).</summary>
+        public double Epsilon { get; set; } = -1;
 
         /// <summary>Shared read-only model for greedy seats (built once, thread-safe).</summary>
         private static readonly System.Lazy<ShardsValueModel> GreedyModel =
@@ -21,6 +23,7 @@ namespace SoiSim
             "random" => "random-v1",
             "heuristic" => "heuristic-v1",
             "greedy" => "greedy-" + CurrentWeightsName(),
+            "strong" => $"ismcts-{CurrentWeightsName()}-{(Budget > 0 ? Budget : 200)}it",
             _ => Kind
         };
 
@@ -39,12 +42,22 @@ namespace SoiSim
             Budget = budget;
         }
 
+        private ShardsSearchConfig StrongConfig()
+        {
+            var config = ShardsSearchConfig.ForSims(Budget > 0 ? Budget : 200);
+            if (Epsilon >= 0)
+                config.RolloutEpsilon = Epsilon;
+            return config;
+        }
+
         public IBotAgent Create(ulong gameSeed, int seat, ShardsEngine engine) => Kind switch
         {
             "heuristic" => new ShardsHeuristicBot(gameSeed * 100 + (ulong)seat, engine),
             "random" => new ShardsHeuristicBot(gameSeed * 100 + (ulong)seat, engine, random: true),
             "greedy" => new ShardsGreedyEvalBot(gameSeed * 100 + (ulong)seat, engine, GreedyModel.Value),
-            _ => throw new CliError($"unknown bot kind '{Kind}' (strong lands with the search bot milestone)")
+            "strong" => new ShardsSearchBot(gameSeed * 100 + (ulong)seat, engine,
+                StrongConfig(), GreedyModel.Value),
+            _ => throw new CliError($"unknown bot kind '{Kind}'")
         };
     }
 }

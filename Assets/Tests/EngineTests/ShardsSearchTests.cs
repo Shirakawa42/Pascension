@@ -168,6 +168,133 @@ namespace Pascension.Engine.Tests
             Assert.Fail("no seed ever produced a decision point — implausible");
         }
 
+        // ---------------------------------------------------------------- determinizer
+
+        [Test]
+        public void Determinizer_PreservesCompositionCountsAndPublicProjection()
+        {
+            var adapter = NewGame(51);
+            var bot = new ShardsHeuristicBot(5100, adapter.Inner);
+            for (int i = 0; i < 60 && !adapter.GameOver; i++)
+                Step(adapter, bot);
+            if (adapter.PendingInput?.Kind != PendingInputKind.Priority || adapter.GameOver)
+                Assert.Inconclusive("seed 51 did not stop on a live priority point");
+
+            int viewer = adapter.PendingInput.PlayerIndex;
+            var fork = adapter.Inner.Fork(rngReseed: 999);
+            var before = Snapshot(fork.State);
+            ulong publicBefore = fork.State.ComputePublicHash(viewer);
+            var ownHandBefore = fork.State.Players[viewer].Hand.ConvertAll(c => c.InstanceId);
+
+            ShardsDeterminizer.Sample(fork.State, viewer, fork.State.Rng);
+
+            var after = Snapshot(fork.State);
+            Assert.AreEqual(before.Counts, after.Counts, "zone counts must be preserved");
+            CollectionAssert.AreEqual(before.Compositions, after.Compositions,
+                "per-player composition multisets must be preserved");
+            Assert.AreEqual(publicBefore, fork.State.ComputePublicHash(viewer),
+                "the viewer's public projection must be unchanged");
+            CollectionAssert.AreEqual(ownHandBefore,
+                fork.State.Players[viewer].Hand.ConvertAll(c => c.InstanceId),
+                "the viewer's own hand must be untouched");
+        }
+
+        private static (string Counts, List<string> Compositions) Snapshot(ShardsState state)
+        {
+            string counts = $"{state.CenterDeck.Count}/{state.DestinyDeck.Count}";
+            var compositions = new List<string>();
+            foreach (var p in state.Players)
+            {
+                counts += $"/{p.Hand.Count}:{p.Deck.Count}";
+                var pool = new List<string>();
+                foreach (var c in p.Hand) pool.Add(c.DefId);
+                foreach (var c in p.Deck) pool.Add(c.DefId);
+                pool.Sort(System.StringComparer.Ordinal);
+                compositions.Add(p.Index + "=" + string.Join(",", pool));
+            }
+            return (counts, compositions);
+        }
+
+        [Test]
+        public void Search_IsInvariantToHiddenInformation()
+        {
+            // Two identical games; in B, swap an opponent HAND card with an opponent
+            // DECK card (different def ids). Public information is identical, hidden
+            // information differs — a fair search must choose the identical action.
+            var a = NewGame(61);
+            var b = NewGame(61);
+            var botA = new ShardsHeuristicBot(6100, a.Inner);
+            var botB = new ShardsHeuristicBot(6100, b.Inner);
+            for (int i = 0; i < 40 && !a.GameOver; i++)
+            {
+                Step(a, botA);
+                Step(b, botB);
+            }
+            Assert.AreEqual(a.Inner.State.ComputeFullHash(), b.Inner.State.ComputeFullHash(),
+                "the twin games must be identical before surgery");
+            if (a.PendingInput?.Kind != PendingInputKind.Priority || a.GameOver)
+                Assert.Inconclusive("seed 61 did not stop on a live priority point");
+
+            int viewer = a.PendingInput.PlayerIndex;
+            var opponent = b.Inner.State.Players[1 - viewer];
+            int hi = -1, di = -1;
+            for (int h = 0; h < opponent.Hand.Count && hi < 0; h++)
+                for (int d = 0; d < opponent.Deck.Count; d++)
+                    if (opponent.Hand[h].DefId != opponent.Deck[d].DefId)
+                    {
+                        hi = h;
+                        di = d;
+                        break;
+                    }
+            if (hi < 0)
+                Assert.Inconclusive("opponent hand/deck were def-uniform at the probe point");
+
+            var handCard = opponent.Hand[hi];
+            var deckCard = opponent.Deck[di];
+            opponent.Hand[hi] = deckCard;
+            opponent.Deck[di] = handCard;
+            (handCard.Zone, deckCard.Zone) = (deckCard.Zone, handCard.Zone);
+            b.Inner.State.InvalidateCardIndex();
+            Assert.AreEqual(a.Inner.State.ComputePublicHash(viewer), b.Inner.State.ComputePublicHash(viewer),
+                "surgery must not change the public projection");
+
+            var config = ShardsSearchConfig.ForSims(80);
+            var model = new ShardsValueModel();
+            var searchA = new ShardsSearchBot(777, a.Inner, config, model);
+            var searchB = new ShardsSearchBot(777, b.Inner, config, model);
+            var actionA = searchA.Choose(a.PendingInput, null);
+            var actionB = searchB.Choose(b.PendingInput, null);
+            Assert.AreEqual(actionA.Describe(), actionB.Describe(),
+                "hidden information leaked into the search");
+        }
+
+        [Test]
+        public void SearchBot_BeatsRandom_Smoke()
+        {
+            int wins = 0;
+            for (ulong seed = 71; seed <= 73; seed++)
+            {
+                var adapter = NewGame(seed);
+                var seats = new IBotAgent[]
+                {
+                    new ShardsSearchBot(seed, adapter.Inner, ShardsSearchConfig.ForSims(48)),
+                    new ShardsHeuristicBot(seed * 100 + 1, adapter.Inner, random: true)
+                };
+                int guard = 0;
+                while (!adapter.GameOver && guard++ < 30000)
+                {
+                    var pending = adapter.PendingInput;
+                    Assert.IsNotNull(pending);
+                    var action = seats[pending.PlayerIndex].Choose(pending, null)
+                                 ?? adapter.DefaultActionFor(pending);
+                    if (!adapter.Submit(action).Accepted)
+                        Assert.IsTrue(adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput)).Accepted);
+                }
+                if (adapter.WinnerIndex == 0) wins++;
+            }
+            Assert.GreaterOrEqual(wins, 2, "the search bot must dominate a random bot");
+        }
+
         // ---------------------------------------------------------------- sentinels
 
         [Test]
