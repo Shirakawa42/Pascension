@@ -17,6 +17,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Tests/ needs NUnit and compiles only via the Engine.Verify source link. -->
+    <Compile Remove="Tests\**\*.cs" />
     <Compile Include="..\..\Assets\Scripts\Core\**\*.cs" LinkBase="Core" />
     <Compile Include="..\..\Assets\Scripts\Shards\**\*.cs" LinkBase="Shards" />
     <Compile Include="..\..\Assets\Scripts\Engine\**\*.cs" LinkBase="Engine" />

@@ -19,6 +19,12 @@ namespace SoiSim
                 {
                     case "bench":
                         return BenchCommand.Run(cli);
+                    case "run":
+                        return RunCommand.Run(cli);
+                    case "analyze":
+                        return AnalyzeCommand.Run(cli);
+                    case "smoke":
+                        return SmokeCommand.Run(cli);
                     default:
                         Console.Error.WriteLine($"Unknown command '{args[0]}'.");
                         PrintUsage();
@@ -38,6 +44,11 @@ namespace SoiSim
             Console.WriteLine();
             Console.WriteLine("usage:");
             Console.WriteLine("  soisim bench [--games 200] [--players 2] [--seed-base 1] [--threads N-1]");
+            Console.WriteLine("  soisim run   [--bots heuristic|random] [--budget 0] [--games-per-matchup 400]");
+            Console.WriteLine("               [--matchups all|decima:tetra,...] [--seed-base 1] [--threads N-1]");
+            Console.WriteLine("               [--out path.jsonl] [--append] [--tag baseline]");
+            Console.WriteLine("  soisim analyze [--in path-or-glob] [--allow-mixed] [--report md] [--json path] [--csv path]");
+            Console.WriteLine("  soisim smoke");
         }
     }
 }
