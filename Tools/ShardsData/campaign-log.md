@@ -22,3 +22,6 @@
 - **2026-07-22 00:02** — probe: ismcts-V4-200it vs ismcts-V4-200it → 34.2 % [26.3 %–43.0 %] over 120 games
 - **2026-07-22 00:05** — probe: ismcts-V4-200it vs ismcts-V4-200it → 36.7 % [28.6 %–45.6 %] over 120 games
 - **2026-07-22 00:07** — PLATINUM attempt 2 REJECTED: gen-2 (search-data-only, val 75.9% — highest yet) lost BOTH duels (34.2% vs gen-0, 36.7% vs gen-1). Diagnosis: self-play distribution collapse — accuracy on own trajectories ≠ broad calibration. Attempt 3 plan: ~50/50 bootstrap/search mixture (train.py per-dir cap) + q-labels.
+- **2026-07-22 00:27** — trained generation 3: val acc 76.0%, 560,000 positions
+- **2026-07-22 00:27** — net generation 3 embedded (valAcc 0.7596 · 560,000 positions · 2026-07-22)
+- **2026-07-22 00:30** — probe: ismcts-V4-200it vs ismcts-V4-200it → 49.2 % [40.4 %–58.0 %] over 120 games

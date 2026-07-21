@@ -49,6 +49,8 @@ graphify-out/
 
 # SoiSim raw simulation output (reproducible from seeds; reports are committed instead)
 Tools/ShardsData/sim/
+# Live campaign status (machine-local heartbeat; history is campaign-log.md)
+Tools/ShardsData/campaign-status.md
 # Neural self-play position data (gigabytes; regenerable from seeds)
 Tools/ShardsData/selfplay/
 # Python env + raw training outputs (weights are committed via ShardsNetWeights.g.cs)

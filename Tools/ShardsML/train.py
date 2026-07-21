@@ -35,21 +35,29 @@ RECORD_DTYPE = np.dtype([
 
 
 def load_dir(paths: str) -> np.ndarray:
-    """Comma-separated dirs = the sliding training window (e.g. gen0,gen1)."""
+    """Comma-separated dirs; append " CAP" (space-separated int) to subsample a dir
+    with a fixed seed, e.g. "gen0 280000,gen1,gen1b" — caps the bootstrap so fresh
+    search data isn't drowned (the attempt-1/-2 lesson)."""
     parts = []
-    files = []
-    for path in paths.split(","):
-        files += sorted(glob.glob(os.path.join(path.strip(), "*.soip")))
-    for file in files:
-        with open(file, "rb") as f:
-            magic, fmt, schema, feat, rec = struct.unpack("<IHHII", f.read(16))
-        assert magic == 0x50494F53, f"{file}: bad magic"
-        assert schema == 1 and feat == FEATURES, f"{file}: schema {schema}/{feat} != 1/{FEATURES}"
-        assert rec == RECORD_DTYPE.itemsize, f"{file}: record size {rec} != {RECORD_DTYPE.itemsize}"
-        parts.append(np.fromfile(file, dtype=RECORD_DTYPE, offset=32))
-    assert parts, f"no .soip files under {paths}"
+    for spec in paths.split(","):
+        tokens = spec.strip().rsplit(" ", 1)
+        path, cap = (tokens[0], int(tokens[1])) if len(tokens) == 2 and tokens[1].isdigit() else (spec.strip(), None)
+        dir_parts = []
+        for file in sorted(glob.glob(os.path.join(path, "*.soip"))):
+            with open(file, "rb") as f:
+                magic, fmt, schema, feat, rec = struct.unpack("<IHHII", f.read(16))
+            assert magic == 0x50494F53, f"{file}: bad magic"
+            assert schema == 1 and feat == FEATURES, f"{file}: schema {schema}/{feat} != 1/{FEATURES}"
+            assert rec == RECORD_DTYPE.itemsize, f"{file}: record size {rec}"
+            dir_parts.append(np.fromfile(file, dtype=RECORD_DTYPE, offset=32))
+        assert dir_parts, f"no .soip files under {path}"
+        block = np.concatenate(dir_parts)
+        if cap is not None and len(block) > cap:
+            block = block[np.random.default_rng(42).choice(len(block), cap, replace=False)]
+        print(f"  {path}: {len(block):,} positions" + (f" (capped from more)" if cap else ""))
+        parts.append(block)
     data = np.concatenate(parts)
-    print(f"loaded {len(data):,} positions from {paths}")
+    print(f"loaded {len(data):,} positions total")
     return data
 
 
