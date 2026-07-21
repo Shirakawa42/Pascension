@@ -279,6 +279,10 @@ cards. All of that is intentionally out of scope here.)
 - **Attack**: each Ingeminex's attack effect triggers ONCE, at the end of the turn on which it
   was revealed, and hits ALL players (not just the active one). It does NOT keep attacking on
   later turns — after that one attack it just sits there until defeated.
+  - LOCKED (user decision 2026-07-21): the attack resolves AFTER the active player's cleanup
+    and redraw (and before the turn passes), so discard attacks (Agony) hit the active
+    player's fresh hand — meaningful for every player symmetrically. Pinned by
+    `IngeminexAttack_FiresAfterActivePlayerRedraws`.
 - **Defeating**: during your turn, spend Power equal to the number printed on the Ingeminex
   (same mechanism as attacking a champion). It goes to the BOTTOM of the center deck (no row
   replacement, since it never occupied a slot) and YOU alone gain its printed reward,

@@ -992,19 +992,8 @@ namespace Shards.Engine
                 queued = true;
             }
 
-            if (State.PendingMonsterAttacks.Count > 0)
-            {
-                foreach (int id in new List<int>(State.PendingMonsterAttacks))
-                {
-                    var monster = State.ActiveMonsters.Find(m => m.InstanceId == id);
-                    if (monster == null) continue;
-                    Emit(new ShardsMonsterAttackedEvent { InstanceId = monster.InstanceId, DefId = monster.DefId });
-                    if (monster.Def.MonsterAttackEffect != null)
-                        QueueEffect(monster.Def.MonsterAttackEffect, player.Index, monster);
-                }
-                State.PendingMonsterAttacks.Clear();
-                queued = true;
-            }
+            // Ingeminex attacks moved to FinishEndTurn: they fire AFTER the active
+            // player redraws (locked 2026-07-21) so discard attacks hit the fresh hand.
 
             // Cleanup must run AFTER every effect the damage step queued — not only the
             // ones queued right here. ApplyDamage queues owned-destiny triggers (Blood
@@ -1055,7 +1044,9 @@ namespace Shards.Engine
 
         private void FinishEndTurn(ShardsPlayer player)
         {
-            _endTurnInProgress = false;
+            // _endTurnInProgress stays true until AdvanceAfterEndTurn: the Ingeminex
+            // attacks queued below may park on decisions, and Concede/RoutePriority
+            // must not advance the turn out from under them.
             _splitTargets = null;
             _splitAmounts = null;
 
@@ -1110,6 +1101,48 @@ namespace Shards.Engine
             player.ResetTurn();
             Emit(new ShardsCleanupEvent { PlayerIndex = player.Index });
 
+            // 6. Ingeminex revealed this turn attack — AFTER the redraw (locked
+            //    2026-07-21: Agony's discard hits the active player's fresh hand).
+            //    Queue only (this runs inside FinishFlow's iterator — pump gotchas),
+            //    and park the turn-advance BEHIND the attack effects so their
+            //    decisions resolve under the correct TurnPlayerIndex and Round.
+            bool queued = QueueMonsterAttacks(player);
+            if (queued || _effectQueue.Count > 0)
+            {
+                QueueEffect(new Custom(_ => AdvanceFlow(player)), player.Index, null);
+                return;
+            }
+            AdvanceAfterEndTurn(player);
+        }
+
+        private IEnumerable<ShardsStep> AdvanceFlow(ShardsPlayer player)
+        {
+            AdvanceAfterEndTurn(player);
+            yield break;
+        }
+
+        /// <summary>Emit + queue the attack of every Ingeminex revealed this turn.</summary>
+        private bool QueueMonsterAttacks(ShardsPlayer player)
+        {
+            if (State.PendingMonsterAttacks.Count == 0) return false;
+            foreach (int id in new List<int>(State.PendingMonsterAttacks))
+            {
+                var monster = State.ActiveMonsters.Find(m => m.InstanceId == id);
+                if (monster == null) continue;
+                Emit(new ShardsMonsterAttackedEvent { InstanceId = monster.InstanceId, DefId = monster.DefId });
+                if (monster.Def.MonsterAttackEffect != null)
+                    QueueEffect(monster.Def.MonsterAttackEffect, player.Index, monster);
+            }
+            State.PendingMonsterAttacks.Clear();
+            return true;
+        }
+
+        /// <summary>The end-turn tail: runs after cleanup AND after any post-redraw
+        /// Ingeminex attacks have fully resolved.</summary>
+        private void AdvanceAfterEndTurn(ShardsPlayer player)
+        {
+            _endTurnInProgress = false;
+            CheckStateBased();
             if (!State.GameOver)
             {
                 // Slipstream Shard M20: the player takes another turn (once per game).

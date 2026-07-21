@@ -43,6 +43,11 @@ namespace Shards.Engine
         public List<ShardsCardSnap> Destinies = new();
         /// <summary>Viewer-only: unearned set-aside relics.</summary>
         public List<ShardsCardSnap> SetAside;
+        /// <summary>Viewer-only: every card the viewer OWNS — deck, hand, discard,
+        /// play zone (minus fast-plays, which return to the center deck) and champions
+        /// in play — sorted by def id so deck ORDER never leaks. The "what is in my
+        /// deck" list, zone-blind.</summary>
+        public List<ShardsCardSnap> FullDeck;
     }
 
     /// <summary>Per-viewer masked view: hands and deck orders hidden for others.</summary>
@@ -136,6 +141,22 @@ namespace Shards.Engine
                     foreach (var card in player.Hand) snap.Hand.Add(Snap(card));
                     snap.SetAside = new List<ShardsCardSnap>();
                     foreach (var card in player.SetAside) snap.SetAside.Add(Snap(card));
+
+                    snap.FullDeck = new List<ShardsCardSnap>();
+                    foreach (var card in player.Deck) snap.FullDeck.Add(Snap(card));
+                    foreach (var card in player.Hand) snap.FullDeck.Add(Snap(card));
+                    foreach (var card in player.Discard) snap.FullDeck.Add(Snap(card));
+                    foreach (var card in player.PlayZone)
+                        if (!card.FastPlayed) // fast-plays return to the center deck
+                            snap.FullDeck.Add(Snap(card));
+                    foreach (var card in player.Champions) snap.FullDeck.Add(Snap(card));
+                    // Def-id order: the composition is the viewer's to know, the
+                    // deck ORDER is not.
+                    snap.FullDeck.Sort((a, b) =>
+                    {
+                        int byDef = string.CompareOrdinal(a.DefId, b.DefId);
+                        return byDef != 0 ? byDef : a.InstanceId.CompareTo(b.InstanceId);
+                    });
                 }
                 snapshot.Players.Add(snap);
             }

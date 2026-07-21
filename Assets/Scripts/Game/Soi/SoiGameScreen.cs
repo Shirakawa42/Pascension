@@ -36,6 +36,11 @@ namespace Pascension.Game.Soi
         private int _maxHealth = 50;
         private PendingSnap _pending;
         private DecisionRequest _deferredDecision;
+        // Destiny board-pick mode: the pending soi.destiny decision answered by
+        // clicking glowing row cards directly (no modal — piles stay browsable).
+        private DecisionRequest _boardPickRequest;
+        private readonly List<int> _boardPicked = new List<int>();
+        private RectTransform _keywordTips; // keyword tooltips beside the hover preview
         private bool _gameOverShown;
 
         // Presentation stack.
@@ -224,9 +229,13 @@ namespace Pascension.Game.Soi
             _playedPile = CreatePile("PlayedPile", UI.Loc.T("Played"), faceDown: false, new Vector2(0f, 0f), new Vector2(80f, 488f));
             _discardPile = CreatePile("DiscardPile", UI.Loc.T("Discard"), faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 208f));
             _banishPile = CreatePile("BanishPile", UI.Loc.T("Banish"), faceDown: false, new Vector2(1f, 0f), new Vector2(-80f, 396f));
-            _drawPile.Clicked += () => _toast.Show(UI.Loc.French
-                ? "Votre deck : " + (Me?.DeckCount ?? 0) + " cartes (contenu et ordre cachés)."
-                : "Your deck: " + (Me?.DeckCount ?? 0) + " cards (contents and order hidden).");
+            _drawPile.Clicked += ShowFullDeck;
+
+            // The zone-blind "what is in my deck" list (also opened by the draw pile).
+            // y=2: tucked under the portrait (bottom edge ~35) without overlapping it.
+            var deckList = UiFactory.CreateButton(Theme, "DeckList", root, UI.Loc.T("DECK LIST"), 15f);
+            UiFactory.Place((RectTransform)deckList.transform, new Vector2(0f, 0f), new Vector2(80f, 2f), new Vector2(140f, 30f));
+            deckList.onClick.AddListener(ShowFullDeck);
             _playedPile.Clicked += () => ShowPile(UI.Loc.T("Played this turn"), Me != null ? ZoneSnaps(Me.PlayZone) : null);
             _discardPile.Clicked += () => ShowPile(UI.Loc.T("Discard pile"), Me != null ? ZoneSnaps(Me.Discard) : null);
             _banishPile.Clicked += ShowBanishedByPlayer;
@@ -456,8 +465,18 @@ namespace Pascension.Game.Soi
         private void OnInputRequested(PendingSnap pending)
         {
             _pending = pending;
-            if (pending != null && pending.Kind == PendingInputKind.Decision &&
-                pending.PlayerIndex == MyIndex && pending.Decision != null)
+            bool myDecision = pending != null && pending.Kind == PendingInputKind.Decision &&
+                              pending.PlayerIndex == MyIndex && pending.Decision != null;
+
+            // A stale board-pick (destiny) mode dies with its decision.
+            if (_boardPickRequest != null &&
+                (!myDecision || pending.Decision.Id != _boardPickRequest.Id))
+            {
+                _boardPickRequest = null;
+                _boardPicked.Clear();
+            }
+
+            if (myDecision)
             {
                 // Decisions wait for animations to finish (Pascension discipline).
                 if (_queue.IsIdle)
@@ -606,12 +625,67 @@ namespace Pascension.Game.Soi
 
         private void ShowDecision(DecisionRequest request)
         {
+            // Destiny picks happen ON THE BOARD (2026-07-21): no modal, no dimmer —
+            // the row cards glow and clicking one answers the decision, so the piles
+            // stay browsable while the player thinks. Everything else is already
+            // blocked by the priority gate (MyPriority is false during a decision).
+            if (request.Context == "soi.destiny")
+            {
+                _boardPickRequest = request;
+                _boardPicked.Clear();
+                _toast.Show(request.Max > 1
+                    ? string.Format(UI.Loc.T("Pick {0} destinies from the glowing row."), request.Max)
+                    : UI.Loc.T("Pick a destiny from the glowing row."));
+                RenderDestinyAndMonsters(); // repaint glows + click routing now
+                return;
+            }
+
             _modal.Show(request, id => OptionLabel(request, id), chosen =>
             {
                 var answer = new DecisionAnswer { DecisionId = request.Id };
                 answer.ChosenOptionIds.AddRange(chosen);
                 Submit(new SubmitDecisionAction { PlayerIndex = MyIndex, Answer = answer });
             }, FindDefId, FindZoneName, PlayerInfo);
+        }
+
+        /// <summary>The decision option matching a destiny-row card (options carry the
+        /// row card's instance id in CardInstanceId; option id equals it today).</summary>
+        private static DecisionOption FindOptionFor(DecisionRequest request, int instanceId)
+        {
+            foreach (var option in request.Options)
+                if (option.CardInstanceId == instanceId || option.Id == instanceId)
+                    return option;
+            return null;
+        }
+
+        private void OnDestinyBoardPick(int instanceId)
+        {
+            var request = _boardPickRequest;
+            if (request == null) return;
+            var option = FindOptionFor(request, instanceId);
+            if (option == null) return;
+
+            if (request.Max <= 1)
+            {
+                SubmitBoardPick(request, new List<int> { option.Id });
+                return;
+            }
+            // Multi-pick: toggle, auto-submit once the required count is reached.
+            if (!_boardPicked.Remove(option.Id))
+                _boardPicked.Add(option.Id);
+            if (_boardPicked.Count >= request.Max)
+                SubmitBoardPick(request, new List<int>(_boardPicked));
+            else
+                RenderDestinyAndMonsters(); // repaint the picked glow
+        }
+
+        private void SubmitBoardPick(DecisionRequest request, List<int> chosen)
+        {
+            _boardPickRequest = null;
+            _boardPicked.Clear();
+            var answer = new DecisionAnswer { DecisionId = request.Id };
+            answer.ChosenOptionIds.AddRange(chosen);
+            Submit(new SubmitDecisionAction { PlayerIndex = MyIndex, Answer = answer });
         }
 
         /// <summary>Live name/health/portrait per player for the damage-split picker.</summary>
@@ -977,7 +1051,8 @@ namespace Pascension.Game.Soi
             foreach (Transform child in _destinyRow) Destroy(child.gameObject);
             foreach (Transform child in _monsterRow) Destroy(child.gameObject);
 
-            bool eligible = MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5;
+            var pick = _boardPickRequest; // board-pick mode: a soi.destiny decision pends
+            bool eligible = pick == null && MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5;
             CenterRun(760f, _snap.DestinyRow.Count, out float x, out float xStep, 96f);
             foreach (var destiny in _snap.DestinyRow)
             {
@@ -987,15 +1062,27 @@ namespace Pascension.Game.Soi
                 view.Rect.anchoredPosition = new Vector2(x, 0f);
                 x += xStep;
                 view.BindDef(destiny.DefId, destiny.InstanceId);
-                view.SetGreyed(!eligible);
-                view.SetGlow(eligible, UiPalette.HealthyGreen); // takeable right now
-                view.Clicked += w =>
+                if (pick != null)
                 {
-                    if (MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5)
-                        Submit(new ShardsTakeDestinyAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
-                    else
-                        _toast.Show(UI.Loc.T("Destinies unlock at Mastery 5 (one per game)."));
-                };
+                    var option = FindOptionFor(pick, destiny.InstanceId);
+                    bool pickable = option != null;
+                    bool picked = pickable && _boardPicked.Contains(option.Id);
+                    view.SetGreyed(!pickable);
+                    view.SetGlow(pickable, picked ? UiPalette.HealthyGreen : UiPalette.Gold);
+                    view.Clicked += w => OnDestinyBoardPick(w.InstanceId);
+                }
+                else
+                {
+                    view.SetGreyed(!eligible);
+                    view.SetGlow(eligible, UiPalette.HealthyGreen); // takeable right now
+                    view.Clicked += w =>
+                    {
+                        if (MyPriority && Me != null && !Me.DestinyTaken && Me.Mastery >= 5)
+                            Submit(new ShardsTakeDestinyAction { PlayerIndex = MyIndex, CardInstanceId = w.InstanceId });
+                        else
+                            _toast.Show(UI.Loc.T("Destinies unlock at Mastery 5 (one per game)."));
+                    };
+                }
                 _boardViews[destiny.InstanceId] = view;
             }
 
@@ -1507,14 +1594,77 @@ namespace Pascension.Game.Soi
         {
             if (view == _preview || _hand.IsDragging) return;
             if (!entered || string.IsNullOrEmpty(view.DefId))
+            {
                 _preview.gameObject.SetActive(false);
+                HideKeywordTips();
+            }
             else
             {
                 _preview.gameObject.SetActive(true);
                 _preview.transform.SetAsLastSibling();
                 _preview.BindDef(view.DefId);
+                ShowKeywordTips(view);
             }
             BroadcastLocalHover(view, entered);
+        }
+
+        // ------------------------------------------------------------------ keyword tooltips
+
+        /// <summary>Hearthstone-style: one tooltip per keyword on the hovered card,
+        /// stacked to the RIGHT of the fixed preview, explaining how the keyword
+        /// activates. Real cards only (InstanceId > 0) — history-bar hover proxies
+        /// keep the space free for their own "affected cards" panel.</summary>
+        private void ShowKeywordTips(CardView source)
+        {
+            HideKeywordTips();
+            if (source.InstanceId <= 0) return;
+            if (!ShardsCardDatabase.TryGet(source.DefId, out var def)) return;
+            var entries = SoiKeywordGlossary.For(def);
+            if (entries.Count == 0) return;
+
+            if (_keywordTips == null)
+            {
+                _keywordTips = UiFactory.CreateRect("KeywordTips", UiRootRect);
+                _keywordTips.anchorMin = _keywordTips.anchorMax = new Vector2(0f, 1f);
+                _keywordTips.pivot = new Vector2(0f, 1f);
+                // Right of the 1.3x preview card at (16,-192).
+                _keywordTips.anchoredPosition = new Vector2(318f, -196f);
+                _keywordTips.sizeDelta = new Vector2(250f, 10f);
+            }
+            foreach (Transform child in _keywordTips) Destroy(child.gameObject);
+
+            const float width = 250f, pad = 8f;
+            float y = 0f;
+            int shown = 0;
+            foreach (var entry in entries)
+            {
+                if (shown++ >= 4) break; // a card never carries more in practice
+                var panel = UiFactory.CreatePanel(Theme, "Tip_" + entry.Title, _keywordTips,
+                    UiPalette.WithAlpha(UiPalette.Background, 0.94f));
+                var title = UiFactory.CreateText(Theme, "Title", panel.transform,
+                    UI.Loc.T(entry.Title), 14f, UiPalette.Gold, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+                UiFactory.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(pad, -6f), new Vector2(width - pad * 2f, 18f));
+                var text = UiFactory.CreateText(Theme, "Text", panel.transform,
+                    UI.Loc.T(entry.Text), 12.5f, UiPalette.TextDim, TextAlignmentOptions.TopLeft);
+                float textH = text.GetPreferredValues(UI.Loc.T(entry.Text), width - pad * 2f, 0f).y + 4f;
+                UiFactory.Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(pad, -26f), new Vector2(width - pad * 2f, textH));
+
+                float panelH = 26f + textH + pad;
+                var panelRect = panel.rectTransform;
+                panelRect.anchorMin = panelRect.anchorMax = new Vector2(0f, 1f);
+                panelRect.pivot = new Vector2(0f, 1f);
+                panelRect.anchoredPosition = new Vector2(0f, y);
+                panelRect.sizeDelta = new Vector2(width, panelH);
+                y -= panelH + 6f;
+            }
+            _keywordTips.gameObject.SetActive(true);
+            _keywordTips.SetAsLastSibling();
+        }
+
+        private void HideKeywordTips()
+        {
+            if (_keywordTips != null)
+                _keywordTips.gameObject.SetActive(false);
         }
 
         /// <summary>Tell everyone which PUBLIC board card we're pointing at — only while
@@ -1640,6 +1790,30 @@ namespace Pascension.Game.Soi
             }
             _cardList.Show(title, cards);
         }
+
+        /// <summary>Every card the viewer owns, zone-blind, cheapest first — the
+        /// host-built FullDeck list (deck order never reaches the client).</summary>
+        private void ShowFullDeck()
+        {
+            var me = Me;
+            if (me?.FullDeck == null || me.FullDeck.Count == 0)
+            {
+                _toast.Show(UI.Loc.T("Nothing there yet."));
+                return;
+            }
+            var snaps = new List<CardSnap>(me.FullDeck.Count);
+            foreach (var card in me.FullDeck)
+                snaps.Add(Synth(card.DefId, card.InstanceId));
+            snaps.Sort((a, b) =>
+            {
+                int byCost = DefCost(a.DefId).CompareTo(DefCost(b.DefId));
+                return byCost != 0 ? byCost : string.CompareOrdinal(DefName(a.DefId), DefName(b.DefId));
+            });
+            _cardList.Show(UI.Loc.T("MY DECK — every card, any zone"), snaps);
+        }
+
+        private static int DefCost(string defId) =>
+            ShardsCardDatabase.TryGet(defId, out var def) ? def.Cost : 0;
 
         /// <summary>Banished cards grouped by owning player (market cards last), so
         /// "who banished what" is readable at a glance.</summary>

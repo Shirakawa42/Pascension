@@ -11,8 +11,8 @@ description: Shards of Infinity engine architecture (Shards.Engine, depends ONLY
 End-turn is a chained decision flow, not a phase machine:
 1. **Damage split** — decision Context `"soi.split"`, one option id per damage point, defenders clockwise from the attacker. Full power assignment is MANDATORY (Min=Power; DefaultOptionIds pre-fill a legal full assignment for timeouts/bots).
 2. **Per-defender shield reveal** — Context `"soi.shields"`, defenders clockwise. Shields reveal from HAND and STAY in hand; champion printed shields are INERT in play (Praetorian-02 is the lone in-play exception).
-3. **Ingeminex end-of-reveal-turn attacks** (ItH DLC).
-4. **Cleanup**: fast-plays → BOTTOM of center deck · play zone → discard · discard hand · ready champions/destinies/character AT END PHASE (not turn start) · redraw 5 with mid-draw reshuffle (never deck out) · pools/turn-flags reset.
+3. **Cleanup**: fast-plays → BOTTOM of center deck · play zone → discard · discard hand · ready champions/destinies/character AT END PHASE (not turn start) · redraw 5 with mid-draw reshuffle (never deck out) · pools/turn-flags reset.
+4. **Ingeminex end-of-reveal-turn attacks** (ItH DLC) — AFTER the redraw (locked 2026-07-21: Agony's discard hits the active player's FRESH hand). `FinishEndTurn` queues `QueueMonsterAttacks` then parks the turn-advance (`AdvanceFlow`→`AdvanceAfterEndTurn`) BEHIND the attack effects; `_endTurnInProgress` stays true until the advance so Concede/RoutePriority can't advance mid-attack. Pinned by `IngeminexAttack_FiresAfterActivePlayerRedraws`.
 
 ## Core rules encoded (each pinned by a test — details per card in shards-cards)
 - Champion damage ACCUMULATES within a turn; marks clear at end phase. Destruction needs full effective defense assigned in one split.

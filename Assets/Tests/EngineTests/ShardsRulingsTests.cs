@@ -432,6 +432,41 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void IngeminexAttack_FiresAfterActivePlayerRedraws()
+        {
+            // Locked 2026-07-21: the attack resolves AFTER the active player's cleanup
+            // and redraw, so Agony's discard hits the fresh hand — and the turn only
+            // advances once every attack decision has resolved.
+            var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 31, players: 2);
+            var p0 = engine.State.Players[0];
+            var p1 = engine.State.Players[1];
+            var agony = new ShardsCard { InstanceId = engine.State.NextInstanceId++, DefId = "ingeminex_agony", Owner = -1, Zone = ShardsZone.CenterDeck };
+            engine.State.CenterDeck.Add(agony);
+            p0.Gems = 20;
+            MustSubmit(engine, new ShardsBuyCardAction { PlayerIndex = 0, SlotIndex = 0 });
+            Assert.Contains(agony, engine.State.ActiveMonsters);
+
+            // Play a card so the leftover hand (4) differs from a fresh one (5) — the
+            // at-decision hand count then discriminates old (pre-cleanup) timing.
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = p0.Hand[0].InstanceId });
+            Assert.AreEqual(engine.State.Rules.HandSize - 1, p0.Hand.Count);
+
+            int p1HandBefore = p1.Hand.Count;
+            MustSubmit(engine, new ShardsEndTurnAction { PlayerIndex = 0 });
+
+            Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind, "Agony discard pending");
+            Assert.AreEqual("soi.discard", engine.PendingInput.Decision.Context);
+            Assert.AreEqual(0, engine.PendingInput.Decision.PlayerIndex, "clockwise from the ender");
+            Assert.AreEqual(engine.State.Rules.HandSize, p0.Hand.Count, "hand already REDRAWN when the attack lands");
+            Assert.AreEqual(0, engine.State.TurnPlayerIndex, "turn must NOT advance while the attack resolves");
+
+            DrainDecisionsWithDefaults(engine);
+            Assert.AreEqual(engine.State.Rules.HandSize - 2, p0.Hand.Count, "discarded 2 from the fresh hand");
+            Assert.AreEqual(p1HandBefore - 2, p1.Hand.Count, "non-active player discarded from the hand they keep");
+            Assert.AreEqual(1, engine.State.TurnPlayerIndex, "turn advanced only after the attack resolved");
+        }
+
+        [Test]
         public void Malice_AttackDestroysHighestCostChampion_EvenOnTies()
         {
             var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 61);
