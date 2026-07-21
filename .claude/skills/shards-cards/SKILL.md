@@ -119,6 +119,12 @@ pump gotchas, glow hints): see the shards-engine skill.
   in early notes was wrong) and fizzled at-cap heals still count.
 - Copying an effect (Ojas/Taur/Duplication Fabricator) is NOT playing the card: no
   faction counts, no play triggers; Cinder Scars' pair bonus needs a REAL second copy.
+- A card can be COPIED only once per resolution chain (`ShardsContext` copy-chain,
+  locked 2026-07-21): a played Fabricator copying the revealed second Fabricator
+  re-reveals the same unchanged deck tops → without the guard this recursed forever
+  (stack overflow, found by a 3000-game bench sweep). Both copy sites filter on
+  `ctx.InCopyChain` and call `ctx.MarkCopied`. Pinned by
+  `DuplicationFabricator_CopyingTheRevealedSecondFabricator_CannotRecurse`.
 - Slipstream Shard M20: extra turn, once per game per player.
 - Full power assignment at the attack phase is MANDATORY (Min=Power on the split
   decision; DefaultOptionIds pre-fill a legal full assignment for timeouts/bots).

@@ -219,7 +219,7 @@ namespace Shards.Content
             if (defIds.Count > 0)
                 engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds });
 
-            var copyable = revealed.FindAll(c => !c.Def.IsChampion && c.Def.PlayEffect != null);
+            var copyable = revealed.FindAll(c => !c.Def.IsChampion && c.Def.PlayEffect != null && !ctx.InCopyChain(c));
             if (copyable.Count == 0) yield break;
             var request = new DecisionRequest
             {
@@ -235,6 +235,7 @@ namespace Shards.Content
             yield return ShardsStep.AwaitDecision(request);
             var chosen = copyable.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
             if (chosen == null) yield break;
+            ctx.MarkCopied(chosen);
             foreach (var step in chosen.Def.PlayEffect.Resolve(ctx))
                 yield return step;
         }

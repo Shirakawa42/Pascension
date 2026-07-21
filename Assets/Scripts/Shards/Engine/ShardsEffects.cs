@@ -29,6 +29,17 @@ namespace Shards.Engine
         public DecisionAnswer Answer;
 
         public ShardsPlayer Controller => Engine.State.Players[ControllerIndex];
+
+        /// <summary>Cards whose effects were copy-resolved in this resolution chain.
+        /// Copy effects (Ojas/Taur/Duplication Fabricator) must skip these: a copied
+        /// effect that copies again would otherwise recurse forever — e.g. a played
+        /// Duplication Fabricator copying the revealed second Fabricator re-reveals
+        /// the same unchanged deck tops. One copy per card per chain is the ruling.</summary>
+        private HashSet<int> _copyChain;
+
+        public bool InCopyChain(ShardsCard card) => _copyChain != null && _copyChain.Contains(card.InstanceId);
+
+        public void MarkCopied(ShardsCard card) => (_copyChain ??= new HashSet<int>()).Add(card.InstanceId);
     }
 
     public sealed class ShardsNullEffect : IShardsEffect
@@ -700,7 +711,7 @@ namespace Shards.Engine
         {
             var player = ctx.Controller;
             var candidates = player.PlayedThisTurn.FindAll(c =>
-                c != ctx.Source && _filter(c.Def) && c.Def.PlayEffect != null);
+                c != ctx.Source && _filter(c.Def) && c.Def.PlayEffect != null && !ctx.InCopyChain(c));
             if (candidates.Count == 0) yield break;
 
             ShardsCard chosen;
@@ -726,6 +737,7 @@ namespace Shards.Engine
                 if (chosen == null) yield break;
             }
 
+            ctx.MarkCopied(chosen);
             for (int i = 0; i < _copies; i++)
                 foreach (var step in chosen.Def.PlayEffect.Resolve(ctx))
                     yield return step;

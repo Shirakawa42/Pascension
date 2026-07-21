@@ -777,6 +777,38 @@ namespace Pascension.Engine.Tests
             Assert.AreEqual(8, p0.Power, "a fast-played Homodeus ally resolves twice too");
         }
 
+        [Test]
+        public void DuplicationFabricator_CopyingTheRevealedSecondFabricator_CannotRecurse()
+        {
+            // Pre-fix this recursed forever: copying the revealed Fabricator re-runs the
+            // reveal against UNCHANGED deck tops (peek doesn't move cards), so the same
+            // Fabricator could be copied again, ad infinitum → stack overflow (found by
+            // a 3000-game bench sweep). Ruling: one copy per card per resolution chain.
+            var engine = NewGame(ShardsDlc.IntoTheHorizon, seed: 77);
+            var p0 = engine.State.Players[0];
+            var p1 = engine.State.Players[1];
+
+            p0.Deck.Clear(); // discard is empty on turn 1 → P0 reveals nothing
+            var played = Give(engine, p0, "duplication_fabricator", ShardsZone.Hand);
+            var second = new ShardsCard
+            {
+                InstanceId = engine.State.NextInstanceId++,
+                DefId = "duplication_fabricator",
+                Owner = 1,
+                Zone = ShardsZone.Deck
+            };
+            p1.Deck.Add(second); // list end = top of deck
+
+            int masteryBefore = p0.Mastery;
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = played.InstanceId });
+            // The revealed second Fabricator is offered and may be copied ONCE...
+            Answer(engine, second.InstanceId);
+            // ...but its own nested reveal must not offer it again — the chain settles.
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind,
+                "the copy chain must settle back to priority instead of recursing");
+            Assert.AreEqual(masteryBefore + 2, p0.Mastery, "played +1 mastery, copied +1 mastery");
+        }
+
         // ------------------------------------------------------------- bot sims
 
         [Test]
