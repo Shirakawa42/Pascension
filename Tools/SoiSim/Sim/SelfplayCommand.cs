@@ -24,6 +24,8 @@ namespace SoiSim
             int games = cli.GetInt("--games", 20000);
             int budget = cli.GetInt("--budget", 0);
             int perGame = cli.GetInt("--positions-per-game", 12);
+            int truncate = cli.GetInt("--truncate", 2);
+            int tempTurns = cli.GetInt("--temp-turns", 8);
             ulong seedBase = cli.GetULong("--seed-base", 1);
             int threads = cli.GetInt("--threads", Math.Max(1, Environment.ProcessorCount - 1));
             string outDir = cli.GetStr("--out",
@@ -42,6 +44,16 @@ namespace SoiSim
             int done = 0;
             var sw = Stopwatch.StartNew();
             var model = new ShardsValueModel();
+            // One shared evaluator (read-only weights, ThreadStatic scratch) for every
+            // search seat; truncation only engages when a trained net exists.
+            IShardsValueEvaluator sharedEval =
+                budget > 0 && truncate > 0 && ShardsNetWeights.Available
+                    ? ShardsNeuralEval.LoadCurrent()
+                    : null;
+            if (budget > 0)
+                Console.WriteLine(sharedEval != null
+                    ? $"  search selfplay: net gen {ShardsNetWeights.Generation} leaf eval, truncate {truncate}, temp turns {tempTurns}"
+                    : "  search selfplay: FULL rollouts (no net embedded), temp turns " + tempTurns);
 
             Parallel.For(0, threads, worker =>
             {
@@ -65,10 +77,21 @@ namespace SoiSim
 
                     var seats = new IBotAgent[2];
                     for (int s = 0; s < 2; s++)
-                        seats[s] = budget > 0
-                            ? new ShardsSearchBot(seed * 100 + (ulong)s, adapter.Inner,
-                                ShardsSearchConfig.ForSims(budget), model)
-                            : new ShardsGreedyEvalBot(seed * 100 + (ulong)s, adapter.Inner, model);
+                    {
+                        if (budget > 0)
+                        {
+                            var config = ShardsSearchConfig.ForSims(budget);
+                            config.RootSampleTurns = tempTurns;
+                            if (sharedEval != null)
+                                config.RolloutEndTurns = truncate;
+                            seats[s] = new ShardsSearchBot(seed * 100 + (ulong)s, adapter.Inner,
+                                config, model, sharedEval);
+                        }
+                        else
+                        {
+                            seats[s] = new ShardsGreedyEvalBot(seed * 100 + (ulong)s, adapter.Inner, model);
+                        }
+                    }
 
                     // Reservoir over priority points; encode AT the moment of sampling.
                     var reservoir = new List<(float[] X, ushort Move, byte Seat)>(perGame);

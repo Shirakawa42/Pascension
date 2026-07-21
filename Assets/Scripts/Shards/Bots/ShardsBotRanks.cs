@@ -60,16 +60,20 @@ namespace Shards.Bots
             // trained on 720k bootstrap positions): ISMCTS with net-truncated rollouts
             // (2 end-turns) at the same 1.0s budget. Promotion probe: 78.3%
             // [66.4–86.9] vs SILVER's search at EQUAL iterations (and ~2× cheaper
-            // per iteration on top). Higher ranks pin future net generations.
+            // per iteration on top). PINNED to generation 0 forever — newer nets mint
+            // newer ranks instead of drifting this one.
             Rank("gold", "GOLD", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    GoldConfig(), Model.Value)),
+                    NetConfig(1.0), Model.Value, Gen0Net.Value)),
         };
 
-        private static ShardsSearchConfig GoldConfig()
+        private static readonly Lazy<IShardsValueEvaluator> Gen0Net =
+            new(() => ShardsNeuralEval.LoadGeneration(0));
+
+        private static ShardsSearchConfig NetConfig(double seconds)
         {
-            var config = ShardsSearchConfig.ForRealGames(1.0);
-            config.RolloutEndTurns = 2; // net-truncated rollouts (ShardsNetWeights)
+            var config = ShardsSearchConfig.ForRealGames(seconds);
+            config.RolloutEndTurns = 2; // net-truncated rollouts
             return config;
         }
 

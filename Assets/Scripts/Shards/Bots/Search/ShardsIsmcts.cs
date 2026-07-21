@@ -61,11 +61,32 @@ namespace Shards.Bots
             var root = RunSearch();
 
             Child best = null;
-            foreach (var child in root.Children.Values)
-                if (best == null || child.Visits > best.Visits)
-                    best = child;
+            if (_config.RootSampleTurns > 0 && _live.State.Round <= _config.RootSampleTurns)
+                best = SampleByVisits(root);
+            if (best == null)
+                foreach (var child in root.Children.Values)
+                    if (best == null || child.Visits > best.Visits)
+                        best = child;
             LastChosenPlan = best == null ? null : new PlanCursor { Node = best.Node };
             return best?.Action ?? _model.ChooseAction(_live, _viewer);
+        }
+
+        /// <summary>Self-play exploration: sample the root ∝ visits^(1/τ).</summary>
+        private Child SampleByVisits(Node root)
+        {
+            double total = 0;
+            foreach (var child in root.Children.Values)
+                if (child.Visits > 0)
+                    total += Math.Pow(child.Visits, 1.0 / _config.RootTau);
+            if (total <= 0) return null;
+            double r = _rng.Next(1_000_000) / 1_000_000.0 * total;
+            foreach (var child in root.Children.Values)
+            {
+                if (child.Visits == 0) continue;
+                r -= Math.Pow(child.Visits, 1.0 / _config.RootTau);
+                if (r <= 0) return child;
+            }
+            return null;
         }
 
         /// <summary>Runs the iteration loop and returns the raw root — the merge surface

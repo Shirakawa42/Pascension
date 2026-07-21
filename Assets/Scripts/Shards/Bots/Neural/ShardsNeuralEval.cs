@@ -32,6 +32,17 @@ namespace Shards.Bots
                 ShardsNetWeights.Layers, ShardsNetWeights.SchemaVersion, ShardsNetWeights.Sha256);
         }
 
+        /// <summary>Loads a specific FROZEN generation — minted ranks pin these so a
+        /// rank's strength never drifts when newer nets land.</summary>
+        public static ShardsNeuralEval LoadGeneration(int generation)
+        {
+            foreach (var spec in ShardsNetWeights.All)
+                if (spec.Generation == generation)
+                    return new ShardsNeuralEval(Convert.FromBase64String(spec.Blob),
+                        spec.Layers, spec.SchemaVersion, spec.Sha256);
+            throw new InvalidOperationException($"net generation {generation} is not embedded");
+        }
+
         public ShardsNeuralEval(byte[] f16Blob, int[] layers, int schemaVersion, string sha256)
         {
             if (schemaVersion != ShardsStateEncoder.SchemaVersion)

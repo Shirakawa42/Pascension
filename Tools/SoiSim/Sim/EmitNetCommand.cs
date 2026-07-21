@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using Pascension.Core;
@@ -10,12 +11,23 @@ using Shards.Engine;
 
 namespace SoiSim
 {
-    /// <summary>emit-net: embeds a trained weights.bin/.json as the generated
-    /// ShardsNetWeights.g.cs (Base64 f16 + header consts). netfixture: writes 64
-    /// deterministic encoded states for train.py to stamp expected outputs — the
-    /// committed parity fixture that pins C# forward == PyTorch.</summary>
+    /// <summary>emit-net: embeds a trained weights.bin/.json into the generated
+    /// ShardsNetWeights.g.cs. PRESERVES every previously embedded generation (read via
+    /// reflection from the compiled registry) — minted ranks pin FROZEN generations
+    /// (GOLD = gen 0) and must never drift when Current moves. netfixture: writes the
+    /// committed parity fixture states.</summary>
     public static class EmitNetCommand
     {
+        private sealed class GenEntry
+        {
+            public int Generation;
+            public int SchemaVersion;
+            public int[] Layers;
+            public string Sha256;
+            public string Blob;
+            public string Note = "";
+        }
+
         public static int RunEmit(Cli cli)
         {
             string binPath = cli.GetStr("--bin", null) ?? throw new CliError("--bin required");
@@ -26,48 +38,133 @@ namespace SoiSim
 
             var header = JObject.Parse(File.ReadAllText(jsonPath));
             byte[] blob = File.ReadAllBytes(binPath);
-            int schema = header.Value<int>("schemaVersion");
-            int features = header.Value<int>("featureCount");
-            var layers = header["layers"].ToObject<int[]>();
-            string sha = header.Value<string>("sha256");
-            int generation = header.Value<int>("generation");
+            var incoming = new GenEntry
+            {
+                Generation = header.Value<int>("generation"),
+                SchemaVersion = header.Value<int>("schemaVersion"),
+                Layers = header["layers"].ToObject<int[]>(),
+                Sha256 = header.Value<string>("sha256"),
+                Blob = Convert.ToBase64String(blob),
+                Note = $"valAcc {header.Value<double?>("valAcc")} · {header.Value<long?>("positions"):N0} positions · {DateTime.Now:yyyy-MM-dd}"
+            };
 
             // Sanity: the blob must load before we embed it.
-            _ = new ShardsNeuralEval(blob, layers, schema, sha);
+            _ = new ShardsNeuralEval(blob, incoming.Layers, incoming.SchemaVersion, incoming.Sha256);
 
+            var entries = ReadExistingGenerations();
+            entries.RemoveAll(e => e.Generation == incoming.Generation);
+            entries.Add(incoming);
+            entries.Sort((a, b) => a.Generation.CompareTo(b.Generation));
+
+            File.WriteAllText(outPath, Render(entries), new UTF8Encoding(false));
+            Console.WriteLine($"emit-net: generation {incoming.Generation} embedded " +
+                              $"({blob.Length:N0} bytes); file now holds generations " +
+                              string.Join(", ", entries.ConvertAll(e => e.Generation.ToString())) +
+                              $" -> {outPath}");
+            return 0;
+        }
+
+        /// <summary>Older generations from the COMPILED registry (reflection so this
+        /// works before and after the multi-gen shape exists).</summary>
+        private static List<GenEntry> ReadExistingGenerations()
+        {
+            var entries = new List<GenEntry>();
+            var type = typeof(ShardsNetWeights);
+            var allField = type.GetField("All", BindingFlags.Public | BindingFlags.Static);
+            if (allField?.GetValue(null) is Array all)
+            {
+                foreach (var item in all)
+                {
+                    var t = item.GetType();
+                    entries.Add(new GenEntry
+                    {
+                        Generation = (int)t.GetField("Generation").GetValue(item),
+                        SchemaVersion = (int)t.GetField("SchemaVersion").GetValue(item),
+                        Layers = (int[])t.GetField("Layers").GetValue(item),
+                        Sha256 = (string)t.GetField("Sha256").GetValue(item),
+                        Blob = (string)t.GetField("Blob").GetValue(item),
+                        Note = (string)(t.GetField("Note")?.GetValue(item) ?? "")
+                    });
+                }
+            }
+            else if ((bool)(type.GetProperty("Available")?.GetValue(null) ?? false))
+            {
+                // Legacy single-blob shape (pre-multi-gen): preserve its one net.
+                entries.Add(new GenEntry
+                {
+                    Generation = (int)type.GetProperty("Generation").GetValue(null),
+                    SchemaVersion = (int)type.GetProperty("SchemaVersion").GetValue(null),
+                    Layers = (int[])type.GetProperty("Layers").GetValue(null),
+                    Sha256 = (string)type.GetProperty("Sha256").GetValue(null),
+                    Blob = (string)type.GetProperty("CurrentBlob").GetValue(null),
+                    Note = "migrated from single-blob format"
+                });
+            }
+            return entries;
+        }
+
+        private static string Render(List<GenEntry> entries)
+        {
+            var newest = entries[entries.Count - 1];
             var sb = new StringBuilder();
             sb.AppendLine("// <auto-generated>");
-            sb.AppendLine("// SoI value-net weights, embedded as Base64 f16 blobs so the SAME bytes ship");
-            sb.AppendLine("// headless, in the editor and in IL2CPP builds (no file IO, no StreamingAssets).");
+            sb.AppendLine("// SoI value-net registry: one FROZEN blob per embedded generation (minted");
+            sb.AppendLine("// ranks pin generations; Current = newest). Base64 f16, sha256-verified.");
             sb.AppendLine("// Regenerate with:  soisim emit-net --bin <weights.bin> --json <weights.json>");
-            sb.AppendLine($"// Generation {generation} · valAcc {header.Value<double?>("valAcc")} · " +
-                          $"{header.Value<long?>("positions"):N0} positions · {DateTime.Now:yyyy-MM-dd}");
+            foreach (var e in entries)
+                sb.AppendLine($"// gen {e.Generation}: layers [{string.Join(",", e.Layers)}] · {e.Note}");
             sb.AppendLine("// </auto-generated>");
             sb.AppendLine("namespace Shards.Bots");
             sb.AppendLine("{");
             sb.AppendLine("    public static class ShardsNetWeights");
             sb.AppendLine("    {");
-            sb.AppendLine("        public static bool Available => true;");
+            sb.AppendLine("        public sealed class NetSpec");
+            sb.AppendLine("        {");
+            sb.AppendLine("            public int Generation;");
+            sb.AppendLine("            public int SchemaVersion;");
+            sb.AppendLine("            public int[] Layers;");
+            sb.AppendLine("            public string Sha256;");
+            sb.AppendLine("            public string Blob;");
+            sb.AppendLine("            public string Note;");
+            sb.AppendLine("        }");
             sb.AppendLine();
-            sb.AppendLine($"        public static int SchemaVersion => {schema};");
-            sb.AppendLine($"        public static int FeatureCount => {features};");
-            sb.AppendLine($"        public static int[] Layers => new[] {{ {string.Join(", ", layers)} }};");
-            sb.AppendLine($"        public static string Sha256 => \"{sha}\";");
-            sb.AppendLine($"        public static int Generation => {generation};");
-            sb.AppendLine();
-            sb.AppendLine("        public static string CurrentBlob => string.Concat(");
-            string base64 = Convert.ToBase64String(blob);
-            const int chunk = 60000;
-            for (int i = 0; i < base64.Length; i += chunk)
+            foreach (var e in entries)
             {
-                string piece = base64.Substring(i, Math.Min(chunk, base64.Length - i));
-                sb.AppendLine($"            \"{piece}\"{(i + chunk < base64.Length ? "," : ");")}");
+                sb.AppendLine($"        private static string Gen{e.Generation}Blob => string.Concat(");
+                const int chunk = 60000;
+                for (int i = 0; i < e.Blob.Length; i += chunk)
+                {
+                    string piece = e.Blob.Substring(i, Math.Min(chunk, e.Blob.Length - i));
+                    sb.AppendLine($"            \"{piece}\"{(i + chunk < e.Blob.Length ? "," : ");")}");
+                }
+                sb.AppendLine();
             }
+            sb.AppendLine("        public static readonly NetSpec[] All =");
+            sb.AppendLine("        {");
+            foreach (var e in entries)
+            {
+                sb.AppendLine("            new NetSpec");
+                sb.AppendLine("            {");
+                sb.AppendLine($"                Generation = {e.Generation},");
+                sb.AppendLine($"                SchemaVersion = {e.SchemaVersion},");
+                sb.AppendLine($"                Layers = new[] {{ {string.Join(", ", e.Layers)} }},");
+                sb.AppendLine($"                Sha256 = \"{e.Sha256}\",");
+                sb.AppendLine($"                Blob = Gen{e.Generation}Blob,");
+                sb.AppendLine($"                Note = \"{e.Note?.Replace("\"", "'")}\"");
+                sb.AppendLine("            },");
+            }
+            sb.AppendLine("        };");
+            sb.AppendLine();
+            sb.AppendLine("        public static bool Available => true;");
+            sb.AppendLine($"        public static int Generation => {newest.Generation};");
+            sb.AppendLine($"        public static int SchemaVersion => {newest.SchemaVersion};");
+            sb.AppendLine($"        public static int FeatureCount => {ShardsStateEncoder.FeatureCount};");
+            sb.AppendLine($"        public static int[] Layers => new[] {{ {string.Join(", ", newest.Layers)} }};");
+            sb.AppendLine($"        public static string Sha256 => \"{newest.Sha256}\";");
+            sb.AppendLine($"        public static string CurrentBlob => Gen{newest.Generation}Blob;");
             sb.AppendLine("    }");
             sb.AppendLine("}");
-            File.WriteAllText(outPath, sb.ToString(), new UTF8Encoding(false));
-            Console.WriteLine($"emit-net: generation {generation}, {blob.Length:N0} bytes -> {outPath}");
-            return 0;
+            return sb.ToString();
         }
 
         public static int RunFixture(Cli cli)

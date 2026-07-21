@@ -35,6 +35,12 @@ namespace Shards.Bots
         /// visits merge by action key.</summary>
         public int RootWorkers = 1;
 
+        /// <summary>Self-play exploration: while Round ≤ this, the ROOT action is
+        /// SAMPLED ∝ visits^(1/RootTau) instead of argmax — game diversity without a
+        /// policy prior to perturb. 0 (default) = always argmax.</summary>
+        public int RootSampleTurns = 0;
+        public double RootTau = 1.0;
+
         public static ShardsSearchConfig ForSims(int iterations) => new()
         {
             Mode = BudgetMode.Iterations,
