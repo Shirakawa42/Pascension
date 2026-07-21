@@ -26,6 +26,20 @@ namespace Pascension.Game.Presentation
         private bool _playing;
         private bool _fastForward;
 
+        /// <summary>When more than this many events are waiting (alt-tab catch-up:
+        /// runInBackground keeps the host resolving bot turns while unfocused), the
+        /// queue fast-forwards continuously until the backlog is back under control —
+        /// seconds of snap-through instead of minutes of animated replay.</summary>
+        private const int BacklogFastForwardThreshold = 20;
+
+        private int PendingEventCount()
+        {
+            int count = 0;
+            foreach (var batch in _batches)
+                count += batch.Count;
+            return count;
+        }
+
         public bool IsIdle => !_playing && _batches.Count == 0;
 
         /// <summary>True while the current batch is being fast-forwarded (per-frame
@@ -45,6 +59,8 @@ namespace Pascension.Game.Presentation
             if (!_playing) return;
             var mouse = Mouse.current;
             if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+                _fastForward = true;
+            if (!_fastForward && PendingEventCount() > BacklogFastForwardThreshold)
                 _fastForward = true;
         }
 

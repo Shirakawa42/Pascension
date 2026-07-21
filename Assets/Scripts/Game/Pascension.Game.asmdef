@@ -9,6 +9,7 @@
         "Pascension.Bots",
         "Shards.Content",
         "Shards.Engine",
+        "Shards.Bots",
         "Pascension.Net",
         "Unity.Netcode.Runtime",
         "Unity.TextMeshPro",

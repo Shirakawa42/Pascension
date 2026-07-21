@@ -1,13 +1,10 @@
 namespace Pascension.Game
 {
-    /// <summary>Which algorithmic agent occupies a bot seat.</summary>
+    /// <summary>Which algorithmic agent occupies a Pascension bot seat. SoI uses its
+    /// own ranked ladder instead (MatchSetup.SoiBotKind → ShardsBotRanks).</summary>
     public enum BotKind
     {
         Heuristic,
-        Random,
-        /// <summary>SoI: tuned value-model argmax (instant, strong).</summary>
-        Greedy,
-        /// <summary>SoI: ISMCTS search, ~1s of thinking per decision (strongest).</summary>
-        Strong
+        Random
     }
 }

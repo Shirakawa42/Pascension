@@ -23,6 +23,7 @@ namespace Pascension.Game.Soi
         public GameHost Host { get; private set; }
 
         private readonly List<BotSeat> _botSeats = new List<BotSeat>();
+        private readonly List<SearchBotSeat> _searchSeats = new List<SearchBotSeat>();
 
         private void Start()
         {
@@ -80,21 +81,25 @@ namespace Pascension.Game.Soi
             Session = new LocalSession(Host, humanSeat);
             Host.AttachSeat(Session, isHuman: true);
 
+            // One rank for every bot seat (the SoI difficulty ladder).
+            string botKind = string.IsNullOrEmpty(MatchSetup.SoiBotKind) ? "rank:bronze" : MatchSetup.SoiBotKind;
+            bool searchKind = Shards.Bots.ShardsBotRanks.IsSearchKind(botKind);
             for (int i = 0; i < seated.Count; i++)
             {
                 if (i == humanSeat) continue;
                 // (i + 1): a bot in seat 0 must never share the engine's own seed.
                 ulong botSeed = MatchSetup.Seed ^ (((ulong)i + 1) * 0x9E3779B97F4A7C15UL);
-                // order[i] maps the seat back to its spec: 0 = human, 1.. = opponents.
-                int opponentIndex = order[i] - 1;
-                var kind = opponentIndex >= 0 && opponentIndex < MatchSetup.Opponents.Count
-                    ? MatchSetup.Opponents[opponentIndex].Bot
-                    : BotKind.Heuristic;
-                var agent = module.CreateBot(KindString(kind), botSeed, adapter);
-                if (kind == BotKind.Strong)
+                var agent = module.CreateBot(botKind, botSeed, adapter);
+                if (searchKind)
                 {
-                    // The search thinks ~1s per decision — run it off the main thread.
-                    Host.AttachSeat(new SearchBotSeat(i, agent, Host), isHuman: false);
+                    // Search ranks think up to seconds per decision — off the main thread.
+                    var seat = new SearchBotSeat(i, agent, Host);
+                    seat.SeatFaulted += (player, error) =>
+                        Debug.LogError($"SoI search bot seat {player} faulted (safe default submitted): {error}");
+                    seat.SearchCompleted += (player, iterations, ms) =>
+                        Debug.Log($"SoI search seat {player}: {iterations} iterations in {ms} ms");
+                    Host.AttachSeat(seat, isHuman: false);
+                    _searchSeats.Add(seat);
                 }
                 else
                 {
@@ -105,6 +110,15 @@ namespace Pascension.Game.Soi
                 }
             }
 
+            if (Screen != null && _searchSeats.Count > 0)
+                Screen.IsBotThinking = player =>
+                {
+                    for (int s = 0; s < _searchSeats.Count; s++)
+                        if (_searchSeats[s].PlayerIndex == player)
+                            return _searchSeats[s].IsThinking;
+                    return false;
+                };
+
             if (Screen != null)
                 Screen.Bind(Session, module.RulesOf(config));
             else
@@ -112,14 +126,6 @@ namespace Pascension.Game.Soi
 
             Host.Start();
         }
-
-        private static string KindString(BotKind kind) => kind switch
-        {
-            BotKind.Random => "random",
-            BotKind.Greedy => "greedy",
-            BotKind.Strong => "strong",
-            _ => "heuristic"
-        };
 
         private static string ValidCharacter(IGameModule module, string requested, int slot)
         {

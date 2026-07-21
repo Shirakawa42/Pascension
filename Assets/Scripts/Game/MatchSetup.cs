@@ -21,6 +21,10 @@ namespace Pascension.Game
         public static List<OpponentSetup> Opponents = new List<OpponentSetup>();
         public static ulong Seed;
 
+        /// <summary>SoI bot rank (one difficulty for all bots) — a ShardsBotRanks kind
+        /// string like "rank:bronze". See the ranked-ladder design.</summary>
+        public static string SoiBotKind = "rank:bronze";
+
         /// <summary>True once the menu has configured a match.</summary>
         public static bool Configured;
 

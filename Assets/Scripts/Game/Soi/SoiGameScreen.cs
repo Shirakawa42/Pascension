@@ -1231,10 +1231,33 @@ namespace Pascension.Game.Soi
             // Snapshot's Pending is fresh + unredacted for all viewers, so this covers
             // both an opponent's whole turn and an opponent's mid-my-turn decision
             // (e.g. shield reveals when I attack).
+            RefreshStatusLine(over);
+        }
+
+        /// <summary>Set by SoiBootstrap for solo games with search-rank bots: returns
+        /// true while the given seat's search worker is deliberating. Lets the status
+        /// line show "thinking…" instead of a generic wait (the search runs behind the
+        /// animation queue, so without this the deliberation is invisible).</summary>
+        public Func<int, bool> IsBotThinking;
+
+        private void RefreshStatusLine(bool over)
+        {
             bool waitingOther = _snap != null && _snap.Pending != null && _snap.Pending.PlayerIndex != MyIndex;
-            _statusLine.text = over || !waitingOther ? "" : UI.Loc.French
-                ? "En attente " + UI.Loc.De(NameOf(_snap.Pending.PlayerIndex)) + "…"
-                : "Waiting for " + NameOf(_snap.Pending.PlayerIndex) + "…";
+            if (over || !waitingOther)
+            {
+                _statusLine.text = "";
+                return;
+            }
+            int pendingPlayer = _snap.Pending.PlayerIndex;
+            bool thinking = IsBotThinking?.Invoke(pendingPlayer) == true;
+            if (thinking)
+                _statusLine.text = UI.Loc.French
+                    ? NameOf(pendingPlayer) + " réfléchit…"
+                    : NameOf(pendingPlayer) + " is thinking…";
+            else
+                _statusLine.text = UI.Loc.French
+                    ? "En attente " + UI.Loc.De(NameOf(pendingPlayer)) + "…"
+                    : "Waiting for " + NameOf(pendingPlayer) + "…";
         }
 
         private void RenderGameOver()
@@ -1747,6 +1770,10 @@ namespace Pascension.Game.Soi
         /// condition/affordable rings — see CardView.ApplyGlowLayout).</summary>
         private void LateUpdate()
         {
+            // Thinking state changes between snapshots — keep the status line live.
+            if (_snap != null && IsBotThinking != null)
+                RefreshStatusLine(_snap.GameOver);
+
             CardView target = null;
             if (_remoteHoverId > 0 && _snap != null &&
                 _remoteHoverSeat == _snap.TurnPlayerIndex &&

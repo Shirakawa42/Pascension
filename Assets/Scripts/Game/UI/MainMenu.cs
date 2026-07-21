@@ -191,7 +191,7 @@ namespace Pascension.Game.UI
         private string _soiCharacter = "decima";
         private int _soiDlc;
         private int _soiBots = 1;
-        private BotKind _soiDifficulty = BotKind.Greedy;
+        private int _soiRankIndex = 1; // ladder index into ShardsModule.RankOptions (1 = BRONZE default)
         private RectTransform _soiCharacterRow;
         private readonly List<Button> _soiBotButtons = new List<Button>();
         private TextMeshProUGUI _soiDifficultyLabel;
@@ -250,7 +250,7 @@ namespace Pascension.Game.UI
                 _soiBotButtons.Add(button);
             }
 
-            var difficultyLabel = UiFactory.CreateText(Theme, "DifficultyLabel", _soiSoloPanel, Loc.T("DIFFICULTY"), 18f,
+            var difficultyLabel = UiFactory.CreateText(Theme, "DifficultyLabel", _soiSoloPanel, Loc.T("BOT RANK"), 18f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
             UiFactory.Place(difficultyLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(180f, -560f), new Vector2(320f, 26f));
             var difficultyButton = UiFactory.CreateButton(Theme, "DifficultyCycle", _soiSoloPanel, "", 18f);
@@ -323,24 +323,17 @@ namespace Pascension.Game.UI
 
         private void CycleSoiDifficulty()
         {
-            _soiDifficulty = _soiDifficulty switch
-            {
-                BotKind.Heuristic => BotKind.Greedy,
-                BotKind.Greedy => BotKind.Strong,
-                _ => BotKind.Heuristic
-            };
+            var ranks = Pascension.Net.ShardsModule.RankOptions;
+            _soiRankIndex = (_soiRankIndex + 1) % ranks.Count;
             RefreshSoiDifficulty();
         }
 
         private void RefreshSoiDifficulty()
         {
             if (_soiDifficultyLabel == null) return;
-            _soiDifficultyLabel.text = _soiDifficulty switch
-            {
-                BotKind.Heuristic => Loc.T("NORMAL"),
-                BotKind.Greedy => Loc.T("HARD"),
-                _ => Loc.T("MASTER (thinks ~1s)")
-            };
+            var ranks = Pascension.Net.ShardsModule.RankOptions;
+            if (_soiRankIndex >= ranks.Count) _soiRankIndex = ranks.Count - 1;
+            _soiDifficultyLabel.text = Loc.T(ranks[_soiRankIndex].Display);
         }
 
         private void StartSoiSolo()
@@ -360,6 +353,8 @@ namespace Pascension.Game.UI
             MatchSetup.DlcFlags = _soiDlc;
             MatchSetup.PlayerHeroId = playerCharacter;
             MatchSetup.PlayerName = "You";
+            var ranks = Pascension.Net.ShardsModule.RankOptions;
+            MatchSetup.SoiBotKind = ranks[Mathf.Clamp(_soiRankIndex, 0, ranks.Count - 1)].Kind;
             MatchSetup.Opponents = new List<OpponentSetup>();
             int next = 0;
             for (int i = 0; i < _soiBots; i++)
@@ -367,7 +362,7 @@ namespace Pascension.Game.UI
                 // Cycle the roster, skipping the player's pick first time around.
                 while (characters[next % characters.Count].Id == playerCharacter && characters.Count > 1)
                     next++;
-                MatchSetup.Opponents.Add(new OpponentSetup(characters[next % characters.Count].Id, _soiDifficulty));
+                MatchSetup.Opponents.Add(new OpponentSetup(characters[next % characters.Count].Id, BotKind.Heuristic));
                 next++;
             }
             MatchSetup.Configured = true;

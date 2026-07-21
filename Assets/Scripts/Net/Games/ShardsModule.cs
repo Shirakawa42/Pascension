@@ -64,28 +64,21 @@ namespace Pascension.Net
         public string CharacterDisplayName(string characterId) =>
             ShardsContentRegistry.CharacterDisplayName(characterId);
 
-        /// <summary>Shared read-only value model for greedy/strong seats (weights are
-        /// static; card statics are immutable after registration).</summary>
-        private static readonly Lazy<ShardsValueModel> Model = new(() =>
+        /// <summary>The minted difficulty ladder for menus: (kind string for CreateBot,
+        /// display name = Loc key, needs the worker SearchBotSeat).</summary>
+        public static IReadOnlyList<(string Kind, string Display, bool IsSearch)> RankOptions
         {
-            ShardsContentRegistry.EnsureRegistered();
-            return new ShardsValueModel();
-        });
-
-        public IBotAgent CreateBot(string botKind, ulong seed, IEngineAdapter engine)
-        {
-            var inner = ((ShardsEngineAdapter)engine).Inner;
-            return botKind switch
+            get
             {
-                "random" => new ShardsHeuristicBot(seed, inner, random: true),
-                "greedy" => new ShardsGreedyEvalBot(seed, inner, Model.Value),
-                "strong" => new ShardsSearchBot(seed, inner,
-                    ShardsSearchConfig.ForRealGames(1.0), Model.Value),
-                "strong-fast" => new ShardsSearchBot(seed, inner,
-                    ShardsSearchConfig.ForRealGames(0.25), Model.Value),
-                _ => new ShardsHeuristicBot(seed, inner)
-            };
+                var options = new List<(string, string, bool)>();
+                foreach (var rank in ShardsBotRanks.Minted)
+                    options.Add((rank.KindString, rank.DisplayName, rank.IsSearch));
+                return options;
+            }
         }
+
+        public IBotAgent CreateBot(string botKind, ulong seed, IEngineAdapter engine) =>
+            ShardsBotRanks.Create(botKind, seed, ((ShardsEngineAdapter)engine).Inner);
 
         public CardFace CardDisplay(string defId)
         {

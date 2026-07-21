@@ -302,7 +302,9 @@ namespace Pascension.Engine.Tests
         {
             // Adding a field to any of these types requires updating ShardsStateClone
             // (DeepCopy / ShardsPlayer.Clone / ComputeFullHash) — then bump the counts.
-            Assert.AreEqual(20, InstanceFieldCount(typeof(ShardsState)),
+            // 21 = 18 data fields + _cardIndex/_cardIndexBuiltAt/_cardIndexLock (the
+            // index trio is rebuilt lazily and deliberately NOT copied or hashed).
+            Assert.AreEqual(21, InstanceFieldCount(typeof(ShardsState)),
                 "ShardsState fields changed → update DeepCopy + ComputeFullHash + this count");
             Assert.AreEqual(31, InstanceFieldCount(typeof(ShardsPlayer)),
                 "ShardsPlayer fields changed → update Clone + ComputeFullHash + this count");
