@@ -47,7 +47,7 @@ namespace SoiSim
             // One shared evaluator (read-only weights, ThreadStatic scratch) for every
             // search seat; truncation only engages when a trained net exists.
             IShardsValueEvaluator sharedEval =
-                budget > 0 && truncate > 0 && ShardsNetWeights.Available
+                budget > 0 && truncate >= 0 && ShardsNetWeights.Available
                     ? ShardsNeuralEval.LoadCurrent()
                     : null;
             if (budget > 0)

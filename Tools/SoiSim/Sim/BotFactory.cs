@@ -13,9 +13,9 @@ namespace SoiSim
         /// <summary>Optional rollout-ε override for "strong" (-1 = config default).</summary>
         public double Epsilon { get; set; } = -1;
 
-        /// <summary>&gt;0: truncate rollouts after N end-turns and score with the
-        /// baseline evaluator (the B2 experiment knob).</summary>
-        public int TruncateEndTurns { get; set; }
+        /// <summary>-1 = full rollouts; 0 = evaluate the expansion leaf directly;
+        /// N&gt;0 = roll N end-turns then evaluate.</summary>
+        public int TruncateEndTurns { get; set; } = -1;
 
         /// <summary>&gt;0: wall-clock budget in seconds (replaces the iteration budget).</summary>
         public double WallClockSeconds { get; set; }
@@ -63,7 +63,7 @@ namespace SoiSim
                 : ShardsSearchConfig.ForSims(Budget > 0 ? Budget : 200);
             if (Epsilon >= 0)
                 config.RolloutEpsilon = Epsilon;
-            if (TruncateEndTurns > 0)
+            if (TruncateEndTurns >= 0)
                 config.RolloutEndTurns = TruncateEndTurns;
             config.RootWorkers = RootWorkers;
             return config;

@@ -205,7 +205,14 @@ namespace Shards.Bots
             // Rollout from the expansion point (or terminal) with the ε-greedy model.
             bool truncated = false;
             if (expanded)
-                truncated = Rollout(clone, ref submits);
+            {
+                bool evalMode = _config.RolloutEndTurns >= 0 && _evaluator != null &&
+                                clone.State.Players.Count == 2;
+                if (evalMode && _config.RolloutEndTurns == 0)
+                    truncated = !clone.State.GameOver; // score the expansion leaf directly
+                else
+                    truncated = Rollout(clone, ref submits);
+            }
 
             double[] scores;
             if (truncated && !clone.State.GameOver)
@@ -328,7 +335,7 @@ namespace Shards.Bots
         /// TRUNCATED at the end-turn budget (leaf to be scored by the evaluator).</summary>
         private bool Rollout(ShardsEngine clone, ref int submits)
         {
-            bool truncate = _config.RolloutEndTurns > 0 && _evaluator != null &&
+            bool truncate = _config.RolloutEndTurns >= 0 && _evaluator != null &&
                             clone.State.Players.Count == 2;
             int endTurns = 0;
             while (!clone.State.GameOver && submits < _config.MaxIterationSubmits)

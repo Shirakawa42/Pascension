@@ -39,7 +39,7 @@ namespace Shards.Bots
             _engine = engine;
             _config = config ?? ShardsSearchConfig.ForSims(200);
             _model = model ?? new ShardsValueModel();
-            _evaluator = evaluator ?? (_config.RolloutEndTurns > 0
+            _evaluator = evaluator ?? (_config.RolloutEndTurns >= 0
                 ? ShardsNetWeights.Available
                     ? (IShardsValueEvaluator)ShardsNeuralEval.LoadCurrent()
                     : new ShardsBaselineEvaluator(_model)

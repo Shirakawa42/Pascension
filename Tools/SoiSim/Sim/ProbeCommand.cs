@@ -25,8 +25,8 @@ namespace SoiSim
             double epsilon = cli.Has("--epsilon")
                 ? double.Parse(cli.GetStr("--epsilon", "-1"), System.Globalization.CultureInfo.InvariantCulture)
                 : -1;
-            int truncateA = cli.GetInt("--truncate-a", 0);
-            int truncateB = cli.GetInt("--truncate-b", 0);
+            int truncateA = cli.GetInt("--truncate-a", -1);
+            int truncateB = cli.GetInt("--truncate-b", -1);
             double wallclock = cli.Has("--wallclock")
                 ? double.Parse(cli.GetStr("--wallclock", "0"), System.Globalization.CultureInfo.InvariantCulture)
                 : 0;
