@@ -16,3 +16,9 @@
 - **2026-07-21 22:52** — net generation 1 embedded (valAcc 0.7506 · 840,000 positions · 2026-07-21)
 - **2026-07-21 22:55** — probe: ismcts-V4-200it vs ismcts-V4-200it → 48.3 % [39.6 %–57.2 %] over 120 games
 - **2026-07-21 22:56** — PLATINUM gate attempt 1 REJECTED: gen-1 (86% bootstrap window, val 75.1%) scored 48.3% [39.6–57.2] vs gen-0 — statistically a twin. Gen-2 cycle queued: +8,000 selfplay games, train on search data only (~280k positions), re-duel.
+- **2026-07-21 23:58** — selfplay gen1b: 8,000 games → 160,000 positions (search 100it, 62 min)
+- **2026-07-21 23:58** — trained generation 2: val acc 75.9%, 280,000 positions
+- **2026-07-21 23:58** — net generation 2 embedded (valAcc 0.7594 · 280,000 positions · 2026-07-21)
+- **2026-07-22 00:02** — probe: ismcts-V4-200it vs ismcts-V4-200it → 34.2 % [26.3 %–43.0 %] over 120 games
+- **2026-07-22 00:05** — probe: ismcts-V4-200it vs ismcts-V4-200it → 36.7 % [28.6 %–45.6 %] over 120 games
+- **2026-07-22 00:07** — PLATINUM attempt 2 REJECTED: gen-2 (search-data-only, val 75.9% — highest yet) lost BOTH duels (34.2% vs gen-0, 36.7% vs gen-1). Diagnosis: self-play distribution collapse — accuracy on own trajectories ≠ broad calibration. Attempt 3 plan: ~50/50 bootstrap/search mixture (train.py per-dir cap) + q-labels.
