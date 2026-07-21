@@ -43,6 +43,12 @@ namespace Shards.Bots
 
         public int IterationsRun { get; private set; }
 
+        /// <summary>Mean reward (viewer's perspective, [0,1]) of the root child the
+        /// last Search() chose; -1 when the search produced no visited child. Self-play
+        /// records this as the q-label — the search's own estimate of the root
+        /// position, blended with the final outcome z at training time.</summary>
+        public double LastRootQ { get; private set; } = -1;
+
         public ShardsIsmcts(ShardsEngine live, int viewer, ShardsValueModel model,
             ShardsSearchConfig config, ulong seed, IShardsValueEvaluator evaluator = null)
         {
@@ -68,6 +74,9 @@ namespace Shards.Bots
                     if (best == null || child.Visits > best.Visits)
                         best = child;
             LastChosenPlan = best == null ? null : new PlanCursor { Node = best.Node };
+            LastRootQ = best != null && best.Visits > 0 && best.Rewards != null
+                ? best.Rewards[_viewer] / best.Visits
+                : -1;
             return best?.Action ?? _model.ChooseAction(_live, _viewer);
         }
 

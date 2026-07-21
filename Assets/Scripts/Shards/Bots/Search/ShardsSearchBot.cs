@@ -31,6 +31,12 @@ namespace Shards.Bots
 
         public int LastIterations { get; private set; }
 
+        /// <summary>The most recent root search's chosen-child mean value, from this
+        /// seat's perspective ([0,1]; -1 before any search or after a model fallback).
+        /// Untouched by decision-kind Choose calls — it always describes the last
+        /// PRIORITY-point search, which is what self-play samples.</summary>
+        public double LastRootQ { get; private set; } = -1;
+
         public ShardsSearchBot(ulong seed, ShardsEngine engine,
             ShardsSearchConfig config = null, ShardsValueModel model = null,
             IShardsValueEvaluator evaluator = null)
@@ -63,8 +69,9 @@ namespace Shards.Bots
             if (_config.RootWorkers > 1)
             {
                 var parallelAction = ShardsRootParallelSearch.Search(_engine, pending.PlayerIndex,
-                    _model, _config, searchSeed, _evaluator, out _plan, out int iterations);
+                    _model, _config, searchSeed, _evaluator, out _plan, out int iterations, out double q);
                 LastIterations = iterations;
+                LastRootQ = q;
                 return parallelAction;
             }
 
@@ -72,6 +79,7 @@ namespace Shards.Bots
                 searchSeed, _evaluator);
             var action = search.Search();
             LastIterations = search.IterationsRun;
+            LastRootQ = search.LastRootQ;
             _plan = search.LastChosenPlan;
             return action;
         }

@@ -26,6 +26,7 @@ namespace SoiSim
             int perGame = cli.GetInt("--positions-per-game", 12);
             int truncate = cli.GetInt("--truncate", 2);
             int tempTurns = cli.GetInt("--temp-turns", 8);
+            int netGen = cli.GetInt("--net", -1);
             ulong seedBase = cli.GetULong("--seed-base", 1);
             int threads = cli.GetInt("--threads", Math.Max(1, Environment.ProcessorCount - 1));
             string outDir = cli.GetStr("--out",
@@ -46,13 +47,15 @@ namespace SoiSim
             var model = new ShardsValueModel();
             // One shared evaluator (read-only weights, ThreadStatic scratch) for every
             // search seat; truncation only engages when a trained net exists.
+            // --net pins a frozen generation (use the CHAMPION for data generation —
+            // Current tracks the NEWEST gen, which may be weaker).
             IShardsValueEvaluator sharedEval =
-                budget > 0 && truncate >= 0 && ShardsNetWeights.Available
-                    ? ShardsNeuralEval.LoadCurrent()
+                budget > 0 && truncate >= 0 && (netGen >= 0 || ShardsNetWeights.Available)
+                    ? netGen >= 0 ? ShardsNeuralEval.LoadGeneration(netGen) : ShardsNeuralEval.LoadCurrent()
                     : null;
             if (budget > 0)
                 Console.WriteLine(sharedEval != null
-                    ? $"  search selfplay: net gen {ShardsNetWeights.Generation} leaf eval, truncate {truncate}, temp turns {tempTurns}"
+                    ? $"  search selfplay: net gen {(netGen >= 0 ? netGen : ShardsNetWeights.Generation)} leaf eval, truncate {truncate}, temp turns {tempTurns}"
                     : "  search selfplay: FULL rollouts (no net embedded), temp turns " + tempTurns);
 
             Parallel.For(0, threads, worker =>
@@ -94,12 +97,15 @@ namespace SoiSim
                     }
 
                     // Reservoir over priority points; encode AT the moment of sampling.
-                    var reservoir = new List<(float[] X, ushort Move, byte Seat)>(perGame);
+                    // Positions are encoded BEFORE the action — the search that follows
+                    // evaluates exactly that state, so its root Q backfills the entry.
+                    var reservoir = new List<(float[] X, ushort Move, byte Seat, float Q)>(perGame);
                     int priorityPoints = 0, guard = 0;
                     while (!adapter.GameOver && guard++ < SimGameRunner.GuardLimit)
                     {
                         var pending = adapter.PendingInput;
                         if (pending == null) break;
+                        int sampledSlot = -1;
                         if (pending.Kind == PendingInputKind.Priority)
                         {
                             priorityPoints++;
@@ -107,7 +113,8 @@ namespace SoiSim
                             {
                                 var x = new float[ShardsStateEncoder.FeatureCount];
                                 ShardsStateEncoder.Encode(adapter.Inner.State, pending.PlayerIndex, x);
-                                reservoir.Add((x, (ushort)priorityPoints, (byte)pending.PlayerIndex));
+                                reservoir.Add((x, (ushort)priorityPoints, (byte)pending.PlayerIndex, -1f));
+                                sampledSlot = reservoir.Count - 1;
                             }
                             else
                             {
@@ -116,12 +123,18 @@ namespace SoiSim
                                 {
                                     var x = new float[ShardsStateEncoder.FeatureCount];
                                     ShardsStateEncoder.Encode(adapter.Inner.State, pending.PlayerIndex, x);
-                                    reservoir[slot] = (x, (ushort)priorityPoints, (byte)pending.PlayerIndex);
+                                    reservoir[slot] = (x, (ushort)priorityPoints, (byte)pending.PlayerIndex, -1f);
+                                    sampledSlot = slot;
                                 }
                             }
                         }
-                        var action = seats[pending.PlayerIndex].Choose(pending, null)
-                                     ?? adapter.DefaultActionFor(pending);
+                        var seat = seats[pending.PlayerIndex];
+                        var action = seat.Choose(pending, null) ?? adapter.DefaultActionFor(pending);
+                        if (sampledSlot >= 0 && seat is ShardsSearchBot searchSeat)
+                        {
+                            var entry = reservoir[sampledSlot];
+                            reservoir[sampledSlot] = (entry.X, entry.Move, entry.Seat, (float)searchSeat.LastRootQ);
+                        }
                         if (!adapter.Submit(action).Accepted &&
                             !adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput)).Accepted)
                             break;
@@ -129,10 +142,10 @@ namespace SoiSim
                     if (!adapter.GameOver) continue; // stalls/guard-caps carry no label
 
                     int winner = adapter.WinnerIndex;
-                    foreach (var (x, move, seat) in reservoir)
+                    foreach (var (x, move, seat, q) in reservoir)
                     {
                         float z = winner < 0 ? 0.5f : winner == seat ? 1f : 0f;
-                        writer.Write(x, z, q: -1f, seed, move, seat, flags: budget > 0 ? (byte)0 : (byte)1);
+                        writer.Write(x, z, q, seed, move, seat, flags: budget > 0 ? (byte)0 : (byte)1);
                     }
                     Interlocked.Add(ref positions, reservoir.Count);
                     int d = Interlocked.Increment(ref done);

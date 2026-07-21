@@ -266,6 +266,10 @@ namespace Pascension.Engine.Tests
             var actionB = searchB.Choose(b.PendingInput, null);
             Assert.AreEqual(actionA.Describe(), actionB.Describe(),
                 "hidden information leaked into the search");
+            Assert.That(searchA.LastRootQ, Is.InRange(0.0, 1.0),
+                "a completed root search must expose its chosen child's mean value");
+            Assert.AreEqual(searchA.LastRootQ, searchB.LastRootQ, 1e-9,
+                "hidden information leaked into the root Q");
         }
 
         [Test]
