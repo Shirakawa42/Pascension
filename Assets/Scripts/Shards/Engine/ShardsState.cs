@@ -143,26 +143,57 @@ namespace Shards.Engine
             }
         }
 
+        /// <summary>Instance-id → card index. Cards are only ever CREATED (NewCard bumps
+        /// NextInstanceId) and move between zones — never destroyed — so the index stays
+        /// valid until a new card appears; NextInstanceId is the staleness signal.</summary>
+        private Dictionary<int, ShardsCard> _cardIndex;
+        private int _cardIndexBuiltAt = -1;
+
+        /// <summary>Drop the card index. Only needed after direct state surgery in tests
+        /// (inserting cards without going through the engine's NewCard).</summary>
+        public void InvalidateCardIndex()
+        {
+            _cardIndex = null;
+            _cardIndexBuiltAt = -1;
+        }
+
         public ShardsCard FindCard(int instanceId)
         {
-            foreach (var card in CenterRow)
-                if (card != null && card.InstanceId == instanceId)
-                    return card;
+            if (_cardIndex == null || _cardIndexBuiltAt != NextInstanceId)
+                RebuildCardIndex();
+            return _cardIndex.TryGetValue(instanceId, out var card) ? card : null;
+        }
+
+        private void RebuildCardIndex()
+        {
+            _cardIndex ??= new Dictionary<int, ShardsCard>(256);
+            _cardIndex.Clear();
             foreach (var card in CenterDeck)
-                if (card.InstanceId == instanceId)
-                    return card;
+                _cardIndex[card.InstanceId] = card;
+            if (CenterRow != null)
+                foreach (var card in CenterRow)
+                    if (card != null)
+                        _cardIndex[card.InstanceId] = card;
             foreach (var p in Players)
             {
-                foreach (var list in new[] { p.Deck, p.Hand, p.Discard, p.PlayZone, p.Champions, p.SetAside, p.Destinies })
-                    foreach (var card in list)
-                        if (card.InstanceId == instanceId)
-                            return card;
+                IndexList(p.Deck);
+                IndexList(p.Hand);
+                IndexList(p.Discard);
+                IndexList(p.PlayZone);
+                IndexList(p.Champions);
+                IndexList(p.SetAside);
+                IndexList(p.Destinies);
             }
-            foreach (var list in new[] { DestinyRow, ActiveMonsters, Banished })
+            IndexList(DestinyRow);
+            IndexList(ActiveMonsters);
+            IndexList(Banished);
+            _cardIndexBuiltAt = NextInstanceId;
+
+            void IndexList(List<ShardsCard> list)
+            {
                 foreach (var card in list)
-                    if (card.InstanceId == instanceId)
-                        return card;
-            return null;
+                    _cardIndex[card.InstanceId] = card;
+            }
         }
 
         /// <summary>FNV-1a state hash for determinism/replay checks.</summary>

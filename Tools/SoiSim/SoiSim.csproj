@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- SoI mass-simulation console: bench / tune / evaluate / emit / run / analyze /
+       smoke / verify-determinism. Compiles the same rules-side sources as
+       Engine.Verify.csproj (minus Assets/Tests) into a standalone exe. CI never
+       builds this project; its Sim/ and Tests/ sources are additionally compile-
+       linked into Engine.Verify.csproj so the smoke tests run there. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>SoiSim</AssemblyName>
+    <RootNamespace>SoiSim</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\Scripts\Core\**\*.cs" LinkBase="Core" />
+    <Compile Include="..\..\Assets\Scripts\Shards\**\*.cs" LinkBase="Shards" />
+    <Compile Include="..\..\Assets\Scripts\Engine\**\*.cs" LinkBase="Engine" />
+    <Compile Include="..\..\Assets\Scripts\Content\**\*.cs" LinkBase="Content" />
+    <Compile Include="..\..\Assets\Scripts\Bots\**\*.cs" LinkBase="Bots" />
+    <Compile Include="..\..\Assets\Scripts\Net\Host\**\*.cs" LinkBase="NetHost" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

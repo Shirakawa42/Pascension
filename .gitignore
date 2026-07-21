@@ -13,6 +13,8 @@ Recordings/
 *.csproj
 # …but the headless test harness project is hand-authored and CI needs it:
 !Tools/EngineVerify/*.csproj
+# …and so is the SoI mass-sim console (CI checks it out but never builds the exe):
+!Tools/SoiSim/*.csproj
 *.sln
 *.slnx
 *.suo
@@ -44,6 +46,9 @@ Tools/**/bin/
 
 # graphify knowledge graph (generated, machine-local — rebuild with /graphify Assets/Scripts)
 graphify-out/
+
+# SoiSim raw simulation output (reproducible from seeds; reports are committed instead)
+Tools/ShardsData/sim/
 
 # Assets/Art/Shards/ holds ORIGINAL Anima-generated card art (committed).
 # If official card images are ever imported over it (Pascension/Setup/Shards

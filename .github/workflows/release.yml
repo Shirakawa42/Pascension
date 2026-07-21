@@ -35,6 +35,7 @@ jobs:
           # ProjectSettings/ProjectVersion.txt; ShardsData: export tests write there.
           sparse-checkout: |
             Tools/EngineVerify
+            Tools/SoiSim
             Tools/ShardsData
             Assets/Scripts
             Assets/Tests
