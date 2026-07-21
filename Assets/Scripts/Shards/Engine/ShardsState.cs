@@ -3,7 +3,7 @@ using Pascension.Engine.Core;
 
 namespace Shards.Engine
 {
-    public sealed class ShardsPlayer
+    public sealed partial class ShardsPlayer
     {
         public int Index;
         public string Name;
@@ -92,7 +92,7 @@ namespace Shards.Engine
         }
     }
 
-    public sealed class ShardsState
+    public sealed partial class ShardsState
     {
         public ShardsRules Rules = new();
         public ShardsDlc Dlc;

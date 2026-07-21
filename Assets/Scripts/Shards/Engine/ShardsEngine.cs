@@ -15,8 +15,16 @@ namespace Shards.Engine
     /// </summary>
     public sealed class ShardsEngine
     {
-        public readonly ShardsState State = new();
+        public readonly ShardsState State;
         public readonly EventLog Log = new();
+
+        /// <summary>Every ACCEPTED action in submission order — the replay backbone for
+        /// search bots (suffix replay from a forked quiescent state).</summary>
+        public readonly List<PlayerAction> Journal = new();
+
+        /// <summary>Quiet engines (search clones) skip event logging entirely — nothing
+        /// rules-side ever reads the log back.</summary>
+        private readonly bool _quiet;
 
         public PendingInput PendingInput { get; private set; }
 
@@ -36,7 +44,36 @@ namespace Shards.Engine
 
         public ShardsEngine(ShardsConfig config)
         {
+            State = new ShardsState();
             Setup(config);
+        }
+
+        /// <summary>Re-attach ctor for Fork: adopts an existing (deep-copied) state and
+        /// routes priority instead of running Setup.</summary>
+        private ShardsEngine(ShardsState state, bool quiet)
+        {
+            State = state;
+            _quiet = quiet;
+            RoutePriority();
+        }
+
+        /// <summary>Clones this engine at a quiescent point. Only legal while a PRIORITY
+        /// input is pending: decision points hold parked effect iterators that cannot be
+        /// copied (search bots reconstruct those via suffix replay instead). The fork is
+        /// quiet by default (no event log). rngReseed replaces the RNG stream — pass a
+        /// fresh seed when determinizing so the clone can't predict live shuffles.</summary>
+        public ShardsEngine Fork(ulong rngReseed = 0, bool quiet = true)
+        {
+            if (PendingInput == null || PendingInput.Kind != PendingInputKind.Priority)
+                throw new System.InvalidOperationException("Fork is only valid at a priority point");
+            if (_activeEffect != null || _effectQueue.Count > 0 || _endTurnInProgress ||
+                _pendingDefenses != null || _splitTargets != null || _splitAmounts != null)
+                throw new System.InvalidOperationException("Fork: engine is not quiescent");
+
+            var state = State.DeepCopy();
+            if (rngReseed != 0)
+                state.Rng = new DeterministicRng(rngReseed);
+            return new ShardsEngine(state, quiet);
         }
 
         // ------------------------------------------------------------------ setup
@@ -185,8 +222,14 @@ namespace Shards.Engine
             if (PendingInput.Kind == PendingInputKind.Decision)
             {
                 if (action is not SubmitDecisionAction decision)
-                    return action is ConcedeAction concede ? Concede(concede.PlayerIndex)
-                        : SubmitResult.Rejected("A decision is pending");
+                {
+                    if (action is not ConcedeAction concede)
+                        return SubmitResult.Rejected("A decision is pending");
+                    var conceded = Concede(concede.PlayerIndex);
+                    if (conceded.Accepted)
+                        Journal.Add(action);
+                    return conceded;
+                }
                 if (decision.Answer == null || decision.Answer.DecisionId != PendingInput.Decision.Id)
                     return SubmitResult.Rejected("Answer does not match the pending decision");
                 var error = ValidateAnswer(PendingInput.Decision, decision.Answer);
@@ -196,6 +239,7 @@ namespace Shards.Engine
                 var request = PendingInput.Decision;
                 PendingInput = null;
                 Emit(new DecisionMadeEvent { PlayerIndex = action.PlayerIndex, DecisionId = request.Id });
+                Journal.Add(action);
                 _activeContext.Answer = decision.Answer;
                 PumpEffects();
                 return SubmitResult.Ok();
@@ -203,7 +247,10 @@ namespace Shards.Engine
 
             var result = ExecuteTurnAction(action);
             if (result.Accepted)
+            {
+                Journal.Add(action);
                 Pump();
+            }
             return result;
         }
 
@@ -1338,7 +1385,11 @@ namespace Shards.Engine
 
         // ------------------------------------------------------------------ mutation helpers (effects call these)
 
-        public void Emit(GameEvent e) => Log.Append(e);
+        public void Emit(GameEvent e)
+        {
+            if (!_quiet)
+                Log.Append(e);
+        }
 
         public void GainGems(int playerIndex, int amount)
         {
