@@ -19,7 +19,7 @@
 | BRONZE | ✅ shipped (default) | tuned value model, greedy | — | instant |
 | SILVER | ✅ shipped | ISMCTS, full rollouts | — | 1.0 s |
 | GOLD | ✅ minted 2026-07-21 | ISMCTS, 2-turn rollouts → net | gen 0 (frozen) | 1.0 s |
-| PLATINUM | 🔄 in training | ISMCTS, eval-at-leaf | gen 1 (frozen) | 1.0 s |
+| PLATINUM | 🔄 in training (4 attempts rejected) | ISMCTS, eval-at-leaf | first gen to clear the gate | 1.0 s |
 | EMERALD | planned | ISMCTS, eval-at-leaf | gen 2+ | 1.25 s |
 | DIAMOND | planned | ISMCTS, eval-at-leaf | promoted gen | 1.5 s |
 | MASTER | planned | ISMCTS, eval-at-leaf (+q-labels) | promoted gen | 1.75 s |
@@ -70,10 +70,18 @@
 - **Frozen**: hard-pinned to generation 0 — future nets mint new ranks instead.
 
 ## PLATINUM (PLATINE) — *(gate not yet passed — campaign in progress)*
-> Attempt 1 (net gen 1, 86% bootstrap-dominated window): **48.3% [39.6–57.2] vs
-> gen 0 — REJECTED** (needs ≥55% + Wilson LB >50%). The net re-learned gen-0's
-> function. Attempt 2 (gen 2) trains on search-quality data ONLY (~280k positions).
-> Original spec below stands for whichever generation first clears the gate.
+> Gate: ≥55% + Wilson LB >50% vs gen 0 at equal budget. Four attempts REJECTED:
+> **1** — gen 1 (86% bootstrap-dominated window): 48.3% [39.6–57.2]; re-learned
+> gen-0's function. **2** — gen 2 (search-quality data ONLY, ~280k): 34.2%/36.7%
+> — self-play distribution collapse. **3** — gen 3 (~50/50 bootstrap/search via
+> train.py per-dir cap): 49.2% [40.4–58.0]. **4** — gen 4 (q-labels: target
+> 0.5z+0.5q, corr(q,z)=0.60; fresh 8k-game q-labeled selfplay + gen0 capped
+> 160k/160k): 50.8% [42.0–59.6] vs gen 0, 55.8% [46.9–64.4] vs gen 3 — best yet,
+> beats every challenger, still a statistical twin of the champion. Attempt 4's
+> train loss ≈ val loss (0.4942/0.4946) = the underfitting fingerprint (§MASTER)
+> → escalation order: more selfplay volume → encoder enrichment / wider net
+> (batched GPU inference pairs with widening). Spec below stands for whichever
+> generation first clears the gate.
 - **Net**: same architecture; trained on the sliding window = gen-0 bootstrap +
   ~120,000 positions from 6,000 *search-quality* self-play games (GOLD-level play,
   100 simulations/decision, root moves temperature-sampled for the first 8 turns).
@@ -86,9 +94,10 @@
 ## EMERALD (ÉMERAUDE) → DIAMOND (DIAMANT) — generations 2+
 - Same loop, each on the previous champion's games: overnight selfplay (~1 evening per
   generation post-speedups) → 5090 training (minutes) → parity → promotion duel.
-- Budgets step up (1.25 s / 1.5 s). Planned data upgrade: **q-labels** (blend the
-  search's own root estimate into the target, halving label noise) once the pipeline
-  records them.
+- Budgets step up (1.25 s / 1.5 s). Data upgrade shipped 2026-07-22: **q-labels**
+  (the search's root estimate blended into the target, 0.5z+0.5q — target std
+  0.37 vs 0.50 z-only; `selfplay` records them, `--net` pins the champion
+  evaluator).
 
 ## MASTER (MAÎTRE) → GRANDMASTER (GRAND MAÎTRE) — late generations
 - Minted only if the loop keeps clearing gates. Escalation levers, each probe-gated:

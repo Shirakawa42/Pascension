@@ -25,3 +25,10 @@
 - **2026-07-22 00:27** — trained generation 3: val acc 76.0%, 560,000 positions
 - **2026-07-22 00:27** — net generation 3 embedded (valAcc 0.7596 · 560,000 positions · 2026-07-22)
 - **2026-07-22 00:30** — probe: ismcts-V4-200it vs ismcts-V4-200it → 49.2 % [40.4 %–58.0 %] over 120 games
+- **2026-07-22 00:43** — selfplay qtest: 40 games → 480 positions (search 30it, 0 min)
+- **2026-07-22 01:45** — selfplay gen4q: 8,000 games → 160,000 positions (search 100it, 61 min)
+- **2026-07-22 01:45** — trained generation 4: val acc 75.1%, 320,000 positions
+- **2026-07-22 01:45** — net generation 4 embedded (valAcc 0.7512 · 320,000 positions · 2026-07-22)
+- **2026-07-22 01:49** — probe: ismcts-V4-200it vs ismcts-V4-200it → 50.8 % [42.0 %–59.6 %] over 120 games
+- **2026-07-22 01:53** — probe: ismcts-V4-200it vs ismcts-V4-200it → 55.8 % [46.9 %–64.4 %] over 120 games
+- **2026-07-22 01:55** — PLATINUM attempt 4 REJECTED: gen-4 (q-labels, 50/50 gen0-capped/gen4q mix, val 75.1% on blended targets) scored 50.8% [42.0–59.6] vs gen-0 (gate: ≥55% + Wilson LB >50%) and 55.8% [46.9–64.4] vs gen-3. Best attempt yet (48.3 → 34.2 → 49.2 → 50.8) and beats the best prior challenger, but still a statistical twin of gen-0. **Underfitting fingerprint present**: final train loss 0.4942 ≈ val loss 0.4946 — capacity/encoding, not data noise, is now the binding constraint → next escalation rungs per bot-ranks.md: more selfplay volume, then encoder enrichment / wider net (1024→512→256, where batched GPU inference becomes worthwhile). Selfplay throughput work queued first.
