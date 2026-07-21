@@ -36,14 +36,23 @@ End-turn is a chained decision flow, not a phase machine:
 - **`BuyableSlots` is only filled while the viewer holds priority on their own turn** (pinned by `SnapshotBuyableSlots_OnlyWhileTheViewerHoldsPriority`) — gems persist until cleanup but the affordable halo must not linger after END TURN.
 - Rendering of the glow channels lives in ui-presentation (3-ring system).
 
-## ShardsHeuristicBot
-`Shards.Bots/ShardsHeuristicBot` — `IBotAgent`, host-side engine access, effect-tree value scoring. Its mid-turn champion-kill branch was removed with the champions-die-only-in-split decision.
+## Bots & AI (2026-07-21 — the strong-AI stack)
+Difficulty ladder (ShardsModule.CreateBot kinds → menu DIFFICULTY): `heuristic` (NORMAL) · `greedy` (HARD, default) · `strong`/`strong-fast` (MASTER, ISMCTS 1.0s/0.25s wall-clock via `SearchBotSeat` worker thread).
+- **ShardsHeuristicBot** — legacy greedy ladder, kept as tuner anchor + rollout-order reference.
+- **ShardsValueModel** (`Shards.Bots`) — tuned value core: `ShardsCardStatics` walks effect trees once per def into atoms at 7 mastery buckets; `ShardsCustomAnnotations` covers every Custom/Do (guard test `EveryCustomOrDoEffect_HasAnAnnotation` fails on new unannotated ones — balance patches trip it on purpose); weights in generated `ShardsEvalWeights.g.cs` (V2 = CMA-ES self-play tuned, 81.9% vs heuristic).
+- **ShardsGreedyEvalBot** — argmax over the model; instant.
+- **ShardsSearchBot** (`Shards.Bots/Search`) — SO-ISMCTS: forks the engine at priority points (`ShardsEngine.Fork` — quiescent-only, quiet clones, DeepCopy), determinizes hidden zones (`ShardsDeterminizer`, canonical-sort-then-shuffle — FAIR: no peeking, pinned by the invariance test), descends by real Submits, ε-greedy model rollouts to terminal (ε=0.03 is load-bearing — see ShardsSearchConfig comment), plan cursor serves own-chain decision answers from the searched subtree. 600 iters ≈ 0.6s/decision ≈ 77% vs greedy.
+- **Engine support**: `ShardsState.DeepCopy/ComputeFullHash/ComputePublicHash` (`ShardsStateClone.cs` — field-count sentinel test forces updates), `ShardsEngine.Fork/Journal`, quiet mode. Copy effects: one copy per card per resolution chain (`ShardsContext.InCopyChain` — Fabricator recursion crash fix).
+- **Retune after any card change**: `dotnet run -c Release --project Tools/SoiSim -- tune` (~3 min, ~1.2M games) → `evaluate` gate (heuristic ≥65% greedy / ≥95% vs random) → commit the regenerated `.g.cs`.
+
+## SoiSim (Tools/SoiSim — mass sims & balance stats)
+Console: `bench | run | analyze | tune | evaluate | probe | smoke`. 30k greedy games ≈ 10s. `run` writes JSONL to gitignored `Tools/ShardsData/sim/`; `analyze` → committed `Tools/ShardsData/balance-report.md/.json` + `sim-summary.csv` (goal-3 input; per-card impact = matchup×seat-stratified, BH-corrected). Sim/ + Tests/ compile-link into EngineVerify (smoke tests gate CI; exe never built there). Headline finding (30k heuristic AND 30k greedy-V2): **P0 wins 58.6%** — the +1 mastery stagger undercompensates.
 
 ## Tests
 `ShardsEngineTests` (structural, stub set), `ShardsRulingsTests` (one test per FAQ ruling), `ShardsContentTests` (counts, setup, termination, card conservation), 3-seed all-DLC bot sims. Keep `Tools/EngineVerify` green.
 
-## Open items (was M8)
+## Open items
 - SoI-over-Relay battery UNVERIFIED (net layer is game-agnostic and Pascension's Relay battery passed 2026-07-10, so risk is low — see networking skill).
-- ShardsHeuristicBot balance sims.
 - 4:3/21:9 screenshot pass for the SoI table (see ui-presentation).
 - Known simplifications to revisit: listed at the bottom of the shards-cards skill.
+- AI follow-ups (optional): search-in-loop weight retune (greedy-tuned weights transfer well but weren't retuned under search); full-size ISMCTS stats run (`soisim run --bots strong --budget 400 --games-per-matchup 400`, hours — the committed strong report used a smaller prefix); truncated-rollout evaluator if more strength per second is ever needed; in-game play-mode frame-freeze check for MASTER bots (SearchBotSeat is designed non-blocking but unverified in play mode).
