@@ -41,6 +41,9 @@ namespace Pascension.Game.Soi
         private DecisionRequest _boardPickRequest;
         private readonly List<int> _boardPicked = new List<int>();
         private RectTransform _keywordTips; // keyword tooltips beside the hover preview
+        // Health-changed events whose float is silenced because a damage event in the
+        // same batch already showed the number (entries removed as they play).
+        private readonly HashSet<GameEvent> _mutedHealthFloats = new HashSet<GameEvent>();
         private bool _gameOverShown;
 
         // Presentation stack.
@@ -460,6 +463,22 @@ namespace Pascension.Game.Soi
             foreach (var e in batch)
                 if (e is ShardsCardDrawnEvent drawn && drawn.PlayerIndex == MyIndex && drawn.InstanceId > 0)
                     _pendingReveal.Add(drawn.InstanceId);
+
+            // A hit floats ONE number: damage already shows its own big "−N"
+            // (PlayPlayerDamage), so mute the paired health-changed float the same
+            // blow emits — a second, smaller copy of the same value made hits hard
+            // to read. Order-blind scan: the engine emits HealthChanged BEFORE
+            // DamageAssigned. Pure health LOSSES (no damage event) keep their float.
+            for (int i = 0; i < batch.Count; i++)
+            {
+                if (!(batch[i] is ShardsDamageAssignedEvent damage)) continue;
+                for (int t = 0; t < damage.Targets.Count; t++)
+                    for (int j = 0; j < batch.Count; j++)
+                        if (batch[j] is ShardsHealthChangedEvent health &&
+                            health.PlayerIndex == damage.Targets[t] && health.Delta < 0 &&
+                            _mutedHealthFloats.Add(batch[j]))
+                            break;
+            }
             _queue.Enqueue(batch);
         }
 
@@ -1275,7 +1294,9 @@ namespace Pascension.Game.Soi
                         _history.Push(SoiCardFaces.CharacterPrefix + _snap.Players[health.PlayerIndex].CharacterId,
                             health.PlayerIndex,
                             $"−{-health.Delta} · {health.NewValue - health.Delta}→{health.NewValue}");
-                    PlayStatFloat(health.PlayerIndex, health.Delta, "soi_health", UiPalette.HealthyGreen, _statHealthRect);
+                    // Muted when a damage event in the same batch already floated it.
+                    if (!_mutedHealthFloats.Remove(health))
+                        PlayStatFloat(health.PlayerIndex, health.Delta, "soi_health", UiPalette.HealthyGreen, _statHealthRect);
                     return null;
                 case ShardsChampionDamagedEvent hit:
                     return PlayChampionHit(hit.InstanceId, hit.Amount);
