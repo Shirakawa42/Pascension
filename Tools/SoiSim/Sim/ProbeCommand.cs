@@ -25,12 +25,14 @@ namespace SoiSim
             double epsilon = cli.Has("--epsilon")
                 ? double.Parse(cli.GetStr("--epsilon", "-1"), System.Globalization.CultureInfo.InvariantCulture)
                 : -1;
+            int truncateA = cli.GetInt("--truncate-a", 0);
+            int truncateB = cli.GetInt("--truncate-b", 0);
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
-            var factoryA = new BotFactory(kindA, budgetA) { Epsilon = epsilon };
-            var factoryB = new BotFactory(kindB, budgetB) { Epsilon = epsilon };
+            var factoryA = new BotFactory(kindA, budgetA) { Epsilon = epsilon, TruncateEndTurns = truncateA };
+            var factoryB = new BotFactory(kindB, budgetB) { Epsilon = epsilon, TruncateEndTurns = truncateB };
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
 
             var work = new List<(ulong Seed, bool AFirst, string C0, string C1)>();

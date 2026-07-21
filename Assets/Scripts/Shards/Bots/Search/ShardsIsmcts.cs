@@ -37,18 +37,20 @@ namespace Shards.Bots
         private readonly int _viewer;
         private readonly ShardsValueModel _model;
         private readonly ShardsSearchConfig _config;
+        private readonly IShardsValueEvaluator _evaluator;
         private readonly DeterministicRng _rng;
         private readonly List<(Node Node, Child Child, int Actor)> _path = new();
 
         public int IterationsRun { get; private set; }
 
         public ShardsIsmcts(ShardsEngine live, int viewer, ShardsValueModel model,
-            ShardsSearchConfig config, ulong seed)
+            ShardsSearchConfig config, ulong seed, IShardsValueEvaluator evaluator = null)
         {
             _live = live;
             _viewer = viewer;
             _model = model;
             _config = config;
+            _evaluator = evaluator;
             _rng = new DeterministicRng(seed, 17);
         }
 
@@ -172,10 +174,23 @@ namespace Shards.Bots
             }
 
             // Rollout from the expansion point (or terminal) with the ε-greedy model.
+            bool truncated = false;
             if (expanded)
-                Rollout(clone, ref submits);
+                truncated = Rollout(clone, ref submits);
 
-            var scores = Score(clone, players);
+            double[] scores;
+            if (truncated && !clone.State.GameOver)
+            {
+                // Truncated leaf: the evaluator's win-prob replaces the playout tail.
+                double v = _evaluator.Evaluate(clone.State, _viewer);
+                scores = new double[players];
+                scores[_viewer] = v;
+                scores[1 - _viewer] = 1 - v;
+            }
+            else
+            {
+                scores = Score(clone, players);
+            }
             foreach (var (_, child, _) in _path)
             {
                 child.Visits++;
@@ -274,12 +289,20 @@ namespace Shards.Bots
             }
         }
 
-        private void Rollout(ShardsEngine clone, ref int submits)
+        /// <summary>Plays the ε-greedy model policy; returns true if the rollout was
+        /// TRUNCATED at the end-turn budget (leaf to be scored by the evaluator).</summary>
+        private bool Rollout(ShardsEngine clone, ref int submits)
         {
+            bool truncate = _config.RolloutEndTurns > 0 && _evaluator != null &&
+                            clone.State.Players.Count == 2;
+            int endTurns = 0;
             while (!clone.State.GameOver && submits < _config.MaxIterationSubmits)
             {
+                if (truncate && endTurns >= _config.RolloutEndTurns &&
+                    clone.PendingInput?.Kind == PendingInputKind.Priority)
+                    return true;
                 var pending = clone.PendingInput;
-                if (pending == null) return;
+                if (pending == null) return false;
                 PlayerAction action;
                 if (pending.Kind == PendingInputKind.Decision)
                 {
@@ -302,9 +325,12 @@ namespace Shards.Bots
 
                 if (!clone.Submit(action).Accepted &&
                     !clone.Submit(Pascension.Core.DefaultActions.For(ToSnap(clone.PendingInput))).Accepted)
-                    return;
+                    return false;
                 submits++;
+                if (action is ShardsEndTurnAction)
+                    endTurns++;
             }
+            return false;
         }
 
         private double[] Score(ShardsEngine clone, int players)

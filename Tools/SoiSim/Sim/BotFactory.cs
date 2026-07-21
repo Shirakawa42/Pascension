@@ -13,6 +13,10 @@ namespace SoiSim
         /// <summary>Optional rollout-ε override for "strong" (-1 = config default).</summary>
         public double Epsilon { get; set; } = -1;
 
+        /// <summary>&gt;0: truncate rollouts after N end-turns and score with the
+        /// baseline evaluator (the B2 experiment knob).</summary>
+        public int TruncateEndTurns { get; set; }
+
         /// <summary>Shared read-only model for greedy seats (built once, thread-safe).</summary>
         private static readonly System.Lazy<ShardsValueModel> GreedyModel =
             new(() => new ShardsValueModel());
@@ -47,6 +51,8 @@ namespace SoiSim
             var config = ShardsSearchConfig.ForSims(Budget > 0 ? Budget : 200);
             if (Epsilon >= 0)
                 config.RolloutEpsilon = Epsilon;
+            if (TruncateEndTurns > 0)
+                config.RolloutEndTurns = TruncateEndTurns;
             return config;
         }
 

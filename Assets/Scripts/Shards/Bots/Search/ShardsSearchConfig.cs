@@ -24,6 +24,12 @@ namespace Shards.Bots
         /// <summary>Hard safety cap on submits per iteration (descent + rollout).</summary>
         public int MaxIterationSubmits = 3000;
 
+        /// <summary>0 = roll every game to terminal (legacy). N&gt;0 = stop the rollout
+        /// after N end-turns and score the leaf with the evaluator — 3-6× cheaper
+        /// iterations, and the leaf estimate replaces the noisiest part of the search.
+        /// Only applies to 2-player games with an evaluator wired.</summary>
+        public int RolloutEndTurns = 0;
+
         public static ShardsSearchConfig ForSims(int iterations) => new()
         {
             Mode = BudgetMode.Iterations,

@@ -18,6 +18,7 @@ namespace Shards.Bots
         private readonly ShardsEngine _engine;
         private readonly ShardsValueModel _model;
         private readonly ShardsSearchConfig _config;
+        private readonly IShardsValueEvaluator _evaluator;
         private readonly ulong _seed;
         private ulong _searches;
         private ShardsIsmcts.PlanCursor _plan;
@@ -31,12 +32,15 @@ namespace Shards.Bots
         public int LastIterations { get; private set; }
 
         public ShardsSearchBot(ulong seed, ShardsEngine engine,
-            ShardsSearchConfig config = null, ShardsValueModel model = null)
+            ShardsSearchConfig config = null, ShardsValueModel model = null,
+            IShardsValueEvaluator evaluator = null)
         {
             _seed = seed;
             _engine = engine;
             _config = config ?? ShardsSearchConfig.ForSims(200);
             _model = model ?? new ShardsValueModel();
+            _evaluator = evaluator ??
+                         (_config.RolloutEndTurns > 0 ? new ShardsBaselineEvaluator(_model) : null);
         }
 
         public PlayerAction Choose(PendingSnap pending, SnapshotBase view)
@@ -53,7 +57,7 @@ namespace Shards.Bots
             }
 
             var search = new ShardsIsmcts(_engine, pending.PlayerIndex, _model, _config,
-                _seed ^ (++_searches * 0x9E3779B97F4A7C15UL));
+                _seed ^ (++_searches * 0x9E3779B97F4A7C15UL), _evaluator);
             var action = search.Search();
             LastIterations = search.IterationsRun;
             _plan = search.LastChosenPlan;
