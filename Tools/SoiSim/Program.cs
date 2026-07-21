@@ -23,6 +23,10 @@ namespace SoiSim
                         return RunCommand.Run(cli);
                     case "analyze":
                         return AnalyzeCommand.Run(cli);
+                    case "tune":
+                        return TuneCommand.Run(cli);
+                    case "evaluate":
+                        return EvaluateCommand.Run(cli);
                     case "smoke":
                         return SmokeCommand.Run(cli);
                     default:
@@ -48,6 +52,9 @@ namespace SoiSim
             Console.WriteLine("               [--matchups all|decima:tetra,...] [--seed-base 1] [--threads N-1]");
             Console.WriteLine("               [--out path.jsonl] [--append] [--tag baseline]");
             Console.WriteLine("  soisim analyze [--in path-or-glob] [--allow-mixed] [--report md] [--json path] [--csv path]");
+            Console.WriteLine("  soisim tune  [--generations 300] [--games-per-candidate 240] [--lambda 16]");
+            Console.WriteLine("               [--sigma 0.15] [--seed 1] [--threads N-1] [--no-emit] [--out path]");
+            Console.WriteLine("  soisim evaluate [--games 1000] [--seed-base 424242] [--threads N-1]");
             Console.WriteLine("  soisim smoke");
         }
     }

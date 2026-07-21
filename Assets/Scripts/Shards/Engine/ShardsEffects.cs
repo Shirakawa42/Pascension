@@ -130,6 +130,10 @@ namespace Shards.Engine
         private readonly ShardsFaction _faction;
         private readonly int _required; // cards of the faction played this turn (excluding this one)
         private readonly IShardsEffect _inner;
+        /// <summary>Read-only views for bot statics/heuristics.</summary>
+        public IShardsEffect Inner => _inner;
+        public ShardsFaction Faction => _faction;
+        public int Required => _required;
 
         public FactionTrigger(ShardsFaction faction, int required, IShardsEffect inner)
         {
@@ -430,6 +434,7 @@ namespace Shards.Engine
     public sealed class OpponentLosesMastery : IShardsEffect
     {
         private readonly int _amount;
+        public int Amount => _amount;
         public OpponentLosesMastery(int amount) => _amount = amount;
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
@@ -463,6 +468,7 @@ namespace Shards.Engine
     {
         private readonly int _count;
         private readonly bool _optional;
+        public int Count => _count;
         public BanishUpTo(int count = 1, bool optional = true)
         {
             _count = count;
@@ -605,6 +611,7 @@ namespace Shards.Engine
     public sealed class WarpUpTo : IShardsEffect
     {
         private readonly int _maxCost;
+        public int MaxCost => _maxCost;
         public WarpUpTo(int maxCost) => _maxCost = maxCost;
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
@@ -649,6 +656,8 @@ namespace Shards.Engine
     {
         private readonly int _maxCost;
         private readonly bool _toHand;
+        public int MaxCost => _maxCost;
+        public bool ToHand => _toHand;
         public RecruitFromRow(int maxCost, bool toHand = false)
         {
             _maxCost = maxCost;
@@ -700,6 +709,7 @@ namespace Shards.Engine
         private readonly System.Func<ShardsCardDef, bool> _filter;
         private readonly string _what;
         private readonly int _copies;
+        public int Copies => _copies;
         public CopyPlayedEffect(System.Func<ShardsCardDef, bool> filter, string what, int copies = 1)
         {
             _filter = filter;
@@ -750,6 +760,8 @@ namespace Shards.Engine
     {
         private readonly int _amount;
         private readonly bool _includeController;
+        public int Amount => _amount;
+        public bool IncludeController => _includeController;
         public AllPlayersLoseHealth(int amount, bool includeController = true)
         {
             _amount = amount;
@@ -772,6 +784,7 @@ namespace Shards.Engine
     public sealed class AllPlayersLoseMastery : IShardsEffect
     {
         private readonly int _amount;
+        public int Amount => _amount;
         public AllPlayersLoseMastery(int amount) => _amount = amount;
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
