@@ -132,16 +132,21 @@ def upload_binary(_):
     print(f"uploaded bin/SoiSim ({mb:.1f} MB) to volume {VOL()}")
 
 
-def _pod_cmd(name, worker, cli, record, out_root):
+def _pod_cmd(worker, cli, out_root, outflag, record, aggregate):
     w = f"w{worker:02d}"
+    ldata = f"/tmp/{w}"  # record to FAST LOCAL disk — network-volume writes can be
+                          # lost when the container terminates before they sync.
+    data_arg = f" {outflag} {ldata}" if record else ""
+    result_arg = f" --result {out_root}/results/{w}.json" if aggregate else ""
+    copy = f"cp {ldata}/*.soip {out_root}/data/{w}/ 2>/dev/null || true" if record else "true"
     parts = [
         "set -e",
         "chmod +x /workspace/bin/SoiSim",
-        f"mkdir -p {out_root}/status/{w} {out_root}/data/{w} {out_root}/results",
+        f"mkdir -p {out_root}/status/{w} {out_root}/data/{w} {out_root}/results {ldata}",
         f"export SOISIM_STATUS_DIR={out_root}/status/{w}",
-        f"/workspace/bin/SoiSim {cli} --result {out_root}/results/{w}.json"
-        + (f" --record {out_root}/data/{w}" if record else "")
-        + f" > {out_root}/status/{w}/run.log 2>&1",
+        f"/workspace/bin/SoiSim {cli}{result_arg}{data_arg} > {out_root}/status/{w}/run.log 2>&1",
+        copy,     # copy the COMPLETE local .soip to the volume
+        "sync",   # force it to the volume backend BEFORE signalling done
         f"touch {out_root}/results/{w}.done",
     ]
     return " && ".join(parts)
@@ -217,7 +222,7 @@ def run(args):
         for i in range(k):
             seed = args.seed_base + i * 100000
             cli = f"{args.cmd} --games {per} --seed-base {seed}"
-            dcmd = _pod_cmd(args.name, i, cli, args.record, out_root)
+            dcmd = _pod_cmd(i, cli, out_root, args.outflag, args.record, not args.no_aggregate)
             r = create_pod(f"{args.name}-w{i:02d}", dcmd, args.vcpu)
             if isinstance(r, dict) and "id" in r:
                 created.append(r["id"]); workers.append(i)
@@ -272,10 +277,10 @@ def _download_and_aggregate(args, k):
     os.makedirs(local, exist_ok=True)
     cl = s3()
     time.sleep(15)  # let the network-volume writes settle into the S3 view
-    n_soip = 0
+    n_soip = bytes_dl = 0
     for key in s3_list(f"runs/{args.name}/data/"):
         if key.endswith(".soip"):
-            dst = os.path.join(local, key.split("/")[-2] + ".soip")
+            dst = os.path.join(local, key.split("/")[-2] + "-" + key.split("/")[-1])
             want = cl.head_object(Bucket=VOL(), Key=key)["ContentLength"]
             for attempt in range(4):  # retry until the download matches the volume size
                 cl.download_file(VOL(), key, dst)
@@ -283,22 +288,26 @@ def _download_and_aggregate(args, k):
                     break
                 time.sleep(10)
             n_soip += 1
-    score = decisive = games = 0.0
-    for key in s3_list(f"runs/{args.name}/results/"):
-        if key.endswith(".json"):
-            r = json.loads(s3_get_text(key))
-            score += r["score"]; decisive += r["decisive"]; games += r["games"]
-    wr = score / decisive if decisive else 0
-    lo = hi = 0
-    if decisive:
-        z = 1.959964
-        p = wr
-        den = 1 + z * z / decisive
-        ctr = p + z * z / (2 * decisive)
-        adj = z * math.sqrt(p * (1 - p) / decisive + z * z / (4 * decisive * decisive))
-        lo, hi = (ctr - adj) / den, (ctr + adj) / den
-    summary = (f"A win rate: {wr:.1%} [{lo:.1%}-{hi:.1%}] over {int(games)} games "
-               f"({n_soip} .soip files -> {local})")
+            bytes_dl += want
+    positions = max(0, (bytes_dl - 32 * n_soip)) // 3096
+    if args.no_aggregate:
+        summary = f"selfplay done: {n_soip} .soip files, ~{positions:,} positions -> {local}"
+    else:
+        score = decisive = games = 0.0
+        for key in s3_list(f"runs/{args.name}/results/"):
+            if key.endswith(".json"):
+                r = json.loads(s3_get_text(key))
+                score += r["score"]; decisive += r["decisive"]; games += r["games"]
+        wr = score / decisive if decisive else 0
+        lo = hi = 0
+        if decisive:
+            z = 1.959964; p = wr
+            den = 1 + z * z / decisive
+            ctr = p + z * z / (2 * decisive)
+            adj = z * math.sqrt(p * (1 - p) / decisive + z * z / (4 * decisive * decisive))
+            lo, hi = (ctr - adj) / den, (ctr + adj) / den
+        summary = (f"A win rate: {wr:.1%} [{lo:.1%}-{hi:.1%}] over {int(games)} games · "
+                   f"{n_soip} .soip, ~{positions:,} positions -> {local}")
     print("RESULT:", summary)
     _write_status(args.name, "COMPLETE — pods torn down", [summary])
     open(os.path.join(local, "RESULT.txt"), "w").write(summary + "\n")
@@ -322,8 +331,12 @@ def main():
     r.add_argument("--vcpu", type=int, default=32)
     r.add_argument("--games", type=int, required=True)
     r.add_argument("--seed-base", type=int, default=200000)
-    r.add_argument("--cmd", required=True, help="SoiSim args WITHOUT --games/--seed-base/--result/--record")
-    r.add_argument("--record", action="store_true")
+    r.add_argument("--cmd", required=True, help="SoiSim args WITHOUT --games/--seed-base/--result/output flag")
+    r.add_argument("--record", action="store_true", help="capture .soip training data from each pod")
+    r.add_argument("--outflag", default="--record",
+                   help="the SoiSim flag that names the .soip output dir: --record (probe) or --out (selfplay)")
+    r.add_argument("--no-aggregate", action="store_true",
+                   help="skip win-rate aggregation (selfplay data-gen has no --result)")
     r.set_defaults(fn=run)
     args = ap.parse_args()
     args.fn(args)
