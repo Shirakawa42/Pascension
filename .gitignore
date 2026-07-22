@@ -57,6 +57,16 @@ Tools/ShardsData/campaign-status.md
 # Neural self-play position data (gigabytes; regenerable from seeds)
 Tools/ShardsData/selfplay/
 Tools/ShardsData/selfplay2/
+# Local secrets — RunPod API/S3 keys etc. NEVER commit these.
+.env
+.env.*
+Tools/RunPod/.secrets
+Tools/RunPod/**/secrets*
+# RunPod build artifacts / transient state (regenerable)
+Tools/RunPod/publish/
+Tools/RunPod/active-pods.json
+Tools/ShardsData/runpod-status.md
+
 # Python env + raw training outputs (weights are committed via ShardsNetWeights.g.cs)
 Tools/ShardsML/.venv/
 Tools/ShardsML/out/

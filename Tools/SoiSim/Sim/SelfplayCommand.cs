@@ -27,6 +27,11 @@ namespace SoiSim
             int truncate = cli.GetInt("--truncate", 2);
             int tempTurns = cli.GetInt("--temp-turns", 8);
             int netGen = cli.GetInt("--net", -1);
+            // Early-stop for the q-label searches: -1 default, 0 OFF (exact full-budget
+            // q, matching the pre-early-stop data), >0 the fraction.
+            double earlyStop = cli.Has("--earlystop")
+                ? double.Parse(cli.GetStr("--earlystop", "-1"), System.Globalization.CultureInfo.InvariantCulture)
+                : -1;
             // Record schema: defaults to the current encoder; --schema 1 writes the
             // frozen v1 pooled encoding — the deployed config for T=2 rollout ranks.
             int schema = cli.GetInt("--schema", ShardsStateEncoder.SchemaVersion);
@@ -37,8 +42,10 @@ namespace SoiSim
                 : ShardsStateEncoder.FeatureCount;
             ulong seedBase = cli.GetULong("--seed-base", 1);
             int threads = cli.GetInt("--threads", Math.Max(1, Environment.ProcessorCount - 1));
-            string outDir = cli.GetStr("--out",
-                Path.Combine(SimConfig.FindRepoRoot(), "Tools", "ShardsData", "selfplay", "gen0"));
+            // Lazy repo-root fallback: FindRepoRoot throws off-repo (e.g. on a cloud
+            // worker), so only resolve it when --out was NOT given.
+            string outDir = cli.GetStr("--out", null)
+                ?? Path.Combine(SimConfig.FindRepoRoot(), "Tools", "ShardsData", "selfplay", "gen0");
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
@@ -100,6 +107,8 @@ namespace SoiSim
                             config.RootSampleTurns = tempTurns;
                             if (sharedEval != null)
                                 config.RolloutEndTurns = truncate;
+                            if (earlyStop == 0) config.EarlyStopWhenDecided = false;
+                            else if (earlyStop > 0) config.EarlyStopBudgetFraction = earlyStop;
                             seats[s] = new ShardsSearchBot(seed * 100 + (ulong)s, adapter.Inner,
                                 config, model, sharedEval);
                         }

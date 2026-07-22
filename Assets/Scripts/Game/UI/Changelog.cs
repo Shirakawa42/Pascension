@@ -45,9 +45,9 @@ namespace Pascension.Game.UI
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
             new Entry("2026-07-22",
-                "· New bot ranks: PLATINUM and EMERALD — the two toughest opponents yet. PLATINUM plays GOLD's search with a smarter neural network (trained on over a million positions from its own games); EMERALD is the same brain thinking several times longer. Each is a clear step up, and all still answer near-instantly.\n" +
+                "· Three new bot ranks — PLATINUM, EMERALD, DIAMOND — the toughest opponents yet. PLATINUM plays GOLD's search with a smarter neural network (trained on over a million positions from its own games); EMERALD and DIAMOND are the same brain thinking progressively longer. Each is a clear step up, and even DIAMOND answers in about half a second.\n" +
                 "· Search bots (SILVER and up) now answer near-instantly — they think a fixed number of moves ahead instead of pausing for a full second, and stop early once the best move is clear.",
-                "· Nouveaux rangs de bot : PLATINE et ÉMERAUDE — les deux adversaires les plus coriaces à ce jour. PLATINE joue la recherche d'OR avec un réseau de neurones plus fin (entraîné sur plus d'un million de positions issues de ses propres parties) ; ÉMERAUDE est le même cerveau qui réfléchit plusieurs fois plus longtemps. Chacun est un net cran au-dessus, et tous répondent quasi instantanément.\n" +
+                "· Trois nouveaux rangs de bot — PLATINE, ÉMERAUDE, DIAMANT — les adversaires les plus coriaces à ce jour. PLATINE joue la recherche d'OR avec un réseau de neurones plus fin (entraîné sur plus d'un million de positions issues de ses propres parties) ; ÉMERAUDE et DIAMANT sont le même cerveau qui réfléchit de plus en plus longtemps. Chacun est un net cran au-dessus, et même DIAMANT répond en une demi-seconde environ.\n" +
                 "· Les bots de recherche (ARGENT et plus) répondent désormais presque instantanément — ils anticipent un nombre fixe de coups au lieu de marquer une pause d'une seconde, et s'arrêtent dès que le meilleur coup est clair."),
             new Entry("2026-07-21",
                 "· Ingeminex attack after you draw your new hand — their discards now hit the hand you keep.\n" +

@@ -54,6 +54,8 @@ namespace SoiSim
             // test games are champion-quality, so reuse them instead of discarding.
             string recordDir = cli.GetStr("--record", null);
             int recordPerGame = cli.GetInt("--record-per-game", 20);
+            // Machine-readable result (score/decisive/games) for cross-worker aggregation.
+            string resultPath = cli.GetStr("--result", null);
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
@@ -205,6 +207,15 @@ namespace SoiSim
             recorder?.Dispose();
             if (recordDir != null)
                 Console.WriteLine($"  recorded {recorded:N0} positions -> {recordDir}");
+            if (resultPath != null)
+            {
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var full = Path.GetFullPath(resultPath);
+                Directory.CreateDirectory(Path.GetDirectoryName(full));
+                File.WriteAllText(full,
+                    $"{{\"score\":{totalScore.ToString(inv)},\"decisive\":{decisive}," +
+                    $"\"games\":{done},\"failures\":{failures},\"wr\":{wr.ToString(inv)}}}");
+            }
             return failures == 0 ? 0 : 1;
         }
     }

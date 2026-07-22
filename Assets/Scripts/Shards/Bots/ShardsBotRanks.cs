@@ -90,6 +90,15 @@ namespace Shards.Bots
             Rank("emerald", "EMERALD", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
                     NetConfig(EmeraldIterations), Model.Value, Gen8Net.Value)),
+            // DIAMOND — minted 2026-07-22. gen-8 net at a 4× budget over EMERALD
+            // (3200 it, ~480 ms/decision). Beats EMERALD@800 56.0% [53.8-58.2] over
+            // 2000 games (measured on a RunPod CPU fan-out, 8 pods, ~12 min). The top
+            // of the fast DETERMINISTIC ladder: both levers (net data, more search)
+            // cap near ~56-57% — SoI's strategic ceiling — so anything above DIAMOND
+            // needs the reserved levers (wall-clock, root-parallelism) at MASTER+.
+            Rank("diamond", "DIAMOND", isSearch: true,
+                (seed, engine) => new ShardsSearchBot(seed, engine,
+                    NetConfig(DiamondIterations), Model.Value, Gen8Net.Value)),
         };
 
         private static readonly Lazy<IShardsValueEvaluator> Gen0Net =
@@ -112,6 +121,10 @@ namespace Shards.Bots
         /// <summary>EMERALD = gen-8 at a 4× budget over PLATINUM. A 2× step was a
         /// coin-flip (51%); 4× is the smallest budget jump that clears the gate (~57%).</summary>
         private const int EmeraldIterations = 800;
+
+        /// <summary>DIAMOND = gen-8 at a 4× budget over EMERALD (~480 ms). The last
+        /// deterministic rung — 56.0% vs EMERALD over 2000 games.</summary>
+        private const int DiamondIterations = 3200;
 
         private static ShardsSearchConfig NetConfig(int iterations)
         {

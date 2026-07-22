@@ -23,11 +23,12 @@ iterations" stops producing gate-clearing generations.
 |---|---|---|---|---|
 | IRON | ✅ shipped | hand-written heuristic | — | instant |
 | BRONZE | ✅ shipped (default) | tuned value model, greedy | — | instant |
-| SILVER | ✅ shipped | ISMCTS, full rollouts, no net | — | 160 it |
+| SILVER | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 0 (frozen) | 100 it |
 | GOLD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 0 (frozen, narrow, bootstrap) | 200 it |
 | PLATINUM | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen, narrow, full data) | 200 it |
 | EMERALD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 800 it (4×) |
-| DIAMOND → CHALLENGER | planned | ISMCTS (+ larger budget / root parallelism / wall-clock) | gen 8 / promoted gen | 3200 it+ |
+| DIAMOND | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 3200 it (4×) |
+| MASTER → CHALLENGER | planned | ISMCTS + reserved levers (wall-clock / root parallelism) | promoted gen | — |
 
 ---
 
