@@ -11,7 +11,8 @@
         "Pascension.Net",
         "Shards.Engine",
         "Shards.Content",
-        "Shards.Bots"
+        "Shards.Bots",
+        "Shards.Stats"
     ],
     "includePlatforms": [
         "Editor"

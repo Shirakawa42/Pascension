@@ -1,0 +1,17 @@
+{
+    "name": "Shards.Stats",
+    "rootNamespace": "Shards.Stats",
+    "references": [
+        "Pascension.Core",
+        "Shards.Engine"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

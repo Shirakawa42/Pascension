@@ -11,8 +11,13 @@ namespace Shards.Engine
     public sealed class ShardsEngineAdapter : IEngineAdapter
     {
         public readonly ShardsEngine Inner;
+        public readonly ShardsConfig Config;
 
-        public ShardsEngineAdapter(ShardsConfig config) => Inner = new ShardsEngine(config);
+        public ShardsEngineAdapter(ShardsConfig config)
+        {
+            Config = config;
+            Inner = new ShardsEngine(config);
+        }
 
         public SubmitResult Submit(PlayerAction action) => Inner.Submit(action);
 
@@ -37,7 +42,8 @@ namespace Shards.Engine
 
         public int EventCount => Inner.Log.Count;
 
-        public SnapshotBase BuildSnapshot(int playerIndex) => ShardsSnapshotBuilder.Build(Inner, playerIndex);
+        public SnapshotBase BuildSnapshot(int playerIndex) =>
+            ShardsSnapshotBuilder.Build(Inner, playerIndex, Config.Players);
 
         public bool GameOver => Inner.State.GameOver;
 

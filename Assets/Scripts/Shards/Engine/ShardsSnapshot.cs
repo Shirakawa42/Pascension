@@ -21,6 +21,9 @@ namespace Shards.Engine
         public int Index;
         public string Name;
         public string CharacterId;
+        public bool IsBot;
+        /// <summary>Bot difficulty kind — null for humans.</summary>
+        public string BotKind;
         public int Health;
         public int Mastery;
         public int Gems;
@@ -91,7 +94,8 @@ namespace Shards.Engine
 
     public static class ShardsSnapshotBuilder
     {
-        public static ShardsSnapshot Build(ShardsEngine engine, int viewerIndex)
+        public static ShardsSnapshot Build(ShardsEngine engine, int viewerIndex,
+            IReadOnlyList<PlayerSpec> specs = null)
         {
             var state = engine.State;
             var snapshot = new ShardsSnapshot
@@ -131,6 +135,13 @@ namespace Shards.Engine
                     DeckCount = player.Deck.Count,
                     HandCount = player.Hand.Count
                 };
+                // Seat specs (spec order == seat order) let stats/UI tell bots from
+                // humans; older call sites without specs keep the defaults.
+                if (specs != null && player.Index < specs.Count && specs[player.Index] != null)
+                {
+                    snap.IsBot = specs[player.Index].IsBot;
+                    snap.BotKind = specs[player.Index].IsBot ? specs[player.Index].BotKind : null;
+                }
                 foreach (var card in player.Discard) snap.Discard.Add(Snap(card));
                 foreach (var card in player.PlayZone) snap.PlayZone.Add(Snap(card));
                 foreach (var card in player.Champions) snap.Champions.Add(Snap(card));
