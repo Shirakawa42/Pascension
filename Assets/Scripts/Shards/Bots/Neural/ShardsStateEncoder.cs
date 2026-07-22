@@ -17,17 +17,38 @@ namespace Shards.Bots
     ///    atoms — no def-id identity anywhere. New cards encode automatically (and
     ///    unannotated Custom effects still trip the annotation guard test first).
     ///
-    /// Layout (see consts): 14 zone pools × 52-dim card vectors = 728, then champion/
-    /// monster dynamics (7), per-player scalars (2×12), global scalars (9) = 768.
-    /// Bump SchemaVersion on ANY layout change — selfplay files and weight blobs
-    /// carry it and refuse to mix.
+    /// Layout: the schema-1 pooled prefix (14 zone pools × 52-dim card vectors = 728,
+    /// champion/monster dynamics 7, per-player scalars 2×12, global scalars 9 = 768)
+    /// followed by the schema-2 TACTICAL appendix (per-slot center row + affordability,
+    /// destiny-pick state, per-champion board detail, per-monster detail = 372) = 1140.
+    /// The appendix exists because five schema-1 net generations plateaued at ~50%
+    /// against each other: pooling sums away exactly the mid-turn tactical state a
+    /// leaf evaluator needs (probes showed 2-turn rollouts beat eval-at-leaf at
+    /// wall-clock parity — the rollout was compensating for this blindness).
+    /// EncodeV1 stays byte-identical to schema 1 — FROZEN nets pinned by minted ranks
+    /// evaluate through it forever. Bump SchemaVersion on ANY layout change —
+    /// selfplay files and weight blobs carry it and refuse to mix.
     /// </summary>
     public static class ShardsStateEncoder
     {
-        public const int SchemaVersion = 1;
+        public const int SchemaVersion = 2;
         public const int CardVecSize = 52;
         public const int PoolCount = 14;
-        public const int FeatureCount = PoolCount * CardVecSize + 7 + 2 * 12 + 9; // 768
+        /// <summary>The schema-1 layout size — the frozen prefix of schema 2.</summary>
+        public const int V1FeatureCount = PoolCount * CardVecSize + 7 + 2 * 12 + 9; // 768
+
+        // ---- schema-2 appendix layout ----
+        private const int RowSlots = 6;
+        private const int RowSlotSize = CardVecSize + 1;                  // + affordable-now bit
+        private const int RowSlotsOffset = V1FeatureCount;                // 768
+        private const int DestinyStateOffset = RowSlotsOffset + RowSlots * RowSlotSize; // 1086
+        private const int ChampDetail = 4;                                // top champions per side
+        private const int ChampDetailSize = 6;
+        private const int ChampDetailOffset = DestinyStateOffset + 2;     // 1088
+        private const int MonsterDetail = 2;
+        private const int MonsterDetailSize = 2;
+        private const int MonsterDetailOffset = ChampDetailOffset + 2 * ChampDetail * ChampDetailSize; // 1136
+        public const int FeatureCount = MonsterDetailOffset + MonsterDetail * MonsterDetailSize; // 1140
 
         // Pool order (offsets = index × CardVecSize). Viewer-relative.
         private const int OwnHand = 0, OwnDeck = 1, OwnDiscard = 2, OwnPlayZone = 3,
@@ -135,10 +156,99 @@ namespace Shards.Bots
 
         // ------------------------------------------------------------------ encode
 
-        /// <summary>Fills dst (length ≥ FeatureCount) with the viewer's encoding.</summary>
+        /// <summary>Fills dst (length ≥ FeatureCount) with the viewer's schema-2
+        /// encoding: the frozen v1 prefix plus the tactical appendix.</summary>
         public static void Encode(ShardsState state, int viewerIndex, float[] dst)
         {
             Array.Clear(dst, 0, FeatureCount);
+            EncodeCore(state, viewerIndex, dst);
+
+            var me = state.Players[viewerIndex];
+            var opp = state.Players[1 - viewerIndex];
+            int slots = Math.Min(state.CenterRow.Length, RowSlots);
+            for (int s = 0; s < slots; s++)
+            {
+                var card = state.CenterRow[s];
+                if (card == null) continue;
+                int off = RowSlotsOffset + s * RowSlotSize;
+                var v = CardVec(card.Def, me.Mastery);
+                for (int i = 0; i < CardVecSize; i++)
+                    dst[off + i] = v[i];
+                dst[off + CardVecSize] = card.Def.Cost <= me.Gems ? 1 : 0;
+            }
+            dst[DestinyStateOffset] = me.Mastery >= 5 && !me.DestinyTaken ? 1 : 0;
+            dst[DestinyStateOffset + 1] = state.DestinyRow.Count / 6f;
+            ChampDetailInto(dst, ChampDetailOffset, me.Champions);
+            ChampDetailInto(dst, ChampDetailOffset + ChampDetail * ChampDetailSize, opp.Champions);
+            MonsterDetailInto(dst, MonsterDetailOffset, state.ActiveMonsters);
+        }
+
+        /// <summary>The exact schema-1 encoding — used by FROZEN generation-≤5 nets
+        /// (minted ranks pin them); must never change.</summary>
+        public static void EncodeV1(ShardsState state, int viewerIndex, float[] dst)
+        {
+            Array.Clear(dst, 0, V1FeatureCount);
+            EncodeCore(state, viewerIndex, dst);
+        }
+
+        /// <summary>Top champions by (remaining defense DESC, InstanceId ASC) — the
+        /// deterministic public ordering; one 6-dim row each, zeros past the count.</summary>
+        private static void ChampDetailInto(float[] dst, int offset, List<ShardsCard> champions)
+        {
+            long prevKey = long.MaxValue;
+            for (int k = 0; k < ChampDetail; k++)
+            {
+                ShardsCard best = null;
+                long bestKey = -1;
+                foreach (var c in champions)
+                {
+                    int remaining = Math.Max(0, c.Def.Defense - c.DamageThisTurn);
+                    long key = (long)remaining * 10_000_000L + (9_999_999L - c.InstanceId);
+                    if (key < prevKey && key > bestKey)
+                    {
+                        bestKey = key;
+                        best = c;
+                    }
+                }
+                if (best == null) return;
+                prevKey = bestKey;
+                int off = offset + k * ChampDetailSize;
+                dst[off + 0] = Math.Max(0, best.Def.Defense - best.DamageThisTurn) / 9f;
+                dst[off + 1] = best.DamageThisTurn / 9f;
+                dst[off + 2] = best.Exhausted ? 1 : 0;
+                dst[off + 3] = best.Def.Taunt ? 1 : 0;
+                dst[off + 4] = best.Def.Shield / 3f;
+                dst[off + 5] = best.Def.Defense / 9f;
+            }
+        }
+
+        private static void MonsterDetailInto(float[] dst, int offset, List<ShardsCard> monsters)
+        {
+            long prevKey = long.MaxValue;
+            for (int k = 0; k < MonsterDetail; k++)
+            {
+                ShardsCard best = null;
+                long bestKey = -1;
+                foreach (var c in monsters)
+                {
+                    int remaining = Math.Max(0, c.Def.Defense - c.DamageThisTurn);
+                    long key = (long)remaining * 10_000_000L + (9_999_999L - c.InstanceId);
+                    if (key < prevKey && key > bestKey)
+                    {
+                        bestKey = key;
+                        best = c;
+                    }
+                }
+                if (best == null) return;
+                prevKey = bestKey;
+                int off = offset + k * MonsterDetailSize;
+                dst[off + 0] = Math.Max(0, best.Def.Defense - best.DamageThisTurn) / 10f;
+                dst[off + 1] = best.Def.Defense / 10f;
+            }
+        }
+
+        private static void EncodeCore(ShardsState state, int viewerIndex, float[] dst)
+        {
             var me = state.Players[viewerIndex];
             var opp = state.Players[1 - viewerIndex];
 

@@ -52,11 +52,17 @@ namespace Shards.Bots
             throw new InvalidOperationException($"net generation {generation} is not embedded");
         }
 
+        /// <summary>1 = legacy pooled encoding (frozen minted nets), 2 = current.</summary>
+        private readonly int _schema;
+
         public ShardsNeuralEval(byte[] f16Blob, int[] layers, int schemaVersion, string sha256)
         {
-            if (schemaVersion != ShardsStateEncoder.SchemaVersion)
+            // Schema 1 nets stay loadable forever — minted ranks pin them and the
+            // encoder keeps the exact v1 path (EncodeV1) alive for them.
+            if (schemaVersion != 1 && schemaVersion != ShardsStateEncoder.SchemaVersion)
                 throw new InvalidOperationException(
-                    $"net schema v{schemaVersion} != encoder v{ShardsStateEncoder.SchemaVersion} — retrain required");
+                    $"net schema v{schemaVersion} unsupported (encoder v{ShardsStateEncoder.SchemaVersion}) — retrain required");
+            _schema = schemaVersion;
             if (!string.IsNullOrEmpty(sha256))
             {
                 using var sha = System.Security.Cryptography.SHA256.Create();
@@ -68,7 +74,9 @@ namespace Shards.Bots
             }
 
             _dims = new int[layers.Length + 1];
-            _dims[0] = ShardsStateEncoder.FeatureCount;
+            _dims[0] = schemaVersion == 1
+                ? ShardsStateEncoder.V1FeatureCount
+                : ShardsStateEncoder.FeatureCount;
             for (int i = 0; i < layers.Length; i++)
                 _dims[i + 1] = layers[i];
 
@@ -108,8 +116,12 @@ namespace Shards.Bots
 
         public double Evaluate(ShardsState state, int playerIndex)
         {
-            _scratchIn ??= new float[ShardsStateEncoder.FeatureCount];
-            ShardsStateEncoder.Encode(state, playerIndex, _scratchIn);
+            if (_scratchIn == null || _scratchIn.Length < _dims[0])
+                _scratchIn = new float[_dims[0]];
+            if (_schema == 1)
+                ShardsStateEncoder.EncodeV1(state, playerIndex, _scratchIn);
+            else
+                ShardsStateEncoder.Encode(state, playerIndex, _scratchIn);
             return Forward(_scratchIn);
         }
 

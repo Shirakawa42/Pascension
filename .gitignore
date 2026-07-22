@@ -56,6 +56,7 @@ Tools/ShardsData/sim/
 Tools/ShardsData/campaign-status.md
 # Neural self-play position data (gigabytes; regenerable from seeds)
 Tools/ShardsData/selfplay/
+Tools/ShardsData/selfplay2/
 # Python env + raw training outputs (weights are committed via ShardsNetWeights.g.cs)
 Tools/ShardsML/.venv/
 Tools/ShardsML/out/

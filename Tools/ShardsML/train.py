@@ -27,30 +27,43 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-FEATURES = 768
 DEFAULT_LAYERS = "512,256,128"
-RECORD_DTYPE = np.dtype([
-    ("x", "<f4", FEATURES), ("z", "<f4"), ("q", "<f4"),
-    ("seed", "<u8"), ("move", "<u2"), ("seat", "u1"), ("flags", "u1"), ("pad", "V4"),
-])
 
 
-def load_dir(paths: str) -> np.ndarray:
+def make_dtype(features: int) -> np.dtype:
+    return np.dtype([
+        ("x", "<f4", features), ("z", "<f4"), ("q", "<f4"),
+        ("seed", "<u8"), ("move", "<u2"), ("seat", "u1"), ("flags", "u1"), ("pad", "V4"),
+    ])
+
+
+def read_header(file: str):
+    with open(file, "rb") as f:
+        magic, fmt, schema, feat, rec = struct.unpack("<IHHII", f.read(16))
+    assert magic == 0x50494F53, f"{file}: bad magic"
+    return schema, feat, rec
+
+
+def load_dir(paths: str):
     """Comma-separated dirs; append " CAP" (space-separated int) to subsample a dir
     with a fixed seed, e.g. "gen0 280000,gen1,gen1b" — caps the bootstrap so fresh
-    search data isn't drowned (the attempt-1/-2 lesson)."""
+    search data isn't drowned (the attempt-1/-2 lesson). Feature count and schema
+    come from the file headers; every file must agree (schemas never mix)."""
     parts = []
+    schema = features = dtype = None
     for spec in paths.split(","):
         tokens = spec.strip().rsplit(" ", 1)
         path, cap = (tokens[0], int(tokens[1])) if len(tokens) == 2 and tokens[1].isdigit() else (spec.strip(), None)
         dir_parts = []
         for file in sorted(glob.glob(os.path.join(path, "*.soip"))):
-            with open(file, "rb") as f:
-                magic, fmt, schema, feat, rec = struct.unpack("<IHHII", f.read(16))
-            assert magic == 0x50494F53, f"{file}: bad magic"
-            assert schema == 1 and feat == FEATURES, f"{file}: schema {schema}/{feat} != 1/{FEATURES}"
-            assert rec == RECORD_DTYPE.itemsize, f"{file}: record size {rec}"
-            dir_parts.append(np.fromfile(file, dtype=RECORD_DTYPE, offset=32))
+            s, feat, rec = read_header(file)
+            if schema is None:
+                schema, features = s, feat
+                dtype = make_dtype(features)
+            assert (s, feat) == (schema, features), \
+                f"{file}: schema {s}/feat {feat} mixes with {schema}/{features}"
+            assert rec == dtype.itemsize, f"{file}: record size {rec} != {dtype.itemsize}"
+            dir_parts.append(np.fromfile(file, dtype=dtype, offset=32))
         assert dir_parts, f"no .soip files under {path}"
         block = np.concatenate(dir_parts)
         if cap is not None and len(block) > cap:
@@ -58,14 +71,14 @@ def load_dir(paths: str) -> np.ndarray:
         print(f"  {path}: {len(block):,} positions" + (f" (capped from more)" if cap else ""))
         parts.append(block)
     data = np.concatenate(parts)
-    print(f"loaded {len(data):,} positions total")
-    return data
+    print(f"loaded {len(data):,} positions total (schema {schema}, {features} features)")
+    return data, schema, features
 
 
 class ValueNet(nn.Module):
-    def __init__(self, hidden):
+    def __init__(self, features, hidden):
         super().__init__()
-        dims = [FEATURES] + hidden
+        dims = [features] + hidden
         layers = []
         for i in range(len(dims) - 1):
             layers += [nn.Linear(dims[i], dims[i + 1]), nn.ReLU()]
@@ -99,7 +112,7 @@ def main() -> None:
     else:
         print("WARNING: training on CPU (torch sees no CUDA — 5090 needs a cu128 build)")
 
-    data = load_dir(args.data)
+    data, schema, features = load_dir(args.data)
     # Split by gameSeed hash so both perspectives of a game land on the same side.
     seed_hash = (data["seed"] * np.uint64(0x9E3779B97F4A7C15)) >> np.uint64(56)
     val_mask = seed_hash < np.uint64(16)  # ~6.25% validation
@@ -116,7 +129,7 @@ def main() -> None:
     x_val = torch.from_numpy(np.ascontiguousarray(val["x"])).to(device)
     y_val = torch.from_numpy(targets(val)).to(device)
 
-    model = ValueNet(hidden).to(device)
+    model = ValueNet(features, hidden).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-5)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
     loss_fn = nn.BCEWithLogitsLoss()
@@ -158,8 +171,8 @@ def main() -> None:
     with open(bin_path, "wb") as f:
         f.write(blob)
     header = {
-        "schemaVersion": 1,
-        "featureCount": FEATURES,
+        "schemaVersion": schema,
+        "featureCount": features,
         "layers": layer_dims,
         "act": "relu",
         "out": "sigmoid",
@@ -183,7 +196,10 @@ def main() -> None:
         pass
 
     if args.fixtures:
-        fixtures = np.fromfile(args.fixtures, dtype=RECORD_DTYPE, offset=32)
+        fs, ff, _ = read_header(args.fixtures)
+        assert (fs, ff) == (schema, features), \
+            f"fixtures are schema {fs}/{ff}, training data {schema}/{features} — regenerate with soisim netfixture"
+        fixtures = np.fromfile(args.fixtures, dtype=make_dtype(features), offset=32)
         with torch.no_grad():
             # f16-roundtrip the weights so expectations match the C# dequantized net.
             for module in model.net:

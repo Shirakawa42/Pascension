@@ -30,6 +30,14 @@ namespace SoiSim
             double wallclock = cli.Has("--wallclock")
                 ? double.Parse(cli.GetStr("--wallclock", "0"), System.Globalization.CultureInfo.InvariantCulture)
                 : 0;
+            // Per-side budgets for cross-budget rank duels (e.g. a 1.25s candidate
+            // vs the 1.0s rank below, both AS SHIPPED). Fall back to the shared value.
+            double wallclockA = cli.Has("--wallclock-a")
+                ? double.Parse(cli.GetStr("--wallclock-a", "0"), System.Globalization.CultureInfo.InvariantCulture)
+                : wallclock;
+            double wallclockB = cli.Has("--wallclock-b")
+                ? double.Parse(cli.GetStr("--wallclock-b", "0"), System.Globalization.CultureInfo.InvariantCulture)
+                : wallclock;
             int workersA = cli.GetInt("--workers-a", 1);
             int workersB = cli.GetInt("--workers-b", 1);
             int netA = cli.GetInt("--net-a", -1);
@@ -39,9 +47,9 @@ namespace SoiSim
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
             var factoryA = new BotFactory(kindA, budgetA)
-                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclock, RootWorkers = workersA, NetGeneration = netA };
+                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclockA, RootWorkers = workersA, NetGeneration = netA };
             var factoryB = new BotFactory(kindB, budgetB)
-                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclock, RootWorkers = workersB, NetGeneration = netB };
+                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclockB, RootWorkers = workersB, NetGeneration = netB };
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
 
             var work = new List<(ulong Seed, bool AFirst, string C0, string C1)>();

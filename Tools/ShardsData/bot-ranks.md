@@ -19,11 +19,11 @@
 | BRONZE | ✅ shipped (default) | tuned value model, greedy | — | instant |
 | SILVER | ✅ shipped | ISMCTS, full rollouts | — | 1.0 s |
 | GOLD | ✅ minted 2026-07-21 | ISMCTS, 2-turn rollouts → net | gen 0 (frozen) | 1.0 s |
-| PLATINUM | 🔄 in training (4 attempts rejected) | ISMCTS, eval-at-leaf | first gen to clear the gate | 1.0 s |
-| EMERALD | planned | ISMCTS, eval-at-leaf | gen 2+ | 1.25 s |
-| DIAMOND | planned | ISMCTS, eval-at-leaf | promoted gen | 1.5 s |
-| MASTER | planned | ISMCTS, eval-at-leaf (+q-labels) | promoted gen | 1.75 s |
-| GRANDMASTER | planned | ISMCTS (+wider net if needed) | promoted gen | 2.0 s |
+| PLATINUM | ✅ minted 2026-07-22 | ISMCTS, 2-turn rollouts → net | gen 5 (frozen, wide) | 1.25 s |
+| EMERALD | planned | ISMCTS, 2-turn rollouts → net | next gate-clearing gen | 1.5 s |
+| DIAMOND | planned | ISMCTS + root parallelism (probe pending) | promoted gen | 1.75 s |
+| MASTER | planned | ISMCTS | promoted gen | 2.0 s |
+| GRANDMASTER | planned | ISMCTS | promoted gen | 2.25 s |
 | CHALLENGER | planned | ISMCTS + root parallelism | always-newest champion | 2.5 s |
 
 ---
@@ -69,42 +69,44 @@
   (and ~2× cheaper per simulation on top).
 - **Frozen**: hard-pinned to generation 0 — future nets mint new ranks instead.
 
-## PLATINUM (PLATINE) — *(gate not yet passed — campaign in progress)*
-> Gate: ≥55% + Wilson LB >50% vs gen 0 at equal budget. Four attempts REJECTED:
-> **1** — gen 1 (86% bootstrap-dominated window): 48.3% [39.6–57.2]; re-learned
-> gen-0's function. **2** — gen 2 (search-quality data ONLY, ~280k): 34.2%/36.7%
-> — self-play distribution collapse. **3** — gen 3 (~50/50 bootstrap/search via
-> train.py per-dir cap): 49.2% [40.4–58.0]. **4** — gen 4 (q-labels: target
-> 0.5z+0.5q, corr(q,z)=0.60; fresh 8k-game q-labeled selfplay + gen0 capped
-> 160k/160k): 50.8% [42.0–59.6] vs gen 0, 55.8% [46.9–64.4] vs gen 3 — best yet,
-> beats every challenger, still a statistical twin of the champion. Attempt 4's
-> train loss ≈ val loss (0.4942/0.4946) = the underfitting fingerprint (§MASTER)
-> → escalation order: more selfplay volume → encoder enrichment / wider net
-> (batched GPU inference pairs with widening). Spec below stands for whichever
-> generation first clears the gate.
-- **Net**: same architecture; trained on the sliding window = gen-0 bootstrap +
-  ~120,000 positions from 6,000 *search-quality* self-play games (GOLD-level play,
-  100 simulations/decision, root moves temperature-sampled for the first 8 turns).
-- **Search**: **eval-at-leaf** (no rollout at all — probed: 56.2% [45.3–66.6] vs the
-  2-turn rollout at equal simulations while 2.6× cheaper) ⇒ ≈ 2,800 simulations/s
-  at the same 1.0 s budget.
-- **Promotion gate** (pending): ≥55% AND Wilson lower bound >50% vs GOLD at equal
-  budget; regression guards ≥95% vs random, no >3-pt drop vs BRONZE.
+## PLATINUM (PLATINE) — minted 2026-07-22 · net generation 5 (pinned) · 1.25 s
+- **Net**: the first WIDE net (768→1024→512→256→1, ~1.44M params, f16 ≈ 2.9 MB),
+  76.8% val acc — trained on 1.32M positions (gen-0 bootstrap capped at 400k +
+  every search-selfplay batch, 640k of them **q-labeled**: target 0.5z + 0.5q,
+  corr(q,z)=0.60, which cut label std 0.50→0.37).
+- **Search**: the SAME 2-end-turn net-truncated rollouts as GOLD — eval-at-leaf
+  was probed for play and REJECTED (see history below) — at the ladder's first
+  budget step, **1.25 s**.
+- **Promotion**: 57.8% [52.9–62.5] vs GOLD's method at equal 200-iteration budget
+  (n=400); **60.7% [54.9–66.3] vs GOLD AS SHIPPED** (1.25s vs 1.0s wall-clock,
+  n=280, idle machine). Guards: 100% [94–100] vs random; 66% vs BRONZE at 200it —
+  identical to GOLD's 66% at the same budget (no regression).
+- **The five-attempt history** (gens 1–4 + gen-5-at-1.0s, all vs gen-0): 48.3% ·
+  34.2% (distribution collapse) · 49.2% · 50.8% · 52.5%. What finally worked —
+  and the campaign's core lesson: value nets at this game sit near the
+  information-set noise floor (~76% val acc); **eval-at-leaf amplifies encoder
+  tactical blindness** (pooled features can't see per-slot row/board detail), so
+  net gains only CONVERT to strength when rollouts resolve the tactical state
+  first and the net judges the cleaner post-rollout position. A schema-2 tactical
+  encoder (1140 features: per-slot row + affordability + per-champion detail) was
+  built and probed both ways — REJECTED (35.8% bootstrap-trained, 42.5%/43.8%
+  search-trained); the v1 pooled information-set encoding + rollouts stands.
 
-## EMERALD (ÉMERAUDE) → DIAMOND (DIAMANT) — generations 2+
-- Same loop, each on the previous champion's games: overnight selfplay (~1 evening per
-  generation post-speedups) → 5090 training (minutes) → parity → promotion duel.
-- Budgets step up (1.25 s / 1.5 s). Data upgrade shipped 2026-07-22: **q-labels**
-  (the search's root estimate blended into the target, 0.5z+0.5q — target std
-  0.37 vs 0.50 z-only; `selfplay` records them, `--net` pins the champion
-  evaluator).
+## EMERALD (ÉMERAUDE) → DIAMOND (DIAMANT) — the next rungs
+- Same loop on the new champion's games, in T=2 ROLLOUT mode (the proven config),
+  budgets stepping 1.5 s / 1.75 s. Candidate levers, each probe-gated:
+  **root parallelism** (implemented; needs a clean idle-machine wall-clock probe —
+  K worker trees ≈ K× simulations at the same seconds), longer q-label searches
+  (budget 200+ for sharper labels), PUCT selection at high sim counts.
+- Known dead ends (probed 2026-07-22, do not retry blindly): eval-at-leaf for
+  PLAY (fine for cheap selfplay data gen); schema-2 tactical encoder features;
+  expecting equal-iteration net-vs-net gains — value nets sit near the
+  information-set noise floor, so rungs differentiate on search/budget instead.
 
 ## MASTER (MAÎTRE) → GRANDMASTER (GRAND MAÎTRE) — late generations
-- Minted only if the loop keeps clearing gates. Escalation levers, each probe-gated:
-  wider net (1024→512→256) **if** the underfitting signature appears (train ≈ val
-  accuracy stuck despite better data) — at which point batched **GPU inference**
-  becomes worthwhile and is the designed-in next step; PUCT selection at high
-  simulation counts; deeper think budgets (1.75 s / 2.0 s).
+- Minted only if the loop keeps clearing gates (2.0 s / 2.25 s). If net progress
+  stays flat, these become search-quality rungs; batched **GPU inference** becomes
+  worthwhile only if a much wider/deeper net ever earns its keep in T=2 mode.
 
 ## CHALLENGER — the living champion
 - **Always re-pointed to the newest promoted net** (not frozen, unlike every rank

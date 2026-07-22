@@ -32,9 +32,36 @@ namespace Pascension.Engine.Tests
         [Test]
         public void Schema_IsPinned()
         {
-            Assert.AreEqual(1, ShardsStateEncoder.SchemaVersion);
-            Assert.AreEqual(768, ShardsStateEncoder.FeatureCount);
+            Assert.AreEqual(2, ShardsStateEncoder.SchemaVersion);
+            Assert.AreEqual(1140, ShardsStateEncoder.FeatureCount);
+            Assert.AreEqual(768, ShardsStateEncoder.V1FeatureCount,
+                "the schema-1 prefix is FROZEN — schema-1 nets are pinned by minted ranks");
             Assert.AreEqual(52, ShardsStateEncoder.CardVecSize);
+        }
+
+        [Test]
+        public void EncodeV1_IsTheExactPrefixOfEncode()
+        {
+            // Frozen schema-1 nets read EncodeV1; new nets read Encode. The v1 layout
+            // must be byte-identical to the first 768 features of v2 forever.
+            var adapter = NewGame(107);
+            var bot = new ShardsHeuristicBot(10700, adapter.Inner);
+            for (int i = 0; i < 60 && !adapter.GameOver; i++)
+            {
+                var pending = adapter.PendingInput;
+                var action = bot.Choose(pending, null) ?? adapter.DefaultActionFor(pending);
+                if (!adapter.Submit(action).Accepted)
+                    adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput));
+            }
+            var v1 = new float[ShardsStateEncoder.V1FeatureCount];
+            var v2 = new float[ShardsStateEncoder.FeatureCount];
+            for (int viewer = 0; viewer < 2; viewer++)
+            {
+                ShardsStateEncoder.EncodeV1(adapter.Inner.State, viewer, v1);
+                ShardsStateEncoder.Encode(adapter.Inner.State, viewer, v2);
+                for (int i = 0; i < v1.Length; i++)
+                    Assert.AreEqual(v1[i], v2[i], 0f, $"viewer {viewer} feature {i} diverged");
+            }
         }
 
         [Test]

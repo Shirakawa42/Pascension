@@ -65,10 +65,27 @@ namespace Shards.Bots
             Rank("gold", "GOLD", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
                     NetConfig(1.0), Model.Value, Gen0Net.Value)),
+            // PLATINUM — minted 2026-07-22 from the generation-5 value net (wide
+            // 1024→512→256, 76.8% val acc, 1.32M mixed bootstrap+search positions
+            // with q-labels): GOLD's net-truncated-rollout search armed with the
+            // stronger net at the ladder's first budget step (1.25s). Promotion:
+            // 57.8% [52.9–62.5] vs GOLD's method at equal 200-iteration budget
+            // (n=400); **60.7% [54.9–66.3] vs GOLD AS SHIPPED** (1.25s vs 1.0s,
+            // n=280 wall-clock); guards 100% vs random, 66% vs BRONZE at 200it —
+            // identical to GOLD's 66%. Eval-at-leaf was probed and REJECTED for play (rollouts
+            // resolve the tactical state the pooled encoding can't see — same for
+            // the schema-2 tactical encoder, rejected in both modes). PINNED to
+            // generation 5 forever.
+            Rank("platinum", "PLATINUM", isSearch: true,
+                (seed, engine) => new ShardsSearchBot(seed, engine,
+                    NetConfig(1.25), Model.Value, Gen5Net.Value)),
         };
 
         private static readonly Lazy<IShardsValueEvaluator> Gen0Net =
             new(() => ShardsNeuralEval.LoadGeneration(0));
+
+        private static readonly Lazy<IShardsValueEvaluator> Gen5Net =
+            new(() => ShardsNeuralEval.LoadGeneration(5));
 
         private static ShardsSearchConfig NetConfig(double seconds)
         {
