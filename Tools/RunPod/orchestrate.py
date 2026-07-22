@@ -493,6 +493,105 @@ def tournament(args):
                   [f"- {r['label']}: {r['wr']:.1%} [{r['lo']:.1%}-{r['hi']:.1%}] ({r['games']}g)" for r in results])
 
 
+def runstats(args):
+    """Fan `soisim run` (full GameRecord JSONL) across pods for balance stats. Each pod
+    runs all character matchups at a slice of games, writes JSONL to /tmp then copies to
+    the volume; we download + merge (one header + all game lines). Guaranteed teardown."""
+    kill_min = int(os.environ.get("RUNPOD_MAX_POD_MINUTES", "90"))
+    pods_cap = int(os.environ.get("RUNPOD_MAX_PODS", "16"))
+    k = min(args.pods, pods_cap)
+    matchups = args.matchups
+    per = max(1, math.ceil(args.games / (matchups * k)))   # games-per-matchup per pod
+    planned = per * matchups * k
+    out_root = f"/workspace/runs/{args.name}"
+    print(f"runstats {args.name}: ~{planned} games ({k} pods × {matchups} matchups × {per}), bots={args.bots}")
+    created, workers = [], []
+    try:
+        for i in range(k):
+            seed = args.seed_base + i * 100000
+            w = f"w{i:02d}"
+            ld = f"/tmp/{w}"
+            cli = (f"/workspace/bin/SoiSim run --bots {args.bots} --games-per-matchup {per} "
+                   f"--seed-base {seed} --threads {args.vcpu} --out {ld}/games.jsonl --tag {args.name}")
+            # Copy the growing JSONL to the volume every 25s so a killed pod (timeout /
+            # balance) still leaves its games-so-far behind — the run() copied only at the
+            # end, which lost everything on an early kill.
+            dcmd = f"""chmod +x /workspace/bin/SoiSim
+mkdir -p {out_root}/status/{w} {out_root}/data {out_root}/results {ld}
+export SOISIM_STATUS_DIR={out_root}/status/{w}
+( while true; do cp {ld}/games.jsonl {out_root}/data/{w}.jsonl 2>/dev/null && sync; sleep 25; done ) &
+CL=$!
+{cli} > {out_root}/status/{w}/run.log 2>&1
+kill $CL 2>/dev/null || true
+cp {ld}/games.jsonl {out_root}/data/{w}.jsonl 2>/dev/null && sync
+touch {out_root}/results/{w}.done"""
+            r = create_pod(f"{args.name}-{w}", dcmd, args.vcpu)
+            if isinstance(r, dict) and "id" in r:
+                created.append(r["id"]); workers.append(i)
+                json.dump(created, open(ACTIVE, "w"))
+                print(f"  {w} -> {r['id']}")
+            else:
+                print(f"  WARN {w} create failed: {json.dumps(r)[:160]}")
+        if args.require_all and len(created) < k:
+            print(f"  require-all: only {len(created)}/{k} pods — tearing down, will retry")
+            teardown(created); sys.exit(3)
+        if not created:
+            raise RuntimeError("no pods could be created")
+        start = time.time()
+        while True:
+            try:
+                done = [x for x in s3_list(f"runs/{args.name}/results/") if x.endswith(".done")]
+                tot = 0
+                for i in workers:
+                    pr = _parse_progress(s3_get_text(f"runs/{args.name}/status/w{i:02d}/campaign-status.md"))
+                    if any(m.endswith(f"w{i:02d}.done") for m in done):
+                        tot += per * matchups
+                    elif pr:
+                        tot += pr[0]
+                elapsed = (time.time() - start) / 60
+                _write_status(args.name, f"runstats ({len(done)}/{len(workers)} pods done)",
+                              [f"~{tot}/{planned} games · {elapsed:.0f} min · {len(workers)}×{args.vcpu} vCPU"])
+                print(f"  [{elapsed:.0f}min] {len(done)}/{len(workers)} pods, ~{tot}/{planned} games")
+                if len(done) >= len(workers):
+                    break
+            except Exception as e:
+                print("  poll hiccup:", str(e)[:120]); elapsed = (time.time() - start) / 60
+            if elapsed > kill_min:
+                print("!! kill-timeout — tearing down"); break
+            time.sleep(20)
+    finally:
+        teardown(created)
+
+    time.sleep(12)
+    local = os.path.join(REPO, "Tools", "ShardsData", "sim", args.name)
+    os.makedirs(local, exist_ok=True)
+    merged = os.path.join(local, "games.jsonl")
+    cl = s3()
+    n_files = n_games = 0
+    with open(merged, "w", encoding="utf-8") as out:
+        wrote_header = False
+        for key in sorted(s3_list(f"runs/{args.name}/data/")):
+            if not key.endswith(".jsonl"):
+                continue
+            txt = s3_get_text(key)
+            if not txt:
+                continue
+            n_files += 1
+            for line in txt.splitlines():
+                if not line.strip():
+                    continue
+                if '"type":"header"' in line or '"type": "header"' in line:
+                    if wrote_header:
+                        continue
+                    wrote_header = True
+                else:
+                    n_games += 1
+                out.write(line + "\n")
+    summary = f"runstats done: {n_games} games from {n_files} pods -> {merged}"
+    print("RESULT:", summary)
+    _write_status(args.name, "RUNSTATS COMPLETE — pods torn down", [summary])
+
+
 def status_cmd(args):
     md = open(STATUS_MD).read() if os.path.exists(STATUS_MD) else "(no status yet)"
     print(md)
@@ -519,6 +618,16 @@ def main():
     tn.add_argument("--vcpu", type=int, default=32)
     tn.add_argument("--seed-base", type=int, default=700000)
     tn.set_defaults(fn=tournament)
+    rs = sub.add_parser("runstats")
+    rs.add_argument("--name", required=True)
+    rs.add_argument("--pods", type=int, required=True)
+    rs.add_argument("--vcpu", type=int, default=32)
+    rs.add_argument("--games", type=int, required=True)
+    rs.add_argument("--bots", default="rank:diamond")
+    rs.add_argument("--matchups", type=int, default=15)
+    rs.add_argument("--seed-base", type=int, default=900000)
+    rs.add_argument("--require-all", action="store_true")
+    rs.set_defaults(fn=runstats)
     sp = sub.add_parser("status"); sp.add_argument("--name", default=""); sp.set_defaults(fn=status_cmd)
     r = sub.add_parser("run")
     r.add_argument("--name", required=True)
