@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Unity.Networking.Transport.Relay;
-using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Relay;
 using UnityEngine;
@@ -18,45 +17,14 @@ namespace Pascension.Net
     }
 
     /// <summary>
-    /// The only file that talks to Unity Gaming Services: anonymous authentication
-    /// (one profile per MPPM virtual player) and Relay allocations. The Relay join
-    /// code is the game ID players share — no port forwarding, no matchmaking.
+    /// Relay only: allocations and join codes (the game ID players share — no port
+    /// forwarding, no matchmaking). Authentication lives in <see cref="AccountService"/>,
+    /// which NetLauncher awaits before any call lands here.
     /// </summary>
     public static class UgsGateway
     {
         /// <summary>DTLS: encrypted UDP — the recommended Relay connection type for desktop.</summary>
         private const string ConnectionType = "dtls";
-
-        private static Task _signIn;
-
-        /// <summary>Initialize UGS + anonymous sign-in, once (concurrent calls share the task).</summary>
-        public static Task EnsureSignedInAsync()
-        {
-            if (_signIn == null || _signIn.IsFaulted)
-                _signIn = SignInAsync();
-            return _signIn;
-        }
-
-        private static async Task SignInAsync()
-        {
-            try
-            {
-                if (UnityServices.State != ServicesInitializationState.Initialized)
-                {
-                    var options = new InitializationOptions();
-                    options.SetProfile(ClientIdentity.AuthProfile);
-                    await UnityServices.InitializeAsync(options);
-                }
-                if (!AuthenticationService.Instance.IsSignedIn)
-                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                Debug.Log("[Net] UGS signed in (profile " + ClientIdentity.AuthProfile +
-                          ", player " + AuthenticationService.Instance.PlayerId + ")");
-            }
-            catch (Exception e)
-            {
-                throw Normalize(e, joining: false);
-            }
-        }
 
         /// <summary>Host: create a Relay allocation and mint its join code (the game ID).</summary>
         public static async Task<(string joinCode, RelayServerData data)> CreateAllocationAsync(int maxConnections)

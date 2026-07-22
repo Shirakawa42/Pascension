@@ -42,7 +42,7 @@ namespace Pascension.Net
             if (manager.IsListening)
                 throw new UgsException("Networking already running — leave the current game first.");
 
-            await UgsGateway.EnsureSignedInAsync();
+            await AccountService.EnsureOnlineAsync();
             var (joinCode, relayData) = await UgsGateway.CreateAllocationAsync(MaxRelayConnections);
 
             NetClientRegistry.Reset();
@@ -66,7 +66,7 @@ namespace Pascension.Net
             if (manager.IsListening)
                 throw new UgsException("Networking already running — leave the current game first.");
 
-            await UgsGateway.EnsureSignedInAsync();
+            await AccountService.EnsureOnlineAsync();
             var relayData = await UgsGateway.JoinAllocationAsync(joinCode);
 
             NetClientRegistry.Reset();

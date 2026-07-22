@@ -77,6 +77,16 @@ namespace Pascension.Game.UI
             {
                 if (!_busy)
                 {
+#if !UNITY_EDITOR
+                    // Edge: a guest (or signed-out player) reached this scene in a
+                    // build — the menu gate normally prevents it. No online play.
+                    if (!AccountService.CanPlayOnline)
+                    {
+                        _hostButton.interactable = _joinButton.interactable = false;
+                        _connectStatus.text = Loc.T("An account is required to play online.");
+                        return;
+                    }
+#endif
                     _hostButton.interactable = !online;
                     _joinButton.interactable = !online;
                     if (online)
@@ -222,6 +232,9 @@ namespace Pascension.Game.UI
 
         private void SavePlayerName()
         {
+            // Signed in: the account username IS the player name (AccountService
+            // seeded ClientIdentity.PlayerName) and there is no input field.
+            if (_nameInput == null) return;
             string name = _nameInput.text.Trim();
             if (!string.IsNullOrEmpty(name))
                 ClientIdentity.PlayerName = name;
@@ -241,7 +254,7 @@ namespace Pascension.Game.UI
             }
             catch (UgsException e)
             {
-                _connectStatus.text = e.Message;
+                _connectStatus.text = Loc.T(e.Message);
             }
             catch (System.Exception e)
             {
@@ -269,7 +282,7 @@ namespace Pascension.Game.UI
             }
             catch (UgsException e)
             {
-                _connectStatus.text = e.Message;
+                _connectStatus.text = Loc.T(e.Message);
             }
             catch (System.Exception e)
             {
@@ -432,10 +445,23 @@ namespace Pascension.Game.UI
             var nameLabel = UiFactory.CreateText(Theme, "NameLabel", panel.transform, Loc.T("YOUR NAME"), 15f,
                 UiPalette.TextDim, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             UiFactory.Place(nameLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(-160f, -122f), new Vector2(180f, 22f));
-            _nameInput = UiFactory.CreateInputField(Theme, "NameInput", panel.transform, Loc.T("Player name"));
-            UiFactory.Place(((RectTransform)_nameInput.transform), new Vector2(0.5f, 1f), new Vector2(0f, -152f), new Vector2(500f, 48f));
-            _nameInput.text = ClientIdentity.PlayerName;
-            _nameInput.characterLimit = 20;
+            // Signed-in players ARE their account name — no editable field (editor
+            // guests keep it: the dev fallback plays online without an account).
+            if (AccountService.State == AccountState.SignedIn ||
+                AccountService.State == AccountState.SignedInOffline)
+            {
+                var nameStatic = UiFactory.CreateText(Theme, "NameStatic", panel.transform,
+                    AccountService.CurrentUsername, 22f, UiPalette.Gold,
+                    TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+                UiFactory.Place(nameStatic.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -152f), new Vector2(500f, 48f));
+            }
+            else
+            {
+                _nameInput = UiFactory.CreateInputField(Theme, "NameInput", panel.transform, Loc.T("Player name"));
+                UiFactory.Place(((RectTransform)_nameInput.transform), new Vector2(0.5f, 1f), new Vector2(0f, -152f), new Vector2(500f, 48f));
+                _nameInput.text = ClientIdentity.PlayerName;
+                _nameInput.characterLimit = 20;
+            }
 
             var codeLabel = UiFactory.CreateText(Theme, "CodeLabel", panel.transform, Loc.T("GAME ID (TO JOIN A FRIEND)"), 15f,
                 UiPalette.TextDim, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);

@@ -74,8 +74,9 @@ namespace Pascension.Net
             }
         }
 
-        /// <summary>FNV-1a — string.GetHashCode is not stable across runtimes/processes.</summary>
-        private static uint StableHash(string s)
+        /// <summary>FNV-1a — string.GetHashCode is not stable across runtimes/processes.
+        /// Internal: AccountService derives auth-profile names and salted pref keys from it.</summary>
+        internal static uint StableHash(string s)
         {
             unchecked
             {
