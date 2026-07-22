@@ -74,3 +74,7 @@ Tools/ShardsML/out/
 # Assets/Art/Shards/ holds ORIGINAL Anima-generated card art (committed).
 # If official card images are ever imported over it (Pascension/Setup/Shards
 # Art Import), those are PERSONAL USE ONLY — re-add the ignore, never commit them.
+Tools/ShardsData/benchmark/
+Tools/RunPod/__pycache__/
+Tools/RunPod/*.log
+Tools/RunPod/bench_spec.json

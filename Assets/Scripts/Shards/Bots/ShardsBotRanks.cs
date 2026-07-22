@@ -90,15 +90,18 @@ namespace Shards.Bots
             Rank("emerald", "EMERALD", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
                     NetConfig(EmeraldIterations), Model.Value, Gen8Net.Value)),
-            // DIAMOND — minted 2026-07-22. gen-8 net at a 4× budget over EMERALD
-            // (3200 it, ~480 ms/decision). Beats EMERALD@800 56.0% [53.8-58.2] over
-            // 2000 games (measured on a RunPod CPU fan-out, 8 pods, ~12 min). The top
-            // of the fast DETERMINISTIC ladder: both levers (net data, more search)
-            // cap near ~56-57% — SoI's strategic ceiling — so anything above DIAMOND
-            // needs the reserved levers (wall-clock, root-parallelism) at MASTER+.
+            // DIAMOND — minted 2026-07-22. gen-8 net, 3200-iteration search that beats
+            // EMERALD@800 56.0% [53.8-58.2] over 2000 games (RunPod fan-out). The top of
+            // the ladder. Delivered as K=8 ROOT-PARALLEL trees of 400 iters each (3200
+            // total): a multi-core machine answers in ~60-90 ms instead of ~480 ms, and
+            // the result is CPU-INDEPENDENT — the 8 seeded trees merge (summed visits,
+            // ordinal tie-break) to the SAME move on any machine; a weak CPU just runs
+            // the trees sequentially, identical answer, slower. Verified equal in play
+            // strength to the single-tree 3200 it was gated at (root-parallel probe).
             Rank("diamond", "DIAMOND", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    NetConfig(DiamondIterations), Model.Value, Gen8Net.Value)),
+                    RootParallelConfig(DiamondPerTreeIterations, DiamondRootWorkers),
+                    Model.Value, Gen8Net.Value)),
         };
 
         private static readonly Lazy<IShardsValueEvaluator> Gen0Net =
@@ -122,9 +125,12 @@ namespace Shards.Bots
         /// coin-flip (51%); 4× is the smallest budget jump that clears the gate (~57%).</summary>
         private const int EmeraldIterations = 800;
 
-        /// <summary>DIAMOND = gen-8 at a 4× budget over EMERALD (~480 ms). The last
-        /// deterministic rung — 56.0% vs EMERALD over 2000 games.</summary>
-        private const int DiamondIterations = 3200;
+        /// <summary>DIAMOND = gen-8, 3200-iteration search (the last rung, 56.0% vs
+        /// EMERALD over 2000 games). Split into <see cref="DiamondRootWorkers"/> trees
+        /// of <see cref="DiamondPerTreeIterations"/> each so multi-core play is fast
+        /// without changing the move (CPU-independent merge).</summary>
+        private const int DiamondRootWorkers = 8;
+        private const int DiamondPerTreeIterations = 400;   // × 8 = 3200 total iterations
 
         private static ShardsSearchConfig NetConfig(int iterations)
         {
@@ -133,6 +139,19 @@ namespace Shards.Bots
             config.EarlyStopBudgetFraction = 1.0; // EXACT: byte-identical move to the full
                                                   // budget, just faster on decided positions —
                                                   // keeps N an honest, gate-faithful ceiling.
+            return config;
+        }
+
+        /// <summary>NetConfig with K root-parallel worker trees. The K trees each fork
+        /// the live engine (concurrent forks are pure reads), search independently at
+        /// <paramref name="perTreeIterations"/>, then merge by summed root-child visits
+        /// with an ordinal tie-break — deterministic given (seed, K, budget), so the
+        /// chosen move does NOT depend on core count, only the wall-clock does. Root
+        /// parallelism disables early-stop internally (each tree runs its full budget).</summary>
+        private static ShardsSearchConfig RootParallelConfig(int perTreeIterations, int workers)
+        {
+            var config = NetConfig(perTreeIterations);
+            config.RootWorkers = workers;
             return config;
         }
 

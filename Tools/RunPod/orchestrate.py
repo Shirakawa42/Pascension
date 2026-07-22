@@ -313,6 +313,186 @@ def _download_and_aggregate(args, k):
     open(os.path.join(local, "RESULT.txt"), "w").write(summary + "\n")
 
 
+def upload_nets(args):
+    cl = s3()
+    for net in [n.strip() for n in args.nets.split(",")]:
+        d = os.path.join(REPO, "Tools", "ShardsML", "out", net)
+        cl.upload_file(os.path.join(d, "weights.bin"), VOL(), f"nets/{net}/weights.bin")
+        cl.upload_file(os.path.join(d, "weights.json"), VOL(), f"nets/{net}/weights.json")
+        print("uploaded net", net)
+
+
+def sweep(args):
+    """Gate each candidate net on ITS OWN pod, concurrently, then rank by win rate."""
+    kill_min = int(os.environ.get("RUNPOD_MAX_POD_MINUTES", "90"))
+    nets = [n.strip() for n in args.nets.split(",")]
+    out_root = f"/workspace/runs/{args.name}"
+    created, mapping = [], []
+    try:
+        for i, net in enumerate(nets):
+            seed = args.seed_base + i * 100000
+            cli = (f"/workspace/bin/SoiSim probe --a strong --net-a-file /workspace/nets/{net}/weights.bin "
+                   f"{args.gate_cmd} --games {args.games} --seed-base {seed} "
+                   f"--result {out_root}/results/{net}.json")
+            dcmd = " && ".join([
+                "set -e", "chmod +x /workspace/bin/SoiSim",
+                f"mkdir -p {out_root}/status/{net} {out_root}/results",
+                f"export SOISIM_STATUS_DIR={out_root}/status/{net}",
+                f"{cli} > {out_root}/status/{net}/run.log 2>&1",
+                f"touch {out_root}/results/{net}.done",
+            ])
+            r = create_pod(f"{args.name}-{net}", dcmd, args.vcpu)
+            if isinstance(r, dict) and "id" in r:
+                created.append(r["id"]); mapping.append(net)
+                json.dump(created, open(ACTIVE, "w"))
+                print(f"  {net} -> {r['id']}")
+            else:
+                print(f"  WARN {net} create failed: {json.dumps(r)[:200]}")
+        if not created:
+            raise RuntimeError("no pods could be created")
+        start = time.time()
+        while True:
+            try:
+                done = [k for k in s3_list(f"runs/{args.name}/results/") if k.endswith(".done")]
+                lines = []
+                for net in mapping:
+                    pr = _parse_progress(s3_get_text(f"runs/{args.name}/status/{net}/campaign-status.md"))
+                    if any(m.endswith(f"{net}.done") for m in done):
+                        lines.append(f"- {net}: done")
+                    elif pr:
+                        lines.append(f"- {net}: {pr[0]}/{pr[1]}")
+                    else:
+                        lines.append(f"- {net}: starting…")
+                elapsed = (time.time() - start) / 60
+                _write_status(args.name, f"sweep ({len(done)}/{len(mapping)} done)", [f"elapsed {elapsed:.0f} min"] + lines)
+                print(f"  [{elapsed:.0f}min] {len(done)}/{len(mapping)} done")
+                if len(done) >= len(mapping):
+                    break
+            except Exception as e:
+                print("  poll hiccup:", str(e)[:120])
+                elapsed = (time.time() - start) / 60
+            if elapsed > kill_min:
+                break
+            time.sleep(15)
+    finally:
+        teardown(created)
+    time.sleep(10)
+    results = []
+    for net in nets:
+        txt = s3_get_text(f"runs/{args.name}/results/{net}.json")
+        if txt:
+            r = json.loads(txt)
+            results.append((net, r["wr"], int(r["games"])))
+    results.sort(key=lambda x: -x[1])
+    print("\n=== SWEEP RESULTS (candidate vs gen-8) ===")
+    for net, wr, g in results:
+        print(f"  {net}: {wr:.1%}  ({g} games)")
+    _write_status(args.name, "SWEEP COMPLETE", [f"- {net}: {wr:.1%} ({g} games)" for net, wr, g in results])
+
+
+def tournament(args):
+    """Round-robin benchmark: many matchups, each fanned across its OWN share of pods,
+    all concurrent. Each matchup's slices aggregate to one win rate. Spec is a JSON list
+    of {label, cmd, games, pods}. Guaranteed teardown; per-matchup Wilson CI."""
+    kill_min = int(os.environ.get("RUNPOD_MAX_POD_MINUTES", "90"))
+    pods_cap = int(os.environ.get("RUNPOD_MAX_PODS", "16"))
+    spec = json.load(open(args.spec, encoding="utf-8"))
+    out_root = f"/workspace/runs/{args.name}"
+    total_pods = sum(m["pods"] for m in spec)
+    if total_pods > pods_cap:
+        sys.exit(f"spec wants {total_pods} pods > cap {pods_cap}")
+    print(f"tournament {args.name}: {len(spec)} matchups, {total_pods} pods, kill@{kill_min}min")
+
+    created, slices = [], []  # slices: (label, worker, per_games)
+    try:
+        for mi, m in enumerate(spec):
+            pods = m["pods"]
+            per = math.ceil(m["games"] / pods)
+            for j in range(pods):
+                seed = args.seed_base + mi * 1_000_000 + j * 100_000
+                w = f"{m['label']}-w{j}"
+                cli = f"/workspace/bin/SoiSim {m['cmd']} --games {per} --seed-base {seed} --result {out_root}/results/{w}.json"
+                dcmd = " && ".join([
+                    "set -e", "chmod +x /workspace/bin/SoiSim",
+                    f"mkdir -p {out_root}/status/{w} {out_root}/results",
+                    f"export SOISIM_STATUS_DIR={out_root}/status/{w}",
+                    f"{cli} > {out_root}/status/{w}/run.log 2>&1",
+                    f"touch {out_root}/results/{w}.done",
+                ])
+                r = create_pod(f"{args.name}-{w}", dcmd, args.vcpu)
+                if isinstance(r, dict) and "id" in r:
+                    created.append(r["id"]); slices.append((m["label"], w, per))
+                    json.dump(created, open(ACTIVE, "w"))
+                    print(f"  {w} -> {r['id']}")
+                else:
+                    print(f"  WARN {w} create failed: {json.dumps(r)[:160]}")
+        if args.require_all and len(created) < total_pods:
+            print(f"  require-all: only {len(created)}/{total_pods} pods — tearing down, will retry")
+            teardown(created)
+            sys.exit(3)
+        if not created:
+            raise RuntimeError("no pods could be created")
+        start = time.time()
+        while True:
+            try:
+                done = [k for k in s3_list(f"runs/{args.name}/results/") if k.endswith(".done")]
+                by_label = {}
+                for label, w, _ in slices:
+                    by_label.setdefault(label, [0, 0])
+                    by_label[label][1] += 1
+                    if any(m.endswith(f"{w}.done") for m in done):
+                        by_label[label][0] += 1
+                lines = [f"- {lb}: {d}/{t} pods done" for lb, (d, t) in sorted(by_label.items())]
+                elapsed = (time.time() - start) / 60
+                _write_status(args.name, f"tournament ({len(done)}/{len(slices)} slices done)",
+                              [f"elapsed {elapsed:.0f} min · {len(slices)} slices"] + lines)
+                print(f"  [{elapsed:.0f}min] {len(done)}/{len(slices)} slices done")
+                if len(done) >= len(slices):
+                    break
+            except Exception as e:
+                print("  poll hiccup:", str(e)[:120])
+                elapsed = (time.time() - start) / 60
+            if elapsed > kill_min:
+                print("!! kill-timeout — tearing down")
+                break
+            time.sleep(20)
+    finally:
+        teardown(created)
+
+    time.sleep(12)
+    agg = {}  # label -> [score, decisive, games]
+    for key in s3_list(f"runs/{args.name}/results/"):
+        if not key.endswith(".json"):
+            continue
+        w = key.split("/")[-1][:-5]
+        label = w.rsplit("-w", 1)[0]
+        try:
+            r = json.loads(s3_get_text(key))
+        except Exception:
+            continue
+        a = agg.setdefault(label, [0.0, 0, 0])
+        a[0] += r["score"]; a[1] += r["decisive"]; a[2] += r["games"]
+    results = []
+    for label, (score, dec, games) in agg.items():
+        wr = score / dec if dec else 0
+        lo = hi = 0
+        if dec:
+            z = 1.959964; p = wr; den = 1 + z * z / dec
+            ctr = p + z * z / (2 * dec)
+            adj = z * math.sqrt(p * (1 - p) / dec + z * z / (4 * dec * dec))
+            lo, hi = (ctr - adj) / den, (ctr + adj) / den
+        results.append({"label": label, "wr": wr, "lo": lo, "hi": hi, "games": int(games)})
+    results.sort(key=lambda x: x["label"])
+    print("\n=== TOURNAMENT RESULTS (A win rate) ===")
+    for r in results:
+        print(f"  {r['label']}: {r['wr']:.1%} [{r['lo']:.1%}-{r['hi']:.1%}] ({r['games']} games)")
+    local = os.path.join(REPO, "Tools", "ShardsData", "benchmark", "results")
+    os.makedirs(local, exist_ok=True)
+    json.dump(results, open(os.path.join(local, f"runpod-{args.name}.json"), "w"), indent=2)
+    _write_status(args.name, "TOURNAMENT COMPLETE — pods torn down",
+                  [f"- {r['label']}: {r['wr']:.1%} [{r['lo']:.1%}-{r['hi']:.1%}] ({r['games']}g)" for r in results])
+
+
 def status_cmd(args):
     md = open(STATUS_MD).read() if os.path.exists(STATUS_MD) else "(no status yet)"
     print(md)
@@ -324,6 +504,21 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("upload-binary").set_defaults(fn=upload_binary)
     sub.add_parser("teardown-all").set_defaults(fn=teardown_all)
+    un = sub.add_parser("upload-nets"); un.add_argument("--nets", required=True); un.set_defaults(fn=upload_nets)
+    sw = sub.add_parser("sweep")
+    sw.add_argument("--name", required=True)
+    sw.add_argument("--nets", required=True, help="comma list of out/<name> dirs (each has weights.bin/json)")
+    sw.add_argument("--vcpu", type=int, default=32)
+    sw.add_argument("--games", type=int, default=200)
+    sw.add_argument("--seed-base", type=int, default=160000)
+    sw.add_argument("--gate-cmd", required=True, help="probe args for the opponent + budgets (no --a/--net-a-file/--games/--seed-base/--result)")
+    sw.set_defaults(fn=sweep)
+    tn = sub.add_parser("tournament")
+    tn.add_argument("--name", required=True)
+    tn.add_argument("--spec", required=True, help="JSON list of {label,cmd,games,pods}")
+    tn.add_argument("--vcpu", type=int, default=32)
+    tn.add_argument("--seed-base", type=int, default=700000)
+    tn.set_defaults(fn=tournament)
     sp = sub.add_parser("status"); sp.add_argument("--name", default=""); sp.set_defaults(fn=status_cmd)
     r = sub.add_parser("run")
     r.add_argument("--name", required=True)

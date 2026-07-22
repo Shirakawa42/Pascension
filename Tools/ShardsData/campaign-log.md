@@ -92,3 +92,42 @@
 - **2026-07-22 13:08** — probe: rank:emerald vs rank:platinum → 57.0 % [47.2 %–66.3 %] over 100 games
 - **2026-07-22 13:16** — probe: ismcts-V4-200it vs ismcts-V4-200it → 55.0 % [34.2 %–74.2 %] over 20 games
 - **2026-07-22 — RunPod CPU fan-out + DIAMOND minted**: built a RunPod orchestrator (Tools/RunPod/) that publishes the self-contained linux-x64 SoiSim binary to a network volume, fans jobs across N CPU pods, monitors via S3→runpod-status.md, downloads results, and ALWAYS tears down (finally + kill-timeout + teardown-all). SoiSim made cloud-ready (lazy FindRepoRoot, SOISIM_STATUS_DIR override, probe --result for aggregation, probe --record from the earlier commit). **First real run: DIAMOND@3200 vs EMERALD@800 = 56.0% [53.8-58.2] over 2000 games in ~12 min on 8 pods × 32 vCPU (~15× local speedup, $1.17)** — clears the gate (≥55% + LB>50%), so **DIAMOND minted** (gen-8 @ 3200it, ~480ms). Ladder now IRON·BRONZE·SILVER(gen0@100)·GOLD(gen0@200)·PLATINUM(gen8@200)·EMERALD(gen8@800)·DIAMOND(gen8@3200) — the fast deterministic ladder is complete; MASTER+ needs the reserved levers. Banked 5,791 champion positions (recording yield low + one pod recorded 0 — flagged for follow-up). Keys stay local (.env + Tools/RunPod/.secrets gitignored, verified). Suite 174 green.
+- **2026-07-22 14:33** — probe: ismcts-V4-200it vs ismcts-V4-200it → 60.0 % [47.4 %–71.4 %] over 60 games
+- **2026-07-22 15:02** — selfplay mdtest: 10 games → 200 positions (search 200it, 0 min)
+- **2026-07-22 15:43** — trained generation 9: val acc 76.5%, 468,000 positions
+- **2026-07-22 15:44** — net generation 9 embedded (valAcc 0.7645 · 468,000 positions · 2026-07-22)
+- **2026-07-22 15:46** — probe: ismcts-V4-200it vs ismcts-V4-200it → 39.0 % [32.5 %–45.9 %] over 200 games
+- **2026-07-22 16:15** — probe: ismcts-V4-200it vs ismcts-V4-200it → 50.0 % [29.9 %–70.1 %] over 20 games
+- **2026-07-22 16:16** — trained generation 9: val acc 76.6%, 1,448,000 positions
+- **2026-07-22 16:17** — trained generation 9: val acc 76.7%, 1,448,000 positions
+- **2026-07-22 16:17** — trained generation 9: val acc 76.6%, 1,448,000 positions
+- **2026-07-22 16:18** — trained generation 9: val acc 76.3%, 1,448,000 positions
+- **2026-07-22 16:19** — trained generation 9: val acc 76.5%, 1,576,000 positions
+- **2026-07-22 16:19** — trained generation 9: val acc 76.6%, 1,576,000 positions
+- **2026-07-22 16:20** — trained generation 9: val acc 76.6%, 1,448,000 positions
+- **2026-07-22 16:21** — trained generation 9: val acc 80.7%, 1,448,000 positions
+- **2026-07-22 16:22** — trained generation 9: val acc 76.6%, 1,448,000 positions
+- **2026-07-22 16:23** — trained generation 9: val acc 76.3%, 1,576,000 positions
+- **2026-07-22 16:53** — probe: rank:gold vs rank:silver → 47.5 % [32.9 %–62.5 %] over 40 games
+- **2026-07-22 16:55** — probe: rank:bronze vs rank:iron → 82.2 % [80.5 %–83.8 %] over 2000 games
+- **2026-07-22 17:00** — probe: rank:silver vs rank:iron → 78.5 % [76.6 %–80.2 %] over 2000 games
+- **2026-07-22 17:09** — probe: rank:gold vs rank:iron → 79.9 % [78.1 %–81.6 %] over 2000 games
+- **2026-07-22 17:18** — probe: rank:platinum vs rank:iron → 83.4 % [81.7 %–85.0 %] over 2000 games
+- **2026-07-22 17:22** — probe: rank:silver vs rank:bronze → 56.2 % [54.1 %–58.4 %] over 2000 games
+- **2026-07-22 17:32** — probe: rank:gold vs rank:bronze → 57.8 % [55.6 %–59.9 %] over 2000 games
+- **2026-07-22 17:45** — probe: rank:platinum vs rank:bronze → 66.0 % [62.6 %–69.2 %] over 800 games
+- **2026-07-22 17:55** — probe: rank:gold vs rank:silver → 50.9 % [47.5 %–54.5 %] over 800 games
+- **2026-07-22 18:04** — probe: rank:platinum vs rank:silver → 61.4 % [58.0 %–64.7 %] over 800 games
+- **2026-07-22 18:16** — probe: rank:platinum vs rank:gold → 61.5 % [58.1 %–64.8 %] over 800 games
+
+---
+
+## Ladder concluded at DIAMOND — 2026-07-22
+
+**gen-9 sweep (10 variants) all tied/lost to gen-8** at equal iterations (best g9v1 51.5%; champion-mixes → 35.5%; q0.7 val-acc 80.7% but played 46.0%). The encoder is the ceiling — MASTER not pursued, ladder final at 7 ranks.
+
+**Full round-robin benchmark** (IRON–PLATINUM measured 800–2000 games/pair; EMERALD/DIAMOND from mint). Elo (BT, IRON=1000): IRON 1000 · BRONZE 1212 · SILVER 1242 · GOLD 1251 · PLATINUM 1312 · EMERALD 1360 · DIAMOND 1402. Biggest neural jump is the **net step** GOLD→PLATINUM 61.5%; SILVER→GOLD 50.9% (2× iters ≈ coin-flip). Visual report published as an artifact; generator + data in `Tools/ShardsData/benchmark/` (gitignored).
+
+**DIAMOND shipped root-parallel** (K=8×400 = 3200 total, CPU-independent merge): ~80 ms multi-core vs ~480 ms single-tree, same budget → same strength. Registry reverted to gens 0,8. 174 EngineVerify tests green.
+
+**Balance stats** (6400 DIAMOND selfplay, `benchmark/balance_stats.json`): first-player 56.5% (front-loaded: 60.2% short / 52.9% long games), ~15 rounds, draws 0.02%, Infinity-shard win 4% of games, attack power 7→409 (rounds 10→20).

@@ -27,8 +27,8 @@ iterations" stops producing gate-clearing generations.
 | GOLD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 0 (frozen, narrow, bootstrap) | 200 it |
 | PLATINUM | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen, narrow, full data) | 200 it |
 | EMERALD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 800 it (4×) |
-| DIAMOND | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 3200 it (4×) |
-| MASTER → CHALLENGER | planned | ISMCTS + reserved levers (wall-clock / root parallelism) | promoted gen | — |
+| DIAMOND | ✅ minted (top rank) | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 3200 it (4×), run as **K=8 × 400 root-parallel** |
+| MASTER → CHALLENGER | ❌ not pursued | — | — | net plateaued (gen-9 sweep); ladder is final at DIAMOND |
 
 ---
 
@@ -118,19 +118,30 @@ GOLD→PLATINUM boundary; the width sweep is flat (76.6-76.8%) and gen-8 vs gen-
 - Known dead ends (do not retry): eval-at-leaf for PLAY; the schema-2 tactical encoder
   (35.8% / 42.5% / 43.8%); wider/deeper nets; 2× budget steps (51%).
 
-## MASTER (MAÎTRE) → CHALLENGER — the reserved-lever ranks
-- Beyond the iteration steps, these adopt the held-back levers: larger budgets, **root parallelism**
-  (implemented, needs a clean idle-machine probe), wall-clock think time, and a living-champion net.
-  Batched **GPU inference** becomes worthwhile only if a much wider/deeper net ever earns its keep,
-  which the plateau says it won't.
+## DIAMOND (DIAMANT) — minted 2026-07-22 · gen 8 · 3200 it (4× budget) · the TOP rank
+- gen-8 net at a 4× budget over EMERALD. Beats EMERALD@800 **56.0% [53.8-58.2]** over 2000 games —
+  the same ~56-57% adjacent-rank ceiling. The last rung of the deterministic ladder.
+- **Multi-threading (2026-07-22)**: the 3200-iteration search is delivered as **K=8 root-parallel
+  trees of 400 iters each** (3200 total, merged by summed visits + ordinal tie-break, early-stop off).
+  The move is **CPU-independent** — identical on any machine, since the 8 seeded trees + budgets fix the
+  result; fewer cores just run the trees sequentially, same answer, slower. ~80 ms on multi-core vs
+  ~480 ms single-tree — same total search budget, so architecturally the same strength, just faster.
 
-## CHALLENGER — the living champion
-- **Always re-pointed to the newest promoted net** (not frozen, unlike every rank
-  below it), at the full 2.5 s budget, plus root-parallel search (K independent trees
-  merged by visits — implemented, adoption pending a clean idle-machine probe;
-  expected ~8× simulations at the same wall-clock).
-- If the campaign promotes more generations than there are ranks, intermediate ranks
-  get re-spaced by Elo at campaign end so adjacent ranks stay evenly separated.
+## Ladder concluded at DIAMOND (2026-07-22)
+- **MASTER→CHALLENGER not pursued.** The value-net plateaued: a gen-9 sweep of **10 variants** (width,
+  depth, epochs, q-weight, champion-weighted data mixes) all TIED or LOST to gen-8 at equal iterations —
+  best was g9v1 **51.5%** (a tie); champion-weighted mixes were *worse* (down to 35.5%), and the q0.7
+  variant's higher val-accuracy (80.7%) played worse (46.0%, a smoother-target artifact). Seven
+  generations, two encoders, a width sweep: the **encoder** (pooled information-set) is the ceiling,
+  not capacity or data. A stronger net for a MASTER rank isn't reachable; lifting DIAMOND to 60% would
+  need only more search, which the user declined as a rung.
+- **Full round-robin benchmark** (`Tools/ShardsData/benchmark/`, visual published as an artifact):
+  IRON–PLATINUM at 800–2000 mirrored games/pair; EMERALD/DIAMOND steps from their mint gates
+  (same net, deeper search — structurally monotone, not re-run). Elo (Bradley-Terry, IRON=1000):
+  IRON 1000 · BRONZE 1212 · SILVER 1242 · GOLD 1251 · PLATINUM 1312 · EMERALD 1360 · DIAMOND 1402.
+  Informative jumps: the **net step** GOLD→PLATINUM = **61.5%** (gen-0→gen-8 at equal depth, the
+  biggest neural gain), while SILVER→GOLD = **50.9%** (2× iterations ≈ coin-flip — depth alone on the
+  weak net barely helps). Root parallelism, formerly a "reserved lever," is now DIAMOND's speed path.
 
 ---
 

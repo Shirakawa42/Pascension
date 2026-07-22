@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.IO;
+using Newtonsoft.Json.Linq;
 using Pascension.Core;
 using Shards.Bots;
 using Shards.Engine;
@@ -30,6 +33,21 @@ namespace SoiSim
         /// <summary>Early-stop budget fraction for "strong": -1 = config default,
         /// 0 = OFF, &gt;0 = that fraction (1.0 exact/neutral, lower = more aggressive).</summary>
         public double EarlyStopFraction { get; set; } = -1;
+
+        /// <summary>Load "strong"'s net from a weights.bin file (sibling weights.json
+        /// carries layers/schema/sha) instead of the embedded registry — lets us gate
+        /// freshly-trained candidates without re-embedding + rebuilding.</summary>
+        public string NetFilePath { get; set; }
+
+        private static readonly ConcurrentDictionary<string, IShardsValueEvaluator> FileNets = new();
+
+        private static IShardsValueEvaluator LoadNetFromFile(string binPath) =>
+            FileNets.GetOrAdd(binPath, p =>
+            {
+                var h = JObject.Parse(File.ReadAllText(Path.Combine(Path.GetDirectoryName(p), "weights.json")));
+                return new ShardsNeuralEval(File.ReadAllBytes(p),
+                    h["layers"].ToObject<int[]>(), h.Value<int>("schemaVersion"), h.Value<string>("sha256"));
+            });
 
         /// <summary>Shared read-only model for greedy seats (built once, thread-safe).</summary>
         private static readonly System.Lazy<ShardsValueModel> GreedyModel =
@@ -82,7 +100,8 @@ namespace SoiSim
             "greedy" => new ShardsGreedyEvalBot(gameSeed * 100 + (ulong)seat, engine, GreedyModel.Value),
             "strong" => new ShardsSearchBot(gameSeed * 100 + (ulong)seat, engine,
                 StrongConfig(), GreedyModel.Value,
-                NetGeneration >= 0 ? ShardsNeuralEval.LoadGeneration(NetGeneration) : null),
+                NetFilePath != null ? LoadNetFromFile(NetFilePath)
+                    : NetGeneration >= 0 ? ShardsNeuralEval.LoadGeneration(NetGeneration) : null),
             _ => ShardsBotRanks.Create(Kind, gameSeed * 100 + (ulong)seat, engine)
         };
     }

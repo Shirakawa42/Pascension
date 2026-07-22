@@ -45,6 +45,8 @@ namespace SoiSim
             int workersB = cli.GetInt("--workers-b", 1);
             int netA = cli.GetInt("--net-a", -1);
             int netB = cli.GetInt("--net-b", -1);
+            string netAFile = cli.GetStr("--net-a-file", null);
+            string netBFile = cli.GetStr("--net-b-file", null);
             // Early-stop budget fraction applied to BOTH search seats: -1 default,
             // 0 off, >0 the fraction (1.0 exact, lower = more aggressive).
             double earlyStop = cli.Has("--earlystop")
@@ -61,9 +63,9 @@ namespace SoiSim
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
             var factoryA = new BotFactory(kindA, budgetA)
-                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclockA, RootWorkers = workersA, NetGeneration = netA, EarlyStopFraction = earlyStop };
+                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclockA, RootWorkers = workersA, NetGeneration = netA, NetFilePath = netAFile, EarlyStopFraction = earlyStop };
             var factoryB = new BotFactory(kindB, budgetB)
-                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclockB, RootWorkers = workersB, NetGeneration = netB, EarlyStopFraction = earlyStop };
+                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclockB, RootWorkers = workersB, NetGeneration = netB, NetFilePath = netBFile, EarlyStopFraction = earlyStop };
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
 
             var work = new List<(ulong Seed, bool AFirst, string C0, string C1)>();
