@@ -13,18 +13,21 @@
 > - **DLC-ready** — card knowledge derives from card *properties*, not card identity;
 >   after a balance patch: `soisim tune` (~3 min) + one selfplay/train/gate cycle.
 
-| Rank | Status | Engine | Net | Think time |
+**Budget model (reframed 2026-07-22):** ranks below MASTER use a FIXED, fast iteration
+budget — NOT wall-clock. Each neural rank is a BETTER TRAINED NET at the *same* iteration
+count (deterministic, ~50-80 ms/decision, ~15× faster than the old 1.0-1.25 s). Wall-clock
+and larger budgets are held back for the top ranks, adopted only once "better net at equal
+iterations" stops producing gate-clearing generations.
+
+| Rank | Status | Engine | Net | Budget |
 |---|---|---|---|---|
 | IRON | ✅ shipped | hand-written heuristic | — | instant |
 | BRONZE | ✅ shipped (default) | tuned value model, greedy | — | instant |
-| SILVER | ✅ shipped | ISMCTS, full rollouts | — | 1.0 s |
-| GOLD | ✅ minted 2026-07-21 | ISMCTS, 2-turn rollouts → net | gen 0 (frozen) | 1.0 s |
-| PLATINUM | ✅ minted 2026-07-22 | ISMCTS, 2-turn rollouts → net | gen 5 (frozen, wide) | 1.25 s |
-| EMERALD | planned | ISMCTS, 2-turn rollouts → net | next gate-clearing gen | 1.5 s |
-| DIAMOND | planned | ISMCTS + root parallelism (probe pending) | promoted gen | 1.75 s |
-| MASTER | planned | ISMCTS | promoted gen | 2.0 s |
-| GRANDMASTER | planned | ISMCTS | promoted gen | 2.25 s |
-| CHALLENGER | planned | ISMCTS + root parallelism | always-newest champion | 2.5 s |
+| SILVER | ✅ shipped | ISMCTS, full rollouts, no net | — | 160 it |
+| GOLD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 0 (frozen, narrow, bootstrap) | 200 it |
+| PLATINUM | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen, narrow, full data) | 200 it |
+| EMERALD | 🔄 in training | ISMCTS, 2-turn rollouts → net | next gate-clearing gen | 200 it |
+| DIAMOND → CHALLENGER | planned | ISMCTS (+ larger budget / root parallelism / wall-clock once net steps plateau) | promoted gen | 400 it+ |
 
 ---
 
@@ -46,14 +49,15 @@
 - **Cost**: microseconds per decision. Also serves as every search rank's rollout policy
   and move-ordering prior.
 
-## SILVER (ARGENT) — the first search AI *(frozen pre-neural config)*
-- **Algorithm**: `ShardsSearchBot` — Single-Observer ISMCTS: per decision, re-imagines
-  hidden zones (determinization), then simulates complete games through the real
-  engine with ε-greedy BRONZE playouts (ε = 0.03, a measured-critical constant);
-  UCB1 + availability + BRONZE priors; plan cursor answers in-chain decisions from
-  the searched subtree.
-- **Budget**: 1.0 s wall-clock ≈ 600–1,000 full-game simulations per decision.
-- **Strength**: **~77% [64.6–85.6] vs BRONZE** (60-game probe).
+## SILVER (ARGENT) — the entry search rank *(re-spec 2026-07-22)*
+- **Algorithm**: `ShardsSearchBot` — the same ISMCTS + 2-turn net-truncated rollouts as
+  GOLD, using **gen-0's net at 100 iterations** (half of GOLD's budget). A fast iteration
+  step below GOLD, same net.
+- **Why not full rollouts**: the original pre-neural SILVER (full rollouts, 1.0 s) can't be
+  both fast AND stronger than BRONZE — full rollouts score ~48% vs BRONZE at 200 iters and
+  need ~600 (≈0.6-1.0 s) to reach 77%. The fast-below-MASTER reframe forces the net here.
+  The archival full-rollout search lives on as the `strong`/`strong-fast` tooling kinds.
+- **Budget**: fixed 100 iterations (~30-40 ms), deterministic. Beats BRONZE, loses to GOLD.
 - **Role**: the pre-neural "MASTER" preserved exactly; baseline the nets must beat.
 
 ## GOLD (OR) — first neural rank · net generation 0 (pinned)
@@ -69,18 +73,21 @@
   (and ~2× cheaper per simulation on top).
 - **Frozen**: hard-pinned to generation 0 — future nets mint new ranks instead.
 
-## PLATINUM (PLATINE) — minted 2026-07-22 · net generation 5 (pinned) · 1.25 s
-- **Net**: the first WIDE net (768→1024→512→256→1, ~1.44M params, f16 ≈ 2.9 MB),
-  76.8% val acc — trained on 1.32M positions (gen-0 bootstrap capped at 400k +
-  every search-selfplay batch, 640k of them **q-labeled**: target 0.5z + 0.5q,
-  corr(q,z)=0.60, which cut label std 0.50→0.37).
-- **Search**: the SAME 2-end-turn net-truncated rollouts as GOLD — eval-at-leaf
-  was probed for play and REJECTED (see history below) — at the ladder's first
-  budget step, **1.25 s**.
-- **Promotion**: 57.8% [52.9–62.5] vs GOLD's method at equal 200-iteration budget
-  (n=400); **60.7% [54.9–66.3] vs GOLD AS SHIPPED** (1.25s vs 1.0s wall-clock,
-  n=280, idle machine). Guards: 100% [94–100] vs random; 66% vs BRONZE at 200it —
-  identical to GOLD's 66% at the same budget (no regression).
+## PLATINUM (PLATINE) — minted 2026-07-22 · net generation 8 (pinned, narrow) · 200 it
+- **Net**: NARROW 768→512→256→128→1 (~560K params, f16 ≈ 1.1 MB) — same architecture as
+  GOLD — 76.7% val acc, trained on the same 1.32M-position mix that produced the (retired)
+  wide gen-5 (gen-0 bootstrap capped at 400k + every search-selfplay batch, 640k **q-labeled**:
+  target 0.5z + 0.5q, corr(q,z)=0.60). **The width sweep proved capacity is plateaued** —
+  narrow 76.7% = medium 76.8% = wide 76.8% = xwide 76.6%; the wide gen-5 was retired as
+  wasteful (gen-8 ties it, 46.0% [40.4-51.7] n=300, at ~2.6× cheaper eval).
+- **Search**: the SAME 2-end-turn net-truncated rollouts as GOLD — eval-at-leaf was probed
+  for play and REJECTED (see history below) — at the shared fixed **200-iteration** budget.
+  So GOLD and PLATINUM share one architecture, speed, and budget, differing only by TRAINING
+  DATA (bootstrap vs full mix): the one honest "better net at equal iterations" step.
+- **Promotion**: **56.5% [51.6–61.3] vs GOLD at equal 200 it (n=400)** — gate passed
+  (≥55% ✓, Wilson LB 51.6% > 50% ✓). Guards: 100% vs random; ~66% vs BRONZE at 200it.
+- **Speed**: ~50-80 ms/decision (fixed 200 it, deterministic) vs the retired 1.25 s wall-clock
+  — a ~15-20× latency cut, from dropping wall-clock AND the wide net.
 - **The five-attempt history** (gens 1–4 + gen-5-at-1.0s, all vs gen-0): 48.3% ·
   34.2% (distribution collapse) · 49.2% · 50.8% · 52.5%. What finally worked —
   and the campaign's core lesson: value nets at this game sit near the
@@ -92,21 +99,29 @@
   built and probed both ways — REJECTED (35.8% bootstrap-trained, 42.5%/43.8%
   search-trained); the v1 pooled information-set encoding + rollouts stands.
 
-## EMERALD (ÉMERAUDE) → DIAMOND (DIAMANT) — the next rungs
-- Same loop on the new champion's games, in T=2 ROLLOUT mode (the proven config),
-  budgets stepping 1.5 s / 1.75 s. Candidate levers, each probe-gated:
-  **root parallelism** (implemented; needs a clean idle-machine wall-clock probe —
-  K worker trees ≈ K× simulations at the same seconds), longer q-label searches
-  (budget 200+ for sharper labels), PUCT selection at high sim counts.
-- Known dead ends (probed 2026-07-22, do not retry blindly): eval-at-leaf for
-  PLAY (fine for cheap selfplay data gen); schema-2 tactical encoder features;
-  expecting equal-iteration net-vs-net gains — value nets sit near the
-  information-set noise floor, so rungs differentiate on search/budget instead.
+## EMERALD (ÉMERAUDE) → the honest depth limit
+**The "better net at equal iterations" method is near-exhausted after ONE step.** Equal-iteration
+net differentiation supports exactly TWO tiers: gen-0 (bootstrap, weak) and gen-8 ≈ gen-5
+(full-mix, strong) — that IS the GOLD→PLATINUM boundary. The width sweep is flat (76.6-76.8%)
+and gen-8 vs gen-5 is a tie: *five nets, one number* — the ceiling is the ENCODER, not capacity
+or data. So EMERALD is a two-track decision:
+- **Net bet (the ideal, being tested)**: every net so far trained on T0 (eval-at-leaf) selfplay
+  data, but the ranks DEPLOY in T2 — a train/deploy mismatch. Regenerate selfplay in **T2 mode**
+  with gen-8 as the leaf evaluator (`--truncate 2 --net 8 --schema 1 --budget 200`), retrain
+  NARROW (gen-9 — do NOT widen), then GATE gen-9 vs gen-8 at equal 200 it, seat-swapped, n≥400.
+  **Kill-criterion: promote only if ≥55% AND Wilson LB >50%.** Most likely a TIE (encoder ceiling).
+- **If the net bet ties** (expected): the better-net method has reached its limit — the point the
+  user reserved for reconsidering the budget axis. Options then, in the user's hands: an ITERATION
+  step (EMERALD = gen-8 @ 400 it, deterministic, still <200 ms) or wall-clock. Depth past PLATINUM
+  is carried by MORE SEARCH, not a smarter net.
+- Known dead ends (probed 2026-07-22, do not retry): eval-at-leaf for PLAY; the schema-2 tactical
+  encoder (35.8% / 42.5% / 43.8%); wider/deeper nets.
 
-## MASTER (MAÎTRE) → GRANDMASTER (GRAND MAÎTRE) — late generations
-- Minted only if the loop keeps clearing gates (2.0 s / 2.25 s). If net progress
-  stays flat, these become search-quality rungs; batched **GPU inference** becomes
-  worthwhile only if a much wider/deeper net ever earns its keep in T=2 mode.
+## MASTER (MAÎTRE) → CHALLENGER — the reserved-lever ranks
+- Beyond the iteration steps, these adopt the held-back levers: larger budgets, **root parallelism**
+  (implemented, needs a clean idle-machine probe), wall-clock think time, and a living-champion net.
+  Batched **GPU inference** becomes worthwhile only if a much wider/deeper net ever earns its keep,
+  which the plateau says it won't.
 
 ## CHALLENGER — the living champion
 - **Always re-pointed to the newest promoted net** (not frozen, unlike every rank

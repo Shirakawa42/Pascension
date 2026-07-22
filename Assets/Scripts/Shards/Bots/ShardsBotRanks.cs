@@ -51,46 +51,60 @@ namespace Shards.Bots
                 (seed, engine) => new ShardsHeuristicBot(seed, engine)),
             Rank("bronze", "BRONZE", isSearch: false,
                 (seed, engine) => new ShardsGreedyEvalBot(seed, engine, Model.Value)),
-            // SILVER is the pre-upgrade "MASTER" exactly as shipped 2026-07-21:
-            // full-rollout SO-ISMCTS at 1.0s wall-clock.
+            // SILVER — re-spec 2026-07-22 to gen-0's net at HALF of GOLD's budget (a
+            // clean iteration step below GOLD, same net). The old full-rollout-at-1.0s
+            // config could not be BOTH fast and stronger than BRONZE (full rollouts
+            // score ~48% vs BRONZE at 200 it, needing ~600 it ≈ 0.6-1.0s to be strong),
+            // so the fast-below-MASTER reframe forces the net here too. gen-0 T2 @ 100 it
+            // is fast (~30-40ms), beats BRONZE, and loses to GOLD @ 200 it. The archival
+            // pre-neural full-rollout search survives as the "strong" tooling kind.
             Rank("silver", "SILVER", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    ShardsSearchConfig.ForRealGames(1.0), Model.Value)),
-            // GOLD — minted 2026-07-21 from the generation-0 value net (74.6% val acc,
-            // trained on 720k bootstrap positions): ISMCTS with net-truncated rollouts
-            // (2 end-turns) at the same 1.0s budget. Promotion probe: 78.3%
-            // [66.4–86.9] vs SILVER's search at EQUAL iterations (and ~2× cheaper
-            // per iteration on top). PINNED to generation 0 forever — newer nets mint
-            // newer ranks instead of drifting this one.
+                    NetConfig(SilverIterations), Model.Value, Gen0Net.Value)),
+            // GOLD — generation-0 value net (narrow 512-256-128, 74.6% val acc,
+            // 720k BOOTSTRAP positions): ISMCTS with 2-end-turn net-truncated rollouts
+            // at the shared fixed budget. The weak-net neural rung; pairs with PLATINUM
+            // at EQUAL iterations. PINNED to generation 0.
             Rank("gold", "GOLD", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    NetConfig(1.0), Model.Value, Gen0Net.Value)),
-            // PLATINUM — minted 2026-07-22 from the generation-5 value net (wide
-            // 1024→512→256, 76.8% val acc, 1.32M mixed bootstrap+search positions
-            // with q-labels): GOLD's net-truncated-rollout search armed with the
-            // stronger net at the ladder's first budget step (1.25s). Promotion:
-            // 57.8% [52.9–62.5] vs GOLD's method at equal 200-iteration budget
-            // (n=400); **60.7% [54.9–66.3] vs GOLD AS SHIPPED** (1.25s vs 1.0s,
-            // n=280 wall-clock); guards 100% vs random, 66% vs BRONZE at 200it —
-            // identical to GOLD's 66%. Eval-at-leaf was probed and REJECTED for play (rollouts
-            // resolve the tactical state the pooled encoding can't see — same for
-            // the schema-2 tactical encoder, rejected in both modes). PINNED to
-            // generation 5 forever.
+                    NetConfig(RankIterations), Model.Value, Gen0Net.Value)),
+            // PLATINUM — re-spec 2026-07-22 to the generation-8 NARROW net (512-256-128,
+            // ~560K params, 76.7% val acc, gen-5's full 1.32M-position q-labeled mix).
+            // The honest "better NET at EQUAL iterations" step over GOLD: 56.5%
+            // [51.6-61.3] vs gen-0 at 200it (n=400) — gate passed. Same play strength as
+            // the retired WIDE gen-5 (46.0% [40.4-51.7], a tie) at ~2.6x cheaper eval, so
+            // GOLD and PLATINUM share ONE architecture and speed, differing only by
+            // TRAINING DATA (bootstrap vs full mix). Wall-clock dropped for a fixed fast
+            // budget (~50-80ms/decision vs the old 1.0-1.25s). PINNED to generation 8.
             Rank("platinum", "PLATINUM", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    NetConfig(1.25), Model.Value, Gen5Net.Value)),
+                    NetConfig(RankIterations), Model.Value, Gen8Net.Value)),
         };
 
         private static readonly Lazy<IShardsValueEvaluator> Gen0Net =
             new(() => ShardsNeuralEval.LoadGeneration(0));
 
-        private static readonly Lazy<IShardsValueEvaluator> Gen5Net =
-            new(() => ShardsNeuralEval.LoadGeneration(5));
+        private static readonly Lazy<IShardsValueEvaluator> Gen8Net =
+            new(() => ShardsNeuralEval.LoadGeneration(8));
 
-        private static ShardsSearchConfig NetConfig(double seconds)
+        /// <summary>Shared fixed search budget for the GOLD/PLATINUM net pair — fast
+        /// (~50-80ms/decision), deterministic, and where the promotion gates were
+        /// proven (56.5% at 200 it, n=400). Each neural rank is a BETTER NET at this
+        /// same budget, not more thinking time; larger budgets (EMERALD 400, DIAMOND
+        /// 800) and wall-clock are reserved for the top ranks once the better-net
+        /// method plateaus.</summary>
+        private const int RankIterations = 200;
+
+        /// <summary>SILVER = gen-0 at half GOLD's budget: a fast iteration step below it.</summary>
+        private const int SilverIterations = 100;
+
+        private static ShardsSearchConfig NetConfig(int iterations)
         {
-            var config = ShardsSearchConfig.ForRealGames(seconds);
-            config.RolloutEndTurns = 2; // net-truncated rollouts
+            var config = ShardsSearchConfig.ForSims(iterations);
+            config.RolloutEndTurns = 2;          // net-truncated rollouts (the deployed mode)
+            config.EarlyStopBudgetFraction = 1.0; // EXACT: byte-identical move to the full
+                                                  // budget, just faster on decided positions —
+                                                  // keeps N an honest, gate-faithful ceiling.
             return config;
         }
 

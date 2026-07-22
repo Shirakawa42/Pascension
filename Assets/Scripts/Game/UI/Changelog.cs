@@ -45,10 +45,10 @@ namespace Pascension.Game.UI
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
             new Entry("2026-07-22",
-                "· New bot rank: PLATINUM — GOLD's search armed with a bigger neural network (trained on over a million positions from its own games) and a longer 1.25-second think time. Beats GOLD about 6 games in 10.\n" +
-                "· Search bots (SILVER and up) think about twice as fast — roughly double the simulations in the same thinking time, so every search rank plays a little stronger.",
-                "· Nouveau rang de bot : PLATINE — la recherche d'OR armée d'un réseau de neurones plus grand (entraîné sur plus d'un million de positions issues de ses propres parties) et d'un temps de réflexion allongé à 1,25 seconde. Bat OR environ 6 parties sur 10.\n" +
-                "· Les bots de recherche (ARGENT et plus) réfléchissent environ deux fois plus vite — à peu près le double de simulations dans le même temps de réflexion, donc chaque rang de recherche joue un peu plus fort."),
+                "· New bot rank: PLATINUM — GOLD's search with a smarter neural network, trained on over a million positions from its own games. Beats GOLD about 56 games in 100, and answers just as fast.\n" +
+                "· Search bots (SILVER and up) now answer near-instantly — they think a fixed number of moves ahead instead of pausing for a full second, and stop early once the best move is clear.",
+                "· Nouveau rang de bot : PLATINE — la recherche d'OR dotée d'un réseau de neurones plus fin, entraîné sur plus d'un million de positions issues de ses propres parties. Bat OR environ 56 parties sur 100, et répond tout aussi vite.\n" +
+                "· Les bots de recherche (ARGENT et plus) répondent désormais presque instantanément — ils anticipent un nombre fixe de coups au lieu de marquer une pause d'une seconde, et s'arrêtent dès que le meilleur coup est clair."),
             new Entry("2026-07-21",
                 "· Ingeminex attack after you draw your new hand — their discards now hit the hand you keep.\n" +
                 "· Destiny picks happen on the board: the row glows, and your piles stay browsable while you decide.\n" +

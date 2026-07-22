@@ -29,6 +29,8 @@ namespace SoiSim
                         return EvaluateCommand.Run(cli);
                     case "probe":
                         return ProbeCommand.Run(cli);
+                    case "converge":
+                        return ConvergeCommand.Run(cli);
                     case "selfplay":
                         return SelfplayCommand.Run(cli);
                     case "emit-net":
