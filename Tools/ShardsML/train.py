@@ -6,9 +6,10 @@ Usage:
 
 Reads every *.soip under --data (32-byte header: magic 'SOIP', formatVersion u16,
 featureSchema u16, featureCount u32, recordSize u32, 16B reserved). Splits
-train/val by gameSeed hash (never same-game leakage). MLP 768-512-256-128-1.
+train/val by gameSeed hash (never same-game leakage). MLP 768-[--layers]-1
+(default 512-256-128; the C# loader accepts any shape from the header).
 Label: z (final outcome); when a record carries a search q >= 0 the target is
-0.5*z + 0.5*q. Exports:
+(1-w)*z + w*q with w = --q-weight (default 0.5). Exports:
   out/weights.bin   f16 blob, per layer W row-major [out][in] then bias [out]
   out/weights.json  schema header + sha256 + val metrics
   out/expected.json (only with --fixtures) net outputs on the fixture states
@@ -27,7 +28,7 @@ import torch
 import torch.nn as nn
 
 FEATURES = 768
-LAYERS = [512, 256, 128]
+DEFAULT_LAYERS = "512,256,128"
 RECORD_DTYPE = np.dtype([
     ("x", "<f4", FEATURES), ("z", "<f4"), ("q", "<f4"),
     ("seed", "<u8"), ("move", "<u2"), ("seat", "u1"), ("flags", "u1"), ("pad", "V4"),
@@ -62,9 +63,9 @@ def load_dir(paths: str) -> np.ndarray:
 
 
 class ValueNet(nn.Module):
-    def __init__(self):
+    def __init__(self, hidden):
         super().__init__()
-        dims = [FEATURES] + LAYERS
+        dims = [FEATURES] + hidden
         layers = []
         for i in range(len(dims) - 1):
             layers += [nn.Linear(dims[i], dims[i + 1]), nn.ReLU()]
@@ -84,7 +85,12 @@ def main() -> None:
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--fixtures", default=None)
     ap.add_argument("--generation", type=int, default=0)
+    ap.add_argument("--layers", default=DEFAULT_LAYERS,
+                    help="hidden layer widths, e.g. '1024,512,256' (C# loads any shape)")
+    ap.add_argument("--q-weight", type=float, default=0.5,
+                    help="blend weight w in (1-w)*z + w*q for q-labeled records")
     args = ap.parse_args()
+    hidden = [int(x) for x in args.layers.split(",")]
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
@@ -102,14 +108,15 @@ def main() -> None:
 
     def targets(d):
         z, q = d["z"].astype(np.float32), d["q"].astype(np.float32)
-        return np.where(q >= 0, 0.5 * z + 0.5 * q, z)
+        w = args.q_weight
+        return np.where(q >= 0, (1 - w) * z + w * q, z)
 
     x_train = torch.from_numpy(np.ascontiguousarray(train["x"]))
     y_train = torch.from_numpy(targets(train))
     x_val = torch.from_numpy(np.ascontiguousarray(val["x"])).to(device)
     y_val = torch.from_numpy(targets(val)).to(device)
 
-    model = ValueNet().to(device)
+    model = ValueNet(hidden).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-5)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
     loss_fn = nn.BCEWithLogitsLoss()

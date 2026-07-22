@@ -37,8 +37,7 @@ namespace Shards.Bots
         {
             if (!ShardsNetWeights.Available)
                 throw new InvalidOperationException("no trained net embedded (ShardsNetWeights.Available is false)");
-            return new ShardsNeuralEval(
-                Convert.FromBase64String(ShardsNetWeights.CurrentBlob),
+            return new ShardsNeuralEval(ShardsNetWeights.CurrentData,
                 ShardsNetWeights.Layers, ShardsNetWeights.SchemaVersion, ShardsNetWeights.Sha256);
         }
 
@@ -48,7 +47,7 @@ namespace Shards.Bots
         {
             foreach (var spec in ShardsNetWeights.All)
                 if (spec.Generation == generation)
-                    return new ShardsNeuralEval(Convert.FromBase64String(spec.Blob),
+                    return new ShardsNeuralEval(spec.Data,
                         spec.Layers, spec.SchemaVersion, spec.Sha256);
             throw new InvalidOperationException($"net generation {generation} is not embedded");
         }

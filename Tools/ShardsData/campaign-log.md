@@ -25,23 +25,16 @@
 - **2026-07-22 00:27** — trained generation 3: val acc 76.0%, 560,000 positions
 - **2026-07-22 00:27** — net generation 3 embedded (valAcc 0.7596 · 560,000 positions · 2026-07-22)
 - **2026-07-22 00:30** — probe: ismcts-V4-200it vs ismcts-V4-200it → 49.2 % [40.4 %–58.0 %] over 120 games
-- **2026-07-22 00:43** — selfplay qtest: 40 games → 480 positions (search 30it, 0 min)
 - **2026-07-22 01:45** — selfplay gen4q: 8,000 games → 160,000 positions (search 100it, 61 min)
 - **2026-07-22 01:45** — trained generation 4: val acc 75.1%, 320,000 positions
 - **2026-07-22 01:45** — net generation 4 embedded (valAcc 0.7512 · 320,000 positions · 2026-07-22)
 - **2026-07-22 01:49** — probe: ismcts-V4-200it vs ismcts-V4-200it → 50.8 % [42.0 %–59.6 %] over 120 games
 - **2026-07-22 01:53** — probe: ismcts-V4-200it vs ismcts-V4-200it → 55.8 % [46.9 %–64.4 %] over 120 games
 - **2026-07-22 01:55** — PLATINUM attempt 4 REJECTED: gen-4 (q-labels, 50/50 gen0-capped/gen4q mix, val 75.1% on blended targets) scored 50.8% [42.0–59.6] vs gen-0 (gate: ≥55% + Wilson LB >50%) and 55.8% [46.9–64.4] vs gen-3. Best attempt yet (48.3 → 34.2 → 49.2 → 50.8) and beats the best prior challenger, but still a statistical twin of gen-0. **Underfitting fingerprint present**: final train loss 0.4942 ≈ val loss 0.4946 — capacity/encoding, not data noise, is now the binding constraint → next escalation rungs per bot-ranks.md: more selfplay volume, then encoder enrichment / wider net (1024→512→256, where batched GPU inference becomes worthwhile). Selfplay throughput work queued first.
-- **2026-07-22 02:01** — selfplay proftest: 12 games → 240 positions (search 100it, 1 min)
 - **2026-07-22 02:40** — search throughput pass (dotnet-trace profiled): sparse-row forward pass (inputs 86% zero, hidden ~50% — was 72% of selfplay CPU), clone arena pooling (fork allocs were ~20%), Server GC. Selfplay 2.2 → **5.3 games/s** (2.4×); single search thread 1.77× (in-game ranks get ~2× simulations at the same budget). Rejected by measurement: flat-block transposed weights (2KB power-of-two stride = cache-set conflicts, jagged rows win), int-key determinizer sort. Output distribution verified unchanged (q/z/sparsity match gen4q); pinned by Fork_WithArena_RecycledCloneMatchesFreshFork + Q-invariance; suite 171 green.
-- **2026-07-22 02:02** — selfplay proftest2: 12 games → 240 positions (search 100it, 1 min)
-- **2026-07-22 02:06** — selfplay afteropt1: 12 games → 240 positions (search 100it, 0 min)
-- **2026-07-22 02:07** — selfplay afteropt15: 300 games → 6,000 positions (search 100it, 1 min)
-- **2026-07-22 02:08** — selfplay proftest3: 12 games → 240 positions (search 100it, 0 min)
-- **2026-07-22 02:10** — selfplay afteropt2: 12 games → 240 positions (search 100it, 0 min)
-- **2026-07-22 02:11** — selfplay proftest4: 12 games → 240 positions (search 100it, 0 min)
-- **2026-07-22 02:13** — selfplay afteropt3: 12 games → 240 positions (search 100it, 0 min)
-- **2026-07-22 02:14** — selfplay afteropt4: 12 games → 240 positions (search 100it, 0 min)
-- **2026-07-22 02:15** — selfplay afteropt5: 12 games → 240 positions (search 100it, 0 min)
-- **2026-07-22 02:20** — selfplay afteropt6: 12 games → 240 positions (search 100it, 0 min)
-- **2026-07-22 02:21** — selfplay afteropt16: 300 games → 6,000 positions (search 100it, 1 min)
+- **2026-07-22 03:46** — selfplay gen5q: 24,000 games → 480,000 positions (search 100it, 70 min)
+- **2026-07-22 02:32** — selfplay gen5q: 24,000 games → 480,000 positions (search 100it, gen-0 leaf eval, 70 min at the new 5.3 games/s)
+- **2026-07-22 03:47** — trained generation 5 WIDE (1024→512→256, first non-default arch via train.py --layers): val acc **76.8%** (best yet), 1,320,000 positions (gen0 capped 400k + gen1 + gen1b + gen4q + gen5q). Train 0.443 < val 0.467 — the wider net USES its capacity; underfitting plateau gone.
+- **2026-07-22 03:47** — net generation 5 embedded. Registry migrated base64 strings → **byte[] RVA data** (6 gens of base64 overflowed the 16MB PE user-string heap → CS8103; byte arrays bypass it entirely and shrink the file 25%). Rejected gens 1–3 retired via new emit-net --retire (never referenced by a minted rank; stats live in this log). Registry: 0, 4, 5.
+- **2026-07-22 03:54** — probe (research, equal 200it, both eval-at-leaf): gen-5 vs gen-0 → 50.8 % [42.0–59.6] over 120 games — identical to gen-4 despite 4× data and best-ever val acc. **Five nets, one number: the value ceiling is the ENCODER, not capacity or data.**
+- **2026-07-22 04:27** — probe (PLATINUM wall-clock gate, 1.0s both): gen-5 T=0 vs GOLD config (gen-0, 2-turn rollouts) → **42.5 % [34.0–51.4] — REJECTED**. GOLD's rollout mode WINS at wall-clock parity: the 2-end-turn playout resolves the mid-turn tactical state the pooled encoding cannot see, worth more than the extra simulations T=0 buys. Attempt 5 closed. Diagnosis converges: encoder tactical blindness → **encoder schema v2 queued** (per-slot center row + affordability, per-champion board detail, monster detail; v1 encode path retained for pinned schema-1 nets).
