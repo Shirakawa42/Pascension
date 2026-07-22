@@ -26,8 +26,8 @@ iterations" stops producing gate-clearing generations.
 | SILVER | ✅ shipped | ISMCTS, full rollouts, no net | — | 160 it |
 | GOLD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 0 (frozen, narrow, bootstrap) | 200 it |
 | PLATINUM | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen, narrow, full data) | 200 it |
-| EMERALD | 🔄 in training | ISMCTS, 2-turn rollouts → net | next gate-clearing gen | 200 it |
-| DIAMOND → CHALLENGER | planned | ISMCTS (+ larger budget / root parallelism / wall-clock once net steps plateau) | promoted gen | 400 it+ |
+| EMERALD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 800 it (4×) |
+| DIAMOND → CHALLENGER | planned | ISMCTS (+ larger budget / root parallelism / wall-clock) | gen 8 / promoted gen | 3200 it+ |
 
 ---
 
@@ -99,23 +99,23 @@ iterations" stops producing gate-clearing generations.
   built and probed both ways — REJECTED (35.8% bootstrap-trained, 42.5%/43.8%
   search-trained); the v1 pooled information-set encoding + rollouts stands.
 
-## EMERALD (ÉMERAUDE) → the honest depth limit
-**The "better net at equal iterations" method is near-exhausted after ONE step.** Equal-iteration
-net differentiation supports exactly TWO tiers: gen-0 (bootstrap, weak) and gen-8 ≈ gen-5
-(full-mix, strong) — that IS the GOLD→PLATINUM boundary. The width sweep is flat (76.6-76.8%)
-and gen-8 vs gen-5 is a tie: *five nets, one number* — the ceiling is the ENCODER, not capacity
-or data. So EMERALD is a two-track decision:
-- **Net bet (the ideal, being tested)**: every net so far trained on T0 (eval-at-leaf) selfplay
-  data, but the ranks DEPLOY in T2 — a train/deploy mismatch. Regenerate selfplay in **T2 mode**
-  with gen-8 as the leaf evaluator (`--truncate 2 --net 8 --schema 1 --budget 200`), retrain
-  NARROW (gen-9 — do NOT widen), then GATE gen-9 vs gen-8 at equal 200 it, seat-swapped, n≥400.
-  **Kill-criterion: promote only if ≥55% AND Wilson LB >50%.** Most likely a TIE (encoder ceiling).
-- **If the net bet ties** (expected): the better-net method has reached its limit — the point the
-  user reserved for reconsidering the budget axis. Options then, in the user's hands: an ITERATION
-  step (EMERALD = gen-8 @ 400 it, deterministic, still <200 ms) or wall-clock. Depth past PLATINUM
-  is carried by MORE SEARCH, not a smarter net.
-- Known dead ends (probed 2026-07-22, do not retry): eval-at-leaf for PLAY; the schema-2 tactical
-  encoder (35.8% / 42.5% / 43.8%); wider/deeper nets.
+## EMERALD (ÉMERAUDE) — minted 2026-07-22 · gen 8 · 800 it (4× budget)
+**The net axis is exhausted after ONE step**, so depth above PLATINUM is carried by SEARCH.
+Only two net tiers exist — gen-0 (bootstrap, weak) and gen-8 ≈ gen-5 (full-mix, strong), the
+GOLD→PLATINUM boundary; the width sweep is flat (76.6-76.8%) and gen-8 vs gen-5 is a tie
+(*five nets, one number* — the ceiling is the ENCODER, not capacity or data).
+- **Budget sizing (measured)**: a 2× step is worthless — gen-8 @400 vs @200 = **51.0% [47.0-55.0]**
+  (near-ties dominate past 200 it). **4× is the smallest real step**: gen-8 @800 vs @200 =
+  **56.8% [52.8-60.7]** — the same ~56-57% ceiling as the net step (PLATINUM vs GOLD = 56.5%,
+  n=1080). So EMERALD = gen-8 @ 800 it, ~120 ms/decision, deterministic.
+- **The 58% target is above SoI's ceiling**: both levers (better net, 4× more search) top out at
+  ~56-57% between adjacent ranks — the game isn't complex/deep enough for a bigger gap. Ranks are
+  spaced ~56% apart by design; chasing 58% would mean far fewer, coarser ranks.
+- **"Data later"** (user decision 2026-07-22): a better-data net (champion-quality T2 selfplay)
+  replaces gen-8 here ONLY IF a future generation actually beats it at equal iterations — expected
+  to tie (encoder ceiling), so not blocked on. Partial T2 selfplay data is parked on disk.
+- Known dead ends (do not retry): eval-at-leaf for PLAY; the schema-2 tactical encoder
+  (35.8% / 42.5% / 43.8%); wider/deeper nets; 2× budget steps (51%).
 
 ## MASTER (MAÎTRE) → CHALLENGER — the reserved-lever ranks
 - Beyond the iteration steps, these adopt the held-back levers: larger budgets, **root parallelism**

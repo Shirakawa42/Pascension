@@ -79,6 +79,17 @@ namespace Shards.Bots
             Rank("platinum", "PLATINUM", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
                     NetConfig(RankIterations), Model.Value, Gen8Net.Value)),
+            // EMERALD — minted 2026-07-22. Same gen-8 net as PLATINUM at a 4× budget
+            // (800 it). The net axis is exhausted (only two net tiers exist — the
+            // encoder is the ceiling), so depth above PLATINUM is carried by SEARCH.
+            // A 2× step was worthless (gen-8 @400 vs @200 = 51.0%, near-ties dominate
+            // past 200 it); 4× is the smallest real step: 56.8% [52.8-60.7] vs PLATINUM
+            // — same ~56-57% ceiling as the net step, which is SoI's strategic limit for
+            // adjacent ranks. ~120 ms/decision. A better-data net will replace gen-8
+            // here IF a future generation actually beats it.
+            Rank("emerald", "EMERALD", isSearch: true,
+                (seed, engine) => new ShardsSearchBot(seed, engine,
+                    NetConfig(EmeraldIterations), Model.Value, Gen8Net.Value)),
         };
 
         private static readonly Lazy<IShardsValueEvaluator> Gen0Net =
@@ -97,6 +108,10 @@ namespace Shards.Bots
 
         /// <summary>SILVER = gen-0 at half GOLD's budget: a fast iteration step below it.</summary>
         private const int SilverIterations = 100;
+
+        /// <summary>EMERALD = gen-8 at a 4× budget over PLATINUM. A 2× step was a
+        /// coin-flip (51%); 4× is the smallest budget jump that clears the gate (~57%).</summary>
+        private const int EmeraldIterations = 800;
 
         private static ShardsSearchConfig NetConfig(int iterations)
         {

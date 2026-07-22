@@ -45,9 +45,9 @@ namespace Pascension.Game.UI
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
             new Entry("2026-07-22",
-                "· New bot rank: PLATINUM — GOLD's search with a smarter neural network, trained on over a million positions from its own games. Beats GOLD about 56 games in 100, and answers just as fast.\n" +
+                "· New bot ranks: PLATINUM and EMERALD — the two toughest opponents yet. PLATINUM plays GOLD's search with a smarter neural network (trained on over a million positions from its own games); EMERALD is the same brain thinking several times longer. Each is a clear step up, and all still answer near-instantly.\n" +
                 "· Search bots (SILVER and up) now answer near-instantly — they think a fixed number of moves ahead instead of pausing for a full second, and stop early once the best move is clear.",
-                "· Nouveau rang de bot : PLATINE — la recherche d'OR dotée d'un réseau de neurones plus fin, entraîné sur plus d'un million de positions issues de ses propres parties. Bat OR environ 56 parties sur 100, et répond tout aussi vite.\n" +
+                "· Nouveaux rangs de bot : PLATINE et ÉMERAUDE — les deux adversaires les plus coriaces à ce jour. PLATINE joue la recherche d'OR avec un réseau de neurones plus fin (entraîné sur plus d'un million de positions issues de ses propres parties) ; ÉMERAUDE est le même cerveau qui réfléchit plusieurs fois plus longtemps. Chacun est un net cran au-dessus, et tous répondent quasi instantanément.\n" +
                 "· Les bots de recherche (ARGENT et plus) répondent désormais presque instantanément — ils anticipent un nombre fixe de coups au lieu de marquer une pause d'une seconde, et s'arrêtent dès que le meilleur coup est clair."),
             new Entry("2026-07-21",
                 "· Ingeminex attack after you draw your new hand — their discards now hit the hand you keep.\n" +
