@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Pascension.Core;
+using Pascension.Engine.Core;
+using Shards.Bots;
 using Shards.Content;
 using Shards.Engine;
 
@@ -47,6 +50,10 @@ namespace SoiSim
             double earlyStop = cli.Has("--earlystop")
                 ? double.Parse(cli.GetStr("--earlystop", "-1"), System.Globalization.CultureInfo.InvariantCulture)
                 : -1;
+            // Optionally SAVE the played positions as v1 training data — the deep-search
+            // test games are champion-quality, so reuse them instead of discarding.
+            string recordDir = cli.GetStr("--record", null);
+            int recordPerGame = cli.GetInt("--record-per-game", 20);
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
@@ -75,6 +82,19 @@ namespace SoiSim
             object sync = new();
             var sw = Stopwatch.StartNew();
 
+            // Shared recorder (v1 schema, one file; per-game writes under a brief lock —
+            // ~20 positions once per game, so contention is negligible).
+            PositionWriter recorder = null;
+            long recorded = 0;
+            object recordSync = new();
+            if (recordDir != null)
+            {
+                Directory.CreateDirectory(recordDir);
+                recorder = new PositionWriter(Path.Combine(recordDir, $"probe-{seedBase}.soip"),
+                    1, ShardsStateEncoder.V1FeatureCount);
+                Console.WriteLine($"  recording v1 positions ({recordPerGame}/game) -> {recordDir}");
+            }
+
             Parallel.ForEach(work, new ParallelOptions { MaxDegreeOfParallelism = threads }, item =>
             {
                 var specs = new List<PlayerSpec>
@@ -92,14 +112,40 @@ namespace SoiSim
                 int guard = 0;
                 long localAMs = 0, localADecisions = 0;
                 var decisionSw = new Stopwatch();
+                var reservoir = recorder != null
+                    ? new List<(float[] X, byte Seat, float Q)>(recordPerGame) : null;
+                var recRng = recorder != null
+                    ? new DeterministicRng(item.Seed * 6367 + 11, 29) : null;
+                int priorityPoints = 0;
                 while (!adapter.GameOver && guard++ < SimGameRunner.GuardLimit)
                 {
                     var pending = adapter.PendingInput;
                     if (pending == null) break;
                     bool isA = pending.PlayerIndex == aSeat;
+                    // Reservoir-sample priority points; encode the v1 information set of
+                    // the acting seat BEFORE its move, then backfill the search's root Q.
+                    int sampledSlot = -1;
+                    if (reservoir != null && pending.Kind == PendingInputKind.Priority)
+                    {
+                        priorityPoints++;
+                        int slot = reservoir.Count < recordPerGame ? reservoir.Count : recRng.Next(priorityPoints);
+                        if (slot < recordPerGame)
+                        {
+                            var x = new float[ShardsStateEncoder.V1FeatureCount];
+                            ShardsStateEncoder.EncodeV1(adapter.Inner.State, pending.PlayerIndex, x);
+                            var entry = (x, (byte)pending.PlayerIndex, -1f);
+                            if (slot < reservoir.Count) reservoir[slot] = entry; else reservoir.Add(entry);
+                            sampledSlot = slot;
+                        }
+                    }
                     if (isA) decisionSw.Restart();
-                    var action = seats[pending.PlayerIndex].Choose(pending, null)
-                                 ?? adapter.DefaultActionFor(pending);
+                    var actingBot = seats[pending.PlayerIndex];
+                    var action = actingBot.Choose(pending, null) ?? adapter.DefaultActionFor(pending);
+                    if (sampledSlot >= 0 && actingBot is ShardsSearchBot searchBot)
+                    {
+                        var e = reservoir[sampledSlot];
+                        reservoir[sampledSlot] = (e.X, e.Seat, (float)searchBot.LastRootQ);
+                    }
                     if (isA)
                     {
                         localAMs += decisionSw.ElapsedMilliseconds;
@@ -108,6 +154,17 @@ namespace SoiSim
                     if (!adapter.Submit(action).Accepted &&
                         !adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput)).Accepted)
                         break;
+                }
+
+                if (reservoir != null && adapter.GameOver)
+                {
+                    int w = adapter.WinnerIndex;
+                    lock (recordSync)
+                    {
+                        foreach (var (x, seat, q) in reservoir)
+                            recorder.Write(x, w < 0 ? 0.5f : w == seat ? 1f : 0f, q, item.Seed, 0, seat, flags: 0);
+                        recorded += reservoir.Count;
+                    }
                 }
 
                 double score = !adapter.GameOver ? -1
@@ -145,6 +202,9 @@ namespace SoiSim
                                $"{wr:P1} [{lo:P1}–{hi:P1}] over {done} games");
             Console.WriteLine($"  wall: {sw.Elapsed.TotalSeconds:F1}s ({done / sw.Elapsed.TotalSeconds:F2} games/s on {threads} threads)");
             Console.WriteLine($"  A think time: {(aDecisions == 0 ? 0 : aDecisionMs / (double)aDecisions):F0} ms/decision ({aDecisions} decisions)");
+            recorder?.Dispose();
+            if (recordDir != null)
+                Console.WriteLine($"  recorded {recorded:N0} positions -> {recordDir}");
             return failures == 0 ? 0 : 1;
         }
     }
