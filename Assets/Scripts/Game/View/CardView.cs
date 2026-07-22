@@ -40,6 +40,7 @@ namespace Pascension.Game.View
         public TextMeshProUGUI DamageText;
         public GameObject ShieldGroup;
         public TextMeshProUGUI ShieldText;
+        public GameObject MercenaryMarker;
         public CanvasGroup Group;
 
         public int InstanceId { get; private set; } = -1;
@@ -75,6 +76,8 @@ namespace Pascension.Game.View
             /// <summary>Shield badge on the card face (count inside the shield icon).</summary>
             public bool ShowShield;
             public string ShieldValueText;
+            /// <summary>SoI mercenary: shows the red "M" triangle on the right edge.</summary>
+            public bool IsMercenary;
         }
 
         /// <summary>Set by non-Pascension tables (SoiGameScreen). Return null for unknown ids.</summary>
@@ -176,6 +179,7 @@ namespace Pascension.Game.View
                 CardDatabase.TryGet(defId, out def);
 
             CaptureRulesDefaults();
+            SetMercenaryMarker(false); // ApplyExternalFace re-enables it for SoI mercenaries
             if (def == null)
             {
                 // Not a Pascension card — another game's database may know this id.
@@ -258,6 +262,7 @@ namespace Pascension.Game.View
                 ShieldGroup.SetActive(face.ShowShield);
                 if (face.ShowShield && ShieldText != null) ShieldText.text = face.ShieldValueText;
             }
+            SetMercenaryMarker(face.IsMercenary);
 
             var sprite = Theme != null ? Theme.Art(face.ArtId ?? DefId) : null;
             Art.sprite = sprite;
@@ -303,6 +308,14 @@ namespace Pascension.Game.View
             if (HpText == null) return;
             HpText.text = text;
             HpText.color = color;
+        }
+
+        /// <summary>SoI mercenary flag — the red "M" triangle on the card's right edge.
+        /// Set intrinsically from the bound face (see ApplyExternalFace), so it follows a
+        /// mercenary into every zone (river, hand, piles, showcase, reveals).</summary>
+        public void SetMercenaryMarker(bool on)
+        {
+            if (MercenaryMarker != null) MercenaryMarker.SetActive(on);
         }
 
         public void SetGlow(bool on) => SetGlow(on, UiPalette.Gold);

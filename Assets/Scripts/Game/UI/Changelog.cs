@@ -26,6 +26,9 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Pascension = new[]
         {
+            new Entry("2026-07-22",
+                "· Frame rate is now capped — 60 FPS in focus, a trickle in the background — so the game no longer drives the GPU and fans at full power while idle or minimized.",
+                "· La fréquence d'images est désormais limitée — 60 FPS au premier plan, au ralenti en arrière-plan — le jeu ne pousse plus le GPU ni les ventilateurs à fond au repos ou minimisé."),
             new Entry("2026-07-21",
                 "· This changelog — one per game, from the main menu.\n" +
                 "· Leaving an online lobby no longer shows a scary \"Disconnected\" message.",
@@ -45,10 +48,16 @@ namespace Pascension.Game.UI
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
             new Entry("2026-07-22",
-                "· Three new bot ranks — PLATINUM, EMERALD, DIAMOND — the toughest opponents yet. PLATINUM plays GOLD's search with a smarter neural network (trained on over a million positions from its own games); EMERALD and DIAMOND are the same brain thinking progressively longer. Each is a clear step up. DIAMOND now runs its deepest search across all your CPU cores at once, answering in a blink instead of half a second — and it picks the exact same move on any machine, just faster on stronger hardware.\n" +
-                "· Search bots (SILVER and up) now answer near-instantly — they think a fixed number of moves ahead instead of pausing for a full second, and stop early once the best move is clear.",
-                "· Trois nouveaux rangs de bot — PLATINE, ÉMERAUDE, DIAMANT — les adversaires les plus coriaces à ce jour. PLATINE joue la recherche d'OR avec un réseau de neurones plus fin (entraîné sur plus d'un million de positions issues de ses propres parties) ; ÉMERAUDE et DIAMANT sont le même cerveau qui réfléchit de plus en plus longtemps. Chacun est un net cran au-dessus. DIAMANT lance désormais sa recherche la plus profonde sur tous les cœurs de votre processeur à la fois, répondant en un clin d'œil au lieu d'une demi-seconde — et il choisit exactement le même coup sur n'importe quelle machine, simplement plus vite sur un matériel plus puissant.\n" +
-                "· Les bots de recherche (ARGENT et plus) répondent désormais presque instantanément — ils anticipent un nombre fixe de coups au lieu de marquer une pause d'une seconde, et s'arrêtent dès que le meilleur coup est clair."),
+                "· Mercenaries are now flagged with a red triangle bearing a black \"M\" on the card's right edge, replacing the old red border.\n" +
+                "· Ingeminex now use two icons — crossed swords for their Attack, a treasure chest for the Reward, one line each — with the timing and defeat rules explained in the hover tooltips.\n" +
+                "· Card and destiny text no longer repeats what a keyword does (Warp, Inspire, Dominion, Echo) — hover the card to see each keyword explained.\n" +
+                "· Seven bot difficulties now available — IRON, BRONZE, SILVER, GOLD, PLATINUM, EMERALD and DIAMOND, each a clear step tougher than the last.\n" +
+                "· Frame rate is now capped — 60 FPS in focus, a trickle in the background — so the game no longer drives the GPU and fans at full power while idle or minimized.",
+                "· Les mercenaires sont désormais signalés par un triangle rouge marqué d'un « M » noir sur le bord droit de la carte, à la place de l'ancienne bordure rouge.\n" +
+                "· Les Ingeminex utilisent désormais deux icônes — des épées croisées pour leur Attaque, un coffre au trésor pour la Récompense, une ligne chacune — la synchro et les règles de défaite étant expliquées dans les infobulles au survol.\n" +
+                "· Le texte des cartes et destinées ne répète plus ce que fait un mot-clé (Distorsion, Inspiration, Domination, Écho) — survolez la carte pour voir chaque mot-clé expliqué.\n" +
+                "· Sept niveaux de bot désormais disponibles — FER, BRONZE, ARGENT, OR, PLATINE, ÉMERAUDE et DIAMANT, chacun nettement plus coriace que le précédent.\n" +
+                "· La fréquence d'images est désormais limitée — 60 FPS au premier plan, au ralenti en arrière-plan — le jeu ne pousse plus le GPU ni les ventilateurs à fond au repos ou minimisé."),
             new Entry("2026-07-21",
                 "· Ingeminex attack after you draw your new hand — their discards now hit the hand you keep.\n" +
                 "· Destiny picks happen on the board: the row glows, and your piles stay browsable while you decide.\n" +
@@ -58,9 +67,7 @@ namespace Pascension.Game.UI
                 "· Health, portraits and opponent stats now update live during animations.\n" +
                 "· Each hit floats a single damage number (the duplicate smaller one is gone).\n" +
                 "· Fixed a crash when Duplication Fabricator copied a revealed Duplication Fabricator (infinite copy loop).\n" +
-                "· Bots now climb a ranked ladder: IRON (the old bots), BRONZE (tuned instant AI) and SILVER (search AI that thinks ~1 second per move and plays without seeing your hand) — higher ranks unlock as the AI trains.\n" +
-                "· First unlock: GOLD — the search AI now imagines each future with a neural network trained on 60,000 of its own games, and beats SILVER about 4 games out of 5.\n" +
-                "· The status line shows when a search bot is thinking, and a bug that could freeze the game during a bot's turn was fixed.\n" +
+                "· Ranked bot opponents arrive, each playing without seeing your hand; the status line shows when one is thinking, and a bug that could freeze the game during a bot's turn was fixed.\n" +
                 "· Returning after a long alt-tab now fast-forwards the replay instead of animating every missed move.",
                 "· Les Ingeminex attaquent après la pioche de votre nouvelle main — leurs défausses touchent la main que vous gardez.\n" +
                 "· Les destinées se choisissent sur le plateau : la rangée s'illumine et vos piles restent consultables pendant la décision.\n" +
@@ -70,9 +77,7 @@ namespace Pascension.Game.UI
                 "· Santé, portraits et statistiques adverses se mettent à jour en direct pendant les animations.\n" +
                 "· Chaque coup n'affiche plus qu'un seul nombre de dégâts (le doublon plus petit a disparu).\n" +
                 "· Correction d'un plantage quand le Duplicateur copiait un Duplicateur révélé (boucle de copie infinie).\n" +
-                "· Les bots grimpent désormais un classement : FER (les anciens bots), BRONZE (IA optimisée instantanée) et ARGENT (IA à recherche qui réfléchit ~1 seconde par coup, sans voir votre main) — les rangs supérieurs se débloqueront au fil de l'entraînement.\n" +
-                "· Premier déblocage : OR — l'IA à recherche imagine désormais chaque futur avec un réseau de neurones entraîné sur 60 000 de ses propres parties, et bat ARGENT environ 4 parties sur 5.\n" +
-                "· La ligne d'état indique quand un bot réfléchit, et un bug pouvant geler la partie pendant le tour d'un bot a été corrigé.\n" +
+                "· Des bots classés font leur entrée, chacun jouant sans voir votre main ; la ligne d'état indique quand l'un d'eux réfléchit, et un bug pouvant geler la partie pendant le tour d'un bot a été corrigé.\n" +
                 "· Revenir après un long alt-tab avance rapidement le replay au lieu d'animer chaque coup manqué."),
             new Entry("2026-07-20",
                 "· RANDOM character option; no duplicate characters; random first player.",

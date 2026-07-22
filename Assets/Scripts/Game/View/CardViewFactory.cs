@@ -152,6 +152,29 @@ namespace Pascension.Game.View
             view.DamageGroup = dmgGroup.gameObject;
             view.DamageText = dmgText;
 
+            // Mercenary marker (Shards of Infinity): a red triangle stuck on the right
+            // edge, apex pointing toward the card center, vertically centered, with a
+            // black "M". Last child of the frame so it draws above the art. Off unless the
+            // bound face is a mercenary. Never blocks the card's click.
+            var mercMarker = UiFactory.CreateRect("Mercenary", frame.transform);
+            mercMarker.anchorMin = mercMarker.anchorMax = new Vector2(1f, 0.5f);
+            mercMarker.pivot = new Vector2(1f, 0.5f);
+            mercMarker.anchoredPosition = Vector2.zero;
+            mercMarker.sizeDelta = new Vector2(46f, 60f);
+            mercMarker.gameObject.AddComponent<CanvasRenderer>(); // Graphic needs one; RequireComponent auto-add is unreliable via runtime AddComponent
+            var mercTri = mercMarker.gameObject.AddComponent<TriangleGraphic>();
+            mercTri.color = UiPalette.Danger;
+            mercTri.raycastTarget = false;
+            var mercM = UiFactory.CreateText(theme, "M", mercMarker, "M", 26f,
+                Color.black, TextAlignmentOptions.Center, FontStyles.Bold);
+            // Sit the glyph over the triangle's mass (a third of the way in from the base).
+            mercM.rectTransform.anchorMin = mercM.rectTransform.anchorMax = new Vector2(1f, 0.5f);
+            mercM.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            mercM.rectTransform.anchoredPosition = new Vector2(-15f, 0f);
+            mercM.rectTransform.sizeDelta = new Vector2(30f, 40f);
+            mercMarker.gameObject.SetActive(false);
+            view.MercenaryMarker = mercMarker.gameObject;
+
             return view;
         }
     }

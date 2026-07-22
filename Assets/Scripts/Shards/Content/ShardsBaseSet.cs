@@ -77,7 +77,7 @@ namespace Shards.Content
             SoiCard.New("kiln_drone", "Kiln Drone").Faction(H)
                 .Type(ShardsCardType.Ally).Cost(1).Qty(3)
                 .Plays(E.Seq(E.Gems(2), If.Inspire(E.Gems(2))))
-                .Text("Gain 2 gems. Inspire: gain 4 instead if you control a champion.")
+                .Text("Gain 2 gems. Inspire: gain 4 instead.")
                 .Art("a small hovering forge drone pouring molten metal, orange sparks").Register();
 
             SoiCard.New("korvus_legionnaire", "Korvus Legionnaire").Faction(H)
@@ -119,7 +119,7 @@ namespace Shards.Content
             SoiCard.New("venator_of_the_wastes", "Venator of the Wastes").Faction(H)
                 .Type(ShardsCardType.Mercenary).Cost(4).Qty(1)
                 .Plays(E.Seq(E.Power(4), If.Inspire(new OpponentLosesMastery(2))))
-                .Text("Gain 4 power. Inspire: if you control a champion, an enemy player loses 2 mastery.")
+                .Text("Gain 4 power. Inspire: an enemy player loses 2 mastery.")
                 .Art("a lone bounty hunter in a dust storm, rifle slung, wasteland ruins").Register();
         }
 
@@ -167,7 +167,7 @@ namespace Shards.Content
                 .Type(ShardsCardType.Champion).Cost(2).Qty(1).Defense(4)
                 .Plays(E.Draw(1))
                 .Exhausts(new Dominion(E.Mastery(3)))
-                .Text("When played, draw a card. Exhaust (Dominion): gain 3 mastery if you played or reveal a Homodeus, Undergrowth AND Wraethe card this turn.")
+                .Text("When played, draw a card. Exhaust (Dominion): gain 3 mastery.")
                 .Art("a young prodigy levitating streams of source code, serene focus").Register();
 
             SoiCard.New("omnius", "Omnius, The All-Knowing").Faction(O)
@@ -323,7 +323,7 @@ namespace Shards.Content
                 .Type(ShardsCardType.Mercenary).Cost(5).Qty(2)
                 .Plays(E.Seq(E.Power(3),
                     new PerCount(ctx => CountDiscard(ctx, W), power: 2)))
-                .Text("Gain 3 power. Echo: gain 2 more for each Wraethe card in your discard pile.")
+                .Text("Gain 3 power. Echo: gain 2 more per Wraethe card.")
                 .Art("an heir of the void crowned with an inverted halo of darkness").Register();
 
             SoiCard.New("shadebound_sentry", "Shadebound Sentry").Faction(W)
@@ -348,7 +348,7 @@ namespace Shards.Content
             SoiCard.New("wraethe_skirmisher", "Wraethe Skirmisher").Faction(W)
                 .Type(ShardsCardType.Ally).Cost(1).Qty(3)
                 .Plays(E.Seq(E.Power(2), If.Echo(E.Power(4))))
-                .Text("Gain 2 power. Echo: gain 6 instead if a Wraethe card is in your discard pile.")
+                .Text("Gain 2 power. Echo: gain 6 instead.")
                 .Art("a darting shade fighter flickering between shadows").Register();
 
             SoiCard.New("zara_ra", "Zara Ra, Soulflayer").Faction(W)

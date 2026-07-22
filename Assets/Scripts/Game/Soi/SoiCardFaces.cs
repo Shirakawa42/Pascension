@@ -51,7 +51,8 @@ namespace Pascension.Game.Soi
                 ShowBadge = champion && def.Defense > 0,
                 BadgeText = def.Defense.ToString(),
                 ShowShield = def.Shield > 0 || def.DynamicShield != null,
-                ShieldValueText = def.DynamicShield != null ? "M" : def.Shield.ToString()
+                ShieldValueText = def.DynamicShield != null ? "M" : def.Shield.ToString(),
+                IsMercenary = def.Type == ShardsCardType.Mercenary
             };
         }
 
@@ -162,6 +163,12 @@ namespace Pascension.Game.Soi
             text = Regex.Replace(text, @"\bsanté\b", "<sprite name=\"soi_health\">");
             text = Regex.Replace(text, @"\bmaîtrise\b", "<sprite name=\"soi_mastery\">");
             text = Regex.Replace(text, @"\bPV\b", "<sprite name=\"soi_health\">");
+
+            // Ingeminex keyword labels at line starts become icons: crossed swords for
+            // Attack, a treasure chest for Reward (EN + FR). The hover tooltip explains
+            // the mechanic. Line-anchored so mid-sentence words are never caught.
+            text = Regex.Replace(text, @"(?m)^(Attack|Attaque)\s*:\s*", "<sprite name=\"soi_attack\"> ");
+            text = Regex.Replace(text, @"(?m)^(Reward|Récompense)\s*:\s*", "<sprite name=\"soi_reward\"> ");
             return text;
         }
 

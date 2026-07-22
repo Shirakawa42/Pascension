@@ -45,6 +45,13 @@ namespace Pascension.Game.Soi
             if (def.Type == ShardsCardType.Mercenary)
                 entries.Add(new Entry("Mercenary",
                     "Recruit it, or fast-play it for its cost: effect now, then under the center deck."));
+            if (def.Type == ShardsCardType.Monster) // Ingeminex
+            {
+                entries.Add(new Entry("Attack",
+                    "Strikes every player at the end of the turn it appeared, unless it is defeated first. These effects aren't damage — shields don't prevent them."));
+                entries.Add(new Entry("Reward",
+                    "Deal it 10 total power to defeat it; only the player who defeats it claims the reward."));
+            }
             if (Regex.IsMatch(text, @"\bexhaust", RegexOptions.IgnoreCase)) // "Exhaust:", "exhausts"
                 entries.Add(new Entry("Exhaust",
                     "Tap this ready card to use its ability. It readies at your end phase."));
@@ -62,7 +69,7 @@ namespace Pascension.Game.Soi
                     "Grows with each {0} card in your discard pile.", faction));
             if (Regex.IsMatch(text, @"\bWarp\b"))
                 entries.Add(new Entry("Warp",
-                    "Fast-play an ally from the row for free; it goes under the center deck at end of turn."));
+                    "Fast-play a row ally costing up to the shown number for free (no number: any ally). It goes under the center deck at end of turn."));
             if (Threshold.IsMatch(text))
                 entries.Add(new Entry("Mastery threshold",
                     "Needs that much Mastery when you play or exhaust this card."));

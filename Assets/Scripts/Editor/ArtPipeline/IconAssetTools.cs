@@ -22,7 +22,9 @@ namespace Pascension.Editor.ArtPipeline
         {
             "icon_dmg", "icon_ap", "icon_xp", "icon_step",
             // Shards of Infinity inline icons (glyph names keep the soi_ prefix).
-            "soi_health", "soi_mastery", "soi_gem", "soi_power", "soi_tap", "soi_shield"
+            "soi_health", "soi_mastery", "soi_gem", "soi_power", "soi_tap", "soi_shield",
+            // Ingeminex keyword icons (crossed swords / treasure chest).
+            "soi_attack", "soi_reward"
         };
         private const int Cell = 512;
 
@@ -51,7 +53,7 @@ namespace Pascension.Editor.ArtPipeline
             File.WriteAllBytes(AtlasPath, atlas.EncodeToPNG());
             Object.DestroyImmediate(atlas);
             AssetDatabase.ImportAsset(AtlasPath);
-            // 9 cells x 512 = 4608 px — the atlas MUST NOT be downscaled or every
+            // 12 cells x 512 = 6144 px — the atlas MUST NOT be downscaled or every
             // glyph rect points at the wrong texels (sprites render blank).
             ConfigureImporter(AtlasPath, readable: false, maxSize: 8192);
             AssetDatabase.Refresh();

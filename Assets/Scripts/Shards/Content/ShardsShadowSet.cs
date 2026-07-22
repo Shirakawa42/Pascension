@@ -33,7 +33,7 @@ namespace Shards.Content
             var breaker = SoiCard.New("breaker", "Breaker").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Ally).Cost(6).Qty(1).Shield(4)
                 .Plays(new WarpUpTo(-1))
-                .Text("Shield 4. When you recruit this, it goes to your hand instead of your discard pile. Warp: fast-play any ally from the row for free.")
+                .Text("Shield 4. When you recruit this, it goes to your hand instead of your discard pile. Warp.")
                 .Art("a heavyset dimension-breaker punching a rift open bare-handed");
             breaker.Def.RecruitsToHand = true;
             breaker.Register();
@@ -41,7 +41,7 @@ namespace Shards.Content
             SoiCard.New("brute", "Brute").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Ally).Cost(3).Qty(2).Shield(2)
                 .Plays(E.Seq(E.Power(4), new WarpUpTo(2)))
-                .Text("Shield 2. Gain 4 power. Warp 2: fast-play an ally costing 2 or less for free.")
+                .Text("Shield 2. Gain 4 power. Warp 2.")
                 .Art("a bruiser wreathed in unstable warp energy cracking knuckles").Register();
 
             SoiCard.New("dash", "Dash").InSet(SET).Faction(A)
@@ -53,7 +53,7 @@ namespace Shards.Content
             SoiCard.New("lucky", "Lucky").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Ally).Cost(4).Qty(2).Shield(2)
                 .Plays(E.Seq(E.Gems(2), new WarpUpTo(3)))
-                .Text("Shield 2. Gain 2 gems. Warp 3: fast-play an ally costing 3 or less for free.")
+                .Text("Shield 2. Gain 2 gems. Warp 3.")
                 .Art("a grinning gambler flipping a coin that lands on its edge").Register();
 
             // ---- Rez's relics (normal relic rules; need DLC1 to be recruitable) ----

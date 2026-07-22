@@ -30,7 +30,7 @@ namespace Shards.Content
             SoiCard.New("j_chord", "J-Chord").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Champion).Cost(3).Qty(1).Defense(3)
                 .Exhausts(new BestByMastery((0, new WarpUpTo(3)), (15, new WarpUpTo(5))))
-                .Text("Exhaust — Warp 3: fast-play an ally costing 3 or less for free. M15: Warp 5 instead.")
+                .Text("Exhaust — Warp 3. M15: Warp 5 instead.")
                 .Art("a sound-weaver strumming rifts open like guitar strings").Register();
 
             SoiCard.New("g_48", "G-48").InSet(SET).Faction(H)
@@ -293,35 +293,35 @@ namespace Shards.Content
                 .Faction(ShardsFaction.Monster).Type(ShardsCardType.Monster).Qty(1).Defense(10)
                 .MonsterAttack(new AllPlayersLoseHealth(5))
                 .Reward(E.Health(20))
-                .Text("Attack — at the end of the turn it appeared (cancelled if defeated first): every player loses 5 health (shields can't prevent it). Defeat (10 power): gain 20 health.")
+                .Text("Attack: every player loses 5 health.\nReward: gain 20 health.")
                 .Art("a mountainous horned brute cratering the ground with a fist").Register();
 
             SoiCard.New("ingeminex_corruption", "Ingeminex: Corruption").InSet(SET)
                 .Faction(ShardsFaction.Monster).Type(ShardsCardType.Monster).Qty(1).Defense(10)
                 .MonsterAttack(E.Seq(new AllPlayersLoseHealth(3), new AllPlayersLoseMastery(1)))
                 .Reward(new Custom(CorruptionReward))
-                .Text("Attack — at the end of the turn it appeared (cancelled if defeated first): every player loses 3 health and 1 mastery. Defeat (10 power): recruit an additional relic directly to your hand. (Removed when Relics of the Future is off.)")
+                .Text("Attack: every player loses 3 health and 1 mastery.\nReward: recruit an additional relic to your hand.")
                 .Art("a weeping mass of blackened crystal infecting the ground").Register();
 
             SoiCard.New("ingeminex_torment", "Ingeminex: Torment").InSet(SET)
                 .Faction(ShardsFaction.Monster).Type(ShardsCardType.Monster).Qty(1).Defense(10)
                 .MonsterAttack(new AllPlayersLoseMastery(2))
                 .Reward(E.Mastery(4))
-                .Text("Attack — at the end of the turn it appeared (cancelled if defeated first): every player loses 2 mastery. Defeat (10 power): gain 4 mastery.")
+                .Text("Attack: every player loses 2 mastery.\nReward: gain 4 mastery.")
                 .Art("a many-armed jailer dragging chains of frozen screams").Register();
 
             SoiCard.New("ingeminex_agony", "Ingeminex: Agony").InSet(SET)
                 .Faction(ShardsFaction.Monster).Type(ShardsCardType.Monster).Qty(1).Defense(10)
                 .MonsterAttack(new AllPlayersDiscard(2))
                 .Reward(E.Seq(E.Draw(2), new Custom(BonusDestiny)))
-                .Text("Attack — at the end of the turn it appeared (cancelled if defeated first): every player discards 2 cards. Defeat (10 power): draw 2 cards and take an additional destiny.")
+                .Text("Attack: every player discards 2 cards.\nReward: draw 2 cards and take an additional destiny.")
                 .Art("a flayed colossus whose cries bend the air into waves").Register();
 
             SoiCard.New("ingeminex_malice", "Ingeminex: Malice").InSet(SET)
                 .Faction(ShardsFaction.Monster).Type(ShardsCardType.Monster).Qty(1).Defense(10)
                 .MonsterAttack(new AllPlayersDestroyBiggestChampion())
                 .Reward(E.Seq(new ReturnFromDiscard(d => d.IsChampion, "champion", optional: true), new Custom(BonusDestiny)))
-                .Text("Attack — at the end of the turn it appeared (cancelled if defeated first): every player destroys their highest-cost champion. Defeat (10 power): return a champion from your discard pile to your hand and take an additional destiny.")
+                .Text("Attack: every player destroys their highest-cost champion.\nReward: return a champion from your discard pile to your hand and take an additional destiny.")
                 .Art("a grinning shadow puppeteer snipping marionette strings").Register();
         }
 

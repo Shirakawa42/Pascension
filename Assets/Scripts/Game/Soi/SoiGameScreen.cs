@@ -894,16 +894,16 @@ namespace Pascension.Game.Soi
         }
 
         /// <summary>Row slot adornments — two independent channels:
-        /// inner glow = the card's CONDITION is met right now (faction color; falls
-        /// back to the red mercenary marker), outer pulse = the viewer can afford it.</summary>
+        /// inner glow = the card's CONDITION is met right now (faction color), outer pulse
+        /// = the viewer can afford it. Mercenaries carry the red "M" triangle intrinsically
+        /// (CardView marker), so they need no glow of their own here.</summary>
         private void ApplyRowGlows(CardView slot, ShardsCardSnap card, int slotIndex)
         {
             ShardsCardDatabase.TryGet(card.DefId, out var def);
-            bool mercenary = def != null && def.Type == ShardsCardType.Mercenary;
             if (def != null && _conditionGlow.Contains(card.InstanceId))
                 slot.SetGlow(true, SoiCardFaces.FactionColor(def.Faction));
             else
-                slot.SetGlow(mercenary, UiPalette.Danger);
+                slot.SetGlow(false);
             slot.SetOuterGlow(_buyable.Contains(slotIndex));
         }
 

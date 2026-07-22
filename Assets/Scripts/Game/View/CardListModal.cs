@@ -8,9 +8,8 @@ namespace Pascension.Game.View
 {
     /// <summary>Scrollable card-grid modal used for browsing discard/exile/relics/etc.
     /// Supports flat lists and GROUPED lists (per-player banished cards…): each group
-    /// renders a separator + header line above its own card grid. SoI mercenaries get
-    /// the same red halo as in the center row (no-op for Pascension ids — the Shards
-    /// database lookup simply misses).</summary>
+    /// renders a separator + header line above its own card grid. SoI mercenaries show
+    /// their red "M" triangle here automatically — it is baked into the CardView.</summary>
     public sealed class CardListModal : MonoBehaviour
     {
         public UiTheme Theme;
@@ -134,22 +133,10 @@ namespace Pascension.Game.View
                     var card = CardViewFactory.Create(cell, Theme, 0.61f);
                     card.Bind(cards[i]);
                     card.SetRaycastable(false);
-                    MarkMercenary(card, cards[i]);
                 }
             }
 
             Container.gameObject.SetActive(true);
-        }
-
-        /// <summary>Same red halo mercenaries carry in the SoI center row, so they are
-        /// recognizable inside any pile. Pascension def ids miss the Shards database
-        /// and fall straight through.</summary>
-        private static void MarkMercenary(CardView card, CardSnap snap)
-        {
-            if (snap?.DefId != null &&
-                Shards.Engine.ShardsCardDatabase.TryGet(snap.DefId, out var def) &&
-                def.Type == Shards.Engine.ShardsCardType.Mercenary)
-                card.SetGlow(true, UiPalette.Danger);
         }
 
         public void Hide()

@@ -40,7 +40,7 @@ namespace Shards.Content
             SoiCard.New("limiter_drones", "Limiter Drones").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
                 .Plays(E.Seq(If.Inspire(new BanishUpTo(1)), E.Draw(1)))
-                .Text("Inspire: if you control a champion, you may banish a card from your hand or discard pile. Draw a card.")
+                .Text("Inspire: you may banish a card from your hand or discard pile. Draw a card.")
                 .Art("regulator drones clamping suppression rings onto a reactor").Register();
 
             var ferrata = SoiCard.New("ferrata_guard", "Ferrata Guard").InSet(SET).Faction(H)
@@ -97,7 +97,7 @@ namespace Shards.Content
             SoiCard.New("pall_shades", "Pall Shades").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
                 .Plays(E.Seq(If.Echo(E.Power(3)), E.Draw(1)))
-                .Text("Echo: if a Wraethe card is in your discard pile, gain 3 power. Draw a card.")
+                .Text("Echo: gain 3 power. Draw a card.")
                 .Art("funeral shrouds drifting upright through a darkened hall").Register();
 
             SoiCard.New("ru_bo_vai", "Ru Bo Vai, The Transcendant").InSet(SET).Faction(W)

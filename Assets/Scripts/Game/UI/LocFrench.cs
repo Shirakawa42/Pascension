@@ -120,6 +120,8 @@ namespace Pascension.Game.UI
             ["Shield"] = "Bouclier",
             ["Mercenary"] = "Mercenaire",
             ["Mastery threshold"] = "Seuil de maîtrise",
+            ["Attack"] = "Attaque",
+            ["Reward"] = "Récompense",
             // Faction names for the {0} slot in faction-scoped tooltips.
             ["Undergrowth"] = "Maquis",
             ["Wraethe"] = "Spectra",
@@ -138,10 +140,14 @@ namespace Pascension.Game.UI
                 "Actif tant que vous contrôlez un champion.",
             ["Grows with each {0} card in your discard pile."] =
                 "Augmente avec chaque carte {0} dans votre défausse.",
-            ["Fast-play an ally from the row for free; it goes under the center deck at end of turn."] =
-                "Enrôlez un allié de la rivière gratuitement ; il retourne sous la pioche commune en fin de tour.",
+            ["Fast-play a row ally costing up to the shown number for free (no number: any ally). It goes under the center deck at end of turn."] =
+                "Enrôlez gratuitement un allié de la rivière coûtant au plus le nombre indiqué (sans nombre : n'importe lequel). Il retourne sous la pioche commune en fin de tour.",
             ["Needs that much Mastery when you play or exhaust this card."] =
                 "Requiert autant de maîtrise au moment de jouer ou d'activer la carte.",
+            ["Strikes every player at the end of the turn it appeared, unless it is defeated first. These effects aren't damage — shields don't prevent them."] =
+                "Frappe tous les joueurs à la fin du tour où il apparaît, sauf s'il est vaincu avant. Ces effets ne sont pas des dégâts — les boucliers n'y font rien.",
+            ["Deal it 10 total power to defeat it; only the player who defeats it claims the reward."] =
+                "Infligez-lui 10 puissance au total pour le vaincre ; seul le joueur qui le vainc obtient la récompense.",
 
             // ---------------------------------------------------------- SoI table
             ["Pick a destiny from the glowing row."] = "Choisissez une destinée dans la rangée en surbrillance.",

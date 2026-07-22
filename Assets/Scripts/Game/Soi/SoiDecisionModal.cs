@@ -270,7 +270,7 @@ namespace Pascension.Game.Soi
         }
 
         /// <summary>Reveal mode ("soi.defiant"): the revealed card itself, big and
-        /// readable (red frame glow if it's a mercenary, like the center row), with one
+        /// readable (mercenaries carry their red "M" triangle intrinsically), with one
         /// large action button per option below it. The choice is mandatory and a click
         /// submits immediately — no confirm/skip row.</summary>
         private void BuildReveal(DecisionRequest request, Func<int, string> defIdResolver)
@@ -290,8 +290,6 @@ namespace Pascension.Game.Soi
                 card.Bind(new CardSnap { DefId = defId, InstanceId = 0, EffectiveCost = -1 });
                 card.SetRaycastable(false);
                 if (card.Group != null) card.Group.blocksRaycasts = false;
-                if (ShardsCardDatabase.TryGet(defId, out var def) && def.Type == ShardsCardType.Mercenary)
-                    card.SetGlow(true, UiPalette.Danger);
             }
 
             int count = request.Options.Count;
