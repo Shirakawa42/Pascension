@@ -32,20 +32,23 @@ namespace Pascension.Engine.Tests
             uint magic = reader.ReadUInt32();
             Assert.AreEqual(PositionWriter.Magic, magic, "fixture magic");
             reader.ReadUInt16(); // format version
+            // Schema-agnostic: the current net may deploy the frozen v1 pooled
+            // encoding (768) or the current encoder (v2, 1140). Take the width and
+            // record size from the fixture's OWN header — they were written to match
+            // the net these fixtures pin, and eval.Forward sizes its input to the net.
             ushort schema = reader.ReadUInt16();
-            Assert.AreEqual(ShardsStateEncoder.SchemaVersion, schema,
-                "fixture schema differs — regenerate fixtures + expectations");
-            uint featureCount = reader.ReadUInt32();
-            Assert.AreEqual(ShardsStateEncoder.FeatureCount, (int)featureCount);
-            reader.ReadUInt32(); // record size
+            int featureCount = (int)reader.ReadUInt32();
+            int recordSize = (int)reader.ReadUInt32();
+            Assert.IsTrue(schema == 1 || schema == ShardsStateEncoder.SchemaVersion,
+                $"fixture schema v{schema} is neither v1 nor the current encoder");
             reader.ReadBytes(16); // reserved
 
-            var features = new float[ShardsStateEncoder.FeatureCount];
+            var features = new float[featureCount];
             for (int record = 0; record < expected.Length; record++)
             {
-                for (int i = 0; i < features.Length; i++)
+                for (int i = 0; i < featureCount; i++)
                     features[i] = reader.ReadSingle();
-                reader.ReadBytes(PositionWriter.RecordSize - features.Length * 4); // labels/meta
+                reader.ReadBytes(recordSize - featureCount * 4); // labels/meta
                 double actual = eval.Forward(features);
                 Assert.AreEqual(expected[record], actual, 1e-4,
                     $"fixture {record}: C# forward diverged from PyTorch");

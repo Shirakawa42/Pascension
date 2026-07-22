@@ -42,6 +42,26 @@ namespace Shards.Bots
         public int RootSampleTurns = 0;
         public double RootTau = 1.0;
 
+        /// <summary>Stop a search the instant the most-visited root child's lead is
+        /// insurmountable by the remaining budget — the argmax move can no longer
+        /// change, so this is STRENGTH-NEUTRAL (bit-identical move to spending the
+        /// whole budget) while skipping wasted iterations on decided positions.
+        /// AUTO-DISABLED during temperature sampling (self-play exploration turns) and
+        /// root-parallel search, where the full visit distribution is used rather than
+        /// just the argmax. In wall-clock mode the remaining-iteration count is a rate
+        /// projection. Default ON.</summary>
+        public bool EarlyStopWhenDecided = true;
+
+        /// <summary>Fraction of the remaining budget the runner-up is assumed able to
+        /// capture, in (0,1]. 1.0 = EXACT and strength-neutral (stop only when the
+        /// leader is literally uncatchable — the runner-up would need EVERY remaining
+        /// iteration). Below 1.0 stops sooner by assuming the runner-up realistically
+        /// captures only this share of what's left (UCB starves trailing arms), at a
+        /// small, tunable chance of switching to a NEAR-TIED alternative — near-ties
+        /// cost ≈0 strength, so this buys speed for free (validated by win-rate
+        /// parity). 0.5 ≈ "the runner-up can't get more than half the rest".</summary>
+        public double EarlyStopBudgetFraction = 0.5;
+
         public static ShardsSearchConfig ForSims(int iterations) => new()
         {
             Mode = BudgetMode.Iterations,

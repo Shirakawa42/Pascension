@@ -185,15 +185,23 @@ namespace SoiSim
             string outPath = cli.GetStr("--out", Path.Combine(SimConfig.FindRepoRoot(),
                 "Tools", "ShardsData", "neural", "fixtures.soip"));
             int count = cli.GetInt("--count", 64);
+            // Match the schema of the net whose parity these fixtures pin. Pass
+            // --schema 1 when the CURRENT net deploys the frozen v1 pooled encoding.
+            int schema = cli.GetInt("--schema", ShardsStateEncoder.SchemaVersion);
+            if (schema != 1 && schema != ShardsStateEncoder.SchemaVersion)
+                throw new CliError($"--schema must be 1 or {ShardsStateEncoder.SchemaVersion}");
+            int featureCount = schema == 1
+                ? ShardsStateEncoder.V1FeatureCount
+                : ShardsStateEncoder.FeatureCount;
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
             var model = new ShardsValueModel();
-            var features = new float[ShardsStateEncoder.FeatureCount];
+            var features = new float[featureCount];
 
-            using var writer = new PositionWriter(outPath);
+            using var writer = new PositionWriter(outPath, schema, featureCount);
             ulong seed = 5000;
             while (writer.Written < count)
             {
@@ -223,7 +231,8 @@ namespace SoiSim
                 if (adapter.GameOver || adapter.PendingInput?.Kind != Pascension.Engine.Core.PendingInputKind.Priority)
                     continue;
                 int viewer = adapter.PendingInput.PlayerIndex;
-                ShardsStateEncoder.Encode(adapter.Inner.State, viewer, features);
+                if (schema == 1) ShardsStateEncoder.EncodeV1(adapter.Inner.State, viewer, features);
+                else ShardsStateEncoder.Encode(adapter.Inner.State, viewer, features);
                 writer.Write(features, z: 0, q: -1, seed, (ushort)guard, (byte)viewer, flags: 2);
             }
             Console.WriteLine($"netfixture: {count} encoded states -> {outPath}");

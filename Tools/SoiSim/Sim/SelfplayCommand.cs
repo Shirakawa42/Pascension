@@ -27,6 +27,14 @@ namespace SoiSim
             int truncate = cli.GetInt("--truncate", 2);
             int tempTurns = cli.GetInt("--temp-turns", 8);
             int netGen = cli.GetInt("--net", -1);
+            // Record schema: defaults to the current encoder; --schema 1 writes the
+            // frozen v1 pooled encoding — the deployed config for T=2 rollout ranks.
+            int schema = cli.GetInt("--schema", ShardsStateEncoder.SchemaVersion);
+            if (schema != 1 && schema != ShardsStateEncoder.SchemaVersion)
+                throw new CliError($"--schema must be 1 or {ShardsStateEncoder.SchemaVersion}");
+            int featureCount = schema == 1
+                ? ShardsStateEncoder.V1FeatureCount
+                : ShardsStateEncoder.FeatureCount;
             ulong seedBase = cli.GetULong("--seed-base", 1);
             int threads = cli.GetInt("--threads", Math.Max(1, Environment.ProcessorCount - 1));
             string outDir = cli.GetStr("--out",
@@ -60,9 +68,14 @@ namespace SoiSim
 
             Parallel.For(0, threads, worker =>
             {
-                using var writer = new PositionWriter(Path.Combine(outDir, $"positions-{worker:D2}.soip"));
+                using var writer = new PositionWriter(Path.Combine(outDir, $"positions-{worker:D2}.soip"),
+                    schema, featureCount);
                 var rng = new DeterministicRng(seedBase * 7919 + (ulong)worker, 271);
-                var features = new float[ShardsStateEncoder.FeatureCount];
+                void EncodeInto(Shards.Engine.ShardsState state, int viewer, float[] dst)
+                {
+                    if (schema == 1) ShardsStateEncoder.EncodeV1(state, viewer, dst);
+                    else ShardsStateEncoder.Encode(state, viewer, dst);
+                }
 
                 for (int g = worker; g < games; g += threads)
                 {
@@ -111,8 +124,8 @@ namespace SoiSim
                             priorityPoints++;
                             if (reservoir.Count < perGame)
                             {
-                                var x = new float[ShardsStateEncoder.FeatureCount];
-                                ShardsStateEncoder.Encode(adapter.Inner.State, pending.PlayerIndex, x);
+                                var x = new float[featureCount];
+                                EncodeInto(adapter.Inner.State, pending.PlayerIndex, x);
                                 reservoir.Add((x, (ushort)priorityPoints, (byte)pending.PlayerIndex, -1f));
                                 sampledSlot = reservoir.Count - 1;
                             }
@@ -121,8 +134,8 @@ namespace SoiSim
                                 int slot = rng.Next(priorityPoints);
                                 if (slot < perGame)
                                 {
-                                    var x = new float[ShardsStateEncoder.FeatureCount];
-                                    ShardsStateEncoder.Encode(adapter.Inner.State, pending.PlayerIndex, x);
+                                    var x = new float[featureCount];
+                                    EncodeInto(adapter.Inner.State, pending.PlayerIndex, x);
                                     reservoir[slot] = (x, (ushort)priorityPoints, (byte)pending.PlayerIndex, -1f);
                                     sampledSlot = slot;
                                 }
@@ -168,7 +181,7 @@ namespace SoiSim
 
             sw.Stop();
             Console.WriteLine($"selfplay: {done} games, {positions} positions in {sw.Elapsed.TotalSeconds:F1}s " +
-                              $"-> {outDir} (schema v{ShardsStateEncoder.SchemaVersion})");
+                              $"-> {outDir} (schema v{schema})");
             CampaignStatus.Complete("selfplay",
                 $"selfplay {Path.GetFileName(outDir)}: {done:N0} games → {positions:N0} positions " +
                 $"({(budget > 0 ? $"search {budget}it" : "greedy bootstrap")}, {sw.Elapsed.TotalMinutes:F0} min)");

@@ -328,6 +328,103 @@ namespace Pascension.Engine.Tests
             Assert.GreaterOrEqual(wins, 2, "the search bot must dominate a random bot");
         }
 
+        private static ShardsSearchConfig EarlyStopConfig(bool on, double fraction) => new()
+        {
+            Mode = ShardsSearchConfig.BudgetMode.Iterations,
+            Iterations = 120,
+            RolloutEndTurns = 0,
+            EarlyStopWhenDecided = on,
+            EarlyStopBudgetFraction = fraction
+        };
+
+        [Test]
+        public void EarlyStop_ExactMode_IsMoveIdenticalToFullBudget_AndCheaper()
+        {
+            // Fraction 1.0 is the strength-neutral guarantee: an early-stopped search
+            // picks the SAME root action as one that spends the whole budget (argmax
+            // over the same deterministic visit evolution, stopped only when the lead
+            // is literally uncatchable). And it must fire — fewer iterations on decided
+            // positions — or it buys nothing.
+            var model = new ShardsValueModel();
+            var eval = ShardsNetWeights.Available ? ShardsNeuralEval.LoadCurrent() : null;
+            int compared = 0, cheaper = 0;
+            for (ulong seed = 41; seed <= 46 && compared < 30; seed++)
+            {
+                var adapter = NewGame(seed);
+                var driver = new ShardsHeuristicBot(seed * 13, adapter.Inner);
+                int guard = 0;
+                while (!adapter.GameOver && guard++ < 400 && compared < 30)
+                {
+                    var pending = adapter.PendingInput;
+                    if (pending == null) break;
+                    if (pending.Kind == PendingInputKind.Priority)
+                    {
+                        var botFull = new ShardsSearchBot(777, adapter.Inner,
+                            EarlyStopConfig(on: false, 1.0), model, eval);
+                        var botEarly = new ShardsSearchBot(777, adapter.Inner,
+                            EarlyStopConfig(on: true, 1.0), model, eval);
+                        var aFull = botFull.Choose(pending, null);
+                        var aEarly = botEarly.Choose(pending, null);
+                        Assert.AreEqual(aFull.Describe(), aEarly.Describe(),
+                            $"seed {seed} point {compared}: exact early stop changed the chosen move");
+                        compared++;
+                        if (botEarly.LastIterations < botFull.LastIterations) cheaper++;
+                    }
+                    var action = driver.Choose(pending, null) ?? adapter.DefaultActionFor(pending);
+                    if (!adapter.Submit(action).Accepted)
+                        adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput));
+                }
+            }
+            Assert.Greater(compared, 0, "no priority points were searched");
+            Assert.Greater(cheaper, 0,
+                "exact early stop never reduced iterations — expected it to fire on decided positions");
+        }
+
+        [Test]
+        public void EarlyStop_ProbabilisticMode_RarelyChangesMove_AndBeatsExactOnSpeed()
+        {
+            // Fraction < 1.0 stops sooner still. It may occasionally swap to a NEAR-TIED
+            // alternative, but that must be RARE (near-ties cost ≈0 strength — the real
+            // guarantee is win-rate parity, checked by probe), and it must run STRICTLY
+            // fewer total iterations than exact mode or it earns nothing extra.
+            var model = new ShardsValueModel();
+            var eval = ShardsNetWeights.Available ? ShardsNeuralEval.LoadCurrent() : null;
+            int compared = 0, changed = 0;
+            long itersExact = 0, itersProb = 0;
+            for (ulong seed = 41; seed <= 48 && compared < 40; seed++)
+            {
+                var adapter = NewGame(seed);
+                var driver = new ShardsHeuristicBot(seed * 13, adapter.Inner);
+                int guard = 0;
+                while (!adapter.GameOver && guard++ < 400 && compared < 40)
+                {
+                    var pending = adapter.PendingInput;
+                    if (pending == null) break;
+                    if (pending.Kind == PendingInputKind.Priority)
+                    {
+                        var botExact = new ShardsSearchBot(777, adapter.Inner,
+                            EarlyStopConfig(on: true, 1.0), model, eval);
+                        var botProb = new ShardsSearchBot(777, adapter.Inner,
+                            EarlyStopConfig(on: true, 0.4), model, eval);
+                        var aExact = botExact.Choose(pending, null);
+                        var aProb = botProb.Choose(pending, null);
+                        if (aExact.Describe() != aProb.Describe()) changed++;
+                        itersExact += botExact.LastIterations;
+                        itersProb += botProb.LastIterations;
+                        compared++;
+                    }
+                    var action = driver.Choose(pending, null) ?? adapter.DefaultActionFor(pending);
+                    if (!adapter.Submit(action).Accepted)
+                        adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput));
+                }
+            }
+            Assert.Greater(compared, 0, "no priority points were searched");
+            Assert.Less(itersProb, itersExact,
+                "probabilistic mode must run fewer iterations than exact mode");
+            Assert.LessOrEqual(changed / (double)compared, 0.2,
+                $"probabilistic mode changed too many moves ({changed}/{compared}) — near-ties only");
+        }
+
         // ---------------------------------------------------------------- sentinels
 
         [Test]

@@ -27,6 +27,10 @@ namespace SoiSim
         /// Current — the promotion-duel knob (gen N vs gen N-1).</summary>
         public int NetGeneration { get; set; } = -1;
 
+        /// <summary>Early-stop budget fraction for "strong": -1 = config default,
+        /// 0 = OFF, &gt;0 = that fraction (1.0 exact/neutral, lower = more aggressive).</summary>
+        public double EarlyStopFraction { get; set; } = -1;
+
         /// <summary>Shared read-only model for greedy seats (built once, thread-safe).</summary>
         private static readonly System.Lazy<ShardsValueModel> GreedyModel =
             new(() => new ShardsValueModel());
@@ -66,6 +70,8 @@ namespace SoiSim
             if (TruncateEndTurns >= 0)
                 config.RolloutEndTurns = TruncateEndTurns;
             config.RootWorkers = RootWorkers;
+            if (EarlyStopFraction == 0) config.EarlyStopWhenDecided = false;
+            else if (EarlyStopFraction > 0) config.EarlyStopBudgetFraction = EarlyStopFraction;
             return config;
         }
 

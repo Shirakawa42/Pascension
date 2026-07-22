@@ -19,24 +19,32 @@ namespace SoiSim
         public static readonly int RecordSize = ShardsStateEncoder.FeatureCount * 4 + 4 + 4 + 8 + 2 + 1 + 1 + 4;
 
         private readonly BinaryWriter _writer;
+        private readonly int _featureCount;
         public int Written { get; private set; }
 
+        /// <summary>Writes the CURRENT encoder schema. The schema overload writes a
+        /// specific one — v1 records train nets for ranks that deploy the frozen
+        /// pooled encoding (the probed-and-adopted config).</summary>
         public PositionWriter(string path)
+            : this(path, ShardsStateEncoder.SchemaVersion, ShardsStateEncoder.FeatureCount) { }
+
+        public PositionWriter(string path, int schemaVersion, int featureCount)
         {
+            _featureCount = featureCount;
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             _writer = new BinaryWriter(new FileStream(path, FileMode.Create, FileAccess.Write));
             _writer.Write(Magic);
             _writer.Write(FormatVersion);
-            _writer.Write((ushort)ShardsStateEncoder.SchemaVersion);
-            _writer.Write((uint)ShardsStateEncoder.FeatureCount);
-            _writer.Write((uint)RecordSize);
+            _writer.Write((ushort)schemaVersion);
+            _writer.Write((uint)featureCount);
+            _writer.Write((uint)(featureCount * 4 + 4 + 4 + 8 + 2 + 1 + 1 + 4));
             _writer.Write(new byte[16]); // reserved → 32-byte header
         }
 
         public void Write(float[] features, float z, float q, ulong gameSeed,
             ushort moveIndex, byte viewerSeat, byte flags)
         {
-            for (int i = 0; i < ShardsStateEncoder.FeatureCount; i++)
+            for (int i = 0; i < _featureCount; i++)
                 _writer.Write(features[i]);
             _writer.Write(z);
             _writer.Write(q);

@@ -110,6 +110,13 @@ namespace Shards.Bots
             var sw = _config.Mode == ShardsSearchConfig.BudgetMode.WallClock ? Stopwatch.StartNew() : null;
             int players = _live.State.Players.Count;
 
+            // Early stop preserves the chosen move ONLY when the root is picked by
+            // argmax (temperature sampling reads the whole visit distribution) and
+            // this is a single tree (root-parallel merges per-worker visits, so a
+            // local stop could shift the merged pick).
+            bool argmax = !(_config.RootSampleTurns > 0 && _live.State.Round <= _config.RootSampleTurns);
+            bool earlyStop = _config.EarlyStopWhenDecided && argmax && _config.RootWorkers <= 1;
+
             IterationsRun = 0;
             for (int iter = 0; iter < _config.Iterations; iter++)
             {
@@ -117,8 +124,44 @@ namespace Shards.Bots
                     break;
                 RunIteration(root, players);
                 IterationsRun++;
+                if (earlyStop && (iter & 7) == 0 && RootDecided(root, sw, IterationsRun))
+                    break;
             }
             return root;
+        }
+
+        /// <summary>True once the leading root child's visit lead is safe against the
+        /// remaining budget scaled by EarlyStopBudgetFraction. At fraction 1.0 the
+        /// leader must be literally uncatchable (the runner-up would need EVERY
+        /// remaining iteration — an unvisited child, count 0, is bounded by the same);
+        /// below 1.0 we assume the runner-up can capture only that share of the rest,
+        /// stopping sooner at a small chance of a near-tie swap. Remaining iterations
+        /// are exact in Iterations mode and a rate projection in WallClock mode.</summary>
+        private bool RootDecided(Node root, Stopwatch sw, int itersDone)
+        {
+            int b1 = 0, b2 = 0;
+            foreach (var child in root.Children.Values)
+            {
+                int v = child.Visits;
+                if (v > b1) { b2 = b1; b1 = v; }
+                else if (v > b2) { b2 = v; }
+            }
+            if (b1 == 0) return false;
+
+            long remaining;
+            if (_config.Mode == ShardsSearchConfig.BudgetMode.Iterations)
+            {
+                remaining = _config.Iterations - itersDone;
+            }
+            else
+            {
+                double elapsed = sw.Elapsed.TotalSeconds;
+                if (elapsed <= 0) return false;
+                double left = _config.WallClockSeconds - elapsed;
+                if (left <= 0) return true;
+                remaining = (long)(itersDone / elapsed * left);
+            }
+            return b1 - b2 > _config.EarlyStopBudgetFraction * remaining;
         }
 
         // ------------------------------------------------------------ plan cursor
