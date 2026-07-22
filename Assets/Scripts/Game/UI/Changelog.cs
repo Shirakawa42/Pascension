@@ -26,6 +26,9 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Pascension = new[]
         {
+            new Entry("2026-07-23",
+                "· Player accounts: create a username + password account or play as a guest — accounts unlock online multiplayer, sign you in automatically at launch, and can be switched from the main menu.",
+                "· Comptes joueur : créez un compte nom d'utilisateur + mot de passe ou jouez en invité — le compte débloque le multijoueur en ligne, vous connecte automatiquement au lancement et se change depuis le menu principal."),
             new Entry("2026-07-22",
                 "· Frame rate is now capped — 60 FPS in focus, a trickle in the background — so the game no longer drives the GPU and fans at full power while idle or minimized.",
                 "· La fréquence d'images est désormais limitée — 60 FPS au premier plan, au ralenti en arrière-plan — le jeu ne pousse plus le GPU ni les ventilateurs à fond au repos ou minimisé."),
@@ -47,6 +50,13 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-07-23",
+                "· Player accounts: create a username + password account or play as a guest — accounts unlock online multiplayer, sign you in automatically at launch, and can be switched from the main menu.\n" +
+                "· Every finished game is now recorded to your match history — result, heroes, cards bought and played, per opponent — stored per account and synced to the cloud when signed in (guests keep a device-only history).\n" +
+                "· STATS button on the main menu: winrates, hero and card leaderboards with full card art, buy synergies, head-to-head records against any player or bot, and your complete match history — filter by mode or focus on a single opponent.",
+                "· Comptes joueur : créez un compte nom d'utilisateur + mot de passe ou jouez en invité — le compte débloque le multijoueur en ligne, vous connecte automatiquement au lancement et se change depuis le menu principal.\n" +
+                "· Chaque partie terminée est désormais enregistrée dans votre historique — résultat, héros, cartes achetées et jouées, par adversaire — conservé par compte et synchronisé dans le cloud une fois connecté (les invités gardent un historique local).\n" +
+                "· Bouton STATISTIQUES dans le menu principal : taux de victoire, classements des héros et des cartes avec leurs illustrations, synergies d'achats, face-à-face contre n'importe quel joueur ou bot, et l'historique complet de vos parties — filtrez par mode ou concentrez-vous sur un seul adversaire."),
             new Entry("2026-07-22",
                 "· Mercenaries are now flagged with a red triangle bearing a black \"M\" on the card's right edge, replacing the old red border.\n" +
                 "· Ingeminex now use two icons — crossed swords for their Attack, a treasure chest for the Reward, one line each — with the timing and defeat rules explained in the hover tooltips.\n" +

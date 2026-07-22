@@ -45,11 +45,15 @@ namespace Pascension.Game.Soi
 
             MatchSetup.EnsureDefaults();
 
+            // One rank for every bot seat (the SoI difficulty ladder) — resolved before
+            // the specs so BotKind reaches snapshots (the stats recorder reads it).
+            string botKind = string.IsNullOrEmpty(MatchSetup.SoiBotKind) ? "rank:bronze" : MatchSetup.SoiBotKind;
+
             var specs = new List<PlayerSpec>
             {
                 new PlayerSpec
                 {
-                    Name = MatchSetup.PlayerName,
+                    Name = AccountService.CurrentUsername ?? MatchSetup.PlayerName,
                     CharacterId = ValidCharacter(module, MatchSetup.PlayerHeroId, 0),
                     FullControl = false
                 }
@@ -61,7 +65,8 @@ namespace Pascension.Game.Soi
                 {
                     Name = module.CharacterDisplayName(character) + " (Bot)",
                     CharacterId = character,
-                    IsBot = true
+                    IsBot = true,
+                    BotKind = botKind
                 });
             }
 
@@ -81,8 +86,6 @@ namespace Pascension.Game.Soi
             Session = new LocalSession(Host, humanSeat);
             Host.AttachSeat(Session, isHuman: true);
 
-            // One rank for every bot seat (the SoI difficulty ladder).
-            string botKind = string.IsNullOrEmpty(MatchSetup.SoiBotKind) ? "rank:bronze" : MatchSetup.SoiBotKind;
             bool searchKind = Shards.Bots.ShardsBotRanks.IsSearchKind(botKind);
             for (int i = 0; i < seated.Count; i++)
             {

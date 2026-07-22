@@ -28,6 +28,10 @@ namespace Pascension.Game.UI
         private RectTransform _settingsPanel;
         private RectTransform _changelogPanel;
         private RectTransform _changelogContent;
+        private RectTransform _accountPanel;
+        private AccountPanel _accountPanelComponent;
+        private RectTransform _statsPanel;
+        private Soi.SoiStatsScreen _statsScreen;
 
         private IReadOnlyList<HeroDefinition> _heroes;
         private int _selectedHero;
@@ -67,7 +71,17 @@ namespace Pascension.Game.UI
             BuildSoloShards();
             BuildSettings();
             BuildChangelog();
-            ShowPanel(_homePanel);
+            _accountPanelComponent = AccountPanel.Create(Parent, Theme, () => ShowPanel(_homePanel));
+            _accountPanel = _accountPanelComponent.Root;
+
+            // SoI stats screen — only when this build ships SoI (Get falls back to
+            // Pascension for unknown ids, so compare the id, not null).
+            if (Pascension.Net.GameCatalog.Get("shards").GameId == "shards")
+            {
+                _statsScreen = Soi.SoiStatsScreen.Create(Parent, Theme,
+                    () => ShowPanel(_homePanel), () => OnGameChosen("shards"));
+                _statsPanel = _statsScreen.Root;
+            }
 
             // Language toggle — parented to the Root (not a panel) so ShowPanel never
             // hides it; visible on every menu screen.
@@ -83,6 +97,30 @@ namespace Pascension.Game.UI
             // Version label + self-update button — Root-parented corner widgets like
             // the language toggle, so ShowPanel never hides them.
             gameObject.AddComponent<Pascension.Game.Update.UpdateMenuControl>().Init(Theme, Parent);
+
+            // Account corner widget (top-right); its Init is the single boot trigger.
+            gameObject.AddComponent<AccountMenuControl>().Init(Theme, Parent, () => ShowPanel(_accountPanel));
+
+            // A session that expires while the player sits on the home screen bounces
+            // them to the account panel (SignedOut + a made choice == account mode).
+            Pascension.Net.AccountService.Changed += OnAccountChanged;
+
+            // Initial panel — AFTER every panel is built (ShowPanel touches them all).
+            // First run: the account-or-guest choice comes before anything else.
+            ShowPanel(Pascension.Net.AccountService.FirstRunChoicePending ? _accountPanel : _homePanel);
+        }
+
+        private void OnDestroy()
+        {
+            Pascension.Net.AccountService.Changed -= OnAccountChanged;
+        }
+
+        private void OnAccountChanged()
+        {
+            if (Pascension.Net.AccountService.State == Pascension.Net.AccountState.SignedOut &&
+                !Pascension.Net.AccountService.FirstRunChoicePending &&
+                _homePanel != null && _homePanel.gameObject.activeSelf)
+                ShowPanel(_accountPanel);
         }
 
         private Transform Parent => Root != null ? (Transform)Root : transform;
@@ -113,12 +151,27 @@ namespace Pascension.Game.UI
 
             // Straight to the lobby: the game is picked THERE (host game-cycle button,
             // replicated) — a pre-lobby choice was ignored and just confused people.
+            // Online play needs an account (guests pass in the editor dev fallback).
             var multi = MenuButton(_homePanel, "MULTIPLAYER", ref y);
             multi.onClick.AddListener(() =>
-                UnityEngine.SceneManagement.SceneManager.LoadScene(Pascension.Net.NetLauncher.LobbySceneName));
+            {
+                if (Pascension.Net.AccountService.CanPlayOnline)
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(Pascension.Net.NetLauncher.LobbySceneName);
+                else
+                {
+                    _accountPanelComponent.ShowOnlineNotice();
+                    ShowPanel(_accountPanel);
+                }
+            });
 
             var settings = MenuButton(_homePanel, "SETTINGS", ref y);
             settings.onClick.AddListener(() => ShowPanel(_settingsPanel));
+
+            if (Pascension.Net.GameCatalog.Get("shards").GameId == "shards")
+            {
+                var stats = MenuButton(_homePanel, "STATS", ref y);
+                stats.onClick.AddListener(() => { _statsScreen.Open(); ShowPanel(_statsPanel); });
+            }
 
             var changelog = MenuButton(_homePanel, "CHANGELOG", ref y);
             changelog.onClick.AddListener(() => ShowPanel(_changelogPanel));
@@ -352,7 +405,7 @@ namespace Pascension.Game.UI
             MatchSetup.GameId = "shards";
             MatchSetup.DlcFlags = _soiDlc;
             MatchSetup.PlayerHeroId = playerCharacter;
-            MatchSetup.PlayerName = "You";
+            MatchSetup.PlayerName = Pascension.Net.AccountService.CurrentUsername ?? "You";
             var ranks = Pascension.Net.ShardsModule.RankOptions;
             MatchSetup.SoiBotKind = ranks[Mathf.Clamp(_soiRankIndex, 0, ranks.Count - 1)].Kind;
             MatchSetup.Opponents = new List<OpponentSetup>();
@@ -643,7 +696,7 @@ namespace Pascension.Game.UI
             var resolved = CharacterPick.ResolveRandoms(picks, roster, MatchSetup.Seed);
 
             MatchSetup.PlayerHeroId = resolved[0];
-            MatchSetup.PlayerName = "You";
+            MatchSetup.PlayerName = Pascension.Net.AccountService.CurrentUsername ?? "You";
             MatchSetup.Opponents = new List<OpponentSetup>();
             for (int b = 0; b < _botCount; b++)
                 MatchSetup.Opponents.Add(new OpponentSetup(resolved[b + 1], _botKind[b]));
@@ -719,6 +772,8 @@ namespace Pascension.Game.UI
             _soiSoloPanel.gameObject.SetActive(panel == _soiSoloPanel);
             _settingsPanel.gameObject.SetActive(panel == _settingsPanel);
             _changelogPanel.gameObject.SetActive(panel == _changelogPanel);
+            _accountPanel.gameObject.SetActive(panel == _accountPanel);
+            if (_statsPanel != null) _statsPanel.gameObject.SetActive(panel == _statsPanel);
         }
 
         // ------------------------------------------------------------------ changelog

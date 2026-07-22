@@ -32,6 +32,7 @@ namespace Pascension.Game.Soi
         public RectTransform UiRootRect;
 
         private ISession _session;
+        private SoiMatchRecorderBridge _recorderBridge;
         private ShardsSnapshot _snap;
         private int _maxHealth = 50;
         private PendingSnap _pending;
@@ -119,6 +120,11 @@ namespace Pascension.Game.Soi
             session.InputRequested += OnInputRequested;
             session.ActionRejected += OnActionRejected;
 
+            // Match stats: rides the raw session stream with its own subscriptions
+            // (independent of the PresentationQueue), fail-soft by design.
+            _recorderBridge = new SoiMatchRecorderBridge(session,
+                () => AccountService.CurrentUsername?.ToLowerInvariant() ?? "guest");
+
             _queue.EventPlayer = PlayEvent;
             _queue.Drained += RefreshAll;
 
@@ -135,6 +141,7 @@ namespace Pascension.Game.Soi
 
         private void OnDestroy()
         {
+            _recorderBridge?.Dispose();
             GameNetBridge.CardHoverChanged -= OnRemoteHover;
             CardView.AnyHovered -= OnAnyCardHovered;
             NetEvents.LocalClientDisconnected -= OnLocalClientDisconnected;
