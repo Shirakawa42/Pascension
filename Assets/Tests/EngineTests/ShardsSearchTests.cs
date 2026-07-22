@@ -126,6 +126,35 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void Fork_WithArena_RecycledCloneMatchesFreshFork()
+        {
+            // The arena hands the SAME state object back on every Fork — after playing
+            // the previous clone forward (mutating every zone, counters, the card
+            // index), the next arena fork must be indistinguishable from a fresh fork.
+            var adapter = NewGame(31);
+            var driver = new ShardsHeuristicBot(3100, adapter.Inner);
+            for (int i = 0; i < 60 && !adapter.GameOver; i++)
+                Step(adapter, driver);
+            if (adapter.PendingInput?.Kind != PendingInputKind.Priority || adapter.GameOver)
+                Assert.Inconclusive("seed 31 did not stop on a live priority point");
+
+            var arena = new ShardsCloneArena();
+            for (int round = 0; round < 3; round++)
+            {
+                var fresh = adapter.Inner.Fork(rngReseed: 555, quiet: true);
+                var pooled = adapter.Inner.Fork(rngReseed: 555, quiet: true, arena: arena);
+                Assert.AreEqual(fresh.State.ComputeFullHash(), pooled.State.ComputeFullHash(),
+                    $"round {round}: recycled clone differs from a fresh fork");
+
+                // Dirty the pooled clone so the next round must fully reset it.
+                var bot = new ShardsHeuristicBot(999 + (ulong)round, pooled);
+                var pooledAdapter = new ForkAdapter(pooled);
+                for (int k = 0; k < 25 && !pooled.State.GameOver; k++)
+                    pooledAdapter.Step(bot);
+            }
+        }
+
+        [Test]
         public void Fork_IsQuiet_AndJournalRecordsAcceptedActions()
         {
             var adapter = NewGame(21);

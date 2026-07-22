@@ -32,3 +32,16 @@
 - **2026-07-22 01:49** — probe: ismcts-V4-200it vs ismcts-V4-200it → 50.8 % [42.0 %–59.6 %] over 120 games
 - **2026-07-22 01:53** — probe: ismcts-V4-200it vs ismcts-V4-200it → 55.8 % [46.9 %–64.4 %] over 120 games
 - **2026-07-22 01:55** — PLATINUM attempt 4 REJECTED: gen-4 (q-labels, 50/50 gen0-capped/gen4q mix, val 75.1% on blended targets) scored 50.8% [42.0–59.6] vs gen-0 (gate: ≥55% + Wilson LB >50%) and 55.8% [46.9–64.4] vs gen-3. Best attempt yet (48.3 → 34.2 → 49.2 → 50.8) and beats the best prior challenger, but still a statistical twin of gen-0. **Underfitting fingerprint present**: final train loss 0.4942 ≈ val loss 0.4946 — capacity/encoding, not data noise, is now the binding constraint → next escalation rungs per bot-ranks.md: more selfplay volume, then encoder enrichment / wider net (1024→512→256, where batched GPU inference becomes worthwhile). Selfplay throughput work queued first.
+- **2026-07-22 02:01** — selfplay proftest: 12 games → 240 positions (search 100it, 1 min)
+- **2026-07-22 02:40** — search throughput pass (dotnet-trace profiled): sparse-row forward pass (inputs 86% zero, hidden ~50% — was 72% of selfplay CPU), clone arena pooling (fork allocs were ~20%), Server GC. Selfplay 2.2 → **5.3 games/s** (2.4×); single search thread 1.77× (in-game ranks get ~2× simulations at the same budget). Rejected by measurement: flat-block transposed weights (2KB power-of-two stride = cache-set conflicts, jagged rows win), int-key determinizer sort. Output distribution verified unchanged (q/z/sparsity match gen4q); pinned by Fork_WithArena_RecycledCloneMatchesFreshFork + Q-invariance; suite 171 green.
+- **2026-07-22 02:02** — selfplay proftest2: 12 games → 240 positions (search 100it, 1 min)
+- **2026-07-22 02:06** — selfplay afteropt1: 12 games → 240 positions (search 100it, 0 min)
+- **2026-07-22 02:07** — selfplay afteropt15: 300 games → 6,000 positions (search 100it, 1 min)
+- **2026-07-22 02:08** — selfplay proftest3: 12 games → 240 positions (search 100it, 0 min)
+- **2026-07-22 02:10** — selfplay afteropt2: 12 games → 240 positions (search 100it, 0 min)
+- **2026-07-22 02:11** — selfplay proftest4: 12 games → 240 positions (search 100it, 0 min)
+- **2026-07-22 02:13** — selfplay afteropt3: 12 games → 240 positions (search 100it, 0 min)
+- **2026-07-22 02:14** — selfplay afteropt4: 12 games → 240 positions (search 100it, 0 min)
+- **2026-07-22 02:15** — selfplay afteropt5: 12 games → 240 positions (search 100it, 0 min)
+- **2026-07-22 02:20** — selfplay afteropt6: 12 games → 240 positions (search 100it, 0 min)
+- **2026-07-22 02:21** — selfplay afteropt16: 300 games → 6,000 positions (search 100it, 1 min)

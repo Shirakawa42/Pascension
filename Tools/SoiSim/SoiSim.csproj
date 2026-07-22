@@ -14,6 +14,10 @@
     <AssemblyName>SoiSim</AssemblyName>
     <RootNamespace>SoiSim</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- 15 selfplay/probe threads churn a fork per search iteration; workstation GC
+         measurably throttled parallel scaling (42% efficiency before the switch). -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

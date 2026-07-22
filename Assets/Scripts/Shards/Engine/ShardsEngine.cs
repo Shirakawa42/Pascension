@@ -62,7 +62,7 @@ namespace Shards.Engine
         /// copied (search bots reconstruct those via suffix replay instead). The fork is
         /// quiet by default (no event log). rngReseed replaces the RNG stream — pass a
         /// fresh seed when determinizing so the clone can't predict live shuffles.</summary>
-        public ShardsEngine Fork(ulong rngReseed = 0, bool quiet = true)
+        public ShardsEngine Fork(ulong rngReseed = 0, bool quiet = true, ShardsCloneArena arena = null)
         {
             if (PendingInput == null || PendingInput.Kind != PendingInputKind.Priority)
                 throw new System.InvalidOperationException("Fork is only valid at a priority point");
@@ -70,7 +70,7 @@ namespace Shards.Engine
                 _pendingDefenses != null || _splitTargets != null || _splitAmounts != null)
                 throw new System.InvalidOperationException("Fork: engine is not quiescent");
 
-            var state = State.DeepCopy();
+            var state = State.DeepCopy(arena);
             if (rngReseed != 0)
                 state.Rng = new DeterministicRng(rngReseed);
             return new ShardsEngine(state, quiet);

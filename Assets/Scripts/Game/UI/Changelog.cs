@@ -44,6 +44,9 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-07-22",
+                "· Search bots (SILVER and up) think about twice as fast — roughly double the simulations in the same thinking time, so every search rank plays a little stronger.",
+                "· Les bots de recherche (ARGENT et plus) réfléchissent environ deux fois plus vite — à peu près le double de simulations dans le même temps de réflexion, donc chaque rang de recherche joue un peu plus fort."),
             new Entry("2026-07-21",
                 "· Ingeminex attack after you draw your new hand — their discards now hit the hand you keep.\n" +
                 "· Destiny picks happen on the board: the row glows, and your piles stay browsable while you decide.\n" +

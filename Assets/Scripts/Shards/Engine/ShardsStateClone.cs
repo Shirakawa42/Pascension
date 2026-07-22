@@ -15,51 +15,89 @@ namespace Shards.Engine
         /// quiescence (no parked effect iterators) — enforced by ShardsEngine.Fork,
         /// which is the intended entry point. Rules and card defs stay shared;
         /// aliased cards (PlayedThisTurn ↔ zones) stay aliased in the copy.</summary>
-        public ShardsState DeepCopy()
+        public ShardsState DeepCopy() => DeepCopy(null);
+
+        /// <summary>With an arena: the SAME routine writing into the arena's recycled
+        /// state/cards/map instead of fresh allocations (search forks once per
+        /// iteration; the allocation churn was ~20% of self-play CPU). Every field is
+        /// overwritten and the lazy card index invalidated, so a recycled clone is
+        /// indistinguishable from a fresh one — pinned by Fork_WithArena tests.</summary>
+        public ShardsState DeepCopy(ShardsCloneArena arena)
         {
-            var map = new Dictionary<int, ShardsCard>(256);
+            // Identity map as a flat array — ids come from the NextInstanceId counter,
+            // so they are dense in [0, NextInstanceId). A Dictionary here was measurable
+            // hashing/allocation overhead at one fork per search iteration.
+            ShardsCard[] map;
+            ShardsState copy;
+            if (arena != null)
+            {
+                arena.BeginCopy(NextInstanceId);
+                map = arena.Map;
+                copy = arena.State ??= new ShardsState();
+                // The reused state's lazy index still points at the PREVIOUS
+                // iteration's card objects (and NextInstanceId alone won't flag it).
+                copy.InvalidateCardIndex();
+            }
+            else
+            {
+                map = new ShardsCard[NextInstanceId];
+                copy = new ShardsState();
+            }
+
             ShardsCard Copy(ShardsCard c)
             {
                 if (c == null) return null;
-                if (map.TryGetValue(c.InstanceId, out var dup)) return dup;
-                dup = new ShardsCard
-                {
-                    InstanceId = c.InstanceId,
-                    DefId = c.DefId,
-                    Owner = c.Owner,
-                    Zone = c.Zone,
-                    Exhausted = c.Exhausted,
-                    FastPlayed = c.FastPlayed,
-                    DamageThisTurn = c.DamageThisTurn
-                };
+                var dup = map[c.InstanceId];
+                if (dup != null) return dup;
+                dup = arena != null ? arena.Rent() : new ShardsCard();
+                dup.InstanceId = c.InstanceId;
+                dup.DefId = c.DefId;
+                dup.Owner = c.Owner;
+                dup.Zone = c.Zone;
+                dup.Exhausted = c.Exhausted;
+                dup.FastPlayed = c.FastPlayed;
+                dup.DamageThisTurn = c.DamageThisTurn;
                 map[c.InstanceId] = dup;
                 return dup;
             }
 
-            var copy = new ShardsState
+            void CopyList(List<ShardsCard> src, List<ShardsCard> dst)
             {
-                Rules = Rules, // constants after setup — shared by design
-                Dlc = Dlc,
-                TurnPlayerIndex = TurnPlayerIndex,
-                Round = Round,
-                ExtraTurnForPlayer = ExtraTurnForPlayer,
-                Rng = new DeterministicRng(1) { State = Rng.State, Inc = Rng.Inc },
-                GameOver = GameOver,
-                WinnerIndex = WinnerIndex,
-                NextInstanceId = NextInstanceId,
-                NextDecisionId = NextDecisionId,
-                CenterRow = new ShardsCard[CenterRow.Length]
-            };
+                dst.Clear();
+                if (dst.Capacity < src.Count) dst.Capacity = src.Count;
+                foreach (var c in src) dst.Add(Copy(c));
+            }
+
+            copy.Rules = Rules; // constants after setup — shared by design
+            copy.Dlc = Dlc;
+            copy.TurnPlayerIndex = TurnPlayerIndex;
+            copy.Round = Round;
+            copy.ExtraTurnForPlayer = ExtraTurnForPlayer;
+            if (copy.Rng == null) copy.Rng = new DeterministicRng(1);
+            copy.Rng.State = Rng.State;
+            copy.Rng.Inc = Rng.Inc;
+            copy.GameOver = GameOver;
+            copy.WinnerIndex = WinnerIndex;
+            copy.NextInstanceId = NextInstanceId;
+            copy.NextDecisionId = NextDecisionId;
+
+            if (copy.CenterRow == null || copy.CenterRow.Length != CenterRow.Length)
+                copy.CenterRow = new ShardsCard[CenterRow.Length];
             for (int s = 0; s < CenterRow.Length; s++)
                 copy.CenterRow[s] = Copy(CenterRow[s]);
-            foreach (var c in CenterDeck) copy.CenterDeck.Add(Copy(c));
-            foreach (var c in DestinyRow) copy.DestinyRow.Add(Copy(c));
-            foreach (var c in DestinyDeck) copy.DestinyDeck.Add(Copy(c));
-            foreach (var c in ActiveMonsters) copy.ActiveMonsters.Add(Copy(c));
-            foreach (var c in Banished) copy.Banished.Add(Copy(c));
+            CopyList(CenterDeck, copy.CenterDeck);
+            CopyList(DestinyRow, copy.DestinyRow);
+            CopyList(DestinyDeck, copy.DestinyDeck);
+            CopyList(ActiveMonsters, copy.ActiveMonsters);
+            CopyList(Banished, copy.Banished);
+            copy.PendingMonsterAttacks.Clear();
             copy.PendingMonsterAttacks.AddRange(PendingMonsterAttacks);
-            foreach (var p in Players)
-                copy.Players.Add(p.Clone(Copy));
+            while (copy.Players.Count > Players.Count)
+                copy.Players.RemoveAt(copy.Players.Count - 1);
+            while (copy.Players.Count < Players.Count)
+                copy.Players.Add(new ShardsPlayer());
+            for (int i = 0; i < Players.Count; i++)
+                Players[i].CloneInto(copy.Players[i], Copy);
             return copy;
         }
 
@@ -189,41 +227,56 @@ namespace Shards.Engine
         /// memoizes, so order only affects which call allocates.</summary>
         public ShardsPlayer Clone(Func<ShardsCard, ShardsCard> copy)
         {
-            var dup = new ShardsPlayer
-            {
-                Index = Index,
-                Name = Name,
-                CharacterId = CharacterId,
-                FullControl = FullControl,
-                Health = Health,
-                Mastery = Mastery,
-                Gems = Gems,
-                Power = Power,
-                CharacterExhausted = CharacterExhausted,
-                FocusedThisTurn = FocusedThisTurn,
-                RelicRecruited = RelicRecruited,
-                DestinyTaken = DestinyTaken,
-                ExtraTurnUsed = ExtraTurnUsed,
-                Eliminated = Eliminated,
-                IgnoreShieldsThisTurn = IgnoreShieldsThisTurn,
-                HealthToPowerThisTurn = HealthToPowerThisTurn,
-                NextRecruitsToHand = NextRecruitsToHand,
-                NextHomodeusChampionsIntoPlay = NextHomodeusChampionsIntoPlay,
-                CopyHomodeusAlliesThisTurn = CopyHomodeusAlliesThisTurn,
-                BonusDrawsOnBigHit = BonusDrawsOnBigHit,
-                MaxDamageDealtToOneOpponent = MaxDamageDealtToOneOpponent
-            };
-            foreach (var c in Deck) dup.Deck.Add(copy(c));
-            foreach (var c in Hand) dup.Hand.Add(copy(c));
-            foreach (var c in Discard) dup.Discard.Add(copy(c));
-            foreach (var c in PlayZone) dup.PlayZone.Add(copy(c));
-            foreach (var c in Champions) dup.Champions.Add(copy(c));
-            foreach (var c in SetAside) dup.SetAside.Add(copy(c));
-            foreach (var c in Destinies) dup.Destinies.Add(copy(c));
-            foreach (var c in PlayedThisTurn) dup.PlayedThisTurn.Add(copy(c));
-            foreach (var kv in _factionPlays) dup._factionPlays[kv.Key] = kv.Value;
-            foreach (var kv in _factionAllyPlays) dup._factionAllyPlays[kv.Key] = kv.Value;
+            var dup = new ShardsPlayer();
+            CloneInto(dup, copy);
             return dup;
+        }
+
+        /// <summary>The single copy routine — also used to overwrite a recycled arena
+        /// player, so it must SET every field (never assume defaults).</summary>
+        public void CloneInto(ShardsPlayer dup, Func<ShardsCard, ShardsCard> copy)
+        {
+            dup.Index = Index;
+            dup.Name = Name;
+            dup.CharacterId = CharacterId;
+            dup.FullControl = FullControl;
+            dup.Health = Health;
+            dup.Mastery = Mastery;
+            dup.Gems = Gems;
+            dup.Power = Power;
+            dup.CharacterExhausted = CharacterExhausted;
+            dup.FocusedThisTurn = FocusedThisTurn;
+            dup.RelicRecruited = RelicRecruited;
+            dup.DestinyTaken = DestinyTaken;
+            dup.ExtraTurnUsed = ExtraTurnUsed;
+            dup.Eliminated = Eliminated;
+            dup.IgnoreShieldsThisTurn = IgnoreShieldsThisTurn;
+            dup.HealthToPowerThisTurn = HealthToPowerThisTurn;
+            dup.NextRecruitsToHand = NextRecruitsToHand;
+            dup.NextHomodeusChampionsIntoPlay = NextHomodeusChampionsIntoPlay;
+            dup.CopyHomodeusAlliesThisTurn = CopyHomodeusAlliesThisTurn;
+            dup.BonusDrawsOnBigHit = BonusDrawsOnBigHit;
+            dup.MaxDamageDealtToOneOpponent = MaxDamageDealtToOneOpponent;
+
+            void CopyList(List<ShardsCard> src, List<ShardsCard> dst)
+            {
+                dst.Clear();
+                if (dst.Capacity < src.Count) dst.Capacity = src.Count;
+                foreach (var c in src) dst.Add(copy(c));
+            }
+
+            CopyList(Deck, dup.Deck);
+            CopyList(Hand, dup.Hand);
+            CopyList(Discard, dup.Discard);
+            CopyList(PlayZone, dup.PlayZone);
+            CopyList(Champions, dup.Champions);
+            CopyList(SetAside, dup.SetAside);
+            CopyList(Destinies, dup.Destinies);
+            CopyList(PlayedThisTurn, dup.PlayedThisTurn);
+            dup._factionPlays.Clear();
+            foreach (var kv in _factionPlays) dup._factionPlays[kv.Key] = kv.Value;
+            dup._factionAllyPlays.Clear();
+            foreach (var kv in _factionAllyPlays) dup._factionAllyPlays[kv.Key] = kv.Value;
         }
     }
 }

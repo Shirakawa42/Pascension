@@ -46,6 +46,9 @@ Tools/**/bin/
 
 # graphify knowledge graph (generated, machine-local — rebuild with /graphify Assets/Scripts)
 graphify-out/
+# The post-commit hook stub-rebuilds into Assets/Scripts/graphify-out (root-resolution
+# quirk); the dir matches the pattern above but Unity's .meta for it does not.
+Assets/Scripts/graphify-out.meta
 
 # SoiSim raw simulation output (reproducible from seeds; reports are committed instead)
 Tools/ShardsData/sim/

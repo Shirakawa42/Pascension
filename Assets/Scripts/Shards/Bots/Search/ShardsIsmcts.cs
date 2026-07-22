@@ -40,6 +40,10 @@ namespace Shards.Bots
         private readonly IShardsValueEvaluator _evaluator;
         private readonly DeterministicRng _rng;
         private readonly List<(Node Node, Child Child, int Actor)> _path = new();
+        // Iteration clones recycle their whole object graph through this arena — the
+        // tree never retains clone STATE (actions/answers carry instance ids only),
+        // so the previous iteration's clone is always dead by the next Fork.
+        private readonly ShardsCloneArena _arena = new();
 
         public int IterationsRun { get; private set; }
 
@@ -173,7 +177,7 @@ namespace Shards.Bots
         private void RunIteration(Node root, int players)
         {
             ulong iterSeed = ((ulong)_rng.NextUInt() << 32) | _rng.NextUInt();
-            var clone = _live.Fork(rngReseed: iterSeed | 1UL, quiet: true);
+            var clone = _live.Fork(rngReseed: iterSeed | 1UL, quiet: true, arena: _arena);
             ShardsDeterminizer.Sample(clone.State, _viewer, clone.State.Rng);
 
             _path.Clear();
