@@ -18,7 +18,124 @@ pump gotchas, glow hints): see the shards-engine skill.
 - **Definitions**: `Assets/Scripts/Shards/Content/` — one builder file per set:
   `ShardsBaseSet.cs` (10 starters + 88 center), `ShardsRelicsSet.cs` (24 center + 8 relics),
   `ShardsShadowSet.cs` (12 center + Rez's 2 relics), `ShardsHorizonSet.cs` (25 center +
-  5 Ingeminex + 30 destinies). `ShardsContentRegistry.EnsureRegistered()` registers all.
+  5 Ingeminex + 30 destinies), `ShardsDuelSet.cs` (**Duel of Doom** — 21 new defs + ~43
+  errata replacement defs). `ShardsContentRegistry.EnsureRegistered()` registers all.
+
+## Reveal rule (engine-wide, 2026-07-26)
+
+Any effect that REVEALS from a player's deck pulls through `ShardsEngine.PeekTopOfDeck`,
+which shuffles the discard back in when the deck runs dry mid-reveal; if both are empty it
+reveals what exists. Reveals are never optional ("you may reveal" is gone) and the pick
+window ALWAYS opens listing EVERY revealed card — the ones that don't qualify carry
+`DecisionOption.Disabled` (shown, greyed, and rejected by `ValidateAnswer`), so the player
+sees the whole reveal and passes deliberately. `ShardsHorizonSet.RevealTopForChampion` is
+the shared implementation (Legion Carrier 3 / errata 5).
+
+## Card-text house style (2026-07-25 sweep — EN defs AND SoiFrenchCards)
+
+1. **Zero parentheses** in rules text — asides become short sentences (`Once per game.`),
+   suffix clauses (`…, rounded up`), or em-dash clauses; mastery asides become their own
+   tier line (`M20: 6 instead.`).
+2. **One effect per line** (`\n`); mastery tiers and keyword clauses (`Unify:`, `Echo:`,
+   `Dominion:`, `Allegiance X 4:`) always start a line. `Iconize` auto-newlines `M##:`
+   tokens, so a literal `\n` before them is optional but the rest is explicit.
+2b. **Paragraph rhythm is a DISPLAY rule, not a def rule** (2026-07-26, `Iconize`): a
+   mastery tier renders TIGHT under the effect it modifies (any `\n` before it is
+   swallowed — the old double newline made "M10" look like its own effect), while every
+   other `\n` becomes a half-height gap. A line starting with an em-dash bullet ("Choose
+   one:" modes) is a sub-item and stays tight. Long texts auto-shrink rather than
+   overflow: `CardView` caps the rules box at `MaxRulesBoxTop` and turns on TMP
+   auto-sizing past it, so a card reads identically at every zoom.
+3. `Iconize` also renders inline `shield`/`bouclier` words as the shield icon and carries
+   a safety regex collapsing `(\s*\n` so a paren slip can never orphan again.
+4. **ORDER MATTERS in `Iconize`**: the LINE-ANCHORED `Attack:`/`Reward:` icon swaps must run
+   BEFORE the paragraph pass, which injects a `<size>` tag at the head of every following
+   line — markup between `^` and the keyword silently drops the icon. That is exactly how the
+   Reward chest went missing on every Ingeminex (2026-07-27).
+Every SoI card change keeps BOTH sides in this style (EN def + `SoiFrenchCards`).
+
+## Duel of Doom (`ShardsDlc.Duel = 8`, set id "duel") — FULLY SHIPPED 2026-07-24 (211 EngineVerify tests green, Unity clean)
+
+Requires all three other DLCs (`ShardsEngine.NormalizeDlc` forces them on). Errata swap:
+a def with `ShardsCardDef.ReplacesId` skips that base def when Duel is on (generalized
+`cloud_oracles_sos` pattern, `ShardsEngine.ReplacedIds`) — applies to the center deck AND
+the destiny deal AND relic set-aside.
+
+**New rules-side vocabulary** — `ShardsDuelEffects.cs`: `AllegianceEffect` (own ≥N of a
+faction — deck+hand+discard+play+champions, counts itself), `Scry`,
+`OpponentDrawsThenDiscards`, `ShardsDuel.DistinctFactionsPlayed`. Engine hooks on
+`ShardsCardDef`: `CountsAsEveryFaction` (Prism), `CannotBeRerolled` (Comet),
+`KeepFastPlaysAtMastery` (Swyft M10), `ImmuneToIngeminex` (Doom Gate),
+`DoublesExhaustsAtMastery` (Unknown God M20). Player flags: `HealingDoubledThisTurn`,
+`OverflowHealthToPowerThisTurn`, `ShieldsDoubledUntilNextTurn` (Praetorian-02, cleared in
+StartTurn), `HeroAbilityUsedThisTurn`, `FirstBuyUsedThisTurn`, `NextChampionsIntoPlay`.
+**Dominion reworked when Duel on** (3+ other cards of 3+ different factions; else base
+H/U/W) — flag-gated inside `Dominion`.
+
+**Row reroll** (repriced 2026-07-25): `ShardsRerollRowAction` — pay
+`ShardsEngine.RerollCost(player)` = **1 + RerollsThisTurn** (climbs per use, resets each
+turn; counter on `ShardsPlayer`, cloned/hashed/snapshotted) → `BottomRowCardAndRefill`
+(also used free by Order Initiate errata). **Hero abilities**: `ShardsHeroAbilityAction` +
+`HeroAbilityFor(characterId)` (Tetra/Volos/KoSynWu/Rez active; Decima = passive first-buy
+discount in `EffectiveCost`); separate from Focus, once/turn.
+**Hero draft**: `HeroDraftFlow` runs at Setup (Duel) — board built first, reverse seat
+order, no duplicates, `_draftDefaults` = lobby picks; players create with null CharacterId,
+`SetAsideRelicsFor` runs after each pick. UI: draft via the decision modal; in-game the
+ability is a REAL CARD beside the portrait (`soiability:<heroId>` face, taps when used,
+passive = permanent untapped; portrait click = Focus) + per-slot reroll buttons with the
+live climbing price. **Ability ART** (2026-07-25) is its own piece per hero —
+`Assets/Art/Shards/Cards/soiability_<hero>.png`, prompts in
+`Tools/ShardsData/art-prompts-extra.json` (the manual companion for non-def art, alongside
+`soichar_*`); adding one requires `Pascension/Rebuild Card Art Index` since these ids are
+not card defs and no test exports them. The card wears a pulsing gold outer halo exactly
+while the ability is usable.
+
+**New defs (21)**: relics praetorian_03/multitask_brain/unknown_god/star_seeker/doom_gate
+(one per hero); cards testudo_vanguard, century_forge, riposte_doctrine, index_of_futures,
+bulwark_chanter, aegis_archivist, thornshell_warden, nectar_alchemist, lifebloom_ritual,
+whisper_extractor, doomstalker, bleak_communion, grim_tutor, comet, prism, longshot.
+**whisper_extractor** (nerfed 2026-07-25 to the ORIGINAL session-JSON intent, which the
+first build dropped): `OpponentDrawsThenDiscards` — target opponent (auto at 1 opponent,
+else a `soi.target` pick) DRAWS 1, then the controller picks a card from their hand to
+discard. Card-neutral for the victim, so it steals the best card instead of stripping one.
+Hand options are sorted by DefId/InstanceId: `ShardsCardDrawnEvent` redacts the def for
+other viewers, so an unsorted list would reveal exactly which card was just drawn.
+**grim_tutor** (2026-07-25, Wraethe Mercenary, cost 3, qty 2): Custom flow — decision over
+the player's DECK sorted by DefId/InstanceId (never deck order — the World Piercer
+anti-leak rule), chosen card to hand, `Rng.Shuffle(deck)`, `LoseHealth(3)` (a loss, not
+damage; applies even with an empty deck). Context `"soi.tutor"`. **Errata (~43
+`<id>_duel` defs)**: 4 Allegiance conversions (ferrata/mainframe/hounds/the_lost) + ~16
+stat tweaks + 5 hook + 12 bespoke + 7 destiny — all in `RegisterErrata` sub-methods.
+
+**Testudo Vanguard rework (2026-07-25, user decision)**: while its owner defends,
+champion split options may be OVER-assigned (0..Power like faces) — deferred hits then
+subtract the shield prevention per champion, so overkill "pays through". Taunt (Zetta) ×
+Testudo: the taunt's deferred hit resolves FIRST; if it SURVIVES post-shields, the wall
+held — every other deferred champion hit AND the face damage resolve as ZERO
+(`ResolveDefenderDamage`). The UI (`SoiDecisionModal`) renders that defender's champions
+with the hero-style 0/−/+/MAX strip (detected via the `ShieldsProtectChampions` def flag —
+no wire change; `option.Amount` stays the live-HP display + taunt-unlock threshold).
+Pinned by `Duel_Testudo_*` tests (over-assign kill, exact-lethal saved, taunt-held zero).
+
+**Ingeminex rewards**: destroying one by CARD EFFECT is defeating it — `DestroyActiveMonster`
+takes the destroyer's seat index and queues `RewardEffect` just like the attack path does
+(Doom Gate paid nothing at all before 2026-07-27). Pass -1 only for a kill that belongs to
+nobody. Doom Gate floods **30** Ingeminex (was 20).
+
+**Testing**: `Duel_*` tests in `ShardsContentTests` (draft, errata swaps, reroll, hero
+ability, Decima discount, full-game random-bot termination). SoiSim gained a `--dlc duel`
+flag (`SimConfig.AllDlc` now settable); the value model gates green on the duel pool with
+existing weights + `ShardsCustomAnnotations` entries for every new Custom/Do — no retune
+needed.
+
+**Adversarial review pass (2026-07-24, 125-agent workflow, 37 confirmed findings — ALL fixed, 220 tests green):**
+- `CannotBeFastPlayed` def flag (Comet) enforced in WarpUpTo/WarpFromRow/FastPlayLoose/BuyCard — closes the free-instant-kill via unlimited Warp.
+- `DoomGateFloodUsed` per-player once-per-game guard; `CardsBanishedThisTurn` per-turn counter (Warpquartz pays on the TURN total); `ShardsCard.BanishAtCleanup` (Reactor Drone mode 2 banishes at END of turn, only when the source IS the drone — copies banish nothing). Sentinels: player 39, card 8.
+- **Duel Dominion**: 3+ OTHER cards AND 3+ distinct factions, with the hand-REVEAL decision (reveals never feed PlayedThisTurn); Prism = all factions but ONE card; CountsAs/Yggdrasil honored everywhere (`ShardsDuel.DistinctFactionsPlayed` + `PlayedFactionCards` gates on the 3-faction destinies).
+- **Testudo now IS "shields protect champions"**: champion hits deferred via `_pendingChampionHits` into the owner's defense step (ShieldFlow applies prevention per champion; transient engine field like _pendingDefenses). **Datic Robes M20 discard-shield implemented** (`DiscardPassiveShield` hook read in NextDefense's passive). Spore Cleric uses real `Unify` (no self-trigger); Riposte = played-or-REVEAL flow; Index of Futures = `ReorderCenterTop` (true any-order, first pick = top); Prism Qty 2; World Piercer options sorted (no deck-order leak).
+- `ValidateAnswer` rejects duplicate option ids (except soi.split, whose duplicates are the mechanism).
+- Bots: herodraft honors DefaultOptionIds (heuristic + value model); ScoreAction ranks hero ability just above / reroll just below END TURN; ShardsDecisionCandidates covers herodraft/mode/handpick/removeshop/defiant/scry; ISMCTS KeyOf distinguishes reroll slots + hero ability. SoiSim records DRAFTED characters, not scheduler defaults.
+- UI: draft/reroll/ability events narrated (history + toasts); opponent portraits guarded during the draft; errata ArtId inherits ReplacesId (art regression fix) + CardArtIndex rebuilt. (The former `SoiCardFaces.DuelEnabled` character-face ability block was replaced 2026-07-25 by the `soiability:` card face.)
 - **Full card table** (id / name / set / faction / type / cost / qty / def / shield / text):
   `Tools/ShardsData/cards-table.md` — REGENERATE, never hand-edit:
   `cd Tools/EngineVerify && dotnet test --filter ExportShardsCardTable`

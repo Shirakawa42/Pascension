@@ -78,3 +78,7 @@ Tools/ShardsData/benchmark/
 Tools/RunPod/__pycache__/
 Tools/RunPod/*.log
 Tools/RunPod/bench_spec.json
+
+# Unity crash-recovery scratch scenes — never project content.
+Assets/_Recovery/
+Assets/_Recovery.meta
