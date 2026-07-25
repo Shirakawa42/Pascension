@@ -108,6 +108,32 @@ namespace SoiSim.Tests
         }
 
         [Test]
+        public void NoMintedRankCheats()
+        {
+            // ShardsSearchConfig.PerfectInformation skips determinization, so the search
+            // plans against the opponent's real hand. It exists only to bound what hidden
+            // information costs. A rank shipping with it set would be undetectable in
+            // normal play and would silently break the fairness guarantee every rank
+            // advertises — so assert the default is off and that nothing turns it on.
+            Assert.IsFalse(new ShardsSearchConfig().PerfectInformation,
+                "PerfectInformation must default to OFF");
+            Assert.IsFalse(ShardsSearchConfig.ForSims(200).PerfectInformation);
+            Assert.IsFalse(ShardsSearchConfig.ForRealGames(1.0).PerfectInformation);
+
+            foreach (var rank in ShardsBotRanks.Minted)
+            {
+                var bot = ShardsBotRanks.Create(rank.KindString, 1, null);
+                Assert.IsNotNull(bot, rank.Id);
+                if (bot is not ShardsSearchBot search) continue;
+                var field = typeof(ShardsSearchBot).GetField("_config",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                Assert.IsNotNull(field, "ShardsSearchBot._config was renamed — update this guard");
+                var config = (ShardsSearchConfig)field.GetValue(search);
+                Assert.IsFalse(config.PerfectInformation, $"rank {rank.Id} CHEATS");
+            }
+        }
+
+        [Test]
         public void WeightLayout_DefaultsCoverEveryIndex()
         {
             // W.Defaults is indexed by weight id in two places (W.Pad and every model

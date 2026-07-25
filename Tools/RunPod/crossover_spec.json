@@ -1,0 +1,5 @@
+[
+  {"label": "rollout1200-vs-bronze",  "cmd": "probe --a strong --b greedy --budget-a 300 --workers-a 4 --threads 8", "games": 400, "pods": 2},
+  {"label": "rollout4800-vs-bronze",  "cmd": "probe --a strong --b greedy --budget-a 1200 --workers-a 4 --threads 8", "games": 400, "pods": 3},
+  {"label": "legacydiamond-vs-bronze","cmd": "probe --a legacy-diamond --b greedy --threads 8", "games": 400, "pods": 2}
+]

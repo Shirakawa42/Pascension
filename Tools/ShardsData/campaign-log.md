@@ -187,3 +187,102 @@ over the first 210). Stopped early — search-vs-search runs at 0.23 games/s, an
 minutes only tightens ±3.5pt to ±2.5pt on an already-decided question. The search ranks
 inherit the improvement through the prior and the rollout policy; their embedded NETS are
 still Duel-blind, which is the encoder-v3 work, not this.
+
+## 2026-07-25 — Phase 0 headroom: two numbers that redirect the campaign
+
+RunPod fan-out, 10 pods × 32 vCPU, ~21 min, ~$2.80 (incl. one aborted launch). Both arms
+are **self-referential** — an agent against a variant of itself — so neither depends on the
+retired DIAMOND as a yardstick. Cross-pod aggregation is now PAIRED (`--result` carries
+`paired_sum`/`paired_sumsq`; the orchestrator pools them exactly), so a fan-out reports the
+same tightened interval a single-box probe would.
+
+**1. Hidden information is nearly free: oracle 55.4% [53.2–57.6] over 1000 pairs.**
+A cheating agent that skips determinization entirely — it plans against the opponent's REAL
+hand and both REAL deck orders — beats an otherwise identical honest agent by only ~38 Elo.
+That is a hard ceiling on the whole belief axis: no encoder, no determinization scheme, no
+amount of hidden-state modelling can ever be worth more than total clairvoyance. The plan's
+kill criterion (<58%) is TRIGGERED. **Stop investing in richer hidden-state representation.**
+Note precisely what this does NOT bound: the oracle still evaluates with the same
+ShardsValueModel, so this says nothing about better VALUE estimation — only about knowing
+what is hidden.
+
+**2. Search scales far better than the campaign recorded: 4× budget = 79.3% [77.2–81.4]
+over 750 pairs (~+231 Elo, ~115 Elo/doubling).** The historical figure was 56.8% for the
+same 4× step (~22 Elo/doubling), and that number is the reason MASTER→CHALLENGER was
+abandoned and "more search" was written off as a rung.
+
+⚠ Caveat, and it matters: `--a strong` is ISMCTS with FULL ε-greedy rollouts to terminal and
+**no net** (`ForSims` leaves `RolloutEndTurns = -1`, so no evaluator is ever loaded). The
+shipped ranks are a different agent — truncate-2 with a frozen net. So this measures the
+rollout agent's slope, not the ladder's, and it is not directly comparable to the 56.8%.
+Follow-up running: the same 800-vs-200 step for the NET config, plus net-vs-rollout at equal
+budget — which also asks whether the Duel-blind net is still helping at all now that the
+weights and the rules it was fit to have both moved.
+
+**3. The frozen net is NEGATIVE value, and it is what flattened the search curve.**
+Same fan-out, net config = truncate-2 + gen-8 (the shipped GOLD→DIAMOND agent):
+- `net-vs-rollout-200it`: **40.6% [38.1–43.0] over 1000 pairs.** At equal budget the net
+  agent LOSES to plain full-rollout ISMCTS by ~66 Elo. The net is worse than no net.
+- `net-slope-800-vs-200`: **52.2% [49.6–54.9] over 734 pairs.** 4× search buys ~nothing
+  for the net agent — versus **79.3%** for the rollout agent on the identical step.
+
+So the campaign's "~22 Elo per doubling" — the number that killed MASTER→CHALLENGER and
+retired "more search" as a rung — was not a property of the game. It was the frozen net
+capping the search: a Duel-blind evaluator anchors every leaf, so extra iterations buy
+better play toward a worse target. Remove it and the same step is worth ~115 Elo/doubling.
+
+**Consequences, in priority order:**
+1. GOLD→DIAMOND are probably weaker than a plain rollout ISMCTS at the same budget. That
+   is a direct, sufficient explanation for the top rank being easy to beat.
+2. The cheapest large win available is to DROP the net from the minted ranks (full
+   rollouts, `RolloutEndTurns = -1`) and re-mint. It costs nothing and restores search
+   scaling — which then makes a big fixed iteration budget genuinely worth buying.
+3. Encoder-v3 / policy-value work is far less attractive than the plan assumed. The oracle
+   bounds the belief axis at ~+38 Elo, and any net must first beat a rollout — the current
+   one is 66 Elo BELOW it. A net is only worth building if it clears that bar.
+
+Spend: ~$9 of the $10 budget across three tournaments (one aborted on a capacity shortfall).
+
+**Two orchestrator bugs found and fixed while running this:**
+- `tournament` referenced `args.require_all`, a flag only declared on `run`/`runstats`, so
+  ANY tournament that lost a pod to a capacity shortfall crashed with AttributeError after
+  teardown instead of reporting.
+- Pods were only torn down in the `finally`, after EVERY matchup finished — so a fast
+  matchup's pods sat RUNNING and billing at $0.96/h for as long as the slowest one took
+  (measured: 4 idle pods × 25 min). Slices are now reaped the moment their `.done` lands.
+- Status reporting rewritten: every fan-out mode now reports games done/planned, percent,
+  aggregate games/s, ETA and the running win rate (`_progress_report`), with a last-known
+  cache so a transient S3 read cannot make progress jump backwards. `status --name X
+  [--watch]` polls any run live without owning its pods.
+
+## 2026-07-25 — re-mint on rollouts, and a result that reframes the whole ladder
+
+Removed the frozen nets from every minted rank (`Rollout()` in ShardsBotRanks): full
+ε-greedy rollouts to terminal, fixed iteration budgets, root workers for wall-clock only.
+The retired net configs survive as `legacy-gold/platinum/diamond` tooling kinds purely so
+the re-mint can be benchmarked against what actually shipped.
+
+**Then the first validation came back backwards: new SILVER (300 it, full rollouts) loses
+to BRONZE (instant V5 greedy) 21.2% [18.2-24.3] over 400 pairs.**
+
+That is not just a mis-set budget. Put it together with the other measurements:
+- V5 made BRONZE **+141 Elo** stronger than V4-greedy.
+- The net ranks did NOT move with it: their evaluator is frozen and Duel-blind, so V5 only
+  improved their prior and rollout policy, not what they are optimising toward.
+- The net agent already loses to a plain rollout agent at equal budget (40.6%).
+
+⇒ The strong hypothesis, now under test, is that **the entire pre-2026-07-25 net ladder
+(GOLD→DIAMOND) is weaker than BRONZE** — i.e. the "top" difficulty was beaten by the
+instant one rung above the bottom. That would explain the user's win rate completely, and
+it means the published Elo table is not merely stale, it is inverted at the top.
+
+It also says something structural about SoI: a tuned instant policy is a very high bar,
+and ISMCTS with ε-greedy rollouts needs a LOT of iterations before its noisy value
+estimates beat simply trusting that policy. The old code comment said ~600 it to pass
+V4-greedy; V5 raises that bar substantially. Search still scales steeply once past the
+crossover (79.3% for a 4× step), so the top rank wants a budget far above it — but the
+crossover has to be measured, not guessed, which is what `crossover_spec.json` does
+(rollout @1200 and @4800 vs BRONZE, plus legacy-DIAMOND vs BRONZE).
+
+**Do not set a rank budget from the scaling slope alone.** Above the crossover search is
+worth ~115 Elo/doubling; below it, more search is worth less than nothing.

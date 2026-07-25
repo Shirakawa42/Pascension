@@ -30,7 +30,7 @@ namespace Shards.Bots
 
         internal sealed class Node
         {
-            public readonly Dictionary<string, Child> Children = new();
+            public readonly Dictionary<long, Child> Children = new();
         }
 
         private readonly ShardsEngine _live;
@@ -44,6 +44,8 @@ namespace Shards.Bots
         // tree never retains clone STATE (actions/answers carry instance ids only),
         // so the previous iteration's clone is always dead by the next Fork.
         private readonly ShardsCloneArena _arena = new();
+        /// <summary>Reused by AnswerKey so sorting a decision answer allocates nothing.</summary>
+        private readonly List<int> _answerSort = new();
 
         public int IterationsRun { get; private set; }
 
@@ -224,7 +226,12 @@ namespace Shards.Bots
         {
             ulong iterSeed = ((ulong)_rng.NextUInt() << 32) | _rng.NextUInt();
             var clone = _live.Fork(rngReseed: iterSeed | 1UL, quiet: true, arena: _arena);
-            ShardsDeterminizer.Sample(clone.State, _viewer, clone.State.Rng);
+            // The ONE line that separates a fair agent from a cheating one. Skipping it
+            // leaves the clone holding the opponent's real hand and the real deck orders;
+            // see ShardsSearchConfig.PerfectInformation (research measurement only, never
+            // a shipped rank).
+            if (!_config.PerfectInformation)
+                ShardsDeterminizer.Sample(clone.State, _viewer, clone.State.Rng);
 
             _path.Clear();
             var node = root;
@@ -309,7 +316,7 @@ namespace Shards.Bots
                 foreach (var action in pending.LegalActions)
                 {
                     if (action is ConcedeAction) continue;
-                    string key = KeyOf(action);
+                    long key = KeyOf(action);
                     if (!node.Children.TryGetValue(key, out var child))
                     {
                         child = new Child
@@ -330,7 +337,7 @@ namespace Shards.Bots
             {
                 foreach (var ids in ShardsDecisionCandidates.Generate(clone, pending.Decision, _model))
                 {
-                    string key = AnswerKey(ids);
+                    long key = AnswerKey(ids);
                     if (!node.Children.TryGetValue(key, out var child))
                     {
                         child = new Child { AnswerIds = ids };
@@ -460,29 +467,69 @@ namespace Shards.Bots
             Decision = pending.Decision
         };
 
-        private static string KeyOf(PlayerAction action) => action switch
+        // ------------------------------------------------------------- tree keys
+        //
+        // Keys are PACKED LONGS: an 8-bit kind in the high byte plus a 32-bit payload
+        // (card instance id or row slot). They used to be strings, which allocated once
+        // per legal action per node visit — with ~20 legal actions and tens of thousands
+        // of iterations per decision that is millions of short-lived strings, and the
+        // resulting GC pressure showed up ahead of real search work in the profile.
+        // Same tree, same moves, no garbage.
+        private const int KindPlay = 1, KindBuy = 2, KindBuyFast = 3, KindFocus = 4,
+            KindExhaust = 5, KindMonster = 6, KindDestiny = 7, KindRelic = 8,
+            KindReroll = 9, KindHero = 10, KindEnd = 11, KindOther = 12, KindAnswer = 13;
+
+        private static long Key(int kind, int payload) =>
+            ((long)kind << 56) | (uint)payload;
+
+        private static long KeyOf(PlayerAction action) => action switch
         {
-            ShardsPlayCardAction a => "p" + a.CardInstanceId,
-            ShardsBuyCardAction a => "b" + a.SlotIndex + (a.FastPlay ? "f" : ""),
-            ShardsFocusAction => "focus",
-            ShardsExhaustAction a => "x" + a.CardInstanceId,
-            ShardsAttackMonsterAction a => "m" + a.CardInstanceId,
-            ShardsTakeDestinyAction a => "d" + a.CardInstanceId,
-            ShardsRecruitRelicAction a => "r" + a.CardInstanceId,
-            ShardsRerollRowAction a => "rr" + a.SlotIndex, // per-slot: WHICH card to cycle matters
-            ShardsHeroAbilityAction => "hero",
-            ShardsEndTurnAction => "end",
-            _ => action.GetType().Name
+            ShardsPlayCardAction a => Key(KindPlay, a.CardInstanceId),
+            ShardsBuyCardAction a => Key(a.FastPlay ? KindBuyFast : KindBuy, a.SlotIndex),
+            ShardsFocusAction => Key(KindFocus, 0),
+            ShardsExhaustAction a => Key(KindExhaust, a.CardInstanceId),
+            ShardsAttackMonsterAction a => Key(KindMonster, a.CardInstanceId),
+            ShardsTakeDestinyAction a => Key(KindDestiny, a.CardInstanceId),
+            ShardsRecruitRelicAction a => Key(KindRelic, a.CardInstanceId),
+            ShardsRerollRowAction a => Key(KindReroll, a.SlotIndex), // per-slot: WHICH card to cycle matters
+            ShardsHeroAbilityAction => Key(KindHero, 0),
+            ShardsEndTurnAction => Key(KindEnd, 0),
+            // NOT string.GetHashCode(): .NET randomizes it per process, which would make
+            // the tree — and therefore the chosen move — differ between runs on the same
+            // seed. Determinism is a shipped guarantee here.
+            _ => Key(KindOther, StableHash(action.GetType().Name))
         };
 
-        private static string AnswerKey(List<int> ids)
+        private static int StableHash(string s)
         {
-            var sorted = new List<int>(ids);
-            sorted.Sort();
-            var sb = new StringBuilder("a");
-            foreach (int id in sorted)
-                sb.Append(':').Append(id);
-            return sb.ToString();
+            unchecked
+            {
+                int h = (int)2166136261;
+                foreach (char c in s) h = (h ^ c) * 16777619;
+                return h;
+            }
+        }
+
+        /// <summary>Order-independent key for a decision answer (the chosen option
+        /// multiset). Sorts into a reusable buffer — one instance per search, and
+        /// root-parallel workers each own their own ShardsIsmcts, so no sharing.</summary>
+        private long AnswerKey(List<int> ids)
+        {
+            _answerSort.Clear();
+            _answerSort.AddRange(ids);
+            _answerSort.Sort();
+            unchecked
+            {
+                ulong h = 1469598103934665603UL;              // FNV-1a 64
+                foreach (int id in _answerSort)
+                {
+                    h ^= (uint)id;
+                    h *= 1099511628211UL;
+                }
+                // Keep answers in their own key space; a node is only ever one kind, but
+                // this makes a mixed-up node loud instead of silently colliding.
+                return ((long)KindAnswer << 56) | (long)(h & 0x00FF_FFFF_FFFF_FFFFUL);
+            }
         }
     }
 }

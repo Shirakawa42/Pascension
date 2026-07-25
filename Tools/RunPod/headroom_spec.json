@@ -1,0 +1,4 @@
+[
+  {"label": "net-slope-800-vs-200", "cmd": "probe --a strong --b strong --budget-a 800 --budget-b 200 --truncate-a 2 --truncate-b 2 --net-a 8 --net-b 8", "games": 1500, "pods": 6},
+  {"label": "net-vs-rollout-200it", "cmd": "probe --a strong --b strong --budget-a 200 --budget-b 200 --truncate-a 2 --net-a 8", "games": 2000, "pods": 4}
+]

@@ -1,0 +1,4 @@
+[
+  {"label": "newgold-vs-legacydiamond", "cmd": "probe --a rank:gold --b legacy-diamond --threads 8", "games": 800, "pods": 3},
+  {"label": "newsilver-vs-bronze", "cmd": "probe --a rank:silver --b rank:bronze --threads 16", "games": 800, "pods": 2}
+]

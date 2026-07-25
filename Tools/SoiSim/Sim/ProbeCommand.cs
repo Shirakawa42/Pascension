@@ -51,6 +51,11 @@ namespace SoiSim
             // promotion gate (Vn vs Vn-1) and the Duel-awareness ablation.
             string weightsA = cli.GetStr("--weights-a", null);
             string weightsB = cli.GetStr("--weights-b", null);
+            // RESEARCH: let a side CHEAT (skip determinization, plan against the real
+            // hidden state). Oracle-vs-honest bounds what hidden information costs, and
+            // therefore what any belief/encoder work could ever be worth.
+            bool oracleA = cli.Has("--oracle-a");
+            bool oracleB = cli.Has("--oracle-b");
             // Early-stop budget fraction applied to BOTH search seats: -1 default,
             // 0 off, >0 the fraction (1.0 exact, lower = more aggressive).
             double earlyStop = cli.Has("--earlystop") ? cli.GetDouble("--earlystop", -1) : -1;
@@ -75,9 +80,9 @@ namespace SoiSim
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
             var factoryA = new BotFactory(kindA, budgetA)
-                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclockA, RootWorkers = workersA, NetGeneration = netA, NetFilePath = netAFile, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsA) };
+                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclockA, RootWorkers = workersA, NetGeneration = netA, NetFilePath = netAFile, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsA), PerfectInformation = oracleA };
             var factoryB = new BotFactory(kindB, budgetB)
-                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclockB, RootWorkers = workersB, NetGeneration = netB, NetFilePath = netBFile, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsB) };
+                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclockB, RootWorkers = workersB, NetGeneration = netB, NetFilePath = netBFile, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsB), PerfectInformation = oracleB };
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
 
             // One work item = one mirrored PAIR (both seat orientations of one seed).
@@ -303,11 +308,18 @@ namespace SoiSim
                 var inv = System.Globalization.CultureInfo.InvariantCulture;
                 var full = Path.GetFullPath(resultPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(full));
+                // paired_sum / paired_sumsq let a fan-out aggregate the PAIRED estimate
+                // exactly across pods (mean and variance are both additive over pairs).
+                // Without them the orchestrator can only pool games unpaired, throwing
+                // away the whole reason for pairing.
+                double pairedSum = 0, pairedSumSq = 0;
+                foreach (double s in pairScores) { pairedSum += s; pairedSumSq += s * s; }
                 File.WriteAllText(full,
                     $"{{\"score\":{totalScore.ToString(inv)},\"decisive\":{decisive}," +
                     $"\"games\":{done},\"failures\":{failures},\"wr\":{rawWr.ToString(inv)}," +
                     $"\"pairs\":{pairScores.Count},\"paired_wr\":{paired.ToString(inv)}," +
-                    $"\"paired_lo\":{pLo.ToString(inv)},\"paired_hi\":{pHi.ToString(inv)}}}");
+                    $"\"paired_lo\":{pLo.ToString(inv)},\"paired_hi\":{pHi.ToString(inv)}," +
+                    $"\"paired_sum\":{pairedSum.ToString(inv)},\"paired_sumsq\":{pairedSumSq.ToString(inv)}}}");
             }
             return failures == 0 ? 0 : 1;
         }

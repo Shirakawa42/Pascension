@@ -62,6 +62,22 @@ namespace Shards.Bots
         /// parity). 0.5 ≈ "the runner-up can't get more than half the rest".</summary>
         public double EarlyStopBudgetFraction = 0.5;
 
+        /// <summary>RESEARCH ONLY — cheats. Skips <see cref="ShardsDeterminizer"/>, so the
+        /// search plans against the opponent's real hand and the real deck orders instead
+        /// of resampling them from the information set.
+        ///
+        /// This exists to measure ONE number: what hidden information actually costs in
+        /// this game. An oracle against an otherwise identical honest agent is an upper
+        /// bound on everything belief-side work (richer encoders, better determinization,
+        /// more samples) could ever buy. If that bound is small, the encoder is not where
+        /// the strength is and the campaign should spend elsewhere.
+        ///
+        /// MUST stay false in every minted rank — pinned by
+        /// `Search_NoMintedRankCheats`, and by the hidden-information invariance test
+        /// which this flag deliberately breaks. Never expose it through a bot kind or a
+        /// difficulty setting.</summary>
+        public bool PerfectInformation;
+
         public static ShardsSearchConfig ForSims(int iterations) => new()
         {
             Mode = BudgetMode.Iterations,

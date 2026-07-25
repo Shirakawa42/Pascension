@@ -30,6 +30,11 @@ namespace SoiSim
         /// Current — the promotion-duel knob (gen N vs gen N-1).</summary>
         public int NetGeneration { get; set; } = -1;
 
+        /// <summary>RESEARCH ONLY — makes "strong" cheat by skipping determinization, so
+        /// it plans against the real hidden state. Used to bound what hidden information
+        /// costs. Never reachable from a minted rank.</summary>
+        public bool PerfectInformation { get; set; }
+
         /// <summary>Early-stop budget fraction for "strong": -1 = config default,
         /// 0 = OFF, &gt;0 = that fraction (1.0 exact/neutral, lower = more aggressive).</summary>
         public double EarlyStopFraction { get; set; } = -1;
@@ -111,7 +116,8 @@ namespace SoiSim
             "random" => "random-v1",
             "heuristic" => "heuristic-v1",
             "greedy" => "greedy-" + WeightsName(),
-            "strong" => $"ismcts-{WeightsName()}-{(Budget > 0 ? Budget : 200)}it",
+            "strong" => $"ismcts-{WeightsName()}-{(Budget > 0 ? Budget : 200)}it" +
+                        (PerfectInformation ? "-ORACLE" : ""),
             _ => Kind
         };
 
@@ -154,6 +160,7 @@ namespace SoiSim
             if (TruncateEndTurns >= 0)
                 config.RolloutEndTurns = TruncateEndTurns;
             config.RootWorkers = RootWorkers;
+            config.PerfectInformation = PerfectInformation;
             if (EarlyStopFraction == 0) config.EarlyStopWhenDecided = false;
             else if (EarlyStopFraction > 0) config.EarlyStopBudgetFraction = EarlyStopFraction;
             return config;

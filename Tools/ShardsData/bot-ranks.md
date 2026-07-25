@@ -19,18 +19,41 @@ count (deterministic, ~50-80 ms/decision, ~15× faster than the old 1.0-1.25 s).
 and larger budgets are held back for the top ranks, adopted only once "better net at equal
 iterations" stops producing gate-clearing generations.
 
-| Rank | Status | Engine | Net | Budget |
-|---|---|---|---|---|
-| IRON | ✅ shipped | hand-written heuristic | — | instant |
-| BRONZE | ✅ shipped (default) | tuned value model, greedy | — | instant |
-| SILVER | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 0 (frozen) | 100 it |
-| GOLD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 0 (frozen, narrow, bootstrap) | 200 it |
-| PLATINUM | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen, narrow, full data) | 200 it |
-| EMERALD | ✅ minted | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 800 it (4×) |
-| DIAMOND | ✅ minted (top rank) | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 3200 it (4×), run as **K=8 × 400 root-parallel** |
-| MASTER → CHALLENGER | ❌ not pursued | — | — | net plateaued (gen-9 sweep); ladder is final at DIAMOND |
+## Current ladder — RE-MINTED 2026-07-25 (no nets, full rollouts, fixed iterations)
 
-> ### ⚠ 2026-07-25 — every strength number above predates Duel of Doom
+| Rank | Engine | Budget (total it) | Root workers | ~Wall clock |
+|---|---|---|---|---|
+| IRON | hand-written heuristic (now uses hero ability + reroll) | — | — | instant |
+| BRONZE | tuned value model V5, greedy argmax | — | — | instant |
+| SILVER | ISMCTS, **full rollouts to terminal, no net** | 2 400 | 8 | ~110 ms |
+| GOLD | same | 6 000 | 8 | ~275 ms |
+| PLATINUM | same | 12 000 | 8 | ~550 ms |
+| EMERALD | same | 24 000 | 16 | ~550 ms |
+| DIAMOND | same | 48 000 | 16 | ~1.1 s |
+
+Every rank is a FIXED iteration count — never wall-clock — so the move is identical on any
+machine; a slower CPU just takes longer. Root workers cut wall-clock only (seeded,
+CPU-independent merge).
+
+### ⚠ The crossover: ~1200 iterations. Below it, search is WORSE than no search.
+Measured vs BRONZE (instant V5 greedy), paired: **300 it → 21.2%**, **1200 it → 51.4%**,
+**4800 it → ~70%**. ε-greedy rollouts give value estimates noisier than simply trusting the
+tuned policy, so a small budget talks the bot out of good greedy moves. Above the crossover
+search compounds fast (~115 Elo/doubling; a 4× step is worth 79.3%). **Never set a rank
+budget from the scaling slope alone.**
+
+### ⚠ The old net ladder was INVERTED — legacy DIAMOND scored 8.5% vs BRONZE
+`legacy-diamond` (gen-8 net, 3200 it, exactly what shipped) vs BRONZE, all DLC incl. Duel:
+**8.5% [5.6–11.4] over 200 pairs** — about −410 Elo. The top difficulty was far weaker than
+the instant one two rungs below it. Causes, all measured: the net is Duel-blind (no Duel
+bit, no hero identity, none of the 9 Duel flags), it loses to a plain rollout agent at equal
+budget (40.6%), and it flattens search scaling to nothing (52.2% for a 4× step vs 79.3%
+without it). The published Elo table below is not merely stale — it is wrong at the top.
+
+A net returns to the ladder only when one beats the rollout agent head-to-head at equal
+wall-clock. That is the bar; gen-8 is 66 Elo below it.
+
+> ### ⚠ 2026-07-25 — every strength number below predates Duel of Doom
 > The ladder was minted with `SimConfig.AllDlc` **excluding** `ShardsDlc.Duel`, so all of
 > it — the Elo table, the per-rank win rates, both embedded nets — describes a game
 > without hero drafts, hero abilities or row rerolls. Mirror matches hid this completely:

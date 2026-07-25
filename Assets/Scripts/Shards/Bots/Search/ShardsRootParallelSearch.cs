@@ -31,7 +31,7 @@ namespace Shards.Bots
 
             // Merge: summed visits per action key; the winning key's plan cursor comes
             // from the worker holding the most visits on that child.
-            var merged = new Dictionary<string, (int Visits, double Reward, ShardsIsmcts.Child Best)>();
+            var merged = new Dictionary<long, (int Visits, double Reward, ShardsIsmcts.Child Best)>();
             foreach (var root in roots)
                 foreach (var kv in root.Children)
                 {
@@ -44,17 +44,22 @@ namespace Shards.Bots
                         merged[kv.Key] = (kv.Value.Visits, reward, kv.Value);
                 }
 
-            string bestKey = null;
+            // Tie-break on the numeric key (was ordinal string compare). Still a total
+            // order over a deterministic key set, so the merge stays CPU-independent:
+            // the K seeded trees pick the same move on any machine.
+            long bestKey = 0;
+            bool haveBest = false;
             int bestVisits = -1;
             foreach (var kv in merged)
                 if (kv.Value.Visits > bestVisits ||
-                    (kv.Value.Visits == bestVisits && string.CompareOrdinal(kv.Key, bestKey) < 0))
+                    (kv.Value.Visits == bestVisits && (!haveBest || kv.Key < bestKey)))
                 {
                     bestVisits = kv.Value.Visits;
                     bestKey = kv.Key;
+                    haveBest = true;
                 }
 
-            if (bestKey == null)
+            if (!haveBest)
             {
                 plan = null;
                 rootQ = -1;

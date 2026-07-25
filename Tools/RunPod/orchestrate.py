@@ -197,7 +197,9 @@ def _write_status(name, phase, lines):
 
 
 def _parse_progress(md):
-    # pull "X / Y games" out of a worker's campaign-status.md
+    """Pull (done, total, games_per_sec, win_rate_pct, pairs) out of a worker's
+    campaign-status.md. Only done/total are required; the rest are None when the worker
+    has not published them yet. Tuple stays index-compatible with the older 2-tuple."""
     if not md:
         return None
     import re
@@ -206,7 +208,88 @@ def _parse_progress(md):
         return None
     done = int(m.group(1).replace(",", ""))
     tot = int(m.group(2).replace(",", ""))
-    return done, tot
+    gs = re.search(r"([\d.]+)\s*games/s", md)
+    # SoiSim formats percentages per current culture, so the space is optional.
+    wr = re.search(r"win rate\*\*:\s*([\d.]+)\s*%", md)
+    pr = re.search(r"over\s+(\d[\d,]*)\s+pairs", md)
+    return (done, tot,
+            float(gs.group(1)) if gs else None,
+            float(wr.group(1)) if wr else None,
+            int(pr.group(1).replace(",", "")) if pr else None)
+
+
+def _fmt_eta(remaining, rate):
+    if not rate or rate <= 0:
+        return "ETA n/a"  # ASCII: this string is print()ed to a cp1252 console too
+    mins = remaining / rate / 60
+    return f"ETA {mins:.0f} min" if mins < 90 else f"ETA {mins / 60:.1f} h"
+
+
+_LAST_PROGRESS = {}  # worker -> last successfully parsed tuple
+
+
+def _progress_report(name, slices, vcpu, kill_min, elapsed_min, done_markers):
+    """Shared live-progress renderer for EVERY fan-out mode.
+
+    `slices` is a list of (label, worker, planned_games). Groups by label and reads each
+    unfinished worker's campaign-status.md off the volume, so the status file carries what
+    you actually need while a job runs: games done vs planned, percent, aggregate games/s,
+    ETA, and the running win rate. Pods-done alone is useless — a matchup can sit at
+    "0/6 pods done" for half an hour and be 68% of the way through.
+
+    Returns (lines_for_the_status_file, one_line_for_the_console).
+    """
+    by_label = {}
+    order = []
+    for label, w, planned in slices:
+        if label not in by_label:
+            by_label[label] = {"pods": 0, "pods_done": 0, "games": 0, "planned": 0,
+                               "rate": 0.0, "wr_num": 0.0, "pairs": 0}
+            order.append(label)
+        a = by_label[label]
+        a["pods"] += 1
+        a["planned"] += planned
+        if any(m.endswith(f"{w}.done") for m in done_markers):
+            a["pods_done"] += 1
+            a["games"] += planned      # a finished slice contributed all of its games
+            continue
+        pr = _parse_progress(s3_get_text(f"runs/{name}/status/{w}/campaign-status.md"))
+        # s3_get_text swallows transient errors and returns None. Falling through to
+        # "contributes 0" made the whole report jump BACKWARDS (1040 -> 860 games), which
+        # is worse than useless — you cannot tell a stalled run from a flaky read. Keep
+        # the last good sample per worker instead.
+        if pr:
+            _LAST_PROGRESS[w] = pr
+        else:
+            pr = _LAST_PROGRESS.get(w)
+        if not pr:
+            continue
+        a["games"] += pr[0]
+        if pr[2]:
+            a["rate"] += pr[2]         # games/s summed over LIVE pods only
+        if pr[3] is not None and pr[4]:
+            a["wr_num"] += pr[3] * pr[4]
+            a["pairs"] += pr[4]
+
+    lines, tot_games, tot_planned, tot_rate, tot_pods, tot_done = [], 0, 0, 0.0, 0, 0
+    for lb in order:
+        a = by_label[lb]
+        pct = 100.0 * a["games"] / max(1, a["planned"])
+        wr = f" · A {a['wr_num'] / a['pairs']:.1f}% over {a['pairs']} pairs" if a["pairs"] else ""
+        lines.append(f"- **{lb}** — {a['games']}/{a['planned']} games ({pct:.0f}%) · "
+                     f"{a['rate']:.2f} games/s · {_fmt_eta(a['planned'] - a['games'], a['rate'])} · "
+                     f"{a['pods_done']}/{a['pods']} pods done{wr}")
+        tot_games += a["games"]; tot_planned += a["planned"]; tot_rate += a["rate"]
+        tot_pods += a["pods"]; tot_done += a["pods_done"]
+
+    overall = (f"**{tot_games}/{tot_planned} games "
+               f"({100.0 * tot_games / max(1, tot_planned):.0f}%)** · {tot_rate:.2f} games/s · "
+               f"{_fmt_eta(tot_planned - tot_games, tot_rate)} · elapsed {elapsed_min:.0f} min "
+               f"(kill@{kill_min}) · {tot_done}/{tot_pods} pods done · {tot_pods}x{vcpu} vCPU")
+    console = (f"  [{elapsed_min:.0f}min] {tot_done}/{tot_pods} pods · "
+               f"{tot_games}/{tot_planned} games · {tot_rate:.2f} games/s")
+    # A single label adds nothing over the overall line; keep it for multi-matchup runs.
+    return ([overall] if len(order) == 1 else [overall, ""] + lines), console
 
 
 def run(args):
@@ -239,23 +322,12 @@ def run(args):
         while True:
             try:
                 done_markers = [k2 for k2 in s3_list(f"runs/{args.name}/results/") if k2.endswith(".done")]
-                prog, total_done = [], 0
-                for i in workers:
-                    w = f"w{i:02d}"
-                    pr = _parse_progress(s3_get_text(f"runs/{args.name}/status/{w}/campaign-status.md"))
-                    if any(m.endswith(f"{w}.done") for m in done_markers):
-                        total_done += per
-                        prog.append(f"- {w}: done")
-                    elif pr:
-                        total_done += pr[0]
-                        prog.append(f"- {w}: {pr[0]}/{pr[1]} games")
-                    else:
-                        prog.append(f"- {w}: starting…")
                 elapsed = (time.time() - start) / 60
-                planned = len(workers) * per
-                _write_status(args.name, f"running ({len(done_markers)}/{len(workers)} pods done)",
-                              [f"**Games**: ~{total_done}/{planned} · elapsed {elapsed:.0f} min · {len(workers)}×{args.vcpu} vCPU", ""] + prog)
-                print(f"  [{elapsed:.0f}min] {len(done_markers)}/{len(workers)} done, ~{total_done}/{planned} games")
+                lines, console = _progress_report(
+                    args.name, [(args.name, f"w{i:02d}", per) for i in workers],
+                    args.vcpu, kill_min, elapsed, done_markers)
+                _write_status(args.name, f"running ({len(done_markers)}/{len(workers)} pods done)", lines)
+                print(console)
                 if len(done_markers) >= len(workers):
                     break
             except Exception as e:
@@ -354,18 +426,12 @@ def sweep(args):
         while True:
             try:
                 done = [k for k in s3_list(f"runs/{args.name}/results/") if k.endswith(".done")]
-                lines = []
-                for net in mapping:
-                    pr = _parse_progress(s3_get_text(f"runs/{args.name}/status/{net}/campaign-status.md"))
-                    if any(m.endswith(f"{net}.done") for m in done):
-                        lines.append(f"- {net}: done")
-                    elif pr:
-                        lines.append(f"- {net}: {pr[0]}/{pr[1]}")
-                    else:
-                        lines.append(f"- {net}: starting…")
                 elapsed = (time.time() - start) / 60
-                _write_status(args.name, f"sweep ({len(done)}/{len(mapping)} done)", [f"elapsed {elapsed:.0f} min"] + lines)
-                print(f"  [{elapsed:.0f}min] {len(done)}/{len(mapping)} done")
+                lines, console = _progress_report(
+                    args.name, [(net, net, args.games) for net in mapping],
+                    args.vcpu, kill_min, elapsed, done)
+                _write_status(args.name, f"sweep ({len(done)}/{len(mapping)} done)", lines)
+                print(console)
                 if len(done) >= len(mapping):
                     break
             except Exception as e:
@@ -404,6 +470,7 @@ def tournament(args):
     print(f"tournament {args.name}: {len(spec)} matchups, {total_pods} pods, kill@{kill_min}min")
 
     created, slices = [], []  # slices: (label, worker, per_games)
+    pod_of, reaped = {}, set()   # worker -> pod id, so a finished slice can be reaped early
     try:
         for mi, m in enumerate(spec):
             pods = m["pods"]
@@ -422,6 +489,7 @@ def tournament(args):
                 r = create_pod(f"{args.name}-{w}", dcmd, args.vcpu)
                 if isinstance(r, dict) and "id" in r:
                     created.append(r["id"]); slices.append((m["label"], w, per))
+                    pod_of[w] = r["id"]
                     json.dump(created, open(ACTIVE, "w"))
                     print(f"  {w} -> {r['id']}")
                 else:
@@ -436,17 +504,21 @@ def tournament(args):
         while True:
             try:
                 done = [k for k in s3_list(f"runs/{args.name}/results/") if k.endswith(".done")]
-                by_label = {}
-                for label, w, _ in slices:
-                    by_label.setdefault(label, [0, 0])
-                    by_label[label][1] += 1
-                    if any(m.endswith(f"{w}.done") for m in done):
-                        by_label[label][0] += 1
-                lines = [f"- {lb}: {d}/{t} pods done" for lb, (d, t) in sorted(by_label.items())]
+                # Reap each pod the moment ITS slice finishes. A pod whose command has
+                # exited stays RUNNING and billing (~$0.96/h) until terminated via the
+                # API, so waiting for the whole spec meant a fast matchup's pods idled at
+                # full price for as long as the slowest one took.
+                for lb, w, _per in slices:
+                    pid = pod_of.get(w)
+                    if pid and pid not in reaped and any(m.endswith(f"{w}.done") for m in done):
+                        terminate(pid)
+                        reaped.add(pid)
+                        print(f"  reaped {w} (slice complete)")
                 elapsed = (time.time() - start) / 60
-                _write_status(args.name, f"tournament ({len(done)}/{len(slices)} slices done)",
-                              [f"elapsed {elapsed:.0f} min · {len(slices)} slices"] + lines)
-                print(f"  [{elapsed:.0f}min] {len(done)}/{len(slices)} slices done")
+                lines, console = _progress_report(args.name, slices, args.vcpu, kill_min,
+                                                  elapsed, done)
+                _write_status(args.name, f"tournament ({len(done)}/{len(slices)} slices done)", lines)
+                print(console)
                 if len(done) >= len(slices):
                     break
             except Exception as e:
@@ -470,22 +542,36 @@ def tournament(args):
             r = json.loads(s3_get_text(key))
         except Exception:
             continue
-        a = agg.setdefault(label, [0.0, 0, 0])
+        a = agg.setdefault(label, [0.0, 0, 0, 0, 0.0, 0.0])
         a[0] += r["score"]; a[1] += r["decisive"]; a[2] += r["games"]
+        # Paired sums (mean and variance are additive over pairs), so the fan-out
+        # reports the same tighter estimate a single-box probe would. Absent from
+        # results written before 2026-07-25 — those fall back to unpaired Wilson.
+        a[3] += r.get("pairs", 0)
+        a[4] += r.get("paired_sum", 0.0)
+        a[5] += r.get("paired_sumsq", 0.0)
     results = []
-    for label, (score, dec, games) in agg.items():
+    for label, (score, dec, games, pairs, psum, psumsq) in agg.items():
         wr = score / dec if dec else 0
         lo = hi = 0
-        if dec:
+        if pairs >= 2:
+            # Paired: sample mean +/- z*SE over independent mirrored pairs.
+            wr = psum / pairs
+            var = max(0.0, (psumsq - pairs * wr * wr) / (pairs - 1))
+            half = 1.959964 * math.sqrt(var / pairs)
+            lo, hi = max(0.0, wr - half), min(1.0, wr + half)
+        elif dec:
             z = 1.959964; p = wr; den = 1 + z * z / dec
             ctr = p + z * z / (2 * dec)
             adj = z * math.sqrt(p * (1 - p) / dec + z * z / (4 * dec * dec))
             lo, hi = (ctr - adj) / den, (ctr + adj) / den
-        results.append({"label": label, "wr": wr, "lo": lo, "hi": hi, "games": int(games)})
+        results.append({"label": label, "wr": wr, "lo": lo, "hi": hi,
+                        "games": int(games), "pairs": int(pairs)})
     results.sort(key=lambda x: x["label"])
     print("\n=== TOURNAMENT RESULTS (A win rate) ===")
     for r in results:
-        print(f"  {r['label']}: {r['wr']:.1%} [{r['lo']:.1%}-{r['hi']:.1%}] ({r['games']} games)")
+        kind = f"{r['pairs']} pairs" if r.get("pairs") else f"{r['games']} games unpaired"
+        print(f"  {r['label']}: {r['wr']:.1%} [{r['lo']:.1%}-{r['hi']:.1%}] ({r['games']} games, {kind})")
     local = os.path.join(REPO, "Tools", "ShardsData", "benchmark", "results")
     os.makedirs(local, exist_ok=True)
     json.dump(results, open(os.path.join(local, f"runpod-{args.name}.json"), "w"), indent=2)
@@ -541,17 +627,12 @@ touch {out_root}/results/{w}.done"""
         while True:
             try:
                 done = [x for x in s3_list(f"runs/{args.name}/results/") if x.endswith(".done")]
-                tot = 0
-                for i in workers:
-                    pr = _parse_progress(s3_get_text(f"runs/{args.name}/status/w{i:02d}/campaign-status.md"))
-                    if any(m.endswith(f"w{i:02d}.done") for m in done):
-                        tot += per * matchups
-                    elif pr:
-                        tot += pr[0]
                 elapsed = (time.time() - start) / 60
-                _write_status(args.name, f"runstats ({len(done)}/{len(workers)} pods done)",
-                              [f"~{tot}/{planned} games · {elapsed:.0f} min · {len(workers)}×{args.vcpu} vCPU"])
-                print(f"  [{elapsed:.0f}min] {len(done)}/{len(workers)} pods, ~{tot}/{planned} games")
+                lines, console = _progress_report(
+                    args.name, [(args.name, f"w{i:02d}", per * matchups) for i in workers],
+                    args.vcpu, kill_min, elapsed, done)
+                _write_status(args.name, f"runstats ({len(done)}/{len(workers)} pods done)", lines)
+                print(console)
                 if len(done) >= len(workers):
                     break
             except Exception as e:
@@ -593,8 +674,46 @@ touch {out_root}/results/{w}.done"""
 
 
 def status_cmd(args):
-    md = open(STATUS_MD).read() if os.path.exists(STATUS_MD) else "(no status yet)"
-    print(md)
+    """No --name: print the cached status file. With --name: poll the volume LIVE and
+    rewrite it, so a run can be watched from any shell — including one whose orchestrator
+    process is on another machine, or an older build that predates rich status."""
+    if not args.name:
+        md = open(STATUS_MD, encoding="utf-8").read() if os.path.exists(STATUS_MD) else "(no status yet)"
+        print(md)
+        return
+    kill_min = int(os.environ.get("RUNPOD_MAX_POD_MINUTES", "90"))
+    # Reconstruct the slice list from what the workers themselves published: each pod
+    # owns runs/<name>/status/<worker>/campaign-status.md and reports its own total.
+    start = time.time()
+    while True:
+        workers, slices = [], []
+        for key in s3_list(f"runs/{args.name}/status/"):
+            parts = key.split("/")
+            if len(parts) >= 4 and parts[-1] == "campaign-status.md":
+                workers.append(parts[-2])
+        for w in sorted(set(workers)):
+            pr = _parse_progress(s3_get_text(f"runs/{args.name}/status/{w}/campaign-status.md"))
+            # Worker names are "<label>-w<N>" in tournaments, plain "wNN" elsewhere.
+            label = w.rsplit("-w", 1)[0] if "-w" in w else args.name
+            slices.append((label, w, pr[1] if pr else 0))
+        if not slices:
+            print(f"no workers published under runs/{args.name}/status/ yet")
+            if not args.watch:
+                return
+        else:
+            done = [k for k in s3_list(f"runs/{args.name}/results/") if k.endswith(".done")]
+            lines, console = _progress_report(args.name, slices, args.vcpu, kill_min,
+                                              (time.time() - start) / 60, done)
+            # Read-only unless asked: an orchestrator running this job owns the status
+            # file and rewrites it every 20s, so two writers would just fight.
+            if args.write:
+                _write_status(args.name, f"monitor ({len(done)}/{len(slices)} slices done)", lines)
+            print("\n".join(lines))
+            if len(done) >= len(slices):
+                return
+        if not args.watch:
+            return
+        time.sleep(20)
 
 
 def main():
@@ -617,6 +736,13 @@ def main():
     tn.add_argument("--spec", required=True, help="JSON list of {label,cmd,games,pods}")
     tn.add_argument("--vcpu", type=int, default=32)
     tn.add_argument("--seed-base", type=int, default=700000)
+    # tournament() has always referenced args.require_all, but the flag was only ever
+    # declared on `run`/`runstats` — so ANY tournament that lost a pod to a capacity
+    # shortfall crashed with AttributeError after teardown instead of reporting. Off by
+    # default: community CPU capacity is flaky, and a matchup that lost one of eight
+    # slices is still worth aggregating (each slice carries its own seed range).
+    tn.add_argument("--require-all", action="store_true",
+                    help="abort and tear down unless every pod in the spec was created")
     tn.set_defaults(fn=tournament)
     rs = sub.add_parser("runstats")
     rs.add_argument("--name", required=True)
@@ -628,7 +754,13 @@ def main():
     rs.add_argument("--seed-base", type=int, default=900000)
     rs.add_argument("--require-all", action="store_true")
     rs.set_defaults(fn=runstats)
-    sp = sub.add_parser("status"); sp.add_argument("--name", default=""); sp.set_defaults(fn=status_cmd)
+    sp = sub.add_parser("status")
+    sp.add_argument("--name", default="", help="poll this run LIVE off the volume instead of printing the cached file")
+    sp.add_argument("--watch", action="store_true", help="keep polling every 20s until every slice is done")
+    sp.add_argument("--vcpu", type=int, default=32, help="vCPU per pod, for the header only")
+    sp.add_argument("--write", action="store_true",
+                    help="also rewrite runpod-status.md (skip while an orchestrator owns it)")
+    sp.set_defaults(fn=status_cmd)
     r = sub.add_parser("run")
     r.add_argument("--name", required=True)
     r.add_argument("--pods", type=int, required=True)

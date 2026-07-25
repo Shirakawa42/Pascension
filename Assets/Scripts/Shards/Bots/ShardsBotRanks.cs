@@ -51,106 +51,95 @@ namespace Shards.Bots
                 (seed, engine) => new ShardsHeuristicBot(seed, engine)),
             Rank("bronze", "BRONZE", isSearch: false,
                 (seed, engine) => new ShardsGreedyEvalBot(seed, engine, Model.Value)),
-            // SILVER — re-spec 2026-07-22 to gen-0's net at HALF of GOLD's budget (a
-            // clean iteration step below GOLD, same net). The old full-rollout-at-1.0s
-            // config could not be BOTH fast and stronger than BRONZE (full rollouts
-            // score ~48% vs BRONZE at 200 it, needing ~600 it ≈ 0.6-1.0s to be strong),
-            // so the fast-below-MASTER reframe forces the net here too. gen-0 T2 @ 100 it
-            // is fast (~30-40ms), beats BRONZE, and loses to GOLD @ 200 it. The archival
-            // pre-neural full-rollout search survives as the "strong" tooling kind.
+            // SILVER → DIAMOND — RE-MINTED 2026-07-25 on FULL ROLLOUTS, no net.
+            // The frozen nets are gone from the ladder because they were measured to be
+            // worth LESS than nothing (see the block comment above Rollout()).
             Rank("silver", "SILVER", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    NetConfig(SilverIterations), Model.Value, Gen0Net.Value)),
-            // GOLD — generation-0 value net (narrow 512-256-128, 74.6% val acc,
-            // 720k BOOTSTRAP positions): ISMCTS with 2-end-turn net-truncated rollouts
-            // at the shared fixed budget. The weak-net neural rung; pairs with PLATINUM
-            // at EQUAL iterations. PINNED to generation 0.
+                    Rollout(SilverIterations, SilverWorkers), Model.Value)),
             Rank("gold", "GOLD", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    NetConfig(RankIterations), Model.Value, Gen0Net.Value)),
-            // PLATINUM — re-spec 2026-07-22 to the generation-8 NARROW net (512-256-128,
-            // ~560K params, 76.7% val acc, gen-5's full 1.32M-position q-labeled mix).
-            // The honest "better NET at EQUAL iterations" step over GOLD: 56.5%
-            // [51.6-61.3] vs gen-0 at 200it (n=400) — gate passed. Same play strength as
-            // the retired WIDE gen-5 (46.0% [40.4-51.7], a tie) at ~2.6x cheaper eval, so
-            // GOLD and PLATINUM share ONE architecture and speed, differing only by
-            // TRAINING DATA (bootstrap vs full mix). Wall-clock dropped for a fixed fast
-            // budget (~50-80ms/decision vs the old 1.0-1.25s). PINNED to generation 8.
+                    Rollout(GoldIterations, GoldWorkers), Model.Value)),
             Rank("platinum", "PLATINUM", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    NetConfig(RankIterations), Model.Value, Gen8Net.Value)),
-            // EMERALD — minted 2026-07-22. Same gen-8 net as PLATINUM at a 4× budget
-            // (800 it). The net axis is exhausted (only two net tiers exist — the
-            // encoder is the ceiling), so depth above PLATINUM is carried by SEARCH.
-            // A 2× step was worthless (gen-8 @400 vs @200 = 51.0%, near-ties dominate
-            // past 200 it); 4× is the smallest real step: 56.8% [52.8-60.7] vs PLATINUM
-            // — same ~56-57% ceiling as the net step, which is SoI's strategic limit for
-            // adjacent ranks. ~120 ms/decision. A better-data net will replace gen-8
-            // here IF a future generation actually beats it.
+                    Rollout(PlatinumIterations, PlatinumWorkers), Model.Value)),
             Rank("emerald", "EMERALD", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    NetConfig(EmeraldIterations), Model.Value, Gen8Net.Value)),
-            // DIAMOND — minted 2026-07-22. gen-8 net, 3200-iteration search that beats
-            // EMERALD@800 56.0% [53.8-58.2] over 2000 games (RunPod fan-out). The top of
-            // the ladder. Delivered as K=8 ROOT-PARALLEL trees of 400 iters each (3200
-            // total): a multi-core machine answers in ~60-90 ms instead of ~480 ms, and
-            // the result is CPU-INDEPENDENT — the 8 seeded trees merge (summed visits,
-            // ordinal tie-break) to the SAME move on any machine; a weak CPU just runs
-            // the trees sequentially, identical answer, slower. Verified equal in play
-            // strength to the single-tree 3200 it was gated at (root-parallel probe).
+                    Rollout(EmeraldIterations, EmeraldWorkers), Model.Value)),
             Rank("diamond", "DIAMOND", isSearch: true,
                 (seed, engine) => new ShardsSearchBot(seed, engine,
-                    RootParallelConfig(DiamondPerTreeIterations, DiamondRootWorkers),
-                    Model.Value, Gen8Net.Value)),
+                    Rollout(DiamondIterations, DiamondWorkers), Model.Value)),
         };
 
+        /// <summary>The frozen nets, kept ONLY for the legacy benchmark kinds below.
+        /// No minted rank uses them any more — see <see cref="Rollout"/>.</summary>
         private static readonly Lazy<IShardsValueEvaluator> Gen0Net =
             new(() => ShardsNeuralEval.LoadGeneration(0));
 
         private static readonly Lazy<IShardsValueEvaluator> Gen8Net =
             new(() => ShardsNeuralEval.LoadGeneration(8));
 
-        /// <summary>Shared fixed search budget for the GOLD/PLATINUM net pair — fast
-        /// (~50-80ms/decision), deterministic, and where the promotion gates were
-        /// proven (56.5% at 200 it, n=400). Each neural rank is a BETTER NET at this
-        /// same budget, not more thinking time; larger budgets (EMERALD 400, DIAMOND
-        /// 800) and wall-clock are reserved for the top ranks once the better-net
-        /// method plateaus.</summary>
-        private const int RankIterations = 200;
+        // ------------------------------------------------------- rank budgets
+        //
+        // ⚠ THE CROSSOVER IS ~1200 ITERATIONS. Measured 2026-07-25 vs BRONZE (instant
+        // V5 greedy), paired: 300 it → **21.2%**, 1200 it → **51.4%**, 4800 it → ~70%.
+        // Below the crossover, MORE SEARCH IS WORSE THAN NO SEARCH: ε-greedy rollouts
+        // produce value estimates noisier than simply trusting the tuned policy, so a
+        // small budget actively talks the bot out of good greedy moves. Above it search
+        // compounds fast (~115 Elo/doubling; a 4× step is worth 79.3%).
+        //
+        // So every search rank sits WELL above 1200, and the ladder is spaced by budget
+        // doublings from there. Never set one of these from the scaling slope alone.
+        //
+        // Wall clock is calibrated on the reference box (16 logical cores) at ~365 µs per
+        // full-rollout iteration (measured: 73 ms/decision at 200 it, single thread).
+        // Root workers cut wall-clock ONLY — the merge is seeded and CPU-independent, so
+        // the move is identical on any machine, which is the shipped guarantee.
+        private const int SilverIterations = 2400, SilverWorkers = 8;          // ~110 ms
+        private const int GoldIterations = 6000, GoldWorkers = 8;              // ~275 ms
+        private const int PlatinumIterations = 12000, PlatinumWorkers = 8;     // ~550 ms
+        private const int EmeraldIterations = 24000, EmeraldWorkers = 16;      // ~550 ms
+        private const int DiamondIterations = 48000, DiamondWorkers = 16;      // ~1.1 s
 
-        /// <summary>SILVER = gen-0 at half GOLD's budget: a fast iteration step below it.</summary>
-        private const int SilverIterations = 100;
-
-        /// <summary>EMERALD = gen-8 at a 4× budget over PLATINUM. A 2× step was a
-        /// coin-flip (51%); 4× is the smallest budget jump that clears the gate (~57%).</summary>
-        private const int EmeraldIterations = 800;
-
-        /// <summary>DIAMOND = gen-8, 3200-iteration search (the last rung, 56.0% vs
-        /// EMERALD over 2000 games). Split into <see cref="DiamondRootWorkers"/> trees
-        /// of <see cref="DiamondPerTreeIterations"/> each so multi-core play is fast
-        /// without changing the move (CPU-independent merge).</summary>
-        private const int DiamondRootWorkers = 8;
-        private const int DiamondPerTreeIterations = 400;   // × 8 = 3200 total iterations
-
-        private static ShardsSearchConfig NetConfig(int iterations)
+        /// <summary>ISMCTS with FULL ε-greedy rollouts to terminal and NO neural net, at a
+        /// FIXED iteration budget.
+        ///
+        /// Why no net (measured 2026-07-25, RunPod, paired):
+        ///  · net (gen-8, truncate-2) vs this rollout agent at EQUAL 200 it —
+        ///    **40.6% [38.1-43.0] over 1000 pairs**. The net loses by ~66 Elo. It is
+        ///    worse than having no evaluator at all.
+        ///  · 4× budget (800 vs 200): rollout agent **79.3%**, net agent **52.2%**.
+        /// The frozen net was anchoring every leaf to a value function fit on a different
+        /// game (no Duel bit, no hero identity, none of the 9 Duel flags), so extra
+        /// iterations bought better play toward a worse target. That — not the game — is
+        /// what produced the "~22 Elo per doubling" figure that retired MASTER→CHALLENGER
+        /// and wrote off "more search" as a rung. Without it the same step is ~115
+        /// Elo/doubling, which is what makes these budgets worth buying.
+        ///
+        /// A net returns to the ladder only when one beats this agent head-to-head at
+        /// equal wall-clock. That is now the bar, and gen-8 is 66 Elo below it.
+        ///
+        /// FIXED iterations, never wall-clock: the move must not depend on the machine.
+        /// EarlyStopBudgetFraction stays 1.0 (exact — byte-identical to spending the whole
+        /// budget, just faster once the leader is literally uncatchable).</summary>
+        private static ShardsSearchConfig Rollout(int totalIterations, int workers = 1)
         {
-            var config = ShardsSearchConfig.ForSims(iterations);
-            config.RolloutEndTurns = 2;          // net-truncated rollouts (the deployed mode)
-            config.EarlyStopBudgetFraction = 1.0; // EXACT: byte-identical move to the full
-                                                  // budget, just faster on decided positions —
-                                                  // keeps N an honest, gate-faithful ceiling.
+            // Root-parallel budgets are PER TREE, so divide to keep `totalIterations`
+            // the honest total the rank is gated at.
+            var config = ShardsSearchConfig.ForSims(Math.Max(1, totalIterations / Math.Max(1, workers)));
+            config.RolloutEndTurns = -1;          // full rollouts to terminal — no evaluator
+            config.EarlyStopBudgetFraction = 1.0;
+            config.RootWorkers = workers;
             return config;
         }
 
-        /// <summary>NetConfig with K root-parallel worker trees. The K trees each fork
-        /// the live engine (concurrent forks are pure reads), search independently at
-        /// <paramref name="perTreeIterations"/>, then merge by summed root-child visits
-        /// with an ordinal tie-break — deterministic given (seed, K, budget), so the
-        /// chosen move does NOT depend on core count, only the wall-clock does. Root
-        /// parallelism disables early-stop internally (each tree runs its full budget).</summary>
-        private static ShardsSearchConfig RootParallelConfig(int perTreeIterations, int workers)
+        /// <summary>The retired net configuration, preserved as a tooling kind so the new
+        /// ladder can be benchmarked against what shipped before. Not selectable in game.</summary>
+        private static ShardsSearchConfig LegacyNetConfig(int perTreeIterations, int workers)
         {
-            var config = NetConfig(perTreeIterations);
+            var config = ShardsSearchConfig.ForSims(perTreeIterations);
+            config.RolloutEndTurns = 2;
+            config.EarlyStopBudgetFraction = 1.0;
             config.RootWorkers = workers;
             return config;
         }
@@ -178,6 +167,14 @@ namespace Shards.Bots
                     ShardsSearchConfig.ForRealGames(1.0), Model.Value),
                 "strong-fast" => new ShardsSearchBot(seed, engine,
                     ShardsSearchConfig.ForRealGames(0.25), Model.Value),
+                // The pre-2026-07-25 net ladder, for benchmarking the re-mint against
+                // what actually shipped. Never offered as a difficulty.
+                "legacy-diamond" => new ShardsSearchBot(seed, engine,
+                    LegacyNetConfig(400, 8), Model.Value, Gen8Net.Value),
+                "legacy-platinum" => new ShardsSearchBot(seed, engine,
+                    LegacyNetConfig(200, 1), Model.Value, Gen8Net.Value),
+                "legacy-gold" => new ShardsSearchBot(seed, engine,
+                    LegacyNetConfig(200, 1), Model.Value, Gen0Net.Value),
                 _ => new ShardsHeuristicBot(seed, engine)
             };
         }
@@ -185,6 +182,7 @@ namespace Shards.Bots
         /// <summary>Whether the kind needs the worker-thread seat (search ranks and
         /// the legacy "strong"* tooling kinds).</summary>
         public static bool IsSearchKind(string kind) =>
-            Find(kind)?.IsSearch ?? kind is "strong" or "strong-fast";
+            Find(kind)?.IsSearch ??
+            kind is "strong" or "strong-fast" or "legacy-diamond" or "legacy-platinum" or "legacy-gold";
     }
 }
