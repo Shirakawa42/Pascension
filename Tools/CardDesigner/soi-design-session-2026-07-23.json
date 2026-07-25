@@ -1,0 +1,915 @@
+{
+  "_format": "soi-card-designer/1",
+  "_readme": [
+    "Design session for the Shards of Infinity fan port — game content is NOT touched by this file.",
+    "Reopen it with Tools/CardDesigner/index.html (Open…) to keep designing.",
+    "cards.added = complete new card specs. cards.modified = per-field was -> now deltas vs the live pool.",
+    "cards.removed = cards this design cuts. keywords.* = same idea for mechanic keywords.",
+    "qty = copies in the center deck (starters: copies per player). cost null = the card is not bought.",
+    "To implement: follow the checklist in the exported Markdown brief (Export AI brief button)."
+  ],
+  "session": {
+    "name": "Duel of Doom",
+    "savedAt": "2026-07-24T12:17:45.804Z",
+    "notes": "Claude pass on top of the 2026-07-23 session: hero abilities separated from Focus (both usable in the same turn), Allegiance conversions (Ferrata Guard / Mainframe Abbot / Hounds of Volos / The Lost), Allegiance + Scry keywords, Dominion reworked (3+ other cards of 3+ different factions), and 15 SUGGESTED cards — 3 per faction, rationale in each card's notes."
+  },
+  "baselineStamp": {
+    "generatedAt": "2026-07-23",
+    "cardCount": 130
+  },
+  "cards": {
+    "added": [
+      {
+        "id": "star_seeker",
+        "name": "Star Seeker",
+        "set": "new_dlc",
+        "faction": "Aion",
+        "types": [
+          "Relic"
+        ],
+        "cost": 0,
+        "qty": 1,
+        "defense": 7,
+        "shield": null,
+        "text": "Exhaust: Warp ∞.\n\nM20: Warp ∞ a second time.",
+        "art": "",
+        "artPrompt": "a radiant navigator's astrolabe orbited by streaking comets and folded space, threads of teleport light converging on a single crimson star, cosmic void background",
+        "notes": ""
+      },
+      {
+        "id": "praetorian_03",
+        "name": "Praetorian-03",
+        "set": "new_dlc",
+        "faction": "Homodeus",
+        "types": [
+          "Relic"
+        ],
+        "cost": 0,
+        "qty": 1,
+        "defense": 0,
+        "shield": 4,
+        "text": "Gain 1 mastery and draw a card.\nM15: 2 mastery and 2 cards instead.\nM25: 3 mastery and 3 cards instead.",
+        "art": "",
+        "artPrompt": "an ancient relic warframe helm crowned with a halo of data-glyphs, blue energy conduits, kneeling in a shrine of light, ceremonial and imposing",
+        "notes": ""
+      },
+      {
+        "id": "multitask_brain",
+        "name": "Multitask Brain",
+        "set": "new_dlc",
+        "faction": "Order",
+        "types": [
+          "Relic"
+        ],
+        "cost": 0,
+        "qty": 1,
+        "defense": null,
+        "shield": null,
+        "text": "For each different faction you played this turn, gain 2 power and draw a card. (M20: gain 4 power instead of 2.)\n\nDominion: gain 3 mastery.",
+        "art": "",
+        "artPrompt": "a floating multi-lobed cybernetic brain wired into five glowing processor cores of different colors, streams of parallel thought, sterile laboratory light",
+        "notes": ""
+      },
+      {
+        "id": "doom_gate",
+        "name": "Doom Gate",
+        "set": "new_dlc",
+        "faction": "Wraethe",
+        "types": [
+          "Relic"
+        ],
+        "cost": 0,
+        "qty": 1,
+        "defense": 6,
+        "shield": null,
+        "text": "You are unaffected by Ingeminex attacks.\n\nWhen you play this champion, shuffle 20 new Ingeminex into the center deck (once per game).\n\nExhaust: destroy an Ingeminex.",
+        "art": "",
+        "artPrompt": "a towering obsidian gateway wreathed in violet void-fire, monstrous silhouettes pressing against a rippling portal, ominous and vast, dark cathedral of ruin",
+        "notes": ""
+      },
+      {
+        "id": "unknown_god",
+        "name": "Unknown God",
+        "set": "new_dlc",
+        "faction": "Undergrowth",
+        "types": [
+          "Relic"
+        ],
+        "cost": 0,
+        "qty": 1,
+        "defense": 5,
+        "shield": null,
+        "text": "M20: your Exhaust effects apply their effects twice.\n\nExhaust: gain 5 health for each champion you control.",
+        "art": "",
+        "artPrompt": "a colossal faceless deity of living wood and crystal rising from an overgrown temple, countless roots and vines, radiant green life-energy, awe and mystery",
+        "notes": ""
+      },
+      {
+        "id": "testudo_vanguard",
+        "name": "Testudo Vanguard",
+        "set": "new_dlc",
+        "faction": "Homodeus",
+        "types": [
+          "Champion"
+        ],
+        "cost": 4,
+        "qty": 2,
+        "defense": 6,
+        "shield": null,
+        "text": "Your shields are also applied to each of your champions individually.\n\nExhaust: gain 2 gems.",
+        "art": "",
+        "artPrompt": "a legionnaire locking tower shields into a glowing testudo wall",
+        "notes": "SUGGESTION — the champion-protection card: a board-only Zetta (protects champions, never your face, so no turtling). Reuses the taunt split machinery."
+      },
+      {
+        "id": "century_forge",
+        "name": "Century Forge",
+        "set": "new_dlc",
+        "faction": "Homodeus",
+        "types": [
+          "Ally"
+        ],
+        "cost": 5,
+        "qty": 2,
+        "defense": null,
+        "shield": 3,
+        "text": "Shield 3. Gain 3 gems. Inspire: the next champion you recruit this turn enters play directly.",
+        "art": "",
+        "artPrompt": "a forge-hall stamping out armored soldiers on a conveyor of sparks",
+        "notes": "SUGGESTION — generalizes Numeri Drones' deploy-directly tech to ANY champion, matching the Evokatus/Primus all-champions errata direction."
+      },
+      {
+        "id": "riposte_doctrine",
+        "name": "Riposte Doctrine",
+        "set": "new_dlc",
+        "faction": "Homodeus",
+        "types": [
+          "Mercenary"
+        ],
+        "cost": 2,
+        "qty": 2,
+        "defense": null,
+        "shield": null,
+        "text": "Gain 3 power. If you played or revealed a shield from your hand, gain 6 power instead.",
+        "art": "",
+        "artPrompt": "a battered duelist turning a parry into a counter-thrust, banner torn",
+        "notes": "SUGGESTION — duel comeback lever aimed at the persistent-health-lead problem (a +10 health lead wins ~87% at DIAMOND)."
+      },
+      {
+        "id": "index_of_futures",
+        "name": "Index of Futures",
+        "set": "new_dlc",
+        "faction": "Order",
+        "types": [
+          "Ally"
+        ],
+        "cost": 3,
+        "qty": 2,
+        "defense": null,
+        "shield": 2,
+        "text": "Shield 2. Draw a card. Look at the center deck's top 3 cards; put them back in any order.",
+        "art": "",
+        "artPrompt": "a librarian monk leafing through a floating card catalogue of tomorrows",
+        "notes": "SUGGESTION — turns the pay-2 row-removal rule (and Warp / Shard Defiant / Rez's Scry) from a gamble into informed planning."
+      },
+      {
+        "id": "bulwark_chanter",
+        "name": "Bulwark Chanter",
+        "set": "new_dlc",
+        "faction": "Order",
+        "types": [
+          "Ally"
+        ],
+        "cost": 4,
+        "qty": 2,
+        "defense": null,
+        "shield": 4,
+        "text": "Shield 4. Gain 2 gems. Dominion: gain 2 mastery and draw a card.",
+        "art": "",
+        "artPrompt": "an armored cantor whose hymn raises a rampart of translucent glyphs",
+        "notes": "SUGGESTION — a shield-bodied payoff for the reworked Dominion (only Giga / Omnius / Order Initiate carry it in the shop today)."
+      },
+      {
+        "id": "aegis_archivist",
+        "name": "Aegis Archivist",
+        "set": "new_dlc",
+        "faction": "Order",
+        "types": [
+          "Champion"
+        ],
+        "cost": 4,
+        "qty": 1,
+        "defense": 5,
+        "shield": null,
+        "text": "Exhaust: gain 2 gems. (Dominion: gain 5 gems instead.)",
+        "art": "",
+        "artPrompt": "a curator of glowing bucklers filed like books, one drawn half-open",
+        "notes": "SUGGESTION — first shield-payoff card (shields really prevent 14.4% of damage): revealing leaks your defense info for tempo — a read tradeoff."
+      },
+      {
+        "id": "thornshell_warden",
+        "name": "Thornshell Warden",
+        "set": "new_dlc",
+        "faction": "Undergrowth",
+        "types": [
+          "Champion"
+        ],
+        "cost": 2,
+        "qty": 2,
+        "defense": 6,
+        "shield": null,
+        "text": "Exhaust: gain 2 health. If you are at 50 health, also gain 2 power.",
+        "art": "",
+        "artPrompt": "a turtle-shelled forest guardian curled behind interlocking bark plates",
+        "notes": "SUGGESTION — a cheap high-defense wall: champion protection by being unprofitable to kill; feeds the full-health theme."
+      },
+      {
+        "id": "nectar_alchemist",
+        "name": "Nectar Alchemist",
+        "set": "new_dlc",
+        "faction": "Undergrowth",
+        "types": [
+          "Ally"
+        ],
+        "cost": 3,
+        "qty": 2,
+        "defense": null,
+        "shield": null,
+        "text": "Gain 4 health. This turn, health you would gain beyond the 50 cap becomes power instead.",
+        "art": "",
+        "artPrompt": "a druid distilling overflowing golden sap into a blade-shaped vial",
+        "notes": "SUGGESTION — fixes dead at-cap heals (a mini Entropic Talons for everyone): heal decks stop stalling and start threatening."
+      },
+      {
+        "id": "lifebloom_ritual",
+        "name": "Lifebloom Ritual",
+        "set": "new_dlc",
+        "faction": "Undergrowth",
+        "types": [
+          "Mercenary"
+        ],
+        "cost": 6,
+        "qty": 1,
+        "defense": null,
+        "shield": null,
+        "text": "Until end of turn, all healing you receive is doubled.\n\nUnify: gain 4 health.",
+        "art": "",
+        "artPrompt": "a fallen colossus re-sprouting from a ring of luminous flowers",
+        "notes": "SUGGESTION — Undergrowth champion recursion with a Unify kicker: regrowth flavor, board-based counterplay to champion removal."
+      },
+      {
+        "id": "whisper_extractor",
+        "name": "Whisper Extractor",
+        "set": "new_dlc",
+        "faction": "Wraethe",
+        "types": [
+          "Ally"
+        ],
+        "cost": 3,
+        "qty": 2,
+        "defense": null,
+        "shield": null,
+        "text": "Gain 2 power.\nTarget opponent draws a card, then choose a card in their hand — they discard it.",
+        "art": "",
+        "artPrompt": "a shade pulling a single glowing card from a fanned hand of shadows",
+        "notes": "SUGGESTION — the intel strike (your spec): snipe one strategic card (an Infinity Shard before the M30 turn, a key shield) but they redraw, so it never strips a hand. IMPLEMENTED 2026-07-25 with the redraw made explicit and mandatory (the first build omitted it and played too strong)."
+      },
+      {
+        "id": "doomstalker",
+        "name": "Doomstalker",
+        "set": "new_dlc",
+        "faction": "Wraethe",
+        "types": [
+          "Mercenary"
+        ],
+        "cost": 5,
+        "qty": 2,
+        "defense": null,
+        "shield": null,
+        "text": "Gain 5 power. If an Ingeminex is in play, gain 8 instead.",
+        "art": "",
+        "artPrompt": "a void hunter stalking a titanic silhouette across a broken plain",
+        "notes": "SUGGESTION — rides Doom Gate's Ingeminex flood + the base ItH monsters: monster pressure becomes a deliberate plan."
+      },
+      {
+        "id": "bleak_communion",
+        "name": "Bleak Communion",
+        "set": "new_dlc",
+        "faction": "Wraethe",
+        "types": [
+          "Mercenary"
+        ],
+        "cost": 3,
+        "qty": 2,
+        "defense": null,
+        "shield": null,
+        "text": "Lose 4 health (not damage). Draw two cards. Echo: an opponent loses that health instead of you.",
+        "art": "",
+        "artPrompt": "cultists sharing a chalice of black light, veins glowing",
+        "notes": "SUGGESTION — Wraethe finally pays life for draw (Oblivion Gatekeeper's cost language); Echo rewards faction commitment. Data Heretic moving to cost 4 leaves room at 3."
+      },
+      {
+        "id": "comet",
+        "name": "Comet",
+        "set": "new_dlc",
+        "faction": "Aion",
+        "types": [
+          "Ally"
+        ],
+        "cost": 14,
+        "qty": 1,
+        "defense": null,
+        "shield": null,
+        "text": "Destroy target opponent.\n\nThis card cannot be fast-played and must be bought using gems.\n\nThis card cannot be banished from the shop.",
+        "art": "",
+        "artPrompt": "a crimson comet-rider streaking low over a row of market stalls",
+        "notes": ""
+      },
+      {
+        "id": "prism",
+        "name": "Prism",
+        "set": "new_dlc",
+        "faction": "Aion",
+        "types": [
+          "Ally"
+        ],
+        "cost": 3,
+        "qty": 2,
+        "defense": null,
+        "shield": 2,
+        "text": "Shield 2. Draw a card. This card counts as a card of every faction.",
+        "art": "",
+        "artPrompt": "a faceted crystal wanderer refracting five colors of light",
+        "notes": "SUGGESTION — the wildcard glue: enables Unify and the reworked Dominion in any deck (Project Yggdrasil's counts-as tech)."
+      },
+      {
+        "id": "grim_tutor",
+        "name": "Grim Tutor",
+        "set": "new_dlc",
+        "faction": "Wraethe",
+        "types": [
+          "Mercenary"
+        ],
+        "cost": 3,
+        "qty": 2,
+        "defense": null,
+        "shield": null,
+        "text": "Search your draw pile for a card and put it into your hand, then shuffle.\nYou lose 3 health.",
+        "art": "",
+        "artPrompt": "a gaunt black-robed sage tracing a pact in blood over a floating open grimoire, skulls and candle smoke, sickly green light",
+        "notes": "User request 2026-07-24 — MTG Grim Tutor homage; Mercenary per user decision (rent-a-tutor fast-play option)."
+      },
+      {
+        "id": "longshot",
+        "name": "Longshot",
+        "set": "new_dlc",
+        "faction": "Aion",
+        "types": [
+          "Ally"
+        ],
+        "cost": 4,
+        "qty": 2,
+        "defense": null,
+        "shield": null,
+        "text": "Reveal the top 2 cards of the center deck. You may fast-play any of them that are allies costing 3 or less; put the rest on the bottom of the center deck. (M15: cost 5 or less instead.)",
+        "art": "",
+        "artPrompt": "a red-cloaked gambler flipping the top card of an endless deck",
+        "notes": "SUGGESTION — makes the center-deck top a strategic zone alongside Rez's Scry and Index of Futures: an informed gamble that improves with information."
+      }
+    ],
+    "modified": [
+      {
+        "id": "korvus_legionnaire",
+        "name": "Korvus Legionnaire",
+        "fields": {
+          "text": {
+            "was": "Shield 2. Gain 2 power. Return a champion from your discard pile to your hand.",
+            "now": "Shield 2. Gain 3 power. Return a champion from your discard pile to your hand."
+          }
+        }
+      },
+      {
+        "id": "reactor_drone",
+        "name": "Reactor Drone",
+        "fields": {
+          "shield": {
+            "was": null,
+            "now": 2
+          },
+          "text": {
+            "was": "Gain 3 gems.",
+            "now": "Choose one:\n- Gain 3 gems\n- Gain 5 gems, banish this card at the end of your turn."
+          }
+        }
+      },
+      {
+        "id": "furrowing_elemental",
+        "name": "Furrowing Elemental",
+        "fields": {
+          "text": {
+            "was": "Gain 4 health and draw a card. If you are at 50 health, gain 6 power.",
+            "now": "Gain 4 health and draw a card. If you are at 50 health, gain 4 power."
+          }
+        }
+      },
+      {
+        "id": "shardwood_guardian",
+        "name": "Shardwood Guardian",
+        "fields": {
+          "text": {
+            "was": "Gain 2 power and draw a card. Unify: gain 6 health.",
+            "now": "Gain 2 power and draw a card. Unify: gain 4 health."
+          }
+        }
+      },
+      {
+        "id": "undergrowth_aspirant",
+        "name": "Undergrowth Aspirant",
+        "fields": {
+          "text": {
+            "was": "Gain 3 health. Unify: also gain 5 power.",
+            "now": "Gain 3 health. Unify: also gain 4 power."
+          }
+        }
+      },
+      {
+        "id": "command_seer",
+        "name": "Command Seer",
+        "fields": {
+          "text": {
+            "was": "Shield 5. Gain 2 gems.",
+            "now": "Shield 5. Gain 3 gems."
+          }
+        }
+      },
+      {
+        "id": "order_initiate",
+        "name": "Order Initiate",
+        "fields": {
+          "text": {
+            "was": "Gain 2 gems. Dominion: gain 2 mastery.",
+            "now": "You may remove a card from the shop.\nGain 2 gems. Dominion: gain 2 mastery."
+          }
+        }
+      },
+      {
+        "id": "wraethe_skirmisher",
+        "name": "Wraethe Skirmisher",
+        "fields": {
+          "text": {
+            "was": "Gain 2 power. Echo: gain 6 instead.",
+            "now": "Gain 2 power. Echo: gain 5 instead."
+          }
+        }
+      },
+      {
+        "id": "evokatus",
+        "name": "Evokatus",
+        "fields": {
+          "text": {
+            "was": "When played, draw a card. Exhaust: gain 1 power per Homodeus champion you control.",
+            "now": "When played, draw a card. Exhaust: gain 1 power per champion you control."
+          }
+        }
+      },
+      {
+        "id": "primus_pilus",
+        "name": "Primus Pilus",
+        "fields": {
+          "defense": {
+            "was": 6,
+            "now": 5
+          },
+          "text": {
+            "was": "Exhaust: if you control three or more Homodeus champions, draw two cards.",
+            "now": "Exhaust: if you control three or more champions, draw two cards."
+          }
+        }
+      },
+      {
+        "id": "li_hin",
+        "name": "Li Hin, The Shattered",
+        "fields": {
+          "text": {
+            "was": "Can't be attacked with power (card effects can still destroy it). Exhaust: gain 1 power.",
+            "now": "Can't be attacked with power (card effects can still destroy it). Exhaust: gain 2 power."
+          }
+        }
+      },
+      {
+        "id": "root_of_the_forest",
+        "name": "Root of the Forest",
+        "fields": {
+          "text": {
+            "was": "Gain 10 health. Unify: gain 10 power.",
+            "now": "Gain 8 health. Unify: gain 8 power."
+          }
+        }
+      },
+      {
+        "id": "spore_cleric",
+        "name": "Spore Cleric",
+        "fields": {
+          "text": {
+            "was": "Gain 4 health.",
+            "now": "Gain 3 health. Unify: gain 6 health instead."
+          }
+        }
+      },
+      {
+        "id": "data_heretic",
+        "name": "Data Heretic",
+        "fields": {
+          "cost": {
+            "was": 3,
+            "now": 4
+          }
+        }
+      },
+      {
+        "id": "nil_assassin",
+        "name": "Nil Assassin",
+        "fields": {
+          "text": {
+            "was": "Gain 5 power.",
+            "now": "Gain 4 power."
+          }
+        }
+      },
+      {
+        "id": "mainframe_abbot",
+        "name": "Mainframe Abbot",
+        "fields": {
+          "text": {
+            "was": "Shield 3. Draw a card. If your character is Tetra, gain 1 mastery.",
+            "now": "Shield 3. Draw a card. Allegiance Order 3: gain 1 mastery."
+          }
+        }
+      },
+      {
+        "id": "axia",
+        "name": "Axia",
+        "fields": {
+          "cost": {
+            "was": 7,
+            "now": 8
+          }
+        }
+      },
+      {
+        "id": "ferrata_guard",
+        "name": "Ferrata Guard",
+        "fields": {
+          "text": {
+            "was": "If your character is Decima, your champions get +2 defense. Exhaust: gain 1 gem per Homodeus champion you control.",
+            "now": "Allegiance Homodeus 3: your champions get +2 defense. Exhaust: gain 1 gem per Homodeus champion you control."
+          }
+        }
+      },
+      {
+        "id": "ru_bo_vai",
+        "name": "Ru Bo Vai, The Transcendant",
+        "fields": {
+          "text": {
+            "was": "Exhaust: gain 4 power. M10: your damage ignores shields this turn.",
+            "now": "Exhaust: gain 3 power. M10: your damage ignores shields this turn."
+          }
+        }
+      },
+      {
+        "id": "hounds_of_volos",
+        "name": "Hounds of Volos",
+        "fields": {
+          "text": {
+            "was": "Gain 5 health. If your character is Volos, also gain 5 power.",
+            "now": "Gain 5 health. Allegiance Undergrowth 3: also gain 5 power."
+          }
+        }
+      },
+      {
+        "id": "the_lost",
+        "name": "The Lost",
+        "fields": {
+          "text": {
+            "was": "Gain 6 power. If your character is Ko Syn Wu, you may banish a card from your hand or discard pile.",
+            "now": "Gain 5 power. Allegiance Wraethe 3: you may banish a card from your hand or discard pile."
+          }
+        }
+      },
+      {
+        "id": "praetorian_02",
+        "name": "Praetorian-02",
+        "fields": {
+          "text": {
+            "was": "Relic champion, defense 9. While in play: shield 3 (M20: 6). Its shield never works from hand.",
+            "now": "While in play: shield 3 (M20: 6).\n\nExhaust, pay 3 gems: until your next turn, your shields are doubled. (Killing this champion does not remove this effect.)"
+          }
+        }
+      },
+      {
+        "id": "datic_robes",
+        "name": "Datic Robes",
+        "fields": {
+          "text": {
+            "was": "Shield equal to your mastery. Draw a card. M20: draw two instead.",
+            "now": "Shield equal to your mastery. Draw two cards.\n\nM20: While this card is in your discard pile, gain Shield equal to half your mastery (rounded up)."
+          }
+        }
+      },
+      {
+        "id": "terminal_crescents",
+        "name": "Terminal Crescents",
+        "fields": {
+          "text": {
+            "was": "Gain 1 mastery, then power equal to half your mastery (rounded up). M20: equal to your full mastery.",
+            "now": "Gain 2 mastery, then power equal to half your mastery (rounded up). M20: equal to your full mastery."
+          }
+        }
+      },
+      {
+        "id": "heart_of_nothing",
+        "name": "The Heart of Nothing",
+        "fields": {
+          "text": {
+            "was": "Gain 5 power (M20: 10). If you deal 10+ unprevented damage to one opponent this turn, draw 3 extra cards at end of turn.",
+            "now": "Gain 6 power (M20: 10). If you deal 10+ unprevented damage to one opponent this turn, draw 3 extra cards at end of turn."
+          }
+        }
+      },
+      {
+        "id": "world_piercer",
+        "name": "The World Piercer",
+        "fields": {
+          "text": {
+            "was": "Gain 2 mastery. Return a mercenary from your discard pile to your hand. M20: return ALL of them.",
+            "now": "Gain 2 mastery. Return a mercenary from your discard or draw pile to your hand. M20: return ALL of them."
+          }
+        }
+      },
+      {
+        "id": "dash",
+        "name": "Dash",
+        "fields": {
+          "text": {
+            "was": "Shield 2. You may put an Aion card from your discard pile on top of your deck. Draw a card.",
+            "now": "Shield 2. You may put an Aion card from your discard pile on top of your deck. (M10: any card instead.)\n\nDraw a card."
+          }
+        }
+      },
+      {
+        "id": "swyft",
+        "name": "Swyft",
+        "fields": {
+          "text": {
+            "was": "Exhaust: gain 2 gems and 2 power. If your character is Rez, you may keep cards you fast-play (they join your discard).",
+            "now": "Exhaust: gain 2 gems and 2 power.\n\nM10: you may keep cards you fast-play (they join your discard)."
+          }
+        }
+      },
+      {
+        "id": "slipstream_shard",
+        "name": "Slipstream Shard",
+        "fields": {
+          "text": {
+            "was": "Gain 1 mastery and draw a card. M20: take an extra turn (once per game).",
+            "now": "Gain 2 mastery and draw two cards. M20: take an extra turn (once per game)."
+          }
+        }
+      },
+      {
+        "id": "warpquartz",
+        "name": "Warpquartz",
+        "fields": {
+          "defense": {
+            "was": null,
+            "now": 0
+          },
+          "text": {
+            "was": "Gain 3 gems and 3 power. M20: banish up to 3 allies from your hand/discard and gain their effects.",
+            "now": "You may banish a card from your hand or discard pile to gain its effect. (M20: up to 3 cards instead.)\n\nGain 3 gems and 3 power for each card you banished this turn."
+          }
+        }
+      },
+      {
+        "id": "legion_carrier",
+        "name": "Legion Carrier",
+        "fields": {
+          "text": {
+            "was": "Gain 2 gems. You may reveal your deck's top 3 cards: up to one revealed champion to your hand, the rest to your discard pile.",
+            "now": "Gain 2 gems. You may reveal your deck's top 5 cards: up to one revealed champion to your hand, the rest to your discard pile."
+          }
+        }
+      },
+      {
+        "id": "duplication_fabricator",
+        "name": "Duplication Fabricator",
+        "fields": {
+          "cost": {
+            "was": 1,
+            "now": 3
+          },
+          "text": {
+            "was": "Gain 1 mastery. Every player reveals their deck's top card; copy the effect of one revealed ally.",
+            "now": "Gain 1 mastery. Every player reveals their deck's top card; copy the effect of one revealed ally.\n(M20: you may copy any number of effects from the revealed cards instead)"
+          }
+        }
+      },
+      {
+        "id": "orm_madu",
+        "name": "Orm Madu",
+        "fields": {
+          "text": {
+            "was": "Exhaust: gain 7 health; then, if you are at 50 health, gain 1 mastery.",
+            "now": "Exhaust: gain 6 health; then, if you are at 50 health, gain 1 mastery."
+          }
+        }
+      },
+      {
+        "id": "j_chord",
+        "name": "J-Chord",
+        "fields": {
+          "text": {
+            "was": "Exhaust — Warp 3. M15: Warp 5 instead.",
+            "now": "Exhaust — Warp 3. M15: Warp 6 instead."
+          }
+        }
+      },
+      {
+        "id": "the_rotten",
+        "name": "The Rotten",
+        "fields": {
+          "text": {
+            "was": "Gain 5 power and 1 mastery.",
+            "now": "Gain 4 power and 1 mastery."
+          }
+        }
+      },
+      {
+        "id": "cinder_scars",
+        "name": "Cinder Scars",
+        "fields": {
+          "qty": {
+            "was": 3,
+            "now": 5
+          }
+        }
+      },
+      {
+        "id": "agony_of_choice",
+        "name": "The Agony of Choice",
+        "fields": {
+          "text": {
+            "was": "Exhaust: if you played cards of 3+ different factions this turn, gain 4 power.",
+            "now": "Exhaust: if you played cards of 3+ different factions this turn, gain 5 power."
+          }
+        }
+      },
+      {
+        "id": "datic_secrets",
+        "name": "Datic Secrets",
+        "fields": {
+          "text": {
+            "was": "Exhaust: if you played 2+ Order allies this turn, gain 2 gems.",
+            "now": "Exhaust: if you played 2+ Order allies this turn, gain 1 gem and 1 mastery."
+          }
+        }
+      },
+      {
+        "id": "deadly_recruits",
+        "name": "Deadly Recruits",
+        "fields": {
+          "text": {
+            "was": "Exhaust: fast-play a cost-1 ally from the row for free (you keep it). M20: cost 2 or less.",
+            "now": "Exhaust: fast-play a cost-2 or less ally from the row for free (you may keep it). M20: cost 4 or less."
+          }
+        }
+      },
+      {
+        "id": "healing_hands",
+        "name": "Healing Hands",
+        "fields": {
+          "text": {
+            "was": "Exhaust: if you played a champion this turn, gain 4 health.",
+            "now": "Exhaust: if you played a champion this turn, gain 5 health."
+          }
+        }
+      },
+      {
+        "id": "paradigm_shift",
+        "name": "Paradigm Shift",
+        "fields": {
+          "text": {
+            "was": "Exhaust: if you played an Order card and a Wraethe card this turn, gain 1 mastery.",
+            "now": "Exhaust: if you played an Order card and a Wraethe card this turn, gain 1 gem and 1 mastery."
+          }
+        }
+      },
+      {
+        "id": "soul_syphon",
+        "name": "Soul Syphon",
+        "fields": {
+          "text": {
+            "was": "Exhaust: if you played cards of 3+ different factions this turn, gain 5 health.",
+            "now": "Exhaust: if you played cards of 3+ different factions this turn, gain 7 health."
+          }
+        }
+      },
+      {
+        "id": "the_last_city",
+        "name": "The Last City",
+        "fields": {
+          "text": {
+            "was": "Exhaust: if you played 2+ mercenaries this turn, gain 2 gems.",
+            "now": "Exhaust: if you played 2+ mercenaries this turn, gain 3 gems."
+          }
+        }
+      },
+      {
+        "id": "soichar_decima",
+        "name": "Decima",
+        "fields": {
+          "text": {
+            "was": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).",
+            "now": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).\n\nRecruiting — M5 passive: the first card you buy each turn costs 1 less."
+          }
+        }
+      },
+      {
+        "id": "soichar_tetra",
+        "name": "Tetra",
+        "fields": {
+          "text": {
+            "was": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).",
+            "now": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).\n\nPerception — M5, once per turn: pay 3 gems, draw a card."
+          }
+        }
+      },
+      {
+        "id": "soichar_volos",
+        "name": "Volos",
+        "fields": {
+          "text": {
+            "was": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).",
+            "now": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).\n\nFirst Aid — M5, once per turn: pay 1 gem, gain 3 health."
+          }
+        }
+      },
+      {
+        "id": "soichar_kosynwu",
+        "name": "Ko Syn Wu",
+        "fields": {
+          "text": {
+            "was": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).",
+            "now": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).\n\nSacrifice — M5, once per turn: pay 3 gems and 3 health, banish a card from your hand or discard pile."
+          }
+        }
+      },
+      {
+        "id": "soichar_rez",
+        "name": "Rez",
+        "fields": {
+          "text": {
+            "was": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).",
+            "now": "Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).\n\nFutureproof — M5, once per turn: pay 1 gem, Scry 2 the center deck."
+          }
+        }
+      }
+    ],
+    "removed": []
+  },
+  "keywords": {
+    "added": [
+      {
+        "id": "allegiance",
+        "name": "Allegiance",
+        "faction": "",
+        "kind": "text",
+        "pattern": "\\bAllegiance\\b",
+        "flags": "",
+        "meaning": "Allegiance <Faction> N: active if you own at least N cards of that faction (deck, hand, discard pile and in play — banished and set-aside cards don't count; this card counts itself). Checked when the card is played or exhausted."
+      },
+      {
+        "id": "scry",
+        "name": "Scry",
+        "faction": "",
+        "kind": "text",
+        "pattern": "\\bScry\\b",
+        "flags": "",
+        "meaning": "Scry N: look at the top N cards of that deck; put any number on its bottom and the rest back on top in any order."
+      }
+    ],
+    "modified": [
+      {
+        "id": "dominion",
+        "name": "Dominion",
+        "fields": {
+          "meaning": {
+            "was": "Active if you played or revealed a Homodeus, an Undergrowth and a Wraethe card this turn.",
+            "now": "Active if you played or revealed at least 3 other cards of at least 3 different factions this turn."
+          }
+        }
+      }
+    ],
+    "removed": []
+  }
+}
