@@ -45,6 +45,8 @@ namespace SoiSim
                         return EmitNetCommand.RunEmit(cli);
                     case "netfixture":
                         return EmitNetCommand.RunFixture(cli);
+                    case "dump-positions":
+                        return DumpPositionsCommand.Run(cli);
                     case "smoke":
                         return SmokeCommand.Run(cli);
                     default:
