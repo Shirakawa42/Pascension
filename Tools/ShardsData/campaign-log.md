@@ -286,3 +286,26 @@ crossover has to be measured, not guessed, which is what `crossover_spec.json` d
 
 **Do not set a rank budget from the scaling slope alone.** Above the crossover search is
 worth ~115 Elo/doubling; below it, more search is worth less than nothing.
+
+**The crossover curve, measured (paired, all DLC incl. Duel, vs BRONZE = instant V5 greedy):**
+
+| rollout ISMCTS budget | vs BRONZE | n |
+|---|---|---|
+| 300 it | **21.2%** [18.2-24.3] | 400 pairs |
+| 1 200 it | **52.5%** [47.6-57.4] | 200 pairs |
+| 4 800 it | **71.4%** [67.3-75.5] | 201 pairs |
+| 6 000 it | ~77.5% (early, 40 pairs) | partial |
+| *legacy DIAMOND (gen-8 net, 3200 it)* | **8.5%** [5.6-11.4] | 200 pairs |
+
+Read that last row against the rest: the shipped top rank performed like a search agent
+with FAR less than 300 iterations. The net did not merely fail to help — it dragged a
+3200-iteration search below a 300-iteration one.
+
+Ladder budgets follow from the curve, not from the slope: 2400 / 6000 / 12000 / 24000 /
+48000, every rung comfortably above the ~1200 crossover.
+
+Not measured (stopped to control spend): 24000 vs 6000. Those games are ~5 min each and
+the matchup produced nothing in 21 minutes of pod time. If the top rung ever needs a
+number, budget it properly — a single 24000-vs-24000 game is ~10 minutes of one core.
+
+Session spend: ~$17 across five tournaments.
