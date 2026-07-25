@@ -20,6 +20,12 @@ namespace Pascension.Game.View
         public const float Width = 220f;
         public const float Height = 308f;
 
+        /// <summary>External (SoI) rules text: fixed size in CARD units so every zoom
+        /// level renders the same layout, and a hard ceiling on how far the rules box may
+        /// grow — 236 leaves the top bar (42) and a sliver of art visible.</summary>
+        private const float RulesFontSize = 13.5f;
+        private const float MaxRulesBoxTop = 236f;
+
         [Header("Wired by CardViewFactory")]
         public UiTheme Theme;
         public Image Glow;
@@ -41,6 +47,7 @@ namespace Pascension.Game.View
         public GameObject ShieldGroup;
         public TextMeshProUGUI ShieldText;
         public GameObject MercenaryMarker;
+        public SparkleOverlay Sparkle;
         public CanvasGroup Group;
 
         public int InstanceId { get; private set; } = -1;
@@ -56,6 +63,13 @@ namespace Pascension.Game.View
 
         /// <summary>Global hover feed — drives the large card preview.</summary>
         public static event Action<CardView, bool> AnyHovered;
+
+        /// <summary>True ONLY while this view is being torn down (disabled/destroyed) and
+        /// raises its farewell hover-exit. The pointer never moved — the view under it
+        /// simply went away, which happens constantly (board rows re-render on every
+        /// snapshot, effects and animations rebuild zones). Hover consumers must treat
+        /// such an "exit" as a rebuild to ride out, not as the user leaving the card.</summary>
+        public bool Closing { get; private set; }
 
         /// <summary>Face data for def ids OUTSIDE Pascension's CardDatabase (the Shards
         /// of Infinity table plugs its database in through this). Only consulted when a
@@ -238,15 +252,27 @@ namespace Pascension.Game.View
             TypeText.text = face.TypeLine;
 
             // Fixed, readable font size — the rules box GROWS for long texts instead of
-            // shrinking the text (Shards cards can be wordy).
+            // shrinking the text (Shards cards can be wordy). Everything here is in the
+            // card's OWN units, so it scales with the card and reads identically at every
+            // zoom (hand, board, 1.3x preview).
             RulesText.enableAutoSizing = false;
-            RulesText.fontSize = 13.5f;
+            RulesText.fontSize = RulesFontSize;
             if (Theme != null && Theme.Icons != null)
                 RulesText.spriteAsset = Theme.Icons;
             RulesText.text = face.RulesText;
             float textWidth = 210f - 16f; // frame-relative rules width minus padding
             float preferred = RulesText.GetPreferredValues(face.RulesText ?? "", textWidth, 0f).y;
             float boxTop = Mathf.Max(_rulesDefaultsCaptured ? _rulesBoxDefaultTop : 102f, preferred + 34f);
+            // …but growing can only go so far: past this the box would swallow the art and
+            // run under the top bar. The longest texts shrink to fit instead of spilling
+            // out of the card — no text is ever clipped at any scale.
+            if (boxTop > MaxRulesBoxTop)
+            {
+                boxTop = MaxRulesBoxTop;
+                RulesText.enableAutoSizing = true;
+                RulesText.fontSizeMax = RulesFontSize;
+                RulesText.fontSizeMin = 8f;
+            }
             var offsetMax = RulesBox.rectTransform.offsetMax;
             RulesBox.rectTransform.offsetMax = new Vector2(offsetMax.x, boxTop);
             CostGroup.SetActive(face.ShowCost);
@@ -316,6 +342,16 @@ namespace Pascension.Game.View
         public void SetMercenaryMarker(bool on)
         {
             if (MercenaryMarker != null) MercenaryMarker.SetActive(on);
+        }
+
+        /// <summary>Star-twinkle "condition met" channel (SoI) — replaced the steady
+        /// condition glow so the ring channels stay free for selection/killable/
+        /// affordable states. Tinted toward the faction color.</summary>
+        public void SetSparkle(bool on, Color color = default)
+        {
+            if (Sparkle == null) return;
+            if (on) Sparkle.Show(color == default ? UiPalette.Gold : color);
+            else Sparkle.Hide();
         }
 
         public void SetGlow(bool on) => SetGlow(on, UiPalette.Gold);
@@ -429,6 +465,18 @@ namespace Pascension.Game.View
             AnyHovered?.Invoke(this, false);
         }
 
-        private void OnDisable() => AnyHovered?.Invoke(this, false);
+        private void OnDisable()
+        {
+            // BOTH feeds must hear it: per-view subscribers own visual hover state (the
+            // hand's lift, the character cards' scale) and would stay stuck lifted if a
+            // view were disabled while hovered.
+            // Flagged so consumers can tell "the view died under a parked pointer" from
+            // "the user moved off the card" (see Closing). Reset afterwards: views can be
+            // re-enabled, and a stale flag would make a real exit look like a teardown.
+            Closing = true;
+            Hovered?.Invoke(this, false);
+            AnyHovered?.Invoke(this, false);
+            Closing = false;
+        }
     }
 }

@@ -91,11 +91,13 @@ namespace Pascension.Game.View
             view.HpGroup = hpGroup.gameObject;
             view.HpText = hpText;
 
-            // Shield badge (Shards of Infinity): shield icon + count, left edge above
-            // the rules box. Inactive by default — Pascension never shows it.
+            // Shield badge (Shards of Infinity): a big shield icon with the count on it,
+            // MIRRORING the mercenary triangle — flush against the LEFT edge, vertically
+            // centered (free art area between top bar and rules box). Inactive by
+            // default — Pascension never shows it.
             var shieldGroup = UiFactory.CreateRect("Shield", frame.transform);
-            UiFactory.Place(shieldGroup, new Vector2(0f, 0f), new Vector2(26f, 130f), new Vector2(44f, 48f));
-            var shieldIcon = UiFactory.CreateText(theme, "Icon", shieldGroup, "<sprite name=\"soi_shield\">", 40f,
+            UiFactory.Place(shieldGroup, new Vector2(0f, 0.5f), new Vector2(2f, 0f), new Vector2(46f, 60f));
+            var shieldIcon = UiFactory.CreateText(theme, "Icon", shieldGroup, "<sprite name=\"soi_shield\">", 48f,
                 Color.white, TextAlignmentOptions.Center);
             if (theme.Icons != null) shieldIcon.spriteAsset = theme.Icons;
             UiFactory.Stretch(shieldIcon.rectTransform);
@@ -152,20 +154,31 @@ namespace Pascension.Game.View
             view.DamageGroup = dmgGroup.gameObject;
             view.DamageText = dmgText;
 
-            // Mercenary marker (Shards of Infinity): a red triangle stuck on the right
-            // edge, apex pointing toward the card center, vertically centered, with a
-            // black "M". Last child of the frame so it draws above the art. Off unless the
-            // bound face is a mercenary. Never blocks the card's click.
+            // Mercenary marker (Shards of Infinity): a red triangle on the right edge
+            // (apex toward the card center, black "M") plus a thin red inset line running
+            // around the card, gapped where the triangle sits so it reads as starting
+            // from the triangle's sides. One group so SetMercenaryMarker toggles both.
+            // Last child of the frame so it draws above the art. Never blocks clicks.
             var mercMarker = UiFactory.CreateRect("Mercenary", frame.transform);
-            mercMarker.anchorMin = mercMarker.anchorMax = new Vector2(1f, 0.5f);
-            mercMarker.pivot = new Vector2(1f, 0.5f);
-            mercMarker.anchoredPosition = Vector2.zero;
-            mercMarker.sizeDelta = new Vector2(46f, 60f);
-            mercMarker.gameObject.AddComponent<CanvasRenderer>(); // Graphic needs one; RequireComponent auto-add is unreliable via runtime AddComponent
-            var mercTri = mercMarker.gameObject.AddComponent<TriangleGraphic>();
+            UiFactory.Stretch(mercMarker);
+
+            var mercRingRect = UiFactory.CreateRect("Ring", mercMarker);
+            UiFactory.Stretch(mercRingRect, 8, 8, 8, 8);
+            mercRingRect.gameObject.AddComponent<CanvasRenderer>(); // Graphic needs one; RequireComponent auto-add is unreliable via runtime AddComponent
+            var mercRing = mercRingRect.gameObject.AddComponent<RectRingGraphic>();
+            mercRing.color = UiPalette.Danger;
+            mercRing.raycastTarget = false;
+
+            var mercTriRect = UiFactory.CreateRect("Triangle", mercMarker);
+            mercTriRect.anchorMin = mercTriRect.anchorMax = new Vector2(1f, 0.5f);
+            mercTriRect.pivot = new Vector2(1f, 0.5f);
+            mercTriRect.anchoredPosition = new Vector2(-8f, 0f); // base sits ON the inset line
+            mercTriRect.sizeDelta = new Vector2(46f, 60f);
+            mercTriRect.gameObject.AddComponent<CanvasRenderer>();
+            var mercTri = mercTriRect.gameObject.AddComponent<TriangleGraphic>();
             mercTri.color = UiPalette.Danger;
             mercTri.raycastTarget = false;
-            var mercM = UiFactory.CreateText(theme, "M", mercMarker, "M", 26f,
+            var mercM = UiFactory.CreateText(theme, "M", mercTriRect, "M", 26f,
                 Color.black, TextAlignmentOptions.Center, FontStyles.Bold);
             // Sit the glyph over the triangle's mass (a third of the way in from the base).
             mercM.rectTransform.anchorMin = mercM.rectTransform.anchorMax = new Vector2(1f, 0.5f);
@@ -174,6 +187,9 @@ namespace Pascension.Game.View
             mercM.rectTransform.sizeDelta = new Vector2(30f, 40f);
             mercMarker.gameObject.SetActive(false);
             view.MercenaryMarker = mercMarker.gameObject;
+
+            // Condition-met star twinkle (SoI) — above everything on the card.
+            view.Sparkle = SparkleOverlay.Create((RectTransform)frame.transform);
 
             return view;
         }

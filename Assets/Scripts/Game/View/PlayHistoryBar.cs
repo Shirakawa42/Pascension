@@ -176,20 +176,53 @@ namespace Pascension.Game.View
 
         /// <summary>Attach a card an effect touched (banished, revealed, fetched…) to the
         /// newest ATTACHABLE entry of that player — its cause. False when no cause entry
-        /// exists yet (caller may push a standalone entry instead).</summary>
-        public bool AttachAffected(int playerIndex, string affectedDefId)
+        /// exists yet (caller may push a standalone entry instead).
+        /// `allowDuplicates` is for REVEALS, where the same def legitimately appears
+        /// several times (three Crystals off the top) and hiding the copies makes a
+        /// five-card reveal look like a three-card one.</summary>
+        public bool AttachAffected(int playerIndex, string affectedDefId, bool allowDuplicates = false)
         {
             if (string.IsNullOrEmpty(affectedDefId)) return false;
             foreach (var entry in _all)
             {
                 if (!entry.Attachable || entry.PlayerIndex != playerIndex) continue;
-                // Dedupe: one effect often reports the same card twice (revealed AND
-                // then recruited) — the panel should show it once.
-                if (entry.Affected.Count < 6 && !entry.Affected.Contains(affectedDefId))
+                // Dedupe by default: one effect often reports the same card twice
+                // (revealed AND then recruited) — the panel should show it once.
+                if (entry.Affected.Count < 8 && (allowDuplicates || !entry.Affected.Contains(affectedDefId)))
                     entry.Affected.Add(affectedDefId);
                 return true;
             }
             return false;
+        }
+
+        /// <summary>Set the dim note line on the newest entry of that player for that card
+        /// — used to record which branch a "Choose one" card took, on the entry the card
+        /// already has, instead of pushing a second row for the same play.</summary>
+        public bool AnnotateNewest(int playerIndex, string defId, string note)
+        {
+            if (string.IsNullOrEmpty(defId)) return false;
+            foreach (var entry in _all)
+            {
+                if (entry.PlayerIndex != playerIndex || entry.DefId != defId) continue;
+                entry.Note = note;
+                if (entry.Rect != null) RefreshRowNote(entry);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Rebuild one bar row in place after its note changed — the note line
+        /// also reflows the name above it, so a rebuild beats patching two texts.</summary>
+        private void RefreshRowNote(Entry entry)
+        {
+            if (entry.Rect == null) return;
+            var pos = entry.Rect.anchoredPosition;
+            int sibling = entry.Rect.GetSiblingIndex();
+            Destroy(entry.Rect.gameObject);
+            entry.Rect = BuildRow(Container, entry, 88f, EntryHeight - 4f, compact: true);
+            entry.Rect.anchorMin = entry.Rect.anchorMax = entry.Rect.pivot = new Vector2(0.5f, 1f);
+            entry.Rect.anchoredPosition = pos;
+            entry.Rect.SetSiblingIndex(sibling);
         }
 
         // ------------------------------------------------------------------ full log window

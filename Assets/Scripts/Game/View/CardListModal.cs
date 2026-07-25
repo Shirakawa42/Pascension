@@ -132,7 +132,9 @@ namespace Pascension.Game.View
                     cell.sizeDelta = new Vector2(CellW, CellH);
                     var card = CardViewFactory.Create(cell, Theme, 0.61f);
                     card.Bind(cards[i]);
-                    card.SetRaycastable(false);
+                    // Stay raycastable so hovering a browsed card fires AnyHovered (big
+                    // preview + keyword tips render above the modal). No Clicked
+                    // subscription — clicks on cards are no-ops; the dimmer still closes.
                 }
             }
 

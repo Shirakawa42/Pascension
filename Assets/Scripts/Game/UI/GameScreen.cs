@@ -407,14 +407,32 @@ namespace Pascension.Game.UI
 
         private string _previewSourceId;
 
+        // Sticky hover (mirrors SoiGameScreen): board/market views are destroyed and
+        // rebuilt constantly, and a view dying under a parked pointer must not blink the
+        // preview off. A teardown exit opens this grace instead; the rebuilt view
+        // re-enters on its own (Unity re-raycasts every frame) and cancels it.
+        private const float PreviewRegrabSeconds = 0.4f;
+        private float _previewRegrabLeft;
+        private CardView _previewSource; // the view the preview belongs to
+        private string _previewDefId;    // and the def it is currently showing
+
         private void OnAnyCardHovered(CardView card, bool entered)
         {
             if (_preview == null || card == _preview) return;
             string key = card.GetInstanceID().ToString();
             if (entered)
             {
-                if (string.IsNullOrEmpty(card.DefId)) return; // hidden card / card back
+                if (string.IsNullOrEmpty(card.DefId))
+                {
+                    // Hidden card / card back: nothing to preview, and the pointer is
+                    // demonstrably on a real card — end any pending re-acquire too.
+                    HidePreview();
+                    return;
+                }
+                _previewRegrabLeft = 0f;
                 _previewSourceId = key;
+                _previewSource = card;
+                _previewDefId = card.DefId;
                 _preview.BindDef(card.DefId);
                 _preview.gameObject.SetActive(true);
                 _preview.Rect.SetAsLastSibling();
@@ -422,8 +440,39 @@ namespace Pascension.Game.UI
             else if (_previewSourceId == key)
             {
                 _previewSourceId = null;
-                _preview.gameObject.SetActive(false);
+                _previewSource = null;
+                // The view was torn down, not left — hold the preview for the rebuild.
+                if (card.Closing) { _previewRegrabLeft = PreviewRegrabSeconds; return; }
+                HidePreview();
             }
+        }
+
+        private void HidePreview()
+        {
+            _previewRegrabLeft = 0f;
+            _previewSourceId = null;
+            _previewSource = null;
+            _previewDefId = null;
+            if (_preview != null) _preview.gameObject.SetActive(false);
+        }
+
+        private void LateUpdate()
+        {
+            if (_previewRegrabLeft > 0f)
+            {
+                _previewRegrabLeft -= Time.unscaledDeltaTime;
+                // Nothing re-acquired the hover: the card really is gone.
+                if (_previewRegrabLeft <= 0f && _previewSourceId == null)
+                    HidePreview();
+                return;
+            }
+            // PERSISTENT views (market slots, board tiles) are REBOUND in place — no
+            // exit/enter fires, so re-sync the preview to what the view now shows.
+            if (_previewSource == null || _preview == null) return;
+            if (_previewSource.DefId == _previewDefId) return;
+            if (string.IsNullOrEmpty(_previewSource.DefId)) { HidePreview(); return; }
+            _previewDefId = _previewSource.DefId;
+            _preview.BindDef(_previewDefId);
         }
 
         /// <summary>Arrows from each stack item's controller to its targets — everyone sees

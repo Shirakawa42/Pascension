@@ -346,12 +346,14 @@ namespace Pascension.Game.View
                 if (_pulseIds.Contains(card.InstanceId))
                 {
                     card.SetGlow(true);
+                    card.SetSparkle(false);
                     continue;
                 }
-                // No pulse: fall back to the steady condition glow, if any.
+                // No pulse: the steady "condition met" channel renders as a star
+                // twinkle (SoI), keeping the glow ring free for the response pulse.
                 var steady = GlowResolver?.Invoke(card.InstanceId);
-                if (steady.HasValue) card.SetGlow(true, steady.Value);
-                else card.SetGlow(false);
+                card.SetGlow(false);
+                card.SetSparkle(steady.HasValue, steady ?? default);
             }
             if (_pulse == null && _pulseIds.Count > 0 && isActiveAndEnabled)
                 _pulse = StartCoroutine(PulseLoop());
@@ -409,7 +411,11 @@ namespace Pascension.Game.View
                 card.Rect.anchoredPosition = pose.Position;
                 card.transform.localRotation = Quaternion.Euler(0f, 0f, pose.RotationZ);
                 card.transform.localScale = Vector3.one * CardScale;
-                card.transform.SetSiblingIndex(Mathf.Clamp(_order.IndexOf(card.InstanceId), 0, Container.childCount - 1));
+                // A view raising its farewell exit is mid-teardown (CardView.Closing):
+                // Unity forbids reordering siblings while the parent is being
+                // activated/deactivated, and a dying card's fan order is moot anyway.
+                if (!card.Closing)
+                    card.transform.SetSiblingIndex(Mathf.Clamp(_order.IndexOf(card.InstanceId), 0, Container.childCount - 1));
             }
         }
 
