@@ -110,9 +110,47 @@ namespace Pascension.Game.UI
             ["A random hero is assigned when the game starts — never one another player already has."] =
                 "Un héros aléatoire vous est attribué au lancement — jamais celui d'un autre joueur.",
 
+            // ---------------------------------------------------------- SoI Duel of Doom (draft, hero abilities, reroll)
+            ["The shop is already dealt — check it before you commit."] =
+                "La boutique est déjà distribuée — inspectez-la avant de vous engager.",
+            ["RELICS — recruit one free at Mastery 10"] = "RELIQUES — recrutez-en une gratuitement à 10 de maîtrise",
+            ["VIEW SHOP"] = "VOIR LA BOUTIQUE",
+            ["BACK TO DRAFT"] = "RETOUR AU DRAFT",
+            ["PLAY {0}"] = "JOUER {0}",
+            ["REROLL"] = "RELANCER",
+            ["Rerolling costs {0} gems right now."] = "Relancer coûte {0} cristaux pour le moment.",
+            ["Hero ability already used this turn."] = "Capacité de héros déjà utilisée ce tour-ci.",
+            ["This ability is passive — it applies by itself."] =
+                "Cette capacité est passive — elle s'applique toute seule.",
+            ["Requires Mastery 5."] = "Nécessite 5 de maîtrise.",
+            ["Not enough gems."] = "Pas assez de cristaux.",
+            ["Not enough health."] = "Pas assez de santé.",
+            // Hero ability names + rules text (engine-sourced English keys).
+            ["Recruiting"] = "Recrutement",
+            ["Perception"] = "Perception",
+            ["First Aid"] = "Premiers Soins",
+            ["Sacrifice"] = "Sacrifice",
+            ["Futureproof"] = "Pare-Avenir",
+            ["M5 passive: the first card you buy each turn costs 1 less."] =
+                "M5 passif : la première carte que vous achetez chaque tour coûte 1 de moins.",
+            ["M5, once per turn: pay 3 gems, draw a card."] =
+                "M5, une fois par tour : payez 3 cristaux, piochez une carte.",
+            ["M5, once per turn: pay 1 gem, gain 3 health."] =
+                "M5, une fois par tour : payez 1 cristal, gagnez 3 santé.",
+            ["M5, once per turn: pay 3 gems and 3 health, banish a card from your hand or discard pile."] =
+                "M5, une fois par tour : payez 3 cristaux et 3 santé, bannissez une carte de votre main ou de votre défausse.",
+            ["M5, once per turn: pay 1 gem, Scry 2 the center deck."] =
+                "M5, une fois par tour : payez 1 cristal, Sondez 2 la pioche commune.",
+            ["drafted"] = "drafté",
+            [" drafts "] = " drafte ",
+            ["rerolled"] = "relancée",
+            [" rerolls "] = " relance ",
+            ["Hero ability"] = "Capacité de héros",
+
             // ---------------------------------------------------------- SoI keyword glossary (hover tooltips)
             ["Unify"] = "Union",
             ["Dominion"] = "Domination",
+            ["Allegiance"] = "Allégeance",
             ["Inspire"] = "Inspiration",
             ["Echo"] = "Écho",
             ["Warp"] = "Distorsion",
@@ -136,10 +174,14 @@ namespace Pascension.Game.UI
                 "Actif si vous avez joué ou que vous révélez un autre allié {0} en jouant cette carte.",
             ["Active if you played or revealed a Homodeus, an Undergrowth and a Wraethe card this turn."] =
                 "Actif si vous avez joué ou révélé une carte Homodeus, une Maquis et une Spectra ce tour-ci.",
+            ["Active if you played or revealed at least 3 other cards of 3 different factions this turn."] =
+                "Actif si vous avez joué ou révélé au moins 3 autres cartes de 3 factions différentes ce tour-ci.",
+            ["Active if you own at least the shown number of cards of that faction (deck, hand, discard and in play)."] =
+                "Actif si vous possédez au moins le nombre indiqué de cartes de cette faction (pioche, main, défausse et en jeu).",
             ["Active while you control a champion."] =
                 "Actif tant que vous contrôlez un champion.",
-            ["Grows with each {0} card in your discard pile."] =
-                "Augmente avec chaque carte {0} dans votre défausse.",
+            ["Active once if at least one {0} card is in your discard pile. It never repeats per card — cards that scale say 'per {0} card' explicitly."] =
+                "Actif une seule fois si au moins une carte {0} est dans votre défausse. Ne se répète jamais par carte — les cartes qui s'amplifient précisent « par carte {0} ».",
             ["Fast-play a row ally costing up to the shown number for free (no number: any ally). It goes under the center deck at end of turn."] =
                 "Enrôlez gratuitement un allié de la rivière coûtant au plus le nombre indiqué (sans nombre : n'importe lequel). Il retourne sous la pioche commune en fin de tour.",
             ["Needs that much Mastery when you play or exhaust this card."] =
@@ -236,11 +278,22 @@ namespace Pascension.Game.UI
             ["deck"] = "deck",
             ["discard"] = "défausse",
             ["played"] = "jouées",
+            // Duel opponent panel (1v1): inline info row + direct pile browsers.
+            ["relic recruited"] = "relique recrutée",
+            ["relic —"] = "relique —",
+            ["PLAYED"] = "JOUÉES",
 
             // ---------------------------------------------------------- decision modal
             ["CONFIRM"] = "CONFIRMER",
             ["SKIP"] = "PASSER",
+            ["PASS"] = "PASSER",
+            ["HIDE"] = "MASQUER",
+            ["Drag the cards to reorder them — 1 goes on top."] =
+                "Glissez les cartes pour les réordonner — la 1 va sur le dessus.",
+            ["BACK TO CHOICE"] = "REVENIR AU CHOIX",
             ["ALL → "] = "TOUT → ",
+            ["Their shields will reduce each champion's damage — assign extra to kill through."] =
+                "Leurs boucliers réduiront les dégâts de chaque champion — assignez plus pour tuer au travers.",
 
             // ---------------------------------------------------------- opponent detail
             ["CHAMPIONS"] = "CHAMPIONS",
@@ -471,6 +524,40 @@ namespace Pascension.Game.UI
                 "Prenez une Destinée supplémentaire de la rangée"),
             (new Regex(@"^Choose an opponent to lose (\d+) mastery$"),
                 "Choisissez un adversaire qui perd $1 maîtrise"),
+            // Duel of Doom decisions (the DLC shipped these titles untranslated).
+            (new Regex(@"^Choose your hero$"),
+                "Choisissez votre héros"),
+            (new Regex(@"^Choose an opponent to destroy$"),
+                "Choisissez un adversaire à détruire"),
+            (new Regex(@"^Choose an opponent to lose (\d+) health$"),
+                "Choisissez un adversaire qui perd $1 santé"),
+            // "$1 : sa main" avoids the de/d' elision a player name would break.
+            (new Regex(@"^Choose an opponent — they draw a card, then discard one you choose$"),
+                "Choisissez un adversaire — il pioche une carte, puis défausse celle que vous choisissez"),
+            (new Regex(@"^Choose a card in (.+)'s hand — they discard it$"),
+                "$1 : choisissez une carte dans sa main — il la défausse"),
+            (new Regex(@"^Search your draw pile for a card to put into your hand$"),
+                "Cherchez dans votre pioche une carte à mettre dans votre main"),
+            (new Regex(@"^Destroy an Ingeminex$"),
+                "Détruisez un Ingeminex"),
+            (new Regex(@"^Reactor Drone: choose one$"),
+                "Drone Réacteur : choisissez"),
+            (new Regex(@"^Remove a card from the shop\?$"),
+                "Retirer une carte de la boutique ?"),
+            (new Regex(@"^Return a mercenary from your discard or draw pile to your hand$"),
+                "Reprenez un mercenaire de votre défausse ou de votre pioche en main"),
+            (new Regex(@"^Reveal a shield card to gain (\d+) power instead\?$"),
+                "Révéler une carte bouclier pour gagner $1 puissance à la place ?"),
+            (new Regex(@"^Banish up to (\d+) card\(s\) from your hand/discard to gain their effects$"),
+                "Bannissez jusqu'à $1 carte(s) de votre main/défausse pour gagner leurs effets"),
+            (new Regex(@"^Fast-play revealed allies costing (\d+) or less \(free\)$"),
+                "Enrôlez gratuitement les alliés révélés coûtant $1 ou moins"),
+            (new Regex(@"^Put the top (\d+) cards back in any order — first picked ends up ON TOP$"),
+                "Remettez les $1 cartes du dessus dans l'ordre de votre choix — la première choisie finit AU-DESSUS"),
+            (new Regex(@"^Scry (\d+): choose cards to move to the bottom of the center deck$"),
+                "Sondage $1 : choisissez les cartes à placer sous la pioche commune"),
+            (new Regex(@"^Copy the effects of any revealed allies$"),
+                "Copiez les effets des alliés révélés de votre choix"),
             (new Regex(@"^Discard (\d+) cards?$"),
                 "Défaussez $1 carte(s)"),
             (new Regex(@"^Fast-play an ally costing (\d+) or less for free \(you keep it\)\?$"),

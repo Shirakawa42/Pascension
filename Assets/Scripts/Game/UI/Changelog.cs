@@ -50,6 +50,33 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-07-27",
+                "· New DLC — Duel of Doom (requires all other expansions), built for two-player skill:\n" +
+                "· Heroes are drafted on turn 1 — the shop is dealt first, then players pick in reverse seat order with no duplicates, so your pick answers the opening shop.\n" +
+                "· Each hero gains a unique second ability, usable alongside Focus (Decima: cheaper first buy; Tetra: draw; Volos: heal; Ko Syn Wu: banish; Rez: Scry). It sits beside your portrait as a real card with its own art, and glows the moment you can use it.\n" +
+                "· Reroll any shop card: 1 gem, +1 for each further reroll the same turn.\n" +
+                "· New Allegiance keyword (a bonus for owning 4+ cards of a faction); Dominion reworked to reward 3 different factions; new cards in every faction plus an extra relic per hero.\n" +
+                "· Testudo Vanguard makes your shields protect your champions too — attackers can assign more than lethal to punch through them.\n" +
+                "· Dozens of cards rebalanced with the DLC on; the base game is untouched.\n" +
+                "· Card texts rewritten for readability: no parentheses, one effect per line, a mastery upgrade tucked under the effect it changes, shields and keywords as icons — in English and French.\n" +
+                "· Card choice windows redesigned: no boxed panel, big cards centred over a dimmed table, big buttons, and a HIDE button so you can study the shop or your piles before deciding.\n" +
+                "· Reveals now always show every card they turned up — the ones you can't take are greyed out and you PASS — and if your draw pile runs short mid-reveal your discard is shuffled back in to finish it. Legion Carrier no longer asks whether to reveal.\n" +
+                "· Card previews no longer blink out: hovering survives effects, animations and board refreshes, and pile browsers show the big preview too.\n" +
+                "· Cards whose condition is met now twinkle with stars instead of glowing; mercenaries carry a red inset line from their triangle, and the shield badge is bigger on the card's left edge.\n" +
+                "· Opponents' reveals now play an animation on your screen, and the Echo tooltip finally explains what Echo actually does.",
+                "· Nouvelle extension — Duel of Doom (nécessite toutes les autres extensions), pensée pour le duel :\n" +
+                "· Les héros se draftent au tour 1 — la boutique est distribuée d'abord, puis les joueurs choisissent en ordre inverse et sans doublon, pour que le choix réponde à la boutique de départ.\n" +
+                "· Chaque héros gagne une seconde capacité unique, utilisable en plus de la Concentration (Decima : premier achat moins cher ; Tetra : pioche ; Volos : soin ; Ko Syn Wu : bannissement ; Rez : Sondage). Elle siège à côté de votre portrait comme une vraie carte avec sa propre illustration, et s'illumine dès que vous pouvez l'utiliser.\n" +
+                "· Relancez n'importe quelle carte de la boutique : 1 cristal, +1 par relance supplémentaire le même tour.\n" +
+                "· Nouveau mot-clé Allégeance (un bonus si vous possédez 4 cartes ou plus d'une faction) ; Domination remaniée pour récompenser 3 factions différentes ; de nouvelles cartes dans chaque faction et une relique supplémentaire par héros.\n" +
+                "· L'Avant-garde Testudo fait aussi protéger vos champions par vos boucliers — les attaquants peuvent assigner plus que nécessaire pour percer.\n" +
+                "· Des dizaines de cartes rééquilibrées avec l'extension active ; le jeu de base reste inchangé.\n" +
+                "· Textes de cartes réécrits pour la lisibilité : plus de parenthèses, un effet par ligne, l'amélioration de maîtrise collée à l'effet qu'elle modifie, boucliers et mots-clés en icônes — en français comme en anglais.\n" +
+                "· Fenêtres de choix de cartes redessinées : plus de panneau encadré, de grandes cartes centrées sur une table assombrie, de grands boutons, et un bouton MASQUER pour consulter la boutique ou vos piles avant de décider.\n" +
+                "· Les révélations montrent désormais toutes les cartes retournées — celles que vous ne pouvez pas prendre sont grisées et vous PASSEZ — et si votre pioche s'épuise en cours de révélation, votre défausse y est remélangée pour terminer. Le Transporteur de la Légion ne demande plus s'il faut révéler.\n" +
+                "· L'aperçu de carte ne clignote plus : le survol survit aux effets, aux animations et aux rafraîchissements du plateau, et les navigateurs de piles affichent aussi le grand aperçu.\n" +
+                "· Les cartes dont la condition est remplie scintillent d'étoiles au lieu de briller ; les mercenaires portent une ligne rouge partant de leur triangle, et le badge bouclier est plus grand sur le bord gauche.\n" +
+                "· Les révélations adverses jouent une animation sur votre écran, et l'infobulle Écho explique enfin ce qu'Écho fait vraiment."),
             new Entry("2026-07-23",
                 "· Player accounts: create a username + password account or play as a guest — accounts unlock online multiplayer, sign you in automatically at launch, and can be switched from the main menu.\n" +
                 "· Every finished game is now recorded to your match history — result, heroes, cards bought and played, per opponent — stored per account and synced to the cloud when signed in (guests keep a device-only history).\n" +
