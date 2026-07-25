@@ -28,6 +28,36 @@ namespace SoiSim
         private readonly int _threads;
         private readonly IReadOnlyList<string> _characters;
 
+        /// <summary>&gt;0: evaluate candidates as SEARCH bots at this iteration budget
+        /// instead of greedy argmax.
+        ///
+        /// Why this exists: the weight vector's job changed. Since the 2026-07-25 re-mint
+        /// every search rank uses it as the ISMCTS move PRIOR and as the ε-greedy ROLLOUT
+        /// POLICY — not to pick moves directly. Those are different objectives. A greedy
+        /// argmax wants the single best move; a rollout policy wants playouts whose
+        /// OUTCOMES are an unbiased, low-variance estimate of the position, which can
+        /// favour a different vector entirely. Tuning greedy and deploying in search has
+        /// been an untested assumption for the whole campaign.
+        ///
+        /// Search games cost ~100x a greedy game, so pair this with far fewer
+        /// generations/games and expect to fan it out.</summary>
+        public int SearchBudget { get; set; }
+
+        /// <summary>Root workers for candidate search games (wall-clock only).</summary>
+        public int SearchWorkers { get; set; } = 1;
+
+        private IBotAgent MakeSeat(ulong seed, ShardsEngineAdapter adapter, ShardsValueModel model)
+        {
+            if (SearchBudget <= 0)
+                return new ShardsGreedyEvalBot(seed, adapter.Inner, model);
+            var config = ShardsSearchConfig.ForSims(
+                Math.Max(1, SearchBudget / Math.Max(1, SearchWorkers)));
+            config.RolloutEndTurns = -1;            // full rollouts — the shipped mode
+            config.EarlyStopBudgetFraction = 1.0;
+            config.RootWorkers = SearchWorkers;
+            return new ShardsSearchBot(seed, adapter.Inner, config, model);
+        }
+
         public Tournament(int threads)
         {
             _threads = threads;
@@ -110,14 +140,18 @@ namespace SoiSim
             var seats = new IBotAgent[2];
             for (int seat = 0; seat < 2; seat++)
             {
+                ulong seatSeed = game.Seed * 100 + (ulong)seat;
                 if (seat == candidateSeat)
-                    seats[seat] = new ShardsGreedyEvalBot(game.Seed * 100 + (ulong)seat, adapter.Inner, candidate);
+                    seats[seat] = MakeSeat(seatSeed, adapter, candidate);
                 else
                     seats[seat] = game.Opponent switch
                     {
-                        OpponentKind.Heuristic => new ShardsHeuristicBot(game.Seed * 100 + (ulong)seat, adapter.Inner),
-                        OpponentKind.Historical => new ShardsGreedyEvalBot(game.Seed * 100 + (ulong)seat, adapter.Inner, historical),
-                        _ => new ShardsGreedyEvalBot(game.Seed * 100 + (ulong)seat, adapter.Inner, champion)
+                        // The heuristic anchor stays a heuristic — it is a FIXED reference
+                        // point, not a weight vector, so wrapping it in search would move
+                        // the anchor every time the budget changed.
+                        OpponentKind.Heuristic => new ShardsHeuristicBot(seatSeed, adapter.Inner),
+                        OpponentKind.Historical => MakeSeat(seatSeed, adapter, historical),
+                        _ => MakeSeat(seatSeed, adapter, champion)
                     };
             }
 

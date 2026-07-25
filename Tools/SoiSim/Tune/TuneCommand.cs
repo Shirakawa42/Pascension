@@ -26,6 +26,12 @@ namespace SoiSim
             int seed = cli.GetInt("--seed", 1);
             bool emit = !cli.Has("--no-emit");
             string emitPath = cli.GetStr("--out", WeightsEmitter.DefaultPath);
+            // Tune the vector IN THE ROLE IT IS ACTUALLY USED: since the re-mint, every
+            // search rank uses it as the ISMCTS prior + rollout policy, not as an argmax
+            // move picker. Search games cost ~100x greedy ones, so drop generations and
+            // games-per-candidate hard when this is on.
+            int searchBudget = cli.GetInt("--search-budget", 0);
+            int searchWorkers = cli.GetInt("--search-workers", 1);
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
@@ -45,7 +51,8 @@ namespace SoiSim
                 mean0[i] = start[i] / scale[i];
 
             var cma = new CmaEs(mean0, sigma, lambda, seed);
-            var tournament = new Tournament(threads);
+            var tournament = new Tournament(threads)
+                { SearchBudget = searchBudget, SearchWorkers = searchWorkers };
             var championWeights = (double[])start.Clone();
             var championHistory = new List<double[]> { championWeights };
             double championVsHeuristic = -1;
