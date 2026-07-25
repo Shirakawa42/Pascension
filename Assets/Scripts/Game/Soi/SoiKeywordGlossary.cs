@@ -60,13 +60,16 @@ namespace Pascension.Game.Soi
                     "Active if you played or reveal another {0} ally as you play this card.", faction));
             if (Regex.IsMatch(text, @"\bDominion\b"))
                 entries.Add(new Entry("Dominion",
-                    "Active if you played or revealed a Homodeus, an Undergrowth and a Wraethe card this turn."));
+                    "Active if you played or revealed at least 3 other cards of 3 different factions this turn."));
+            if (Regex.IsMatch(text, @"\bAllegiance\b"))
+                entries.Add(new Entry("Allegiance",
+                    "Active if you own at least the shown number of cards of that faction (deck, hand, discard and in play)."));
             if (Regex.IsMatch(text, @"\bInspire\b"))
                 entries.Add(new Entry("Inspire",
                     "Active while you control a champion."));
             if (Regex.IsMatch(text, @"\bEcho\b"))
                 entries.Add(new Entry("Echo",
-                    "Grows with each {0} card in your discard pile.", faction));
+                    "Active once if at least one {0} card is in your discard pile. It never repeats per card — cards that scale say 'per {0} card' explicitly.", faction));
             if (Regex.IsMatch(text, @"\bWarp\b"))
                 entries.Add(new Entry("Warp",
                     "Fast-play a row ally costing up to the shown number for free (no number: any ally). It goes under the center deck at end of turn."));

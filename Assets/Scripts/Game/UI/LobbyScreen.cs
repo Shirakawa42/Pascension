@@ -142,6 +142,10 @@ namespace Pascension.Game.UI
                 if (slot.Kind == LobbySlotKind.Human && slot.ClientId == myId) mySlot = i;
             }
 
+            // Duel of Doom drafts heroes on turn 1, on the dealt board — the lobby hero
+            // pick disappears (it would be overridden by the in-game draft anyway).
+            bool duelDraft = state.GameId == "shards" &&
+                             (state.DlcFlags & (int)Shards.Engine.ShardsDlc.Duel) != 0;
             for (int i = 0; i < _rows.Length; i++)
             {
                 var row = _rows[i];
@@ -166,7 +170,7 @@ namespace Pascension.Game.UI
                     (ready ? "  <size=15><color=#71B356>" + Loc.T("READY") + "</color></size>"
                            : "  <size=15><color=#C24B3A>" + Loc.T("NOT READY") + "</color></size>");
 
-                row.HeroButton.gameObject.SetActive(true);
+                row.HeroButton.gameObject.SetActive(!duelDraft);
                 row.HeroLabel.text = HeroDisplayName(slot.HeroId);
                 row.HeroButton.interactable = i == mySlot || (isHost && slot.Kind == LobbySlotKind.Bot);
 
@@ -397,28 +401,40 @@ namespace Pascension.Game.UI
                     rt.anchoredPosition = new Vector2(x, 0f);
                     rt.sizeDelta = new Vector2(290f, 28f);
                     int flag = dlc.Flag;
+                    string gameId = module.GameId;
                     toggle.onValueChanged.AddListener(on =>
                     {
                         var l = LobbyNetBehaviour.Instance;
                         var m = NetworkManager.Singleton;
                         if (l == null || m == null || !m.IsHost) return;
-                        int flags = l.State.DlcFlags;
-                        l.HostSetDlc(on ? flags | flag : flags & ~flag);
+                        int flags = on ? l.State.DlcFlags | flag : l.State.DlcFlags & ~flag;
+                        // Duel of Doom requires every other SoI expansion — normalize here
+                        // so all lobby clients see the forced-on set.
+                        if (gameId == "shards")
+                            flags = (int)Shards.Engine.ShardsEngine.NormalizeDlc((Shards.Engine.ShardsDlc)flags);
+                        l.HostSetDlc(flags);
                     });
                     x += 300f;
                 }
             }
 
-            // Sync checkbox states + host-only interactivity.
+            // Sync checkbox states + host-only interactivity. With Duel of Doom on, the
+            // other SoI expansions are REQUIRED: they show checked and greyed out.
             int current = lobby.State.DlcFlags;
+            bool duelLock = module.GameId == "shards" &&
+                            (current & (int)Shards.Engine.ShardsDlc.Duel) != 0;
             for (int i = 0; i < _dlcRow.childCount; i++)
             {
                 var toggle = _dlcRow.GetChild(i).GetComponent<UnityEngine.UI.Toggle>();
                 if (toggle == null) continue;
                 string name = _dlcRow.GetChild(i).name; // "Dlc_<flag>"
                 if (int.TryParse(name.Substring(4), out int flag))
+                {
                     toggle.SetIsOnWithoutNotify((current & flag) != 0);
-                toggle.interactable = isHost;
+                    toggle.interactable = isHost && !(duelLock && flag != (int)Shards.Engine.ShardsDlc.Duel);
+                }
+                else
+                    toggle.interactable = isHost;
             }
         }
 

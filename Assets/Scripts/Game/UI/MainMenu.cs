@@ -246,6 +246,8 @@ namespace Pascension.Game.UI
         private int _soiBots = 1;
         private int _soiRankIndex = 1; // ladder index into ShardsModule.RankOptions (1 = BRONZE default)
         private RectTransform _soiCharacterRow;
+        private TextMeshProUGUI _soiCharLabel;
+        private readonly Dictionary<int, Toggle> _soiDlcToggles = new Dictionary<int, Toggle>();
         private readonly List<Button> _soiBotButtons = new List<Button>();
         private TextMeshProUGUI _soiDifficultyLabel;
 
@@ -259,9 +261,9 @@ namespace Pascension.Game.UI
             title.characterSpacing = 4f;
             UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(1100f, 52f));
 
-            var charLabel = UiFactory.CreateText(Theme, "CharLabel", _soiSoloPanel, Loc.T("YOUR CHARACTER"), 18f,
+            _soiCharLabel = UiFactory.CreateText(Theme, "CharLabel", _soiSoloPanel, Loc.T("YOUR CHARACTER"), 18f,
                 UiPalette.TextDim, TextAlignmentOptions.Center, FontStyles.Bold);
-            UiFactory.Place(charLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(600f, 26f));
+            UiFactory.Place(_soiCharLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(600f, 26f));
             _soiCharacterRow = UiFactory.CreateRect("Characters", _soiSoloPanel);
             UiFactory.Place(_soiCharacterRow, new Vector2(0.5f, 1f), new Vector2(0f, -260f), new Vector2(1200f, 110f));
 
@@ -270,6 +272,7 @@ namespace Pascension.Game.UI
             UiFactory.Place(dlcLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -360f), new Vector2(600f, 26f));
             var module = Pascension.Net.GameCatalog.Get("shards");
             float dy = -400f;
+            _soiDlcToggles.Clear();
             foreach (var dlc in module.DlcOptions)
             {
                 var toggle = UiFactory.CreateToggle(Theme, "Dlc_" + dlc.Flag, _soiSoloPanel,
@@ -277,10 +280,12 @@ namespace Pascension.Game.UI
                 UiFactory.Place((RectTransform)toggle.transform, new Vector2(0.5f, 1f), new Vector2(-40f, dy), new Vector2(860f, 34f));
                 dy -= 42f;
                 int flag = dlc.Flag;
+                _soiDlcToggles[flag] = toggle;
                 toggle.onValueChanged.AddListener(on =>
                 {
                     if (on) _soiDlc |= flag;
                     else _soiDlc &= ~flag;
+                    RefreshSoiDuelLock();
                     RebuildSoiCharacters(); // Rez appears only with Shadow of Salvation
                 });
             }
@@ -322,8 +327,28 @@ namespace Pascension.Game.UI
             UiFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0f, 70f), new Vector2(220f, 54f));
             back.onClick.AddListener(() => ShowPanel(_gameSelectPanel));
 
+            RefreshSoiDuelLock();
             RebuildSoiCharacters();
             RefreshSoiBotButtons();
+        }
+
+        /// <summary>Duel of Doom requires every other expansion and drafts heroes on turn 1:
+        /// while its toggle is on, the other DLC toggles lock CHECKED (greyed) and the
+        /// hero-selection row disappears (the pick happens in-game, on the dealt board).</summary>
+        private void RefreshSoiDuelLock()
+        {
+            bool duel = (_soiDlc & (int)Shards.Engine.ShardsDlc.Duel) != 0;
+            if (duel)
+                _soiDlc = (int)Shards.Engine.ShardsEngine.NormalizeDlc((Shards.Engine.ShardsDlc)_soiDlc);
+            foreach (var pair in _soiDlcToggles)
+            {
+                if (pair.Key == (int)Shards.Engine.ShardsDlc.Duel) continue;
+                if (duel)
+                    pair.Value.SetIsOnWithoutNotify(true); // forced on — the flag is already in _soiDlc
+                pair.Value.interactable = !duel;
+            }
+            if (_soiCharLabel != null) _soiCharLabel.gameObject.SetActive(!duel);
+            if (_soiCharacterRow != null) _soiCharacterRow.gameObject.SetActive(!duel);
         }
 
         private void RebuildSoiCharacters()

@@ -61,10 +61,18 @@ namespace Pascension.Game.Soi
         private RectTransform _statHealthRect, _statMasteryRect, _statGemsRect, _statPowerRect;
         private Button _endTurn, _relics, _focusButton;
         private TextMeshProUGUI _endTurnLabel;
+        private CardView _abilityCard;      // Duel hero ability as a real card, beside the portrait
+        private bool _abilityWasReady;      // edge-detects "its gates just came true" (one burst)
+        private bool _portraitHovered, _abilityHovered; // drive ApplyCharacterCardScale
+        private const float PortraitScale = 0.5f;
+        private const float AbilityScale = 0.42f;
+        private readonly Button[] _rerollButtons = new Button[6];
+        private readonly TextMeshProUGUI[] _rerollLabels = new TextMeshProUGUI[6];
         private Color _relicsBaseColor;
         private PlayHistoryBar _history;
         private RectTransform _buyPopup;
         private int _buyPopupSlot = -1;
+        private RectTransform _popupHolder;
         private RectTransform _opponentStrip, _centerRow, _destinyRow, _monsterRow;
         private RectTransform _championRow, _ownDestinyRow;
         private CardView _portrait;
@@ -74,12 +82,17 @@ namespace Pascension.Game.Soi
         private RectTransform _handRect;
         private PileWidget _drawPile, _playedPile, _discardPile, _banishPile, _centerDeckPile;
         private SoiDecisionModal _modal;
+        private SoiHeroDraftPanel _heroDraft;
         private CardListModal _cardList;
         private SoiOpponentDetailModal _opponentDetail;
         private PauseOverlayView _pauseOverlay;
         private CardView _preview;
         private RectTransform _gameOverPanel;
         private TextMeshProUGUI _gameOverText;
+
+        // One-opponent (duel) mode renders a single rich panel instead of the strip;
+        // UpdateOpponentLine must format live stat updates for whichever is showing.
+        private bool _duelOpponentPanel;
 
         // Event-time lookups (rebuilt on every full refresh).
         private readonly Dictionary<int, CardView> _boardViews = new Dictionary<int, CardView>();
@@ -97,6 +110,15 @@ namespace Pascension.Game.Soi
         private int _lastHoverSent = -1;
         private int _remoteHoverSeat = -1, _remoteHoverId = -1;
         private CardView _hoverGlowView; // view currently carrying the hover halo
+
+        // Sticky local hover (see OnAnyCardHovered): the CARD owns the preview, not the
+        // view. _hoverRegrabLeft is the grace given to a rebuilt view to take the hover
+        // back before the preview is dropped as "that card is gone".
+        private const float HoverRegrabSeconds = 0.4f;
+        private CardView _hoverSource;
+        private string _hoverDefId;
+        private int _hoverInstanceId = -1;
+        private float _hoverRegrabLeft;
 
         // Kill attribution for the play log: a champion destroyed right after taking
         // power damage was ATTACKED (own log entry only); destroyed without a preceding
@@ -206,15 +228,46 @@ namespace Pascension.Game.Soi
                 slot.Clicked += _ => OnRowSlotClicked(slotIndex);
                 slot.gameObject.SetActive(false);
                 _slots[s] = slot;
+
+                // Duel of Doom: a PERMANENT reroll button under each shop card. The price
+                // climbs per use each turn — the label follows the live cost.
+                var reroll = UiFactory.CreateButton(Theme, "Reroll_" + s, _centerRow, "", 15f,
+                    UiPalette.WithAlpha(UiPalette.Panel, 0.92f), UiPalette.TextMain);
+                var rerollRect = (RectTransform)reroll.transform;
+                rerollRect.anchorMin = rerollRect.anchorMax = new Vector2(0f, 0.5f);
+                rerollRect.pivot = new Vector2(0f, 0.5f);
+                rerollRect.anchoredPosition = new Vector2(s * 148f, -113f);
+                rerollRect.sizeDelta = new Vector2(136f, 26f);
+                var rerollLabel = UiFactory.ButtonLabel(reroll);
+                if (Theme.Icons != null) rerollLabel.spriteAsset = Theme.Icons;
+                _rerollLabels[s] = rerollLabel;
+                reroll.onClick.AddListener(() => OnRerollClicked(slotIndex));
+                reroll.gameObject.SetActive(false);
+                _rerollButtons[s] = reroll;
             }
 
-            // Character portrait — display only (Focus moved to the "+" mastery button),
-            // sitting just below the draw pile.
-            _portrait = CardViewFactory.Create(root, Theme, 0.5f);
+            // Character portrait, just below the draw pile. CLICK = Focus (the "+"
+            // button beside the mastery counter stays as a second entry point); hovering
+            // it feeds the big preview and lifts, like any card.
+            _portrait = CardViewFactory.Create(root, Theme, PortraitScale);
             _portrait.Rect.anchorMin = _portrait.Rect.anchorMax = new Vector2(0f, 0f);
             _portrait.Rect.anchoredPosition = new Vector2(80f, 112f);
-            _portrait.SetRaycastable(false);
-            _portrait.Group.blocksRaycasts = false;
+            _portrait.SetRaycastable(true);
+            _portrait.Group.blocksRaycasts = true;
+            _portrait.Clicked += _ => OnFocusClicked();
+            _portrait.Hovered += (_, entered) => { _portraitHovered = entered; ApplyCharacterCardScale(); };
+
+            // Duel of Doom: the hero's unique ability as a REAL CARD beside the portrait
+            // — reads like any card (own art, mastery pill, big preview on hover), taps
+            // when used this turn, greys while unusable, and wears a pulsing gold halo
+            // the moment it can actually be used. Hidden outside Duel games.
+            _abilityCard = CardViewFactory.Create(root, Theme, AbilityScale);
+            _abilityCard.Rect.anchorMin = _abilityCard.Rect.anchorMax = new Vector2(0f, 0f);
+            _abilityCard.Rect.anchoredPosition = new Vector2(184f, 100f);
+            _abilityCard.RotateWhenTapped = false; // tap = greyed-tilt-free (mini-card slot)
+            _abilityCard.Clicked += _ => OnHeroAbilityClicked();
+            _abilityCard.Hovered += (_, entered) => { _abilityHovered = entered; ApplyCharacterCardScale(); };
+            _abilityCard.gameObject.SetActive(false);
 
             // My champions + owned destinies (above the hand band).
             _championRow = LabeledRow(root, UI.Loc.T("MY CHAMPIONS"), new Vector2(-330f, -122f), new Vector2(620f, 140f));
@@ -308,6 +361,9 @@ namespace Pascension.Game.Soi
             _cardList.Init(Theme);
             _opponentDetail = SoiOpponentDetailModal.Create(root, Theme);
             _modal = SoiDecisionModal.Create(root, Theme);
+            // Duel of Doom hero draft (created before the hover preview so relic/thumbnail
+            // hovers still preview ABOVE the draft panel).
+            _heroDraft = SoiHeroDraftPanel.Create(root, Theme);
 
             // Fixed hover preview (top-left, under the opponent strip).
             _preview = CardViewFactory.Create(root, Theme, 1.3f);
@@ -502,6 +558,8 @@ namespace Pascension.Game.Soi
                 _boardPickRequest = null;
                 _boardPicked.Clear();
             }
+            // Same for a stale hero draft (resync, timeout answer, opponent's turn).
+            _heroDraft?.HideIfNot(myDecision ? pending.Decision : null);
 
             if (myDecision)
             {
@@ -559,6 +617,27 @@ namespace Pascension.Game.Soi
             Submit(new ShardsFocusAction { PlayerIndex = MyIndex });
         }
 
+        private void OnHeroAbilityClicked()
+        {
+            var me = Me;
+            if (!MyPriority || me == null) return;
+            var spec = ShardsEngine.HeroAbilityInfo(me.CharacterId);
+            if (spec.Name == null) return;
+            if (!spec.Active) { _toast.Show(UI.Loc.T("This ability is passive — it applies by itself.")); return; }
+            if (me.HeroAbilityUsedThisTurn) { _toast.Show(UI.Loc.T("Hero ability already used this turn.")); return; }
+            if (me.Mastery < spec.Mastery) { _toast.Show(UI.Loc.T("Requires Mastery 5.")); return; }
+            if (me.Gems < spec.Gems) { _toast.Show(UI.Loc.T("Not enough gems.")); return; }
+            if (me.Health <= spec.Health) { _toast.Show(UI.Loc.T("Not enough health.")); return; }
+            // Optimistic: tap it and drop the "ready" halo now, so the affordance dies
+            // with the click instead of lingering for a network round-trip (the same
+            // reason END TURN clears the affordable halos optimistically).
+            _abilityCard.SetTapped(true);
+            _abilityCard.SetGreyed(true);
+            _abilityCard.SetOuterGlow(false);
+            _abilityWasReady = false;
+            Submit(new ShardsHeroAbilityAction { PlayerIndex = MyIndex });
+        }
+
         private void OnRowSlotClicked(int slot)
         {
             if (!MyPriority || _snap == null) return;
@@ -575,7 +654,8 @@ namespace Pascension.Game.Soi
         }
 
         /// <summary>Mercenary click: two inline buttons right at the card — BUY (recruit
-        /// to your deck) or USE (fast-play once). Clicking anywhere else dismisses.</summary>
+        /// to your deck) or USE (fast-play once). Clicking anywhere else dismisses.
+        /// (The Duel reroll lives on its own permanent per-slot button, not here.)</summary>
         private void ShowBuyUsePopup(int slot)
         {
             if (_buyPopup == null)
@@ -591,12 +671,12 @@ namespace Pascension.Game.Soi
                 dismiss.transition = Selectable.Transition.None;
                 dismiss.onClick.AddListener(() => _buyPopup.gameObject.SetActive(false));
 
-                var holder = UiFactory.CreateRect("Buttons", _buyPopup);
-                holder.sizeDelta = new Vector2(162f, 128f);
-                var backdrop = UiFactory.CreatePanel(Theme, "Backdrop", holder, UiPalette.WithAlpha(UiPalette.Background, 0.92f));
+                _popupHolder = UiFactory.CreateRect("Buttons", _buyPopup);
+                _popupHolder.sizeDelta = new Vector2(162f, 128f);
+                var backdrop = UiFactory.CreatePanel(Theme, "Backdrop", _popupHolder, UiPalette.WithAlpha(UiPalette.Background, 0.92f));
                 UiFactory.Stretch((RectTransform)backdrop.transform, -6f, -6f, 6f, 6f);
 
-                var buy = UiFactory.CreateButton(Theme, "Buy", holder, UI.Loc.T("BUY"), 19f,
+                var buy = UiFactory.CreateButton(Theme, "Buy", _popupHolder, UI.Loc.T("BUY"), 19f,
                     UiPalette.Gold, UiPalette.Background);
                 UiFactory.Place((RectTransform)buy.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 31f), new Vector2(150f, 52f));
                 buy.onClick.AddListener(() =>
@@ -605,7 +685,7 @@ namespace Pascension.Game.Soi
                     Submit(new ShardsBuyCardAction { PlayerIndex = MyIndex, SlotIndex = _buyPopupSlot });
                 });
 
-                var use = UiFactory.CreateButton(Theme, "Use", holder, UI.Loc.T("USE"), 19f,
+                var use = UiFactory.CreateButton(Theme, "Use", _popupHolder, UI.Loc.T("USE"), 19f,
                     UiPalette.Danger, UiPalette.TextMain);
                 UiFactory.Place((RectTransform)use.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, -31f), new Vector2(150f, 52f));
                 use.onClick.AddListener(() =>
@@ -616,10 +696,9 @@ namespace Pascension.Game.Soi
             }
 
             _buyPopupSlot = slot;
-            var holderRect = (RectTransform)_buyPopup.GetChild(1);
             var slotWorld = _slots[slot].Rect.TransformPoint(_slots[slot].Rect.rect.center);
             Vector2 local = UiRootRect.InverseTransformPoint(slotWorld);
-            holderRect.anchoredPosition = local + new Vector2(0f, -10f);
+            _popupHolder.anchoredPosition = local + new Vector2(0f, -10f);
             _buyPopup.gameObject.SetActive(true);
             _buyPopup.SetAsLastSibling();
         }
@@ -652,6 +731,26 @@ namespace Pascension.Game.Soi
 
         private void ShowDecision(DecisionRequest request)
         {
+            // Duel of Doom hero draft: a dedicated carousel (portrait + ability + relics
+            // per hero, with a persistent shop show/hide toggle), not the generic modal.
+            if (request.Context == "soi.herodraft")
+            {
+                var dlc = _snap != null ? (ShardsDlc)_snap.Dlc : ShardsEngine.NormalizeDlc(ShardsDlc.Duel);
+                _heroDraft.Show(request, dlc, chosenId =>
+                {
+                    var answer = new DecisionAnswer { DecisionId = request.Id };
+                    answer.ChosenOptionIds.Add(chosenId);
+                    Submit(new SubmitDecisionAction { PlayerIndex = MyIndex, Answer = answer });
+                });
+                // The draft must overlay the whole table (opponent strip, hand, buttons) —
+                // but the hover PREVIEW and toasts stay above it so relic/thumbnail hovers
+                // still enlarge while drafting.
+                _heroDraft.transform.SetAsLastSibling();
+                _preview.Rect.SetAsLastSibling();
+                ((RectTransform)_toast.transform).SetAsLastSibling();
+                return;
+            }
+
             // Destiny picks happen ON THE BOARD (2026-07-21): no modal, no dimmer —
             // the row cards glow and clicking one answers the decision, so the piles
             // stay browsable while the player thinks. Everything else is already
@@ -800,11 +899,20 @@ namespace Pascension.Game.Soi
             // Portrait + opponent strip render LIVE too: a bot streaming plays keeps
             // the animation queue busy for whole turns, and the drain-gated path left
             // the hero art unloaded and opponent health frozen until our turn.
-            string portraitDef = SoiCardFaces.CharacterPrefix + me.CharacterId;
-            if (_portrait.DefId != portraitDef)
-                _portrait.BindDef(portraitDef);
-            _portrait.SetTapped(me.CharacterExhausted);
-            _portrait.SetGreyed(me.CharacterExhausted);
+            // During the Duel hero draft CharacterId is still null — no portrait yet.
+            if (string.IsNullOrEmpty(me.CharacterId))
+            {
+                _portrait.gameObject.SetActive(false);
+            }
+            else
+            {
+                _portrait.gameObject.SetActive(true);
+                string portraitDef = SoiCardFaces.CharacterPrefix + me.CharacterId;
+                if (_portrait.DefId != portraitDef)
+                    _portrait.BindDef(portraitDef);
+                _portrait.SetTapped(me.CharacterExhausted);
+                _portrait.SetGreyed(me.CharacterExhausted);
+            }
             RenderOpponents();
             RefreshOpponentDetail();
 
@@ -891,30 +999,77 @@ namespace Pascension.Game.Soi
                 if (card == null || _hiddenSlots.Contains(s))
                 {
                     slot.gameObject.SetActive(false);
+                    SyncRerollVisibility(s);
                     continue;
                 }
                 slot.gameObject.SetActive(true);
                 slot.BindDef(card.DefId, card.InstanceId);
                 ApplyRowGlows(slot, card, s);
+                SyncRerollVisibility(s);
                 _boardViews[card.InstanceId] = slot;
             }
         }
 
-        /// <summary>Row slot adornments — two independent channels:
-        /// inner glow = the card's CONDITION is met right now (faction color), outer pulse
-        /// = the viewer can afford it. Mercenaries carry the red "M" triangle intrinsically
-        /// (CardView marker), so they need no glow of their own here.</summary>
+        /// <summary>The NEXT reroll's gem price for the viewer (1, then 2, 3… this turn).</summary>
+        private int NextRerollCost(ShardsPlayerSnap me) => 1 + (me?.RerollsThisTurn ?? 0);
+
+        private void OnRerollClicked(int slot)
+        {
+            var me = Me;
+            if (!MyPriority || me == null) return;
+            int cost = NextRerollCost(me);
+            if (me.Gems < cost)
+            {
+                _toast.Show(string.Format(UI.Loc.T("Rerolling costs {0} gems right now."), cost));
+                return;
+            }
+            Submit(new ShardsRerollRowAction { PlayerIndex = MyIndex, SlotIndex = slot });
+        }
+
+        /// <summary>Whether slot s currently offers a reroll at all (Duel on, card present
+        /// and not reroll-proof). Interactability is layered on by RefreshRerollButtons.</summary>
+        private void SyncRerollVisibility(int s)
+        {
+            var button = _rerollButtons[s];
+            if (button == null) return;
+            bool duel = _snap != null && (_snap.Dlc & (int)ShardsDlc.Duel) != 0;
+            var card = duel && s < _snap.CenterRow.Count ? _snap.CenterRow[s] : null;
+            bool rerollable = card != null && !_hiddenSlots.Contains(s) &&
+                (!ShardsCardDatabase.TryGet(card.DefId, out var def) || !def.CannotBeRerolled);
+            button.gameObject.SetActive(rerollable);
+        }
+
+        private void RefreshRerollButtons(bool canAct, ShardsPlayerSnap me)
+        {
+            int cost = NextRerollCost(me);
+            string label = UI.Loc.T("REROLL") + " " + cost + "<sprite name=\"soi_gem\">";
+            for (int s = 0; s < _rerollButtons.Length; s++)
+            {
+                SyncRerollVisibility(s);
+                var button = _rerollButtons[s];
+                if (button == null || !button.gameObject.activeSelf) continue;
+                if (_rerollLabels[s] != null) _rerollLabels[s].text = label;
+                button.interactable = canAct && me != null && me.Gems >= cost;
+            }
+        }
+
+        /// <summary>Row slot adornments — two independent channels: a star TWINKLE for
+        /// "this card's condition is met" and the gold outer pulse for "affordable".
+        /// In the row the twinkle is deliberately narrow: only MERCENARIES the viewer can
+        /// afford right now sparkle (a fast-play could fire the effect immediately) —
+        /// non-mercs must be bought into the deck first, so their condition is noise.</summary>
         private void ApplyRowGlows(CardView slot, ShardsCardSnap card, int slotIndex)
         {
             ShardsCardDatabase.TryGet(card.DefId, out var def);
-            if (def != null && _conditionGlow.Contains(card.InstanceId))
-                slot.SetGlow(true, SoiCardFaces.FactionColor(def.Faction));
-            else
-                slot.SetGlow(false);
+            slot.SetGlow(false);
+            bool sparkle = def != null && def.Type == ShardsCardType.Mercenary &&
+                           _buyable.Contains(slotIndex) && _conditionGlow.Contains(card.InstanceId);
+            slot.SetSparkle(sparkle, def != null ? SoiCardFaces.FactionColor(def.Faction) : default);
             slot.SetOuterGlow(_buyable.Contains(slotIndex));
         }
 
-        /// <summary>Gentle shared pulse for every active "affordable" outer halo.</summary>
+        /// <summary>Gentle shared pulse for every active "you can use this now" outer halo
+        /// — affordable shop slots and the hero-ability card breathe together.</summary>
         private IEnumerator OuterGlowPulseLoop()
         {
             while (true)
@@ -924,6 +1079,8 @@ namespace Pascension.Game.Soi
                     foreach (var slot in _slots)
                         if (slot != null && slot.gameObject.activeSelf)
                             slot.SetOuterGlowAlpha(alpha);
+                if (_abilityCard != null && _abilityCard.gameObject.activeSelf)
+                    _abilityCard.SetOuterGlowAlpha(alpha);
                 yield return null;
             }
         }
@@ -936,10 +1093,11 @@ namespace Pascension.Game.Soi
             if (_snap == null || slotIndex >= _snap.CenterRow.Count) return;
             var card = _snap.CenterRow[slotIndex];
             var slot = _slots[slotIndex];
-            if (card == null) { slot.gameObject.SetActive(false); return; }
+            if (card == null) { slot.gameObject.SetActive(false); SyncRerollVisibility(slotIndex); return; }
             slot.gameObject.SetActive(true);
             slot.BindDef(card.DefId, card.InstanceId);
             ApplyRowGlows(slot, card, slotIndex);
+            SyncRerollVisibility(slotIndex);
             _boardViews[card.InstanceId] = slot;
             if (isActiveAndEnabled)
                 StartCoroutine(Tween.Punch(slot.transform, 0.18f, 0.22f));
@@ -952,13 +1110,26 @@ namespace Pascension.Game.Soi
             $"<color=#E06C55>{player.Power}</color><sprite name=\"soi_power\">\n" +
             $"{UI.Loc.T("hand")} {player.HandCount} · {UI.Loc.T("deck")} {player.DeckCount} · {UI.Loc.T("discard")} {player.Discard.Count}";
 
+        /// <summary>The duel panel's richer stat block: the big resource line plus the
+        /// info row that previously lived only in the detail modal.</summary>
+        private string DuelStatsLine(ShardsPlayerSnap player) =>
+            $"<color=#6FDF8F>{player.Health}/{_maxHealth}</color><sprite name=\"soi_health\">  " +
+            $"<color=#D4AF37>{player.Mastery}/30</color><sprite name=\"soi_mastery\">  " +
+            $"<color=#73AEF2>{player.Gems}</color><sprite name=\"soi_gem\">  " +
+            $"<color=#E06C55>{player.Power}</color><sprite name=\"soi_power\">\n" +
+            $"<size=14>{UI.Loc.T("played")} {player.PlayZone.Count} · " +
+            $"{UI.Loc.T(player.RelicRecruited ? "relic recruited" : "relic —")}\n" +
+            $"{UI.Loc.T("hand")} {player.HandCount} · {UI.Loc.T("deck")} {player.DeckCount} · {UI.Loc.T("discard")} {player.Discard.Count}</size>";
+
         /// <summary>Life totals update the instant damage lands — never waiting for the
         /// animation queue to drain.</summary>
         private void UpdateOpponentLine(int playerIndex)
         {
             if (_snap == null || playerIndex < 0 || playerIndex >= _snap.Players.Count) return;
             if (_opponentStatTexts.TryGetValue(playerIndex, out var text) && text != null)
-                text.text = OpponentStatsLine(_snap.Players[playerIndex]);
+                text.text = _duelOpponentPanel
+                    ? DuelStatsLine(_snap.Players[playerIndex])
+                    : OpponentStatsLine(_snap.Players[playerIndex]);
         }
 
         private void RenderOpponents()
@@ -970,43 +1141,88 @@ namespace Pascension.Game.Soi
             foreach (var player in _snap.Players)
                 if (player.Index != MyIndex)
                     count++;
+            // A single opponent (duel) gets one big, rich panel; 2-3 opponents keep the
+            // compact strip. Click → full detail modal either way.
+            _duelOpponentPanel = count == 1;
             float x = -(count * 384f - 12f) / 2f; // centered along the top edge
             foreach (var player in _snap.Players)
             {
                 if (player.Index == MyIndex) continue;
-                var panel = UiFactory.CreatePanel(Theme, "Opp_" + player.Index, _opponentStrip,
-                    UiPalette.WithAlpha(UiPalette.Panel, player.Eliminated ? 0.4f : 0.92f));
-                var rect = (RectTransform)panel.transform;
-                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-                rect.pivot = new Vector2(0f, 1f);
-                rect.anchoredPosition = new Vector2(x, 0f);
-                rect.sizeDelta = new Vector2(372f, 168f);
-                x += 384f;
-                _opponentPanels[player.Index] = rect;
+                if (_duelOpponentPanel)
+                {
+                    BuildDuelOpponentPanel(player);
+                }
+                else
+                {
+                    BuildCompactOpponentPanel(player, x);
+                    x += 384f;
+                }
+            }
+        }
 
-                // Whole panel opens the full detail sheet (portrait, stats, champions,
-                // destinies, browsable piles) — the compact strip can't fit everything.
-                int detailIndex = player.Index;
-                var open = panel.gameObject.AddComponent<Button>();
-                open.targetGraphic = panel;
-                open.transition = Selectable.Transition.None;
-                open.onClick.AddListener(() => ShowOpponentDetail(detailIndex));
+        private RectTransform CreateOpponentPanel(ShardsPlayerSnap player, Vector2 position, Vector2 size)
+        {
+            var panel = UiFactory.CreatePanel(Theme, "Opp_" + player.Index, _opponentStrip,
+                UiPalette.WithAlpha(UiPalette.Panel, player.Eliminated ? 0.4f : 0.92f));
+            var rect = (RectTransform)panel.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+            _opponentPanels[player.Index] = rect;
 
-                bool theirTurn = _snap.TurnPlayerIndex == player.Index;
-                var name = UiFactory.CreateText(Theme, "Name", rect, player.Name +
-                        (player.Eliminated ? UI.Loc.T("  · eliminated") : theirTurn ? UI.Loc.T("  ← turn") : ""),
-                    16f, theirTurn ? UiPalette.Gold : UiPalette.TextMain, TextAlignmentOptions.Left, FontStyles.Bold);
-                UiFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -15f), new Vector2(350f, 22f));
-                name.raycastTarget = false;
+            // Whole panel opens the full detail sheet (portrait, stats, champions,
+            // destinies, browsable piles).
+            int detailIndex = player.Index;
+            var open = panel.gameObject.AddComponent<Button>();
+            open.targetGraphic = panel;
+            open.transition = Selectable.Transition.None;
+            open.onClick.AddListener(() => ShowOpponentDetail(detailIndex));
+            return rect;
+        }
 
-                var stats = UiFactory.CreateText(Theme, "Stats", rect, OpponentStatsLine(player),
-                    13f, UiPalette.TextDim, TextAlignmentOptions.TopLeft);
-                if (Theme.Icons != null) stats.spriteAsset = Theme.Icons;
-                UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -36f), new Vector2(356f, 40f));
-                stats.raycastTarget = false;
-                _opponentStatTexts[player.Index] = stats;
+        private TextMeshProUGUI OpponentName(ShardsPlayerSnap player, RectTransform rect, float size, Vector2 pos, float width)
+        {
+            bool theirTurn = _snap.TurnPlayerIndex == player.Index;
+            var name = UiFactory.CreateText(Theme, "Name", rect, player.Name +
+                    (player.Eliminated ? UI.Loc.T("  · eliminated") : theirTurn ? UI.Loc.T("  ← turn") : ""),
+                size, theirTurn ? UiPalette.Gold : UiPalette.TextMain, TextAlignmentOptions.Left, FontStyles.Bold);
+            UiFactory.Place(name.rectTransform, new Vector2(0f, 1f), pos, new Vector2(width, size + 8f));
+            name.raycastTarget = false;
+            return name;
+        }
 
-                // Mini portrait (same sheet as ours), bottom-left of the panel.
+        private CardView OpponentBandCard(RectTransform rect, float scale, float bandX, ShardsCardSnap card)
+        {
+            var view = CardViewFactory.Create(rect, Theme, scale);
+            view.RotateWhenTapped = false;
+            view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0f);
+            view.Rect.pivot = new Vector2(0f, 0f);
+            view.Rect.anchoredPosition = new Vector2(bandX, 4f);
+            view.BindDef(card.DefId, card.InstanceId);
+            view.SetTapped(card.Exhausted);
+            ApplyBoardGlow(view, card);
+            _boardViews[card.InstanceId] = view;
+            return view;
+        }
+
+        private void BuildCompactOpponentPanel(ShardsPlayerSnap player, float x)
+        {
+            var rect = CreateOpponentPanel(player, new Vector2(x, 0f), new Vector2(372f, 168f));
+            int detailIndex = player.Index;
+            OpponentName(player, rect, 16f, new Vector2(14f, -15f), 350f);
+
+            var stats = UiFactory.CreateText(Theme, "Stats", rect, OpponentStatsLine(player),
+                13f, UiPalette.TextDim, TextAlignmentOptions.TopLeft);
+            if (Theme.Icons != null) stats.spriteAsset = Theme.Icons;
+            UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(14f, -36f), new Vector2(356f, 40f));
+            stats.raycastTarget = false;
+            _opponentStatTexts[player.Index] = stats;
+
+            // Mini portrait (same sheet as ours), bottom-left of the panel — hidden
+            // while the Duel hero draft hasn't assigned a character yet.
+            if (!string.IsNullOrEmpty(player.CharacterId))
+            {
                 var portrait = CardViewFactory.Create(rect, Theme, 0.3f);
                 portrait.Rect.anchorMin = portrait.Rect.anchorMax = new Vector2(0f, 0f);
                 portrait.Rect.pivot = new Vector2(0f, 0f);
@@ -1015,49 +1231,130 @@ namespace Pascension.Game.Soi
                 portrait.SetTapped(player.CharacterExhausted);
                 portrait.SetRaycastable(false);
                 if (portrait.Group != null) portrait.Group.blocksRaycasts = false;
+            }
 
-                // Champions band, then DESTINIES (smaller) to their right — both
-                // compress instead of dropping cards.
-                float cx = 84f;
-                float championStep = player.Champions.Count > 1
-                    ? Mathf.Min(72f, (156f - 66f) / (player.Champions.Count - 1)) : 72f;
-                foreach (var champion in player.Champions)
-                {
-                    var view = CardViewFactory.Create(rect, Theme, 0.3f);
-                    view.RotateWhenTapped = false;
-                    view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0f);
-                    view.Rect.pivot = new Vector2(0f, 0f);
-                    view.Rect.anchoredPosition = new Vector2(cx, 4f);
-                    cx += championStep;
-                    view.BindDef(champion.DefId, champion.InstanceId);
-                    view.SetTapped(champion.Exhausted);
-                    view.SetMarkedDamage(champion.DamageThisTurn);
-                    ApplyBoardGlow(view, champion);
-                    // Champions can't be attacked mid-turn — they die in the end-of-turn
-                    // damage assignment (the red glow means "your split can kill this").
-                    view.Clicked += _ => _toast.Show(
-                        UI.Loc.T("Champions are destroyed in the end-of-turn damage assignment."));
-                    _boardViews[champion.InstanceId] = view;
-                }
+            // Champions band, then DESTINIES (smaller) to their right — both
+            // compress instead of dropping cards.
+            float cx = 84f;
+            float championStep = player.Champions.Count > 1
+                ? Mathf.Min(72f, (156f - 66f) / (player.Champions.Count - 1)) : 72f;
+            foreach (var champion in player.Champions)
+            {
+                var view = OpponentBandCard(rect, 0.3f, cx, champion);
+                cx += championStep;
+                view.SetMarkedDamage(champion.DamageThisTurn);
+                // Champions can't be attacked mid-turn — they die in the end-of-turn
+                // damage assignment (the red glow means "your split can kill this").
+                view.Clicked += _ => _toast.Show(
+                    UI.Loc.T("Champions are destroyed in the end-of-turn damage assignment."));
+            }
 
-                float dx = 254f;
-                float destinyStep = player.Destinies.Count > 1
-                    ? Mathf.Min(52f, (110f - 48f) / (player.Destinies.Count - 1)) : 52f;
-                foreach (var destiny in player.Destinies)
+            float dx = 254f;
+            float destinyStep = player.Destinies.Count > 1
+                ? Mathf.Min(52f, (110f - 48f) / (player.Destinies.Count - 1)) : 52f;
+            foreach (var destiny in player.Destinies)
+            {
+                var view = OpponentBandCard(rect, 0.22f, dx, destiny);
+                dx += destinyStep;
+                view.Clicked += _ => ShowOpponentDetail(detailIndex); // don't swallow the panel click
+            }
+        }
+
+        /// <summary>Duel (1 opponent): an 800×178 panel — not a scale-up but a richer
+        /// layout. Bigger portrait/name/stats, the detail-modal info row (played count,
+        /// relic, hand/deck/discard) inline, readable champion (0.44) and destiny (0.33)
+        /// bands, and two direct browse buttons for their discard and played piles.</summary>
+        private void BuildDuelOpponentPanel(ShardsPlayerSnap player)
+        {
+            const float panelWidth = 1120f; // +40% over the first duel panel; still clear
+            var rect = CreateOpponentPanel(player, new Vector2(-panelWidth / 2f, 0f), new Vector2(panelWidth, 178f));
+            int detailIndex = player.Index;
+            OpponentName(player, rect, 22f, new Vector2(106f, -10f), 380f);
+
+            var stats = UiFactory.CreateText(Theme, "Stats", rect, DuelStatsLine(player),
+                18f, UiPalette.TextDim, TextAlignmentOptions.TopLeft);
+            if (Theme.Icons != null) stats.spriteAsset = Theme.Icons;
+            UiFactory.Place(stats.rectTransform, new Vector2(0f, 1f), new Vector2(106f, -42f), new Vector2(240f, 96f));
+            stats.raycastTarget = false;
+            _opponentStatTexts[player.Index] = stats;
+
+            if (!string.IsNullOrEmpty(player.CharacterId))
+            {
+                var portrait = CardViewFactory.Create(rect, Theme, 0.42f);
+                portrait.Rect.anchorMin = portrait.Rect.anchorMax = new Vector2(0f, 0f);
+                portrait.Rect.pivot = new Vector2(0f, 0f);
+                portrait.Rect.anchoredPosition = new Vector2(10f, 4f);
+                portrait.BindDef(SoiCardFaces.CharacterPrefix + player.CharacterId);
+                portrait.SetTapped(player.CharacterExhausted);
+                portrait.SetRaycastable(false);
+                if (portrait.Group != null) portrait.Group.blocksRaycasts = false;
+
+                // Their hero ABILITY sits right beside the hero, exactly like ours —
+                // you need to know what they can do to you, not just who they are.
+                var spec = ShardsEngine.HeroAbilityInfo(player.CharacterId);
+                if (spec.Name != null)
                 {
-                    var view = CardViewFactory.Create(rect, Theme, 0.22f);
-                    view.RotateWhenTapped = false;
-                    view.Rect.anchorMin = view.Rect.anchorMax = new Vector2(0f, 0f);
-                    view.Rect.pivot = new Vector2(0f, 0f);
-                    view.Rect.anchoredPosition = new Vector2(dx, 4f);
-                    dx += destinyStep;
-                    view.BindDef(destiny.DefId, destiny.InstanceId);
-                    view.SetTapped(destiny.Exhausted);
-                    ApplyBoardGlow(view, destiny);
-                    view.Clicked += _ => ShowOpponentDetail(detailIndex); // don't swallow the panel click
-                    _boardViews[destiny.InstanceId] = view;
+                    var ability = CardViewFactory.Create(rect, Theme, 0.34f);
+                    ability.Rect.anchorMin = ability.Rect.anchorMax = new Vector2(0f, 0f);
+                    ability.Rect.pivot = new Vector2(0f, 0f);
+                    ability.Rect.anchoredPosition = new Vector2(352f, 6f);
+                    ability.RotateWhenTapped = false;
+                    ability.BindDef(SoiCardFaces.AbilityPrefix + player.CharacterId);
+                    ability.SetGreyed(spec.Active && player.HeroAbilityUsedThisTurn);
+                    ability.Clicked += _ => ShowOpponentDetail(detailIndex);
                 }
             }
+
+            // Direct pile browsers (the detail modal still has them too).
+            var discardBrowse = UiFactory.CreateButton(Theme, "BrowseDiscard", rect,
+                UI.Loc.T("DISCARD") + $" ({player.Discard.Count})", 13f);
+            UiFactory.Place((RectTransform)discardBrowse.transform, new Vector2(0f, 0f), new Vector2(106f, 6f), new Vector2(112f, 28f));
+            discardBrowse.onClick.AddListener(() =>
+                _cardList.Show(UI.Loc.T("Discard pile"), ZoneSnaps(_snap.Players[detailIndex].Discard)));
+            var playedBrowse = UiFactory.CreateButton(Theme, "BrowsePlayed", rect,
+                UI.Loc.T("PLAYED") + $" ({player.PlayZone.Count})", 13f);
+            UiFactory.Place((RectTransform)playedBrowse.transform, new Vector2(0f, 0f), new Vector2(224f, 6f), new Vector2(112f, 28f));
+            playedBrowse.onClick.AddListener(() =>
+                _cardList.Show(UI.Loc.T("Played this turn"), ZoneSnaps(_snap.Players[detailIndex].PlayZone)));
+
+            // Labelled bands, so an empty stretch of panel is never ambiguous.
+            const float championX = 452f, destinyX = 812f;
+            BandTitle(rect, UI.Loc.T("CHAMPIONS"), championX, destinyX - championX - 12f);
+            BandTitle(rect, UI.Loc.T("DESTINIES"), destinyX, panelWidth - destinyX - 12f);
+
+            // Readable champion band (0.44, like our own board row), destinies at 0.33 —
+            // the usual compress-on-overflow pattern, never dropping cards.
+            float cx = championX;
+            float championStep = player.Champions.Count > 1
+                ? Mathf.Min(64f, (destinyX - championX - 97f) / (player.Champions.Count - 1)) : 64f;
+            foreach (var champion in player.Champions)
+            {
+                var view = OpponentBandCard(rect, 0.44f, cx, champion);
+                cx += championStep;
+                view.SetMarkedDamage(champion.DamageThisTurn);
+                view.Clicked += _ => _toast.Show(
+                    UI.Loc.T("Champions are destroyed in the end-of-turn damage assignment."));
+            }
+
+            float dx = destinyX;
+            float destinyStep = player.Destinies.Count > 1
+                ? Mathf.Min(46f, (panelWidth - destinyX - 73f) / (player.Destinies.Count - 1)) : 46f;
+            foreach (var destiny in player.Destinies)
+            {
+                var view = OpponentBandCard(rect, 0.33f, dx, destiny);
+                dx += destinyStep;
+                view.Clicked += _ => ShowOpponentDetail(detailIndex);
+            }
+        }
+
+        /// <summary>Small dim caption ABOVE one of the duel panel's card bands (the cards
+        /// themselves sit at y=4 and stand ~135 tall, so 144 clears them).</summary>
+        private void BandTitle(RectTransform panel, string text, float x, float width)
+        {
+            var label = UiFactory.CreateText(Theme, "BandTitle", panel, text, 12f,
+                UiPalette.TextDim, TextAlignmentOptions.BottomLeft, FontStyles.Bold);
+            UiFactory.Place(label.rectTransform, new Vector2(0f, 0f), new Vector2(x, 144f), new Vector2(width, 18f));
+            label.raycastTarget = false;
         }
 
         private void ShowOpponentDetail(int playerIndex)
@@ -1235,6 +1532,13 @@ namespace Pascension.Game.Soi
             SetRelicGlow(_relics.gameObject.activeSelf && _relics.interactable);
             _focusButton.interactable = canAct && me != null && me.Gems >= 1 &&
                                         !me.FocusedThisTurn && !me.CharacterExhausted;
+
+            // Duel hero ability card (beside the portrait): taps once used this turn,
+            // greys while its gates fail.
+            RefreshAbilityCard(canAct, me);
+
+            // Duel per-slot reroll buttons follow gems/turn state live.
+            RefreshRerollButtons(canAct, me);
             // Snapshot's Pending is fresh + unredacted for all viewers, so this covers
             // both an opponent's whole turn and an opponent's mid-my-turn decision
             // (e.g. shield reveals when I attack).
@@ -1246,6 +1550,69 @@ namespace Pascension.Game.Soi
         /// line show "thinking…" instead of a generic wait (the search runs behind the
         /// animation queue, so without this the deliberation is invisible).</summary>
         public Func<int, bool> IsBotThinking;
+
+        /// <summary>The Duel hero-ability CARD beside the portrait: bound once per hero,
+        /// tapped once used this turn, greyed while unusable. Shown for EVERY hero —
+        /// passive abilities (Decima) render permanently untapped and only toast when
+        /// clicked. Hidden outside Duel games and during the hero draft.</summary>
+        private void RefreshAbilityCard(bool canAct, ShardsPlayerSnap me)
+        {
+            if (_abilityCard == null) return;
+            bool duel = _snap != null && (_snap.Dlc & (int)ShardsDlc.Duel) != 0;
+            var spec = ShardsEngine.HeroAbilityInfo(me?.CharacterId);
+            bool show = duel && spec.Name != null;
+            _abilityCard.gameObject.SetActive(show);
+            if (!show) { _abilityWasReady = false; return; }
+
+            string defId = SoiCardFaces.AbilityPrefix + me.CharacterId;
+            if (_abilityCard.DefId != defId)
+                _abilityCard.BindDef(defId);
+            if (!spec.Active)
+            {
+                // Passive (Decima): nothing to click, so it never taps or calls for
+                // attention — but it must not read as live before it exists. Grey it
+                // until its mastery gate opens, and again once the turn's discounted
+                // buy is spent.
+                bool inEffect = me.Mastery >= spec.Mastery && !me.FirstBuyUsedThisTurn;
+                _abilityCard.SetTapped(false);
+                _abilityCard.SetGreyed(!inEffect);
+                _abilityCard.SetOuterGlow(false);
+                _abilityWasReady = false;
+                return;
+            }
+
+            // NB: "used" reads as GREYED, not rotated — RotateWhenTapped is off for this
+            // mini-card slot (rotating would push it out of its corner).
+            _abilityCard.SetTapped(me.HeroAbilityUsedThisTurn);
+            // Edge-detect on the ability's OWN gates only. Folding priority in here would
+            // re-fire the burst every time an opponent takes a mid-turn decision.
+            bool ready = me.Mastery >= spec.Mastery && me.Gems >= spec.Gems &&
+                         me.Health > spec.Health && !me.HeroAbilityUsedThisTurn;
+            bool usable = canAct && ready;
+            _abilityCard.SetGreyed(!usable);
+            // "You can use me NOW": the same pulsing gold halo the affordable shop slots
+            // wear (OuterGlowPulseLoop drives the alpha), plus a one-shot burst the
+            // moment it becomes ready — the ability is easy to forget otherwise.
+            _abilityCard.SetOuterGlow(usable, UiPalette.Gold);
+            if (usable && !_abilityWasReady && isActiveAndEnabled && _bursts != null)
+                _bursts.Burst(_bursts.ToLocal(_abilityCard.Rect), UiPalette.Gold, 10, 110f);
+            _abilityWasReady = ready;
+        }
+
+        /// <summary>SINGLE owner of the two persistent character cards' localScale: the
+        /// hover lift (they read as interactive, the way a hand card lifts) and every
+        /// caller that punches them (Focus) both end here. That single ownership is the
+        /// point — Tween.Punch captures localScale as its base and force-restores it, so
+        /// a punch spanning a hover change would otherwise strand the card at the lifted
+        /// size forever (the documented persistent-view ratchet).</summary>
+        private void ApplyCharacterCardScale()
+        {
+            const float lift = 1.08f;
+            if (_portrait != null)
+                _portrait.transform.localScale = Vector3.one * PortraitScale * (_portraitHovered ? lift : 1f);
+            if (_abilityCard != null)
+                _abilityCard.transform.localScale = Vector3.one * AbilityScale * (_abilityHovered ? lift : 1f);
+        }
 
         private void RefreshStatusLine(bool over)
         {
@@ -1351,11 +1718,7 @@ namespace Pascension.Game.Soi
                     _toast.ShowBanner(DefName(attack.DefId) + UI.Loc.T(" strikes every player!"));
                     return null;
                 case ShardsCardsRevealedEvent reveals:
-                    // Reveals are always card-caused (Unify/Dominion, Shard Defiant…):
-                    // attach them to their causing entry rather than spamming the log.
-                    foreach (string defId in reveals.DefIds)
-                        _history.AttachAffected(reveals.PlayerIndex, defId);
-                    return null;
+                    return PlayReveals(reveals);
                 case ShardsDamageAssignedEvent damage:
                     return PlayPlayerDamage(damage);
                 case ShardsShieldsRevealedEvent shields:
@@ -1393,6 +1756,38 @@ namespace Pascension.Game.Soi
                     if (turn.PlayerIndex == MyIndex)
                         _toast.ShowBanner(UI.Loc.T("YOUR TURN"));
                     return null;
+                // ---- Duel of Doom narration ----
+                case ShardsHeroDraftedEvent drafted:
+                    _history.Push(SoiCardFaces.CharacterPrefix + drafted.CharacterId,
+                        drafted.PlayerIndex, UI.Loc.T("drafted"));
+                    if (drafted.PlayerIndex != MyIndex)
+                        _toast.Show(NameOf(drafted.PlayerIndex) + UI.Loc.T(" drafts ") +
+                            Shards.Content.ShardsContentRegistry.CharacterDisplayName(drafted.CharacterId) + ".");
+                    return null;
+                case ShardsRowRerolledEvent rerolled:
+                    _history.Push(rerolled.DefId, rerolled.PlayerIndex, UI.Loc.T("rerolled"));
+                    if (rerolled.PlayerIndex != MyIndex)
+                        _toast.Show(NameOf(rerolled.PlayerIndex) + UI.Loc.T(" rerolls ") + DefName(rerolled.DefId) + ".");
+                    return null;
+                case ShardsModeChosenEvent chosen:
+                    // Record the branch on the card's OWN log entry (no second row).
+                    _history.AnnotateNewest(chosen.PlayerIndex, chosen.DefId,
+                        UI.Loc.OptionLabel(chosen.Label));
+                    if (chosen.PlayerIndex != MyIndex)
+                        _toast.Show(NameOf(chosen.PlayerIndex) + " — " + UI.Loc.OptionLabel(chosen.Label));
+                    return null;
+                case ShardsHeroAbilityUsedEvent heroAbility:
+                {
+                    var abilitySpec = ShardsEngine.HeroAbilityInfo(heroAbility.CharacterId);
+                    string abilityName = abilitySpec.Name != null ? UI.Loc.T(abilitySpec.Name) : UI.Loc.T("Hero ability");
+                    // The ability CARD (its own art), not the hero portrait — the log
+                    // entry then previews exactly what was used.
+                    _history.Push(SoiCardFaces.AbilityPrefix + heroAbility.CharacterId,
+                        heroAbility.PlayerIndex, abilityName, attachable: true);
+                    if (heroAbility.PlayerIndex != MyIndex)
+                        _toast.Show(NameOf(heroAbility.PlayerIndex) + " — " + abilityName + ".");
+                    return null;
+                }
                 default:
                     return null;
             }
@@ -1414,6 +1809,23 @@ namespace Pascension.Game.Soi
                 : AnchorOf(playerIndex, null);
             yield return _showcase.Play(_queue, defId, playerIndex, from, to);
             if (playerIndex == MyIndex) _playedPile.Pulse();
+        }
+
+        /// <summary>Revealed cards (Unify/Dominion checks, Shard Defiant, Longshot…):
+        /// attach to the causing log entry, and for OPPONENT viewers showcase up to 3 of
+        /// them center-screen — a reveal the viewer didn't choose was log-only and easy
+        /// to miss. Own reveals stay animation-free (the player just picked them). The
+        /// PresentationQueue keeps the sequence click-skippable.</summary>
+        private IEnumerator PlayReveals(ShardsCardsRevealedEvent reveals)
+        {
+            // Duplicates kept: a five-card reveal that turns up three Crystals must not
+            // read as a three-card reveal.
+            foreach (string defId in reveals.DefIds)
+                _history.AttachAffected(reveals.PlayerIndex, defId, allowDuplicates: true);
+            if (reveals.PlayerIndex == MyIndex) yield break;
+            Vector2 anchor = AnchorOf(reveals.PlayerIndex, null);
+            for (int i = 0; i < reveals.DefIds.Count && i < 3; i++)
+                yield return _showcase.Play(_queue, reveals.DefIds[i], reveals.PlayerIndex, anchor, anchor);
         }
 
         private IEnumerator PlayDraws(int playerIndex, List<int> instanceIds)
@@ -1478,6 +1890,7 @@ namespace Pascension.Game.Soi
             if (refilled.SlotIndex < 0 || refilled.SlotIndex >= _slots.Length) yield break;
             _hiddenSlots.Add(refilled.SlotIndex);
             _slots[refilled.SlotIndex].gameObject.SetActive(false);
+            SyncRerollVisibility(refilled.SlotIndex); // hide the button while the slot flies in
             yield return _flights.Fly(_queue, refilled.DefId,
                 _flights.ToLocal(_centerDeckPile.AnchorRect),
                 _flights.ToLocal(_slots[refilled.SlotIndex].Rect), 0.45f, 0.62f, 0.3f);
@@ -1618,6 +2031,7 @@ namespace Pascension.Game.Soi
                     _portrait.SetTapped(true);
                     _bursts.Burst(_bursts.ToLocal(_portrait.Rect), UiPalette.Gold, 8, 120f);
                     yield return Tween.Punch(_portrait.transform, 0.16f, 0.15f);
+                    ApplyCharacterCardScale(); // the punch restores ITS captured base — re-assert ours
                 }
                 yield break;
             }
@@ -1653,22 +2067,63 @@ namespace Pascension.Game.Soi
 
         // ------------------------------------------------------------------ hover preview
 
+        /// <summary>The hover preview is STICKY: it belongs to the hovered CARD, not to the
+        /// CardView that happens to be showing it. Views are destroyed and rebuilt
+        /// constantly (board rows re-render on every snapshot, effects and animations
+        /// rebuild whole zones), and the old code hid the preview on ANY view's exit —
+        /// so a card blinked out from under the pointer whenever anything happened.
+        /// Now only the previewing card's own exit counts, and a teardown exit merely
+        /// opens a short re-acquire window (Unity re-raycasts every frame, so a card that
+        /// still exists fires PointerEnter on its rebuilt view and the preview never
+        /// blinks). The window lapsing in LateUpdate means the card really is gone.</summary>
         private void OnAnyCardHovered(CardView view, bool entered)
         {
-            if (view == _preview || _hand.IsDragging) return;
-            if (!entered || string.IsNullOrEmpty(view.DefId))
+            if (_preview == null || view == _preview || _hand.IsDragging) return;
+
+            if (entered)
             {
-                _preview.gameObject.SetActive(false);
-                HideKeywordTips();
-            }
-            else
-            {
+                // Face-down / unknown card: nothing to preview, and the pointer is
+                // demonstrably on a real card — end any pending re-acquire too.
+                if (string.IsNullOrEmpty(view.DefId)) { ClearHover(); return; }
+                bool sameCard = view.DefId == _hoverDefId && view.InstanceId == _hoverInstanceId;
+                _hoverSource = view;
+                _hoverDefId = view.DefId;
+                _hoverInstanceId = view.InstanceId;
+                _hoverRegrabLeft = 0f;
                 _preview.gameObject.SetActive(true);
                 _preview.transform.SetAsLastSibling();
-                _preview.BindDef(view.DefId);
-                ShowKeywordTips(view);
+                // Re-acquiring the SAME card must not rebuild the tooltip stack — that
+                // rebuild is exactly the flicker this whole mechanism exists to remove.
+                if (!sameCard)
+                {
+                    _preview.BindDef(view.DefId);
+                    ShowKeywordTips(view);
+                }
+                BroadcastLocalHover(view, true);
+                return;
             }
-            BroadcastLocalHover(view, entered);
+
+            // Exits from any other view are noise: a single re-render disables dozens.
+            if (view != _hoverSource) return;
+            if (view.Closing)
+            {
+                _hoverSource = null;
+                _hoverRegrabLeft = HoverRegrabSeconds;
+                return;
+            }
+            ClearHover();
+        }
+
+        /// <summary>Drop the hover for real — the pointer left, or the card is gone.</summary>
+        private void ClearHover()
+        {
+            _hoverSource = null;
+            _hoverDefId = null;
+            _hoverInstanceId = -1;
+            _hoverRegrabLeft = 0f;
+            _preview.gameObject.SetActive(false);
+            HideKeywordTips();
+            BroadcastLocalHover(null, false);
         }
 
         // ------------------------------------------------------------------ keyword tooltips
@@ -1753,7 +2208,7 @@ namespace Pascension.Game.Soi
         private void BroadcastLocalHover(CardView view, bool entered)
         {
             if (_snap == null || _snap.TurnPlayerIndex != MyIndex) return;
-            int hoverId = entered && view.InstanceId > 0 && _boardViews.ContainsKey(view.InstanceId)
+            int hoverId = entered && view != null && view.InstanceId > 0 && _boardViews.ContainsKey(view.InstanceId)
                 ? view.InstanceId : -1;
             if (hoverId == _lastHoverSent) return;
             _lastHoverSent = hoverId;
@@ -1780,6 +2235,30 @@ namespace Pascension.Game.Soi
             // Thinking state changes between snapshots — keep the status line live.
             if (_snap != null && IsBotThinking != null)
                 RefreshStatusLine(_snap.GameOver);
+
+            // Sticky hover: a view teardown opened a re-acquire window. A card that still
+            // exists re-enters on its rebuilt view within a frame or two and cancels this;
+            // if the window lapses, nothing came back — the card really left the table.
+            if (_hoverRegrabLeft > 0f)
+            {
+                _hoverRegrabLeft -= Time.unscaledDeltaTime;
+                if (_hoverRegrabLeft <= 0f) ClearHover();
+            }
+            // The other half of the same problem: PERSISTENT views (river slots, pile
+            // tops, the portrait) are REBOUND in place — buy-and-refill, a Duel reroll,
+            // a new pile top. No exit/enter fires, so without this the preview would keep
+            // showing the card that used to be there.
+            else if (_hoverSource != null && _hoverSource.DefId != _hoverDefId)
+            {
+                if (string.IsNullOrEmpty(_hoverSource.DefId)) ClearHover();
+                else
+                {
+                    _hoverDefId = _hoverSource.DefId;
+                    _hoverInstanceId = _hoverSource.InstanceId;
+                    _preview.BindDef(_hoverDefId);
+                    ShowKeywordTips(_hoverSource);
+                }
+            }
 
             CardView target = null;
             if (_remoteHoverId > 0 && _snap != null &&
@@ -1829,18 +2308,27 @@ namespace Pascension.Game.Soi
             return null;
         }
 
-        /// <summary>In-play glow for champions/destinies/Ingeminex: red = the viewer can
-        /// kill it right now (wins over everything), faction color = its exhaust
-        /// condition is met (ready cards only, host-checked).</summary>
+        /// <summary>In-play adornments for champions/destinies/Ingeminex: red GLOW = the
+        /// viewer can kill it right now (wins over everything, stays a glow); a faction
+        /// star TWINKLE = its exhaust condition is met (ready cards only, host-checked).</summary>
         private void ApplyBoardGlow(CardView view, ShardsCardSnap card)
         {
             if (_killable.Contains(card.InstanceId))
+            {
                 view.SetGlow(true, UiPalette.WoundedRed);
+                view.SetSparkle(false);
+            }
             else if (!card.Exhausted && _conditionGlow.Contains(card.InstanceId) &&
                      ShardsCardDatabase.TryGet(card.DefId, out var def))
-                view.SetGlow(true, SoiCardFaces.FactionColor(def.Faction));
-            else
+            {
                 view.SetGlow(false);
+                view.SetSparkle(true, SoiCardFaces.FactionColor(def.Faction));
+            }
+            else
+            {
+                view.SetGlow(false);
+                view.SetSparkle(false);
+            }
         }
 
         /// <summary>Synthetic CardSnap: DefId + InstanceId only — CardView resolves SoI
