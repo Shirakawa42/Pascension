@@ -30,44 +30,44 @@ namespace Shards.Content
             SoiCard.New("j_chord", "J-Chord").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Champion).Cost(3).Qty(1).Defense(3)
                 .Exhausts(new BestByMastery((0, new WarpUpTo(3)), (15, new WarpUpTo(5))))
-                .Text("Exhaust — Warp 3. M15: Warp 5 instead.")
+                .Text("Exhaust — Warp 3.\nM15: Warp 5 instead.")
                 .Art("a sound-weaver strumming rifts open like guitar strings").Register();
 
             SoiCard.New("g_48", "G-48").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Champion).Cost(4).Qty(1).Defense(5)
                 .Exhausts(new Custom(ResetChampion))
-                .Text("Exhaust: reset another champion you control (it may exhaust again this turn).")
+                .Text("Exhaust: reset another champion you control. It may exhaust again this turn.")
                 .Art("a maintenance automaton jump-starting a battle frame").Register();
 
             SoiCard.New("legion_carrier", "Legion Carrier").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(2)
                 .Plays(E.Seq(E.Gems(2), new Custom(LegionCarrierFlow)))
-                .Text("Gain 2 gems. You may reveal your deck's top 3 cards: up to one revealed champion to your hand, the rest to your discard pile.")
+                .Text("Gain 2 gems.\nReveal your deck's top 3 cards: up to one revealed champion to your hand, the rest to your discard pile.")
                 .Art("a dropship bay disgorging ranks of soldiers onto a landing pad").Register();
 
             SoiCard.New("torian_commandos", "Torian Commandos").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Ally).Cost(3).Qty(3).Shield(4)
                 .Plays(E.Mix(gems: 2, power: 2))
-                .Text("Shield 4. Gain 2 gems and 2 power.")
+                .Text("Shield 4.\nGain 2 gems and 2 power.")
                 .Art("a strike team rappelling through smoke with riot shields").Register();
 
             SoiCard.New("anomaly_cleric", "Anomaly Cleric").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Ally).Cost(5).Qty(1)
                 .Plays(E.Seq(E.Mix(gems: 3, mastery: 1),
                     E.At(10, new Do(ctx => ctx.Controller.NextRecruitsToHand++))))
-                .Text("Gain 3 gems and 1 mastery. M10: the next card you recruit this turn goes to your hand.")
+                .Text("Gain 3 gems and 1 mastery.\nM10: the next card you recruit this turn goes to your hand.")
                 .Art("a cleric calmly cataloguing a floating impossible object").Register();
 
             SoiCard.New("duplication_fabricator", "Duplication Fabricator").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Ally).Cost(1).Qty(2)
                 .Plays(E.Seq(E.Mastery(1), new Custom(FabricatorFlow)))
-                .Text("Gain 1 mastery. Every player reveals their deck's top card; copy the effect of one revealed ally.")
+                .Text("Gain 1 mastery.\nEvery player reveals their deck's top card; copy the effect of one revealed ally.")
                 .Art("a mirrored forge printing a perfect copy of whatever it sees").Register();
 
             SoiCard.New("shard_seer", "Shard Seer").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
                 .Plays(E.Seq(E.Draw(1), new Custom(ShardSeerFlow)))
-                .Text("Draw a card. You may reveal an Infinity Shard from your hand to gain 2 mastery.")
+                .Text("Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 2 mastery.")
                 .Art("a seer gazing into a shard that reflects every possible future").Register();
 
             SoiCard.New("carnivorous_vine", "Carnivorous Vine").InSet(SET).Faction(U)
@@ -75,13 +75,13 @@ namespace Shards.Content
                 .Plays(E.Seq(E.Mix(health: 3, power: 3),
                     new PerCount(ctx => System.Math.Max(0, ctx.Controller.FactionAllyPlays(U) - 1),
                         health: 2, power: 2)))
-                .Text("Gain 3 health and 3 power, plus 2 health and 2 power per OTHER Undergrowth ally you played this turn.")
+                .Text("Gain 3 health and 3 power.\nGain 2 more health and 2 more power per OTHER Undergrowth ally you played this turn.")
                 .Art("a flowering vine with a fanged bloom swallowing sunlight").Register();
 
             SoiCard.New("orm_madu", "Orm Madu").InSet(SET).Faction(U)
                 .Type(ShardsCardType.Champion).Cost(7).Qty(1).Defense(7)
                 .Exhausts(E.Seq(E.Health(7), If.FullHealth(E.Mastery(1))))
-                .Text("Exhaust: gain 7 health; then, if you are at 50 health, gain 1 mastery.")
+                .Text("Exhaust: gain 7 health.\nThen, if you are at 50 health, gain 1 mastery.")
                 .Art("a serpent of moss and river-stone coiled around a spring").Register();
 
             SoiCard.New("the_rotten", "The Rotten").InSet(SET).Faction(U)
@@ -96,19 +96,19 @@ namespace Shards.Content
                     new If(ctx => ctx.Controller.PlayedThisTurn.Exists(c =>
                         c.DefId == "cinder_scars" && c != ctx.Source), E.Power(3)),
                     E.At(10, new BanishUpTo(1))))
-                .Text("Draw a card. If you played another Cinder Scars this turn, gain 3 power. M10: you may banish a card from your hand or discard pile.")
+                .Text("Draw a card.\nIf you played another Cinder Scars this turn, gain 3 power.\nM10: you may banish a card from your hand or discard pile.")
                 .Art("smoldering scar-lines of ash tracing a silhouette in the dark").Register();
 
             SoiCard.New("oblivion_gatekeeper", "Oblivion Gatekeeper").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Champion).Cost(4).Qty(1).Defense(5)
                 .Exhausts(new Custom(GatekeeperFlow))
-                .Text("Exhaust: reveal your deck's top card, lose health equal to its cost (not damage), and put it into your hand. M20: every opponent loses that health instead.")
+                .Text("Exhaust: reveal your deck's top card, lose health equal to its cost, and put it into your hand. This is a loss, not damage — shields can't prevent it.\nM20: every opponent loses that health instead.")
                 .Art("a towering warden holding open a door made of night").Register();
 
             var dispossessed = SoiCard.New("the_dispossessed", "The Dispossessed").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Ally).Cost(1).Qty(2)
                 .Plays(E.Power(3))
-                .Text("Gain 3 power. While in your discard pile: when you play a Wraethe card, you may return this to your hand.")
+                .Text("Gain 3 power.\nWhile in your discard pile: when you play a Wraethe card, you may return this to your hand.")
                 .Art("evicted spirits carrying the doors of their former homes");
             dispossessed.Def.ReturnFromDiscardOnFactionPlay = W;
             dispossessed.Register();
@@ -137,28 +137,26 @@ namespace Shards.Content
                 chosen.Exhausted = false;
         }
 
-        private static IEnumerable<ShardsStep> LegionCarrierFlow(ShardsContext ctx)
+        private static IEnumerable<ShardsStep> LegionCarrierFlow(ShardsContext ctx) =>
+            RevealTopForChampion(ctx, 3);
+
+        /// <summary>Legion Carrier's reveal, shared by the base card (3) and the Duel
+        /// errata (5). The reveal is MANDATORY — no "you may" — and the pick window
+        /// always opens showing EVERY revealed card, with the non-champions greyed out,
+        /// so the player sees the whole reveal and passes deliberately.
+        /// Running short of deck is not a failure: <see cref="ShardsEngine.PeekTopOfDeck"/>
+        /// shuffles the discard back in mid-reveal, and if there is still nothing left we
+        /// simply reveal what exists.</summary>
+        public static IEnumerable<ShardsStep> RevealTopForChampion(ShardsContext ctx, int count)
         {
             var player = ctx.Controller;
             var engine = ctx.Engine;
-            var confirm = new DecisionRequest
-            {
-                PlayerIndex = player.Index,
-                Kind = DecisionKind.ChooseMode,
-                Title = "Reveal your deck's top 3 cards?",
-                Context = "soi.confirm",
-                Min = 0,
-                Max = 1
-            };
-            confirm.Options.Add(new DecisionOption(1, "Reveal"));
-            yield return ShardsStep.AwaitDecision(confirm);
-            if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
 
             var revealed = new List<ShardsCard>();
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < count; i++)
             {
-                var top = engine.PeekTopOfDeck(player);
-                if (top == null) break;
+                var top = engine.PeekTopOfDeck(player); // reshuffles the discard when empty
+                if (top == null) break;                 // deck AND discard exhausted
                 player.Deck.Remove(top);
                 revealed.Add(top);
             }
@@ -167,25 +165,27 @@ namespace Shards.Content
             foreach (var card in revealed) defIds.Add(card.DefId);
             engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = defIds });
 
-            var champions = revealed.FindAll(c => c.Def.IsChampion);
             ShardsCard toHand = null;
-            if (champions.Count > 0)
+            var pick = new DecisionRequest
             {
-                var pick = new DecisionRequest
+                PlayerIndex = player.Index,
+                Kind = DecisionKind.ChooseCards,
+                Title = "Put one revealed champion into your hand?",
+                Context = "soi.reveal",
+                Min = 0,
+                Max = 1
+            };
+            foreach (var card in revealed)
+                pick.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name)
                 {
-                    PlayerIndex = player.Index,
-                    Kind = DecisionKind.ChooseCards,
-                    Title = "Put one revealed champion into your hand?",
-                    Context = "soi.reveal",
-                    Min = 0,
-                    Max = 1
-                };
-                foreach (var card in champions)
-                    pick.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
-                yield return ShardsStep.AwaitDecision(pick);
-                if (ctx.Answer.ChosenOptionIds.Count > 0)
-                    toHand = champions.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
-            }
+                    CardInstanceId = card.InstanceId,
+                    DefId = card.DefId,
+                    Disabled = !card.Def.IsChampion // shown, greyed, unpickable
+                });
+            yield return ShardsStep.AwaitDecision(pick);
+            if (ctx.Answer.ChosenOptionIds.Count > 0)
+                toHand = revealed.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0] && c.Def.IsChampion);
+
             foreach (var card in revealed)
             {
                 if (card == toHand)
@@ -437,7 +437,7 @@ namespace Shards.Content
                     dealt >= 5 ? new Custom(BloodForBloodFlow) : null);
 
             Destiny("bound_for_life", "Bound for Life",
-                "Exhaust: ALL players (including you) lose 4 health. Not damage — shields can't prevent it.",
+                "Exhaust: ALL players lose 4 health, including you. Not damage — shields can't prevent it.",
                 "chains of light binding every combatant's wrist together",
                 new AllPlayersLoseHealth(4));
 
@@ -465,7 +465,7 @@ namespace Shards.Content
                     E.Mastery(1)));
 
             Destiny("deadly_recruits", "Deadly Recruits",
-                "Exhaust: fast-play a cost-1 ally from the row for free (you keep it). M20: cost 2 or less.",
+                "Exhaust: fast-play a cost-1 ally from the row for free. You keep it.\nM20: cost 2 or less.",
                 "a recruiter's table where every pen is a knife",
                 new BestByMastery((0, new Custom(ctx => DeadlyRecruitsFlow(ctx, 1))),
                                   (20, new Custom(ctx => DeadlyRecruitsFlow(ctx, 2)))));
@@ -498,7 +498,7 @@ namespace Shards.Content
                 new If(ctx => DistinctFactions(ctx) >= 3, E.Power(4)));
 
             Destiny("shard_defiant", "The Shard Defiant",
-                "Pay 2 gems, Exhaust: reveal the center deck's top card; recruit or banish it. If you played an Aion card this turn, you may repeat this once.",
+                "Pay 2 gems, Exhaust: reveal the center deck's top card; recruit or banish it.\nIf you played an Aion card this turn, you may repeat this once.",
                 "a lone shard hovering against a tide of grasping hands",
                 new Custom(ShardDefiantFlow),
                 def => def.ExhaustGemCost = 2);
@@ -539,13 +539,13 @@ namespace Shards.Content
                 new If(ctx => ctx.Controller.Health >= 40, E.Draw(1)));
 
             Destiny("advanced_weapons", "Advanced Weapons",
-                "Exhaust: if you played 2+ odd-cost cards this turn, gain 3 power. (Cost-less cards are neither even nor odd.)",
+                "Exhaust: if you played 2+ odd-cost cards this turn, gain 3 power.\nCost-less cards are neither even nor odd.",
                 "a rack of impossible weapons still warm from the forge",
                 new If(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
                     c.Def.Cost > 0 && c.Def.Cost % 2 == 1).Count >= 2, E.Power(3)));
 
             Destiny("advanced_medicine", "Advanced Medicine",
-                "Exhaust: if you played 2+ even-cost cards this turn, gain 4 health. (Cost-less cards are neither even nor odd.)",
+                "Exhaust: if you played 2+ even-cost cards this turn, gain 4 health.\nCost-less cards are neither even nor odd.",
                 "a suture of light closing a wound in mid-air",
                 new If(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
                     c.Def.Cost > 0 && c.Def.Cost % 2 == 0).Count >= 2, E.Health(4)));

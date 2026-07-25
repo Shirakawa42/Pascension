@@ -14,8 +14,7 @@ namespace SoiSim
     /// tuning/stats wall-clock estimate calibrates from.</summary>
     public static class BenchCommand
     {
-        private const ShardsDlc AllDlc =
-            ShardsDlc.RelicsOfTheFuture | ShardsDlc.ShadowOfSalvation | ShardsDlc.IntoTheHorizon;
+        private static ShardsDlc AllDlc => SimConfig.AllDlc;
 
         public static int Run(Cli cli)
         {

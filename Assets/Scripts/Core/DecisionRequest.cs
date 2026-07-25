@@ -36,6 +36,11 @@ namespace Pascension.Engine.Decisions
         /// <summary>UI hint — grouping key (SoI damage split: the owning player's
         /// index, so targets render in per-player sections). -1 = ungrouped.</summary>
         public int OwnerIndex = -1;
+        /// <summary>SHOWN but not choosable. A reveal must display everything it turned
+        /// up — the cards that don't qualify are greyed out rather than hidden, so the
+        /// player sees the whole reveal and passes deliberately. The engine REJECTS an
+        /// answer naming one (ValidateAnswer), so this is a rule, not just a hint.</summary>
+        public bool Disabled;
         /// <summary>Set when the option is a target.</summary>
         public TargetRef? Target;
 

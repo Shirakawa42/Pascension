@@ -90,6 +90,43 @@ namespace Shards.Bots
 
             // Draw 3 at end of turn after a 10+ damage hit on one opponent.
             ["heart_of_nothing:play"] = (a, m, w) => Add(a, draw: 0.8, w: w),
+
+            // ---- Duel of Doom ----
+            // Inspire: the next Homodeus champion recruit enters play directly.
+            ["century_forge:play"] = (a, m, w) => Add(a, power: 0.8, w: w),
+            // This turn, over-cap healing becomes power (marginal unless near full).
+            ["nectar_alchemist:play"] = (a, m, w) => Add(a, power: 0.5, w: w),
+            // This turn, all healing is doubled (proxy — depends on other heals).
+            ["lifebloom_ritual:play"] = (a, m, w) => Add(a, health: 1.5, w: w),
+            // Destroy target opponent — a lethal finisher (costs 14 gems).
+            ["comet:play"] = (a, m, w) => Add(a, power: 12, w: w),
+            // Lose 4 health, draw 2 (Echo redirects the loss to an opponent).
+            ["bleak_communion:play"] = (a, m, w) => Add(a, draw: 2, health: -1, w: w),
+
+            // ---- Duel of Doom errata (new def ids need their own annotations) ----
+            ["slipstream_shard_duel:play"] = (a, m, w) => Add(a, draw: 2.5, w: w),
+            ["heart_of_nothing_duel:play"] = (a, m, w) => Add(a, draw: 0.8, w: w),
+            ["ru_bo_vai_duel:exhaust"] = (a, m, w) => Add(a, power: 1, w: w),
+            ["reactor_drone_duel:play"] = (a, m, w) => Add(a, gems: 4, w: w),
+            ["order_initiate_duel:play"] = (a, m, w) => Add(a, gems: 0.2, w: w), // free shop-removal, denial
+            ["spore_cleric_duel:play"] = (a, m, w) => Add(a, health: 4.5, w: w),
+            ["warpquartz_duel:play"] = (a, m, w) => { a.BanishCapacity += 1; Add(a, gems: 2, power: 2, w: w); },
+            ["duplication_fabricator_duel:play"] = (a, m, w) => a.CopyEffects += 1,
+            ["dash_duel:play"] = (a, m, w) => Add(a, draw: 0.4, w: w),
+            ["world_piercer_duel:play"] = (a, m, w) => { a.ReturnsFromDiscard = true; Add(a, draw: 0.5, w: w); },
+            ["legion_carrier_duel:play"] = (a, m, w) => Add(a, draw: 0.4, w: w),
+            ["deadly_recruits_duel:exhaust"] = (a, m, w) => { a.Warps++; a.WarpMaxCost = Math.Max(a.WarpMaxCost, m >= 20 ? 4 : 2); },
+            ["praetorian_02_duel:exhaust"] = (a, m, w) => Add(a, health: 1, w: w), // shields doubled — defensive
+            // Doom Gate: shuffle 20 Ingeminex (board swing, hard to value) / destroy one.
+            ["doom_gate:play"] = (a, m, w) => Add(a, w: w),
+            ["doom_gate:exhaust"] = (a, m, w) => Add(a, w: w),
+            // Riposte Doctrine: +3 more power when a shield was played/revealed (~common).
+            ["riposte_doctrine:play"] = (a, m, w) => Add(a, power: 1.5, w: w),
+            // Longshot: reveal top 2, fast-play cheap allies (free tempo).
+            ["longshot:play"] = (a, m, w) => Add(a, power: 1, gems: 0.5, w: w),
+            // Grim Tutor: fetch your best card now — draw-quality worth more than a draw —
+            // at 3 life (a loss, not damage).
+            ["grim_tutor:play"] = (a, m, w) => Add(a, draw: 1.4, health: -3, w: w),
         };
 
         public static bool TryApply(string defId, string slot, EffectAtoms atoms, int mastery, double mult)

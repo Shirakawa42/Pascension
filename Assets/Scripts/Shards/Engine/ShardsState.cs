@@ -18,6 +18,12 @@ namespace Shards.Engine
         /// <summary>Character card exhausted (Focus or a character exhaust power).</summary>
         public bool CharacterExhausted;
         public bool FocusedThisTurn;
+        /// <summary>Duel: the hero's unique second ability was used this turn (separate from
+        /// Focus — both are usable in the same turn).</summary>
+        public bool HeroAbilityUsedThisTurn;
+        /// <summary>Duel: this player has already bought a card this turn (Decima's M5
+        /// first-buy discount is spent).</summary>
+        public bool FirstBuyUsedThisTurn;
 
         public List<ShardsCard> Deck = new();
         public List<ShardsCard> Hand = new();
@@ -36,6 +42,9 @@ namespace Shards.Engine
         public bool DestinyTaken;
         /// <summary>Slipstream Shard's M20 extra turn is once per game.</summary>
         public bool ExtraTurnUsed;
+        /// <summary>Doom Gate's 20-Ingeminex flood is once per game — replaying the relic
+        /// champion after it was destroyed must NOT flood again (Duel).</summary>
+        public bool DoomGateFloodUsed;
         public bool Eliminated;
 
         // ---- turn-scoped state (cleared in ResetTurn) ----
@@ -50,16 +59,30 @@ namespace Shards.Engine
 
         public bool IgnoreShieldsThisTurn;        // Ru Bo Vai M10
         public bool HealthToPowerThisTurn;        // Entropic Talons conversion
+        public bool HealingDoubledThisTurn;       // Lifebloom Ritual (Duel)
+        public bool OverflowHealthToPowerThisTurn;// Nectar Alchemist (Duel): over-cap heal → power
+        /// <summary>Praetorian-02 (Duel errata): shields doubled until this player's next
+        /// turn. Set on the exhaust, cleared in StartTurn — persists through the opponent's
+        /// attack (NOT reset in ResetTurn).</summary>
+        public bool ShieldsDoubledUntilNextTurn;
         /// <summary>Counters, not flags — two Numeri Drones (or an Ojas-copied Anomaly
         /// Cleric) can arm several redirects in one turn.</summary>
         public int NextRecruitsToHand;            // Anomaly Cleric M10
         public int NextHomodeusChampionsIntoPlay; // Numeri Drones
+        public int NextChampionsIntoPlay;         // Century Forge (Duel) — any champion
         public bool CopyHomodeusAlliesThisTurn;   // General Decurion M20
         /// <summary>Heart of Nothing: extra end-of-turn draws if 10+ unprevented damage
         /// landed on a single opponent this turn.</summary>
         public int BonusDrawsOnBigHit;
         /// <summary>Largest unprevented damage total dealt to one opponent this turn.</summary>
         public int MaxDamageDealtToOneOpponent;
+        /// <summary>Cards this player banished this turn, any source (Warpquartz Duel pays
+        /// "for each card you banished this turn").</summary>
+        public int CardsBanishedThisTurn;
+        /// <summary>Duel row rerolls used this turn — the price climbs 1 gem per use
+        /// (1, 2, 3…) and resets each turn, so the first look is nearly free but digging
+        /// the whole shop for one card is expensive.</summary>
+        public int RerollsThisTurn;
 
         public int FactionPlays(ShardsFaction faction) =>
             _factionPlays.TryGetValue(faction, out int n) ? n : 0;
@@ -79,16 +102,23 @@ namespace Shards.Engine
             Gems = 0;
             Power = 0;
             FocusedThisTurn = false;
+            HeroAbilityUsedThisTurn = false;
+            FirstBuyUsedThisTurn = false;
             _factionPlays.Clear();
             _factionAllyPlays.Clear();
             PlayedThisTurn.Clear();
             IgnoreShieldsThisTurn = false;
             HealthToPowerThisTurn = false;
+            HealingDoubledThisTurn = false;
+            OverflowHealthToPowerThisTurn = false;
             NextRecruitsToHand = 0;
             NextHomodeusChampionsIntoPlay = 0;
+            NextChampionsIntoPlay = 0;
             CopyHomodeusAlliesThisTurn = false;
             BonusDrawsOnBigHit = 0;
             MaxDamageDealtToOneOpponent = 0;
+            CardsBanishedThisTurn = 0;
+            RerollsThisTurn = 0;
         }
     }
 

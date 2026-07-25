@@ -317,21 +317,71 @@ namespace Shards.Engine
         }
     }
 
-    /// <summary>Dominion: fires if the controller played and/or reveals from hand at
-    /// least one card of EACH of the three non-Order base factions this turn.</summary>
+    /// <summary>Dominion. Base game: at least one card of EACH of Homodeus/Undergrowth/
+    /// Wraethe played and/or revealed this turn. With the Duel DLC on it is reworked to the
+    /// faction-agnostic form: at least 3 OTHER cards of 3 different factions this turn
+    /// (Order and Aion now help; the card itself never counts). Reveals still count.</summary>
     public sealed class Dominion : IShardsEffect, IShardsConditionalEffect
     {
         private static readonly ShardsFaction[] Required =
             { ShardsFaction.Homodeus, ShardsFaction.Undergrowth, ShardsFaction.Wraethe };
+        private const int DuelDistinctFactions = 3;
         private readonly IShardsEffect _inner;
         public IShardsEffect Inner => _inner;
         public Dominion(IShardsEffect inner) => _inner = inner;
+
+        private static bool DuelRework(ShardsContext ctx) =>
+            (ctx.Engine.State.Dlc & ShardsDlc.Duel) != 0;
+
+        private static readonly ShardsFaction[] AllFactions =
+        {
+            ShardsFaction.Homodeus, ShardsFaction.Undergrowth, ShardsFaction.Order,
+            ShardsFaction.Wraethe, ShardsFaction.Aion
+        };
+
+        /// <summary>Duel rework tally over cards PLAYED this turn, excluding the Dominion
+        /// card itself: how many OTHER faction cards, and which distinct factions they
+        /// cover. A Prism (CountsAsEveryFaction) covers all factions but is still only
+        /// ONE card toward the 3-card clause; Project Yggdrasil counts-as included.</summary>
+        private static (int cards, HashSet<ShardsFaction> factions) DuelPlayedTally(ShardsContext ctx)
+        {
+            var player = ctx.Controller;
+            var seen = new HashSet<ShardsFaction>();
+            int cards = 0;
+            foreach (var card in player.PlayedThisTurn)
+            {
+                if (card == ctx.Source) continue;
+                if (card.Def.Faction == ShardsFaction.None || card.Def.Faction == ShardsFaction.Monster) continue;
+                cards++;
+                foreach (var f in AllFactions)
+                    if (ShardsEngine.CountsAs(player, card.Def, f))
+                        seen.Add(f);
+            }
+            return (cards, seen);
+        }
 
         /// <summary>Lit when every required faction is covered by a play or a possible
         /// hand reveal (the probed card itself never counts).</summary>
         public bool ConditionMet(ShardsContext ctx)
         {
             var player = ctx.Controller;
+            if (DuelRework(ctx))
+            {
+                // Lit when plays already satisfy it, or hand reveals could complete it.
+                var (cards, factions) = DuelPlayedTally(ctx);
+                if (cards >= DuelDistinctFactions && factions.Count >= DuelDistinctFactions)
+                    return true;
+                foreach (var card in player.Hand)
+                {
+                    if (card == ctx.Source) continue;
+                    if (card.Def.Faction == ShardsFaction.None || card.Def.Faction == ShardsFaction.Monster) continue;
+                    cards++;
+                    foreach (var f in AllFactions)
+                        if (ShardsEngine.CountsAs(player, card.Def, f))
+                            factions.Add(f);
+                }
+                return cards >= DuelDistinctFactions && factions.Count >= DuelDistinctFactions;
+            }
             foreach (var faction in Required)
             {
                 if (player.FactionPlays(faction) >= 1) continue;
@@ -350,6 +400,52 @@ namespace Shards.Engine
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {
             var player = ctx.Controller;
+
+            // Duel rework: 3+ OTHER cards covering 3+ distinct factions, from plays
+            // and/or hand reveals ("like Unify but harder" — reveals never feed
+            // PlayedThisTurn, so they are offered as a decision here).
+            if (DuelRework(ctx))
+            {
+                var (cards, factions) = DuelPlayedTally(ctx);
+                if (cards < DuelDistinctFactions || factions.Count < DuelDistinctFactions)
+                {
+                    var candidates = player.Hand.FindAll(c => c != ctx.Source &&
+                        c.Def.Faction != ShardsFaction.None && c.Def.Faction != ShardsFaction.Monster);
+                    if (candidates.Count == 0) yield break;
+                    var reveal = new DecisionRequest
+                    {
+                        PlayerIndex = player.Index,
+                        Kind = DecisionKind.ChooseCards,
+                        Title = "Reveal cards to complete Dominion? (3 other cards of 3 factions needed)",
+                        Context = "soi.reveal",
+                        Min = 0,
+                        Max = candidates.Count
+                    };
+                    foreach (var card in candidates)
+                        reveal.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name + " (" + card.Def.Faction + ")") { CardInstanceId = card.InstanceId, DefId = card.DefId });
+                    yield return ShardsStep.AwaitDecision(reveal);
+
+                    var revealedIds = new List<string>();
+                    foreach (int id in ctx.Answer.ChosenOptionIds)
+                    {
+                        var card = player.Hand.Find(c => c.InstanceId == id);
+                        if (card == null) continue;
+                        cards++;
+                        foreach (var f in AllFactions)
+                            if (ShardsEngine.CountsAs(player, card.Def, f))
+                                factions.Add(f);
+                        revealedIds.Add(card.DefId);
+                    }
+                    if (revealedIds.Count > 0)
+                        ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds });
+                    if (cards < DuelDistinctFactions || factions.Count < DuelDistinctFactions)
+                        yield break;
+                }
+                foreach (var step in _inner.Resolve(ctx))
+                    yield return step;
+                yield break;
+            }
+
             var missing = new List<ShardsFaction>();
             foreach (var faction in Required)
                 if (player.FactionPlays(faction) < 1)
@@ -622,6 +718,7 @@ namespace Shards.Engine
             {
                 var card = engine.State.CenterRow[s];
                 if (card == null || card.Def.IsChampion) continue;
+                if (card.Def.CannotBeFastPlayed) continue; // Comet: must be BOUGHT
                 if (_maxCost >= 0 && card.Def.Cost > _maxCost) continue;
                 slots.Add(s);
             }
@@ -774,6 +871,7 @@ namespace Shards.Engine
             {
                 if (player.Eliminated) continue;
                 if (!_includeController && player.Index == ctx.ControllerIndex) continue;
+                if (ctx.Engine.IsImmuneToActiveMonster(player)) continue; // Doom Gate
                 ctx.Engine.LoseHealth(player.Index, _amount);
             }
             yield break;
@@ -790,7 +888,7 @@ namespace Shards.Engine
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {
             foreach (var player in ctx.Engine.State.Players)
-                if (!player.Eliminated)
+                if (!player.Eliminated && !ctx.Engine.IsImmuneToActiveMonster(player)) // Doom Gate
                     ctx.Engine.LoseMastery(player.Index, _amount);
             yield break;
         }
@@ -810,6 +908,7 @@ namespace Shards.Engine
             {
                 var player = state.Players[(state.TurnPlayerIndex + step) % state.Players.Count];
                 if (player.Eliminated || player.Hand.Count == 0) continue;
+                if (ctx.Engine.IsImmuneToActiveMonster(player)) continue; // Doom Gate
                 int count = System.Math.Min(_count, player.Hand.Count);
                 var request = new DecisionRequest
                 {
@@ -844,6 +943,7 @@ namespace Shards.Engine
             foreach (var player in ctx.Engine.State.Players)
             {
                 if (player.Eliminated || player.Champions.Count == 0) continue;
+                if (ctx.Engine.IsImmuneToActiveMonster(player)) continue; // Doom Gate
                 ShardsCard biggest = null;
                 foreach (var champion in player.Champions)
                     if (biggest == null || champion.Def.Cost > biggest.Def.Cost ||

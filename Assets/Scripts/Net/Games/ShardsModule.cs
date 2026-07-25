@@ -31,7 +31,8 @@ namespace Pascension.Net
         {
             new DlcOption { Flag = (int)ShardsDlc.RelicsOfTheFuture, Name = "Relics of the Future", Description = "+24 center cards; recruit one of your 2 relics at Mastery 10" },
             new DlcOption { Flag = (int)ShardsDlc.ShadowOfSalvation, Name = "Shadow of Salvation", Description = "+12 center cards; Rez as a 5th character (competitive content)" },
-            new DlcOption { Flag = (int)ShardsDlc.IntoTheHorizon, Name = "Into the Horizon", Description = "+30 center cards with Ingeminex monsters; destinies at Mastery 5" }
+            new DlcOption { Flag = (int)ShardsDlc.IntoTheHorizon, Name = "Into the Horizon", Description = "+30 center cards with Ingeminex monsters; destinies at Mastery 5" },
+            new DlcOption { Flag = (int)ShardsDlc.Duel, Name = "Duel of Doom", Description = "Requires all other DLCs — hero draft, new cards, errata, shop reroll" }
         };
         public IReadOnlyList<DlcOption> DlcOptions => Dlc;
 
@@ -97,7 +98,8 @@ namespace Pascension.Net
                 CostText = def.Type == ShardsCardType.Monster ? def.Defense.ToString() : def.Cost.ToString(),
                 TypeLine = typeLine,
                 RulesText = def.RulesText,
-                ArtId = def.Id
+                // Errata replacement defs inherit the replaced card's art.
+                ArtId = string.IsNullOrEmpty(def.ReplacesId) ? def.Id : def.ReplacesId
             };
         }
     }

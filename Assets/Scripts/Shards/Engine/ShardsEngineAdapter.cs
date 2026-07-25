@@ -66,6 +66,8 @@ namespace Shards.Engine
                 typeof(ShardsAttackMonsterAction),
                 typeof(ShardsTakeDestinyAction),
                 typeof(ShardsRecruitRelicAction),
+                typeof(ShardsRerollRowAction),
+                typeof(ShardsHeroAbilityAction),
                 typeof(ShardsEndTurnAction),
                 typeof(PassPriorityAction),
                 typeof(SubmitDecisionAction),

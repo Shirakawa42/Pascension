@@ -59,6 +59,38 @@ namespace Shards.Engine
         public string DefId;
     }
 
+    /// <summary>Duel of Doom: a player paid gems to remove a center-row card.</summary>
+    public sealed class ShardsRowRerolledEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public int SlotIndex;
+        public string DefId;
+    }
+
+    /// <summary>Duel of Doom: a player used their hero's unique M5 ability.</summary>
+    public sealed class ShardsHeroAbilityUsedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public string CharacterId;
+    }
+
+    /// <summary>A "Choose one" card resolved a branch (Reactor Drone…). Public — the
+    /// effect is visible anyway — so the log can say WHICH mode was taken, including for
+    /// bots and opponents. Label is the option's ENGLISH label; the UI localizes it.</summary>
+    public sealed class ShardsModeChosenEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public string DefId;
+        public string Label;
+    }
+
+    /// <summary>Duel of Doom: a player drafted their hero on turn 1 (public commitment).</summary>
+    public sealed class ShardsHeroDraftedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public string CharacterId;
+    }
+
     public sealed class ShardsFocusedEvent : GameEvent
     {
         public int PlayerIndex;

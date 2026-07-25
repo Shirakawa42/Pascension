@@ -30,6 +30,9 @@ namespace Shards.Engine
         public int Power;
         public bool CharacterExhausted;
         public bool FocusedThisTurn;
+        public bool HeroAbilityUsedThisTurn; // Duel
+        public bool FirstBuyUsedThisTurn;    // Duel — Decima's discount is spent for the turn
+        public int RerollsThisTurn;          // Duel — next reroll costs 1 + this
         public bool Eliminated;
         public bool RelicRecruited;
         public bool DestinyTaken;
@@ -90,6 +93,7 @@ namespace Shards.Engine
             public int Kind;
             public int PlayerIndex;
         }
+
     }
 
     public static class ShardsSnapshotBuilder
@@ -129,6 +133,9 @@ namespace Shards.Engine
                     Power = player.Power,
                     CharacterExhausted = player.CharacterExhausted,
                     FocusedThisTurn = player.FocusedThisTurn,
+                    HeroAbilityUsedThisTurn = player.HeroAbilityUsedThisTurn,
+                    FirstBuyUsedThisTurn = player.FirstBuyUsedThisTurn,
+                    RerollsThisTurn = player.RerollsThisTurn,
                     Eliminated = player.Eliminated,
                     RelicRecruited = player.RelicRecruited,
                     DestinyTaken = player.DestinyTaken,

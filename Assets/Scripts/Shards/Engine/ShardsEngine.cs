@@ -36,6 +36,10 @@ namespace Shards.Engine
         // End-turn flow state (damage split → per-defender shield reveals → cleanup).
         private bool _endTurnInProgress;
         private Queue<(int defender, int amount)> _pendingDefenses;
+        /// <summary>Testudo Vanguard (Duel): champion hits deferred into their owner's
+        /// defense step so revealed shields reduce them individually. Transient within one
+        /// end-turn resolution (like _pendingDefenses) — never cloned or hashed.</summary>
+        private Dictionary<int, List<(int hitId, int amount)>> _pendingChampionHits;
         private List<int> _splitTargets;
         private List<int> _splitAmounts;
         /// <summary>Non-null only during the initial center-row fill: monsters drawn then
@@ -80,9 +84,17 @@ namespace Shards.Engine
 
         private void Setup(ShardsConfig config)
         {
+            // Duel of Doom requires the other three DLCs — normalize the flag so the whole
+            // stack (center deck, relics, errata swaps, rules) agrees on one mask.
+            config.Dlc = NormalizeDlc(config.Dlc);
+
             State.Rules = config.Rules;
             State.Dlc = config.Dlc;
             State.Rng = new DeterministicRng(config.Seed);
+
+            // Errata swap: any enabled Duel def with a ReplacesId skips that base def from
+            // the pool (same mechanism as cloud_oracles → cloud_oracles_sos, generalized).
+            var replaced = ReplacedIds(config.Dlc);
 
             // Center deck from the enabled sets (relics and destinies are never in it).
             foreach (var def in ShardsCardDatabase.All)
@@ -97,9 +109,11 @@ namespace Shards.Engine
                     "relics_of_the_future" => (config.Dlc & ShardsDlc.RelicsOfTheFuture) != 0,
                     "shadow_of_salvation" => (config.Dlc & ShardsDlc.ShadowOfSalvation) != 0,
                     "into_the_horizon" => (config.Dlc & ShardsDlc.IntoTheHorizon) != 0,
+                    "duel" => (config.Dlc & ShardsDlc.Duel) != 0,
                     _ => false
                 };
                 if (!inSet) continue;
+                if (replaced.Contains(def.Id)) continue; // errata'd out by a Duel replacement
                 // ItH rule: Corruption's reward needs relics — remove it without RotF.
                 if (def.IsMonster && def.Id == "ingeminex_corruption" &&
                     (config.Dlc & ShardsDlc.RelicsOfTheFuture) == 0)
@@ -120,9 +134,15 @@ namespace Shards.Engine
             {
                 var destinies = new List<ShardsCard>();
                 foreach (var def in ShardsCardDatabase.All)
-                    if (def.Type == ShardsCardType.Destiny)
-                        for (int i = 0; i < def.Quantity; i++)
-                            destinies.Add(NewCard(def.Id, -1, ShardsZone.DestinyRow));
+                {
+                    if (def.Type != ShardsCardType.Destiny) continue;
+                    if (replaced.Contains(def.Id)) continue; // errata'd out by a Duel replacement
+                    // Duel destiny errata (Set "duel") only join when Duel is on; base
+                    // destinies (Set "into_the_horizon") join whenever this loop runs.
+                    if (def.Set == "duel" && (config.Dlc & ShardsDlc.Duel) == 0) continue;
+                    for (int i = 0; i < def.Quantity; i++)
+                        destinies.Add(NewCard(def.Id, -1, ShardsZone.DestinyRow));
+                }
                 State.Rng.Shuffle(destinies);
                 for (int i = 0; i < destinies.Count; i++)
                 {
@@ -130,6 +150,11 @@ namespace Shards.Engine
                     else State.DestinyDeck.Add(destinies[i]);
                 }
             }
+
+            // Duel of Doom drafts heroes on turn 1 (reverse seat order) AFTER the board is
+            // built — so players create WITHOUT a character/relics; HeroDraftFlow assigns
+            // both. Non-Duel keeps the lobby-assigned character and sets relics aside now.
+            bool duel = (config.Dlc & ShardsDlc.Duel) != 0;
 
             // Players: starter decks, staggered mastery 0/1/2/3, opening hands.
             for (int i = 0; i < config.Players.Count; i++)
@@ -139,7 +164,7 @@ namespace Shards.Engine
                 {
                     Index = i,
                     Name = spec.Name,
-                    CharacterId = spec.CharacterId,
+                    CharacterId = duel ? null : spec.CharacterId, // draft assigns it
                     FullControl = spec.FullControl,
                     Health = config.Rules.StartingHealth,
                     Mastery = i // staggered start: 0/1/2/3 by turn order
@@ -152,21 +177,8 @@ namespace Shards.Engine
                 }
                 State.Rng.Shuffle(player.Deck);
 
-                // Relics are set aside when the SET that ships them is enabled (recruit
-                // ONE free at Mastery 10): RotF ships the four base characters' pairs,
-                // SoS ships Rez's — the SoS sheet grants Rez his relics with SoS alone.
-                foreach (var def in ShardsCardDatabase.All)
-                {
-                    if (def.Type != ShardsCardType.Relic || def.Character != spec.CharacterId) continue;
-                    bool shipped = def.Set switch
-                    {
-                        "relics_of_the_future" => (config.Dlc & ShardsDlc.RelicsOfTheFuture) != 0,
-                        "shadow_of_salvation" => (config.Dlc & ShardsDlc.ShadowOfSalvation) != 0,
-                        _ => false
-                    };
-                    if (shipped)
-                        player.SetAside.Add(NewCard(def.Id, i, ShardsZone.SetAside));
-                }
+                if (!duel)
+                    SetAsideRelicsFor(player, config.Dlc);
 
                 State.Players.Add(player);
             }
@@ -196,8 +208,101 @@ namespace Shards.Engine
                 for (int d = 0; d < config.Rules.HandSize; d++)
                     DrawOne(player);
 
+            if (duel)
+            {
+                // Draft heroes on turn 1, reverse seat order, on the initialized board.
+                _draftDefaults = new List<string>();
+                foreach (var spec in config.Players) _draftDefaults.Add(spec.CharacterId);
+                QueueEffect(new Custom(HeroDraftFlow), 0, null);
+                Pump();
+            }
+            else
+            {
+                StartTurn(0, firstTurn: true);
+                RoutePriority();
+            }
+        }
+
+        /// <summary>The relic def ids a character sets aside under the given DLC mask —
+        /// shipped-set gating + Duel errata swaps applied. Deterministic order (sorted by
+        /// id). Public: the hero-draft UI shows each hero's relics from the same source
+        /// the engine deals from.</summary>
+        public static List<string> RelicIdsFor(string characterId, ShardsDlc dlc)
+        {
+            var replaced = ReplacedIds(dlc);
+            var ids = new List<string>();
+            foreach (var def in ShardsCardDatabase.All)
+            {
+                if (def.Type != ShardsCardType.Relic || def.Character != characterId) continue;
+                if (replaced.Contains(def.Id)) continue; // errata'd out by a Duel replacement
+                bool shipped = def.Set switch
+                {
+                    "relics_of_the_future" => (dlc & ShardsDlc.RelicsOfTheFuture) != 0,
+                    "shadow_of_salvation" => (dlc & ShardsDlc.ShadowOfSalvation) != 0,
+                    "duel" => (dlc & ShardsDlc.Duel) != 0,
+                    _ => false
+                };
+                if (shipped)
+                    ids.Add(def.Id);
+            }
+            ids.Sort(System.StringComparer.Ordinal);
+            return ids;
+        }
+
+        /// <summary>Set aside a player's relics (recruit ONE free at Mastery 10). Called at
+        /// setup (non-Duel) or after a hero draft pick assigns the character (Duel).</summary>
+        private void SetAsideRelicsFor(ShardsPlayer player, ShardsDlc dlc)
+        {
+            foreach (var id in RelicIdsFor(player.CharacterId, dlc))
+                player.SetAside.Add(NewCard(id, player.Index, ShardsZone.SetAside));
+        }
+
+        // Duel of Doom hero draft: reverse seat order, no duplicates, on the built board.
+        private static readonly string[] DraftableCharacters = { "decima", "tetra", "volos", "kosynwu", "rez" };
+        private List<string> _draftDefaults;
+
+        private IEnumerable<ShardsStep> HeroDraftFlow(ShardsContext ctx)
+        {
+            var heroes = new List<string>(DraftableCharacters);
+            var taken = new HashSet<string>();
+            // Last player picks first (compensates for the seat disadvantage).
+            for (int seat = State.Players.Count - 1; seat >= 0; seat--)
+            {
+                var player = State.Players[seat];
+                var available = heroes.FindAll(h => !taken.Contains(h));
+                string preferred = _draftDefaults != null && seat < _draftDefaults.Count ? _draftDefaults[seat] : null;
+                int defaultIdx = available.Contains(preferred) ? heroes.IndexOf(preferred) : heroes.IndexOf(available[0]);
+
+                var req = new DecisionRequest
+                {
+                    PlayerIndex = seat,
+                    Kind = DecisionKind.ChooseMode,
+                    Title = "Choose your hero",
+                    Context = "soi.herodraft",
+                    Min = 1,
+                    Max = 1
+                };
+                req.DefaultOptionIds.Add(defaultIdx);
+                foreach (var h in available)
+                    req.Options.Add(new DecisionOption(heroes.IndexOf(h), HeroDraftLabel(h)) { DefId = h });
+                yield return ShardsStep.AwaitDecision(req);
+
+                int pick = ctx.Answer.ChosenOptionIds.Count > 0 ? ctx.Answer.ChosenOptionIds[0] : defaultIdx;
+                string chosen = (pick >= 0 && pick < heroes.Count && !taken.Contains(heroes[pick]))
+                    ? heroes[pick] : available[0];
+                taken.Add(chosen);
+                player.CharacterId = chosen;
+                SetAsideRelicsFor(player, State.Dlc);
+                Emit(new ShardsHeroDraftedEvent { PlayerIndex = seat, CharacterId = chosen });
+            }
+            _draftDefaults = null;
             StartTurn(0, firstTurn: true);
-            RoutePriority();
+        }
+
+        private static string HeroDraftLabel(string id)
+        {
+            var spec = HeroAbilityInfo(id);
+            return spec.Name == null ? id : $"{id} — {spec.Name}: {spec.Text}";
         }
 
         private ShardsCard NewCard(string defId, int owner, ShardsZone zone) => new()
@@ -207,6 +312,25 @@ namespace Shards.Engine
             Owner = owner,
             Zone = zone
         };
+
+        /// <summary>Duel of Doom requires all three other DLCs; force them on so the pool,
+        /// errata swaps and rules are consistent no matter how the flag was assembled.</summary>
+        public static ShardsDlc NormalizeDlc(ShardsDlc dlc) =>
+            (dlc & ShardsDlc.Duel) != 0
+                ? dlc | ShardsDlc.RelicsOfTheFuture | ShardsDlc.ShadowOfSalvation | ShardsDlc.IntoTheHorizon
+                : dlc;
+
+        /// <summary>Base-def ids replaced by an enabled Duel errata def (Set "duel" with a
+        /// ReplacesId). Those base defs are skipped from the center deck and relic pool.</summary>
+        private static HashSet<string> ReplacedIds(ShardsDlc dlc)
+        {
+            var replaced = new HashSet<string>();
+            if ((dlc & ShardsDlc.Duel) == 0) return replaced;
+            foreach (var def in ShardsCardDatabase.All)
+                if (def.Set == "duel" && !string.IsNullOrEmpty(def.ReplacesId))
+                    replaced.Add(def.ReplacesId);
+            return replaced;
+        }
 
         // ------------------------------------------------------------------ submit pump
 
@@ -239,6 +363,20 @@ namespace Shards.Engine
                 var request = PendingInput.Decision;
                 PendingInput = null;
                 Emit(new DecisionMadeEvent { PlayerIndex = action.PlayerIndex, DecisionId = request.Id });
+                // "Choose one" branches are public: announce which one, so the play log
+                // can say what an opponent's card actually did.
+                if (request.Context == "soi.mode" && decision.Answer.ChosenOptionIds.Count > 0)
+                    foreach (var option in request.Options)
+                        if (option.Id == decision.Answer.ChosenOptionIds[0])
+                        {
+                            Emit(new ShardsModeChosenEvent
+                            {
+                                PlayerIndex = action.PlayerIndex,
+                                DefId = _activeContext?.Source?.DefId,
+                                Label = option.Label
+                            });
+                            break;
+                        }
                 Journal.Add(action);
                 _activeContext.Answer = decision.Answer;
                 PumpEffects();
@@ -258,13 +396,24 @@ namespace Shards.Engine
         {
             if (answer.ChosenOptionIds.Count < request.Min) return "Too few options chosen";
             if (answer.ChosenOptionIds.Count > request.Max) return "Too many options chosen";
+            // The damage split assigns one option id PER POINT — duplicates are its
+            // mechanism. Every other decision picks distinct options; a duplicated id
+            // would double-count (e.g. banishing one card "three times" for triple pay).
+            bool allowDuplicates = request.Context == "soi.split";
+            var seen = new HashSet<int>();
             foreach (int id in answer.ChosenOptionIds)
             {
                 bool known = false;
                 foreach (var option in request.Options)
                     if (option.Id == id)
+                    {
+                        // Shown-but-greyed options (a reveal's non-qualifying cards) are
+                        // display only — never a legal pick, however the client asks.
+                        if (option.Disabled) return "Option " + id + " is not selectable";
                         known = true;
+                    }
                 if (!known) return "Unknown option " + id;
+                if (!allowDuplicates && !seen.Add(id)) return "Duplicate option " + id;
             }
             return null;
         }
@@ -298,6 +447,10 @@ namespace Shards.Engine
                     return TakeDestiny(player, destiny.CardInstanceId);
                 case ShardsRecruitRelicAction relic:
                     return RecruitRelic(player, relic.CardInstanceId);
+                case ShardsRerollRowAction reroll:
+                    return RerollRow(player, reroll.SlotIndex);
+                case ShardsHeroAbilityAction:
+                    return HeroAbility(player);
                 case ShardsEndTurnAction:
                     BeginEndTurn(player);
                     return SubmitResult.Ok();
@@ -353,6 +506,8 @@ namespace Shards.Engine
             var def = card.Def;
             if (fastPlay && def.Type != ShardsCardType.Mercenary)
                 return SubmitResult.Rejected("Only mercenaries can be fast-played");
+            if (fastPlay && def.CannotBeFastPlayed)
+                return SubmitResult.Rejected("That card must be bought");
             int cost = EffectiveCost(player, def);
             if (player.Gems < cost) return SubmitResult.Rejected("Not enough gems");
 
@@ -361,6 +516,7 @@ namespace Shards.Engine
                 player.Gems -= cost;
                 Emit(new ShardsGemsChangedEvent { PlayerIndex = player.Index, Delta = -cost, NewValue = player.Gems });
             }
+            player.FirstBuyUsedThisTurn = true; // Decima's M5 first-buy discount is now spent
 
             // Row refills IMMEDIATELY — before the card's effect resolves.
             State.CenterRow[slotIndex] = null;
@@ -399,9 +555,15 @@ namespace Shards.Engine
         private void RecruitTo(ShardsPlayer player, ShardsCard card)
         {
             var def = card.Def;
-            if (player.NextHomodeusChampionsIntoPlay > 0 && def.IsChampion && def.Faction == ShardsFaction.Homodeus)
+            // Deploy a recruited champion directly into play: Numeri Drones (Homodeus only)
+            // or Century Forge / Duel (any champion, via the general counter).
+            bool deployDirect = def.IsChampion &&
+                (player.NextChampionsIntoPlay > 0 ||
+                 (player.NextHomodeusChampionsIntoPlay > 0 && def.Faction == ShardsFaction.Homodeus));
+            if (deployDirect)
             {
-                player.NextHomodeusChampionsIntoPlay--;
+                if (player.NextChampionsIntoPlay > 0) player.NextChampionsIntoPlay--;
+                else player.NextHomodeusChampionsIntoPlay--;
                 card.Zone = ShardsZone.Champions;
                 card.Exhausted = false;
                 player.Champions.Add(card);
@@ -465,6 +627,84 @@ namespace Shards.Engine
             return SubmitResult.Ok();
         }
 
+        // ---- Duel of Doom hero abilities (character-keyed, like Focus) ----
+
+        /// <summary>UI-facing description of a hero's unique Duel ability. English strings —
+        /// display layers localize via their own dictionaries. Active=false → the ability is
+        /// a PASSIVE (Decima) and has no activation button.</summary>
+        public readonly struct HeroAbilitySpec
+        {
+            public readonly string Name;
+            public readonly string Text;
+            public readonly int Mastery, Gems, Health;
+            public readonly bool Active;
+
+            public HeroAbilitySpec(string name, string text, int mastery, int gems, int health, bool active)
+            {
+                Name = name; Text = text; Mastery = mastery; Gems = gems; Health = health; Active = active;
+            }
+        }
+
+        /// <summary>Single source of truth for every hero's Duel ability metadata (costs,
+        /// names, rules text). The engine's activation path and every UI read this.</summary>
+        public static HeroAbilitySpec HeroAbilityInfo(string characterId) => characterId switch
+        {
+            "decima" => new HeroAbilitySpec("Recruiting",
+                "M5 passive: the first card you buy each turn costs 1 less.", 5, 0, 0, active: false),
+            "tetra" => new HeroAbilitySpec("Perception",
+                "M5, once per turn: pay 3 gems, draw a card.", 5, 3, 0, active: true),
+            "volos" => new HeroAbilitySpec("First Aid",
+                "M5, once per turn: pay 1 gem, gain 3 health.", 5, 1, 0, active: true),
+            "kosynwu" => new HeroAbilitySpec("Sacrifice",
+                "M5, once per turn: pay 3 gems and 3 health, banish a card from your hand or discard pile.", 5, 3, 3, active: true),
+            "rez" => new HeroAbilitySpec("Futureproof",
+                "M5, once per turn: pay 1 gem, Scry 2 the center deck.", 5, 1, 0, active: true),
+            _ => new HeroAbilitySpec(null, null, 0, 0, 0, active: false)
+        };
+
+        /// <summary>The activated effect behind <see cref="HeroAbilityInfo"/> (costs live
+        /// there; Decima's passive lives in <see cref="EffectiveCost"/>).</summary>
+        private static IShardsEffect HeroAbilityEffect(string characterId) => characterId switch
+        {
+            "tetra" => new Gain { Draw = 1 },
+            "volos" => new Gain { Health = 3 },
+            "kosynwu" => new BanishUpTo(1),
+            "rez" => new Scry(2),
+            _ => null
+        };
+
+        /// <summary>True if the player may activate their hero ability right now (Duel only).</summary>
+        private bool HeroAbilityAvailable(ShardsPlayer player)
+        {
+            if ((State.Dlc & ShardsDlc.Duel) == 0 || player.HeroAbilityUsedThisTurn) return false;
+            var spec = HeroAbilityInfo(player.CharacterId);
+            return spec.Active && player.Mastery >= spec.Mastery &&
+                   player.Gems >= spec.Gems && player.Health > spec.Health; // never self-eliminate on the cost
+        }
+
+        private SubmitResult HeroAbility(ShardsPlayer player)
+        {
+            if ((State.Dlc & ShardsDlc.Duel) == 0) return SubmitResult.Rejected("Hero abilities require Duel of Doom");
+            if (player.HeroAbilityUsedThisTurn) return SubmitResult.Rejected("Hero ability already used this turn");
+            var spec = HeroAbilityInfo(player.CharacterId);
+            var effect = HeroAbilityEffect(player.CharacterId);
+            if (!spec.Active || effect == null) return SubmitResult.Rejected("Your hero has no activated ability");
+            if (player.Mastery < spec.Mastery) return SubmitResult.Rejected($"Requires Mastery {spec.Mastery}");
+            if (player.Gems < spec.Gems) return SubmitResult.Rejected($"Costs {spec.Gems} gems");
+            if (player.Health <= spec.Health) return SubmitResult.Rejected($"Costs {spec.Health} health");
+
+            if (spec.Gems > 0)
+            {
+                player.Gems -= spec.Gems;
+                Emit(new ShardsGemsChangedEvent { PlayerIndex = player.Index, Delta = -spec.Gems, NewValue = player.Gems });
+            }
+            if (spec.Health > 0) LoseHealth(player.Index, spec.Health);
+            player.HeroAbilityUsedThisTurn = true;
+            Emit(new ShardsHeroAbilityUsedEvent { PlayerIndex = player.Index, CharacterId = player.CharacterId });
+            QueueEffect(effect, player.Index, null);
+            return SubmitResult.Ok();
+        }
+
         private SubmitResult ExhaustCard(ShardsPlayer player, int instanceId)
         {
             // Champions and owned Destinies both carry once-per-turn exhaust powers.
@@ -485,6 +725,10 @@ namespace Shards.Engine
             card.Exhausted = true;
             Emit(new ShardsCharacterExhaustedEvent { PlayerIndex = player.Index, CardInstanceId = card.InstanceId });
             QueueEffect(def.ExhaustEffect, player.Index, card);
+            // Unknown God (Duel M20): the owner's exhaust effects resolve a second time.
+            if (player.Champions.Exists(c => c.Def.DoublesExhaustsAtMastery >= 0 &&
+                                             player.Mastery >= c.Def.DoublesExhaustsAtMastery))
+                QueueEffect(def.ExhaustEffect, player.Index, card);
             return SubmitResult.Ok();
         }
 
@@ -581,6 +825,44 @@ namespace Shards.Engine
             return SubmitResult.Ok();
         }
 
+        /// <summary>Duel of Doom row reroll price: 1 gem for the first reroll of the turn,
+        /// +1 per subsequent reroll (1, 2, 3…), resetting each turn — the first look is
+        /// nearly free, but digging the whole shop for one card gets expensive fast.
+        /// A def may opt out entirely (Comet).</summary>
+        public static int RerollCost(ShardsPlayer player) => 1 + player.RerollsThisTurn;
+
+        private SubmitResult RerollRow(ShardsPlayer player, int slotIndex)
+        {
+            if ((State.Dlc & ShardsDlc.Duel) == 0) return SubmitResult.Rejected("Row reroll requires Duel of Doom");
+            if (slotIndex < 0 || slotIndex >= State.CenterRow.Length) return SubmitResult.Rejected("Invalid slot");
+            var card = State.CenterRow[slotIndex];
+            if (card == null) return SubmitResult.Rejected("Empty slot");
+            if (card.Def.CannotBeRerolled) return SubmitResult.Rejected("That card can't be removed from the shop");
+            int cost = RerollCost(player);
+            if (player.Gems < cost) return SubmitResult.Rejected($"Reroll costs {cost} gems right now");
+
+            player.Gems -= cost;
+            player.RerollsThisTurn++;
+            Emit(new ShardsGemsChangedEvent { PlayerIndex = player.Index, Delta = -cost, NewValue = player.Gems });
+            Emit(new ShardsRowRerolledEvent { PlayerIndex = player.Index, SlotIndex = slotIndex, DefId = card.DefId });
+            BottomRowCardAndRefill(slotIndex);
+            return SubmitResult.Ok();
+        }
+
+        /// <summary>Send a center-row card to the bottom of the center deck and refill the
+        /// slot. Used by the paid row reroll AND free "remove a card from the shop" effects
+        /// (Order Initiate errata).</summary>
+        public void BottomRowCardAndRefill(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= State.CenterRow.Length) return;
+            var card = State.CenterRow[slotIndex];
+            if (card == null) return;
+            State.CenterRow[slotIndex] = null;
+            card.Zone = ShardsZone.CenterDeck;
+            State.CenterDeck.Insert(0, card);
+            RefillSlot(slotIndex);
+        }
+
         /// <summary>A card's shield value for this owner: dynamic overrides (Datic Robes =
         /// mastery, Praetorian-02 M20) plus Phasic Technology (+2 on Homodeus/Order cards).</summary>
         public int ShieldValue(ShardsPlayer owner, ShardsCard card)
@@ -590,6 +872,9 @@ namespace Shards.Engine
             if ((def.Faction == ShardsFaction.Homodeus || def.Faction == ShardsFaction.Order) &&
                 owner.Destinies.Exists(d => d.DefId == "phasic_technology"))
                 value += 2;
+            // Praetorian-02 (Duel errata): shields doubled until the owner's next turn.
+            if (owner.ShieldsDoubledUntilNextTurn && value > 0)
+                value *= 2;
             return value;
         }
 
@@ -598,6 +883,9 @@ namespace Shards.Engine
         public static bool CountsAs(ShardsPlayer owner, ShardsCardDef def, ShardsFaction faction)
         {
             if (def.Faction == faction) return true;
+            // Prism (Duel): counts as a card of every real faction.
+            if (def.CountsAsEveryFaction && faction != ShardsFaction.None && faction != ShardsFaction.Monster)
+                return true;
             if (!owner.Destinies.Exists(d => d.DefId == "project_yggdrasil")) return false;
             return (faction == ShardsFaction.Wraethe && def.Faction == ShardsFaction.Undergrowth) ||
                    (faction == ShardsFaction.Undergrowth && def.Faction == ShardsFaction.Wraethe);
@@ -610,13 +898,25 @@ namespace Shards.Engine
         {
             var def = card.Def;
             bool isAlly = !def.IsChampion;
-            player.CountFactionPlay(def.Faction, isAlly);
-            if (player.Destinies.Exists(d => d.DefId == "project_yggdrasil"))
+            if (def.CountsAsEveryFaction)
             {
-                if (def.Faction == ShardsFaction.Wraethe)
-                    player.CountFactionPlay(ShardsFaction.Undergrowth, isAlly);
-                else if (def.Faction == ShardsFaction.Undergrowth)
-                    player.CountFactionPlay(ShardsFaction.Wraethe, isAlly);
+                // Prism (Duel): a play of every real faction at once.
+                player.CountFactionPlay(ShardsFaction.Homodeus, isAlly);
+                player.CountFactionPlay(ShardsFaction.Undergrowth, isAlly);
+                player.CountFactionPlay(ShardsFaction.Order, isAlly);
+                player.CountFactionPlay(ShardsFaction.Wraethe, isAlly);
+                player.CountFactionPlay(ShardsFaction.Aion, isAlly);
+            }
+            else
+            {
+                player.CountFactionPlay(def.Faction, isAlly);
+                if (player.Destinies.Exists(d => d.DefId == "project_yggdrasil"))
+                {
+                    if (def.Faction == ShardsFaction.Wraethe)
+                        player.CountFactionPlay(ShardsFaction.Undergrowth, isAlly);
+                    else if (def.Faction == ShardsFaction.Undergrowth)
+                        player.CountFactionPlay(ShardsFaction.Wraethe, isAlly);
+                }
             }
             player.PlayedThisTurn.Add(card);
 
@@ -660,6 +960,10 @@ namespace Shards.Engine
             int cost = def.Cost;
             if (def.CostModifier != null)
                 cost += def.CostModifier(buyer);
+            // Decima (Duel) M5 passive: the first card you buy each turn costs 1 less.
+            if ((State.Dlc & ShardsDlc.Duel) != 0 && buyer.CharacterId == "decima" &&
+                buyer.Mastery >= 5 && !buyer.FirstBuyUsedThisTurn)
+                cost -= 1;
             return System.Math.Max(0, cost);
         }
 
@@ -875,19 +1179,71 @@ namespace Shards.Engine
                         championHits.Remove(other.InstanceId);
             }
 
-            // Champion damage lands first (shields never protect champions).
+            // Champion damage lands first (shields never protect champions) — EXCEPT for
+            // owners with a ShieldsProtectChampions champion in play (Testudo Vanguard,
+            // Duel): their champion hits are DEFERRED into their defense step so the
+            // shields they reveal reduce each champion's damage individually.
+            _pendingChampionHits = new Dictionary<int, List<(int hitId, int amount)>>();
             foreach (var hit in championHits)
             {
                 foreach (var championOwner in State.Players)
                 {
                     var champion = championOwner.Champions.Find(c => c.InstanceId == hit.Key);
                     if (champion == null) continue;
-                    ApplyPowerToChampion(ctx.ControllerIndex, championOwner, champion, hit.Value);
+                    if (championOwner.Champions.Exists(c => c.Def.ShieldsProtectChampions))
+                    {
+                        if (!_pendingChampionHits.TryGetValue(championOwner.Index, out var list))
+                            _pendingChampionHits[championOwner.Index] = list = new List<(int, int)>();
+                        list.Add((hit.Key, hit.Value));
+                    }
+                    else
+                    {
+                        ApplyPowerToChampion(ctx.ControllerIndex, championOwner, champion, hit.Value);
+                    }
                     break;
                 }
             }
 
             BeginDefenses(ctx.Controller);
+        }
+
+        /// <summary>Resolve one defender's damage after their shield reveal, in rules
+        /// order. Testudo Vanguard (Duel) defers champion hits to here so shields reduce
+        /// EACH hit individually (the attacker may have over-assigned to pay through).
+        /// Taunt (Zetta) × Testudo: the taunt champion's hit resolves FIRST — if it
+        /// SURVIVES its shield-reduced damage, the wall held: every other champion hit
+        /// AND the face damage resolve as ZERO.</summary>
+        private void ResolveDefenderDamage(int attackerIndex, ShardsPlayer defender,
+            int faceAmount, int prevented, List<string> revealed)
+        {
+            bool tauntHeld = false;
+            if (_pendingChampionHits != null &&
+                _pendingChampionHits.TryGetValue(defender.Index, out var hits))
+            {
+                _pendingChampionHits.Remove(defender.Index);
+                // Taunt hits first — their survival gates everything behind them.
+                hits.Sort((a, b) => IsTauntHit(defender, b.hitId).CompareTo(IsTauntHit(defender, a.hitId)));
+                foreach (var (hitId, amount) in hits)
+                {
+                    if (tauntHeld) continue; // the wall held — nothing reaches past it
+                    var champion = defender.Champions.Find(c => c.InstanceId == hitId);
+                    if (champion == null) continue;
+                    bool isTaunt = champion.Def.Taunt;
+                    int dealt = amount - prevented;
+                    if (dealt > 0)
+                        ApplyPowerToChampion(attackerIndex, defender, champion, dealt);
+                    if (isTaunt && defender.Champions.Contains(champion))
+                        tauntHeld = true; // survived the shield-reduced hit
+                }
+            }
+            if (!tauntHeld)
+                ApplyDamage(attackerIndex, defender, faceAmount, prevented, revealed);
+        }
+
+        private static bool IsTauntHit(ShardsPlayer defender, int instanceId)
+        {
+            var champion = defender.Champions.Find(c => c.InstanceId == instanceId);
+            return champion != null && champion.Def.Taunt;
         }
 
         private void BeginDefenses(ShardsPlayer attacker)
@@ -900,8 +1256,13 @@ namespace Shards.Engine
             {
                 int seat = (attacker.Index + step) % State.Players.Count;
                 int i = _splitTargets.IndexOf(seat);
-                if (i >= 0 && _splitAmounts[i] > 0)
-                    _pendingDefenses.Enqueue((seat, _splitAmounts[i]));
+                int face = i >= 0 ? _splitAmounts[i] : 0;
+                // Deferred champion hits (Testudo) need a defense step even at 0 face
+                // damage — the owner's shields resolve against the champion hits there.
+                bool championHits = _pendingChampionHits != null &&
+                                    _pendingChampionHits.ContainsKey(seat);
+                if (face > 0 || championHits)
+                    _pendingDefenses.Enqueue((seat, face));
             }
             NextDefense(attacker);
         }
@@ -917,7 +1278,7 @@ namespace Shards.Engine
                 // Ru Bo Vai M10: the attacker ignores ALL shields this turn.
                 if (attacker.IgnoreShieldsThisTurn)
                 {
-                    ApplyDamage(attacker.Index, defender, amount, 0, revealed: null);
+                    ResolveDefenderDamage(attacker.Index, defender, amount, 0, revealed: null);
                     continue;
                 }
 
@@ -928,11 +1289,15 @@ namespace Shards.Engine
                 foreach (var champion in defender.Champions)
                     if (champion.Def.ShieldInPlay)
                         passive += ShieldValue(defender, champion);
+                // Datic Robes (Duel M20): passive shield while the relic is in the discard.
+                foreach (var card in defender.Discard)
+                    if (card.Def.DiscardPassiveShield != null)
+                        passive += card.Def.DiscardPassiveShield(defender);
 
                 var handShields = defender.Hand.FindAll(c => ShieldValue(defender, c) > 0 && !c.Def.ShieldInPlay);
                 if (handShields.Count == 0)
                 {
-                    ApplyDamage(attacker.Index, defender, amount, passive, revealed: null);
+                    ResolveDefenderDamage(attacker.Index, defender, amount, passive, revealed: null);
                     continue;
                 }
 
@@ -984,7 +1349,7 @@ namespace Shards.Engine
             if (revealed.Count > 0)
                 Emit(new ShardsShieldsRevealedEvent { PlayerIndex = defender.Index, DefIds = revealed, Prevented = prevented });
 
-            ApplyDamage(attackerIndex, defender, amount, passive + prevented, revealed);
+            ResolveDefenderDamage(attackerIndex, defender, amount, passive + prevented, revealed);
             NextDefense(State.Players[attackerIndex]);
         }
 
@@ -1024,6 +1389,7 @@ namespace Shards.Engine
         private void AfterDefenses(ShardsPlayer player)
         {
             _pendingDefenses = null;
+            _pendingChampionHits = null; // eliminated defenders' deferred hits die with them
             CheckStateBased();
             if (State.GameOver) return;
 
@@ -1032,7 +1398,8 @@ namespace Shards.Engine
             // Swyft (while in play, character matches): fast-played cards may be KEPT
             // (recruited to discard) instead of returning to the center deck.
             bool canKeep = player.Champions.Exists(c =>
-                c.Def.KeepFastPlaysCharacter != null && c.Def.KeepFastPlaysCharacter == player.CharacterId);
+                (c.Def.KeepFastPlaysCharacter != null && c.Def.KeepFastPlaysCharacter == player.CharacterId) ||
+                (c.Def.KeepFastPlaysAtMastery >= 0 && player.Mastery >= c.Def.KeepFastPlaysAtMastery));
             if (canKeep && player.PlayZone.Exists(c => c.FastPlayed))
             {
                 QueueEffect(new Custom(ctx => KeepFastPlaysFlow(ctx)), player.Index, null);
@@ -1110,6 +1477,15 @@ namespace Shards.Engine
                     State.CenterDeck.Insert(0, card); // list end = top; index 0 = bottom
                     Emit(new ShardsMercenaryReturnedEvent { PlayerIndex = player.Index, DefId = card.DefId });
                 }
+                else if (card.BanishAtCleanup)
+                {
+                    // Reactor Drone (Duel) mode 2: "banish this card at the end of your turn".
+                    card.BanishAtCleanup = false;
+                    card.Zone = ShardsZone.Banished;
+                    State.Banished.Add(card);
+                    player.CardsBanishedThisTurn++; // still this player's turn
+                    Emit(new ShardsCardBanishedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+                }
                 else
                 {
                     card.Zone = ShardsZone.Discard;
@@ -1168,6 +1544,16 @@ namespace Shards.Engine
             yield break;
         }
 
+        /// <summary>True while an Ingeminex attack effect is resolving — Doom Gate's owner
+        /// is skipped by the AllPlayers* attack effects during this window. Transient (only
+        /// ever true mid-resolution, false at every quiescent fork point) so it is NOT
+        /// cloned or hashed.</summary>
+        public bool MonsterAttackActive { get; private set; }
+
+        /// <summary>Doom Gate (Duel): the player is immune to the Ingeminex attack in progress.</summary>
+        public bool IsImmuneToActiveMonster(ShardsPlayer player) =>
+            MonsterAttackActive && player.Champions.Exists(c => c.Def.ImmuneToIngeminex);
+
         /// <summary>Emit + queue the attack of every Ingeminex revealed this turn.</summary>
         private bool QueueMonsterAttacks(ShardsPlayer player)
         {
@@ -1178,10 +1564,71 @@ namespace Shards.Engine
                 if (monster == null) continue;
                 Emit(new ShardsMonsterAttackedEvent { InstanceId = monster.InstanceId, DefId = monster.DefId });
                 if (monster.Def.MonsterAttackEffect != null)
-                    QueueEffect(monster.Def.MonsterAttackEffect, player.Index, monster);
+                {
+                    var inner = monster.Def.MonsterAttackEffect;
+                    QueueEffect(new Custom(ctx => MonsterAttackWrapper(ctx, inner)), player.Index, monster);
+                }
             }
             State.PendingMonsterAttacks.Clear();
             return true;
+        }
+
+        private IEnumerable<ShardsStep> MonsterAttackWrapper(ShardsContext ctx, IShardsEffect inner)
+        {
+            MonsterAttackActive = true;
+            foreach (var step in inner.Resolve(ctx))
+                yield return step;
+            MonsterAttackActive = false;
+        }
+
+        /// <summary>Doom Gate (Duel): add N Ingeminex to the center deck and reshuffle
+        /// (cycling through the five types). Their attacks fire only when later revealed.</summary>
+        public void ShuffleIngeminexIntoCenterDeck(int n)
+        {
+            var types = new List<string>();
+            foreach (var def in ShardsCardDatabase.All)
+                if (def.IsMonster && def.Set == "into_the_horizon")
+                    types.Add(def.Id);
+            types.Sort(System.StringComparer.Ordinal); // deterministic order
+            if (types.Count == 0) return;
+            for (int i = 0; i < n; i++)
+                State.CenterDeck.Add(NewCard(types[i % types.Count], -1, ShardsZone.CenterDeck));
+            State.Rng.Shuffle(State.CenterDeck);
+        }
+
+        /// <summary>Doom Gate (Duel): remove a revealed Ingeminex from play (to the bottom
+        /// of the center deck, no reward) and cancel its pending attack.</summary>
+        /// <summary>Destroy an Ingeminex through a card EFFECT (Doom Gate) rather than by
+        /// spending power on it. Destroying is defeating: `destroyerIndex` collects the
+        /// printed reward exactly as the attack path does — pass -1 only for a kill that
+        /// belongs to nobody.</summary>
+        public void DestroyActiveMonster(ShardsCard monster, int destroyerIndex = -1)
+        {
+            if (monster == null || !State.ActiveMonsters.Remove(monster)) return;
+            State.PendingMonsterAttacks.Remove(monster.InstanceId);
+            monster.DamageThisTurn = 0;
+            monster.Zone = ShardsZone.CenterDeck;
+            State.CenterDeck.Insert(0, monster);
+            Emit(new ShardsMonsterDefeatedEvent { PlayerIndex = destroyerIndex, InstanceId = monster.InstanceId, DefId = monster.DefId });
+
+            if (destroyerIndex >= 0 && monster.Def.RewardEffect != null)
+                QueueEffect(monster.Def.RewardEffect, destroyerIndex, monster);
+        }
+
+        /// <summary>Fast-play a center-owned card that is NOT in the row (Longshot reveals
+        /// it off the center-deck top). Same fast-play rules as Warp: effect now, play
+        /// zone, faction play counted, bottom of the center deck at cleanup.</summary>
+        public void FastPlayLoose(int playerIndex, ShardsCard card)
+        {
+            if (card.Def.CannotBeFastPlayed) return; // Comet: must be BOUGHT
+            var player = State.Players[playerIndex];
+            card.Owner = playerIndex;
+            card.Zone = ShardsZone.PlayZone;
+            card.FastPlayed = true;
+            player.PlayZone.Add(card);
+            Emit(new ShardsCardBoughtEvent { PlayerIndex = playerIndex, SlotIndex = -1, DefId = card.DefId, CostPaid = 0, FastPlay = true });
+            CountPlay(player, card);
+            QueuePlayEffect(player, card);
         }
 
         /// <summary>The end-turn tail: runs after cleanup AND after any post-redraw
@@ -1222,6 +1669,8 @@ namespace Shards.Engine
         {
             // Readying happens in the END phase (champions/destinies/character), not here.
             State.TurnPlayerIndex = playerIndex;
+            // Praetorian-02 (Duel): the "shields doubled until your next turn" window closes.
+            State.Players[playerIndex].ShieldsDoubledUntilNextTurn = false;
             Emit(new ShardsTurnStartedEvent { PlayerIndex = playerIndex, Round = State.Round });
         }
 
@@ -1338,6 +1787,7 @@ namespace Shards.Engine
             foreach (var card in player.Hand)
                 actions.Add(new ShardsPlayCardAction { PlayerIndex = playerIndex, CardInstanceId = card.InstanceId });
 
+            bool duel = (State.Dlc & ShardsDlc.Duel) != 0;
             for (int s = 0; s < State.CenterRow.Length; s++)
             {
                 var card = State.CenterRow[s];
@@ -1349,10 +1799,17 @@ namespace Shards.Engine
                     if (def.Type == ShardsCardType.Mercenary)
                         actions.Add(new ShardsBuyCardAction { PlayerIndex = playerIndex, SlotIndex = s, FastPlay = true });
                 }
+                // Duel: reroll this slot at the climbing per-turn price (card may opt out).
+                if (duel && !def.CannotBeRerolled && player.Gems >= RerollCost(player))
+                    actions.Add(new ShardsRerollRowAction { PlayerIndex = playerIndex, SlotIndex = s });
             }
 
             if (!player.FocusedThisTurn && !player.CharacterExhausted && player.Gems >= 1)
                 actions.Add(new ShardsFocusAction { PlayerIndex = playerIndex });
+
+            // Duel: the hero's unique ability (separate from Focus, once per turn).
+            if (HeroAbilityAvailable(player))
+                actions.Add(new ShardsHeroAbilityAction { PlayerIndex = playerIndex });
 
             foreach (var champion in player.Champions)
                 if (!champion.Exhausted && champion.Def.ExhaustEffect != null &&
@@ -1428,6 +1885,9 @@ namespace Shards.Engine
         public void GainHealth(int playerIndex, int amount)
         {
             var player = State.Players[playerIndex];
+            // Lifebloom Ritual (Duel): all healing this turn is doubled.
+            if (player.HealingDoubledThisTurn && amount > 0)
+                amount *= 2;
             int before = player.Health;
             player.Health = System.Math.Min(State.Rules.MaxHealth, player.Health + amount);
             if (player.Health != before)
@@ -1436,6 +1896,12 @@ namespace Shards.Engine
             // "would gain at the 50 cap" still counts (FAQ), so use the REQUESTED amount.
             if (player.HealthToPowerThisTurn && amount > 0)
                 GainPower(playerIndex, amount);
+            // Nectar Alchemist (Duel): only the OVER-cap remainder becomes power.
+            if (player.OverflowHealthToPowerThisTurn && amount > 0)
+            {
+                int overflow = amount - (player.Health - before);
+                if (overflow > 0) GainPower(playerIndex, overflow);
+            }
         }
 
         /// <summary>"Lose Health" is NOT damage: shields can never prevent it and it does
@@ -1459,6 +1925,7 @@ namespace Shards.Engine
             if (slotIndex < 0 || slotIndex >= State.CenterRow.Length) return false;
             var card = State.CenterRow[slotIndex];
             if (card == null) return false;
+            if (card.Def.CannotBeFastPlayed) return false; // Comet: must be BOUGHT
             var player = State.Players[playerIndex];
 
             State.CenterRow[slotIndex] = null;
@@ -1635,6 +2102,10 @@ namespace Shards.Engine
             if (!fromZone.Remove(card)) return;
             card.Zone = ShardsZone.Banished;
             State.Banished.Add(card);
+            // "Cards you banished this turn" (Warpquartz Duel) — banishes are always an
+            // active-player effect, so they attribute to the turn player.
+            if (!State.GameOver)
+                State.TurnPlayer.CardsBanishedThisTurn++;
             Emit(new ShardsCardBanishedEvent { PlayerIndex = card.Owner, InstanceId = card.InstanceId, DefId = card.DefId });
         }
 

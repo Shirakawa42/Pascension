@@ -85,7 +85,13 @@ namespace SoiSim
                 }
                 sw.Stop();
 
-                return GameRecorder.Extract(adapter, spec.Seed, spec.Characters, destinyRowInitial,
+                // Duel drafts heroes on turn 1 — record the characters ACTUALLY drafted,
+                // not the scheduler's pre-assigned ones (which are only draft defaults).
+                var playedCharacters = new string[spec.Characters.Length];
+                for (int i = 0; i < playedCharacters.Length; i++)
+                    playedCharacters[i] = adapter.Inner.State.Players[i].CharacterId ?? spec.Characters[i];
+
+                return GameRecorder.Extract(adapter, spec.Seed, playedCharacters, destinyRowInitial,
                     initialHealth, initialMastery, guard, rejected, sw.Elapsed.TotalMilliseconds,
                     termination);
             }

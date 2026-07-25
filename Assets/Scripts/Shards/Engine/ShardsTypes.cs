@@ -10,7 +10,12 @@ namespace Shards.Engine
         None = 0,
         RelicsOfTheFuture = 1,
         ShadowOfSalvation = 2,
-        IntoTheHorizon = 4
+        IntoTheHorizon = 4,
+        /// <summary>Duel of Doom — 2-player-focused pack. REQUIRES all three other DLCs;
+        /// setup normalizes the flag to force them on. Adds new cards, errata replacement
+        /// defs (see <see cref="ShardsCardDef.ReplacesId"/>), and new rules (row reroll,
+        /// separated hero abilities, reworked Dominion, the Allegiance keyword).</summary>
+        Duel = 8
     }
 
     public enum ShardsFaction
@@ -65,6 +70,9 @@ namespace Shards.Engine
         public bool FastPlayed;
         /// <summary>Champion/Ingeminex damage marked THIS turn — clears every end phase.</summary>
         public int DamageThisTurn;
+        /// <summary>Reactor Drone (Duel) mode 2: this play-zone card is BANISHED at cleanup
+        /// instead of going to the discard pile.</summary>
+        public bool BanishAtCleanup;
 
         public ShardsCardDef Def => ShardsCardDatabase.Get(DefId);
     }
@@ -137,6 +145,39 @@ namespace Shards.Engine
         /// <summary>The Dispossessed: while in the discard pile, playing a card of this
         /// faction lets the owner return it to hand (optional).</summary>
         public ShardsFaction ReturnFromDiscardOnFactionPlay = ShardsFaction.None;
+
+        // ---- Duel of Doom hooks (only meaningful when the Duel DLC is enabled) ----
+
+        /// <summary>Errata: when this def's set is active, it REPLACES the base def with
+        /// this id (that base def is skipped from the center deck / relic pool). Same
+        /// mechanism as cloud_oracles → cloud_oracles_sos, generalized. Null = not errata.</summary>
+        public string ReplacesId;
+        /// <summary>Deck-composition keyword ("Allegiance &lt;Faction&gt; N"): while in the
+        /// owner's play/champion zone as a static aura, or as an effect gate, the bonus is
+        /// live if the owner OWNS at least N cards of the faction. Info only — the effect
+        /// tree carries the gate (<see cref="AllegianceEffect"/>) and auras read it.</summary>
+        public bool CountsAsEveryFaction;
+        /// <summary>Comet: cannot be removed from the center row by the Duel row reroll.</summary>
+        public bool CannotBeRerolled;
+        /// <summary>Comet: "must be bought using gems" — excluded from every free/fast-play
+        /// path (Warp, Longshot, fast-play purchase).</summary>
+        public bool CannotBeFastPlayed;
+        /// <summary>Testudo Vanguard (Duel): while in play, the owner's revealed/passive
+        /// shields also reduce the damage assigned to EACH of their champions individually
+        /// in the end-turn split resolution.</summary>
+        public bool ShieldsProtectChampions;
+        /// <summary>Datic Robes (Duel M20): passive shield granted while this card sits in
+        /// the owner's DISCARD pile: (owner) → value (0 = inactive).</summary>
+        public System.Func<ShardsPlayer, int> DiscardPassiveShield;
+        /// <summary>Swyft (Duel errata): while in play and the owner is at least this mastery,
+        /// the owner may keep fast-played cards (character-agnostic). -1 = off.</summary>
+        public int KeepFastPlaysAtMastery = -1;
+        /// <summary>Doom Gate (Duel): while this champion is in play, its owner is unaffected
+        /// by Ingeminex attacks.</summary>
+        public bool ImmuneToIngeminex;
+        /// <summary>Unknown God (Duel): while this champion is in play and the owner is at
+        /// least this mastery, the owner's card exhaust effects resolve twice. -1 = off.</summary>
+        public int DoublesExhaustsAtMastery = -1;
 
         public string RulesText = "";
         public string ArtPrompt = "";

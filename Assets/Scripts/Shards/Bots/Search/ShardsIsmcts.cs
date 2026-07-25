@@ -179,9 +179,12 @@ namespace Shards.Bots
 
         /// <summary>Answer a decision from the plan subtree, advancing the cursor.
         /// Valid only when every chosen id exists in the REAL request's options and the
-        /// count fits Min/Max (option ids reference public objects — champions, row
-        /// slots, the bot's own hand — so they are stable between the search's
-        /// determinizations and reality). Returns false to fall back to the model.</summary>
+        /// count fits Min/Max. Most option ids reference public objects (champions, row
+        /// slots, the bot's own hand) and so are stable between the search's
+        /// determinizations and reality; ids drawn from a HIDDEN zone are not — an
+        /// opponent's hand is re-dealt per determinization ("soi.handpick") — which is
+        /// exactly what the membership check below catches, falling back to the model.
+        /// Returns false to fall back.</summary>
         public static bool TryPlannedAnswer(ref PlanCursor cursor, DecisionRequest request, out List<int> ids)
         {
             ids = null;
@@ -466,6 +469,8 @@ namespace Shards.Bots
             ShardsAttackMonsterAction a => "m" + a.CardInstanceId,
             ShardsTakeDestinyAction a => "d" + a.CardInstanceId,
             ShardsRecruitRelicAction a => "r" + a.CardInstanceId,
+            ShardsRerollRowAction a => "rr" + a.SlotIndex, // per-slot: WHICH card to cycle matters
+            ShardsHeroAbilityAction => "hero",
             ShardsEndTurnAction => "end",
             _ => action.GetType().Name
         };

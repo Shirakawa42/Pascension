@@ -18,5 +18,26 @@
  {
   "id": "soichar_rez",
   "prompt": "a cocky young dimension-runner with a cracked energy visor, warp light streaking around him, ember-orange jacket, portrait"
+ },
+ {
+  "id": "soiability_decima",
+  "prompt": "a commanding female war-leader in gilded techno-armor clasping forearms with a kneeling recruit, golden circuitry veins, a stream of coins and pact-sigils spiralling between them, banner of a machine legion behind"
+ },
+ {
+  "id": "soiability_tetra",
+  "prompt": "a serene female data-mystic in flowing blue robes, a third eye of white light open on her brow, glyph streams parting to reveal a single blank glowing tablet drawn toward her open palm, orbiting cipher rings"
+ },
+ {
+  "id": "soiability_volos",
+  "prompt": "a wild-bearded druid lord with antler crown pressing both hands over a wounded shoulder, warm green restorative light and spiralling leaves knitting the flesh closed, giant fungi forest behind"
+ },
+ {
+  "id": "soiability_kosynwu",
+  "prompt": "a gaunt shadow-monk in violet funeral silks holding a blank tablet dissolving into violet flame and ash, a thin ribbon of his own blood feeding the fire, spectral wisps rising"
+ },
+ {
+  "id": "soiability_rez",
+  "_seedSalt": 1,
+  "prompt": "a cocky young dimension-runner with a cracked glowing energy visor and ember-orange jacket, leaning through a torn rift of warp light, one gloved hand sifting glowing cards of possible futures that stream past him, streaking future-light, three-quarter view, face visible"
  }
 ]

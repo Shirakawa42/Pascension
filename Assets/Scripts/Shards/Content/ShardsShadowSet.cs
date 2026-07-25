@@ -19,13 +19,13 @@ namespace Shards.Content
             SoiCard.New("cloud_oracles_sos", "Cloud Oracles").InSet(SET).Faction(ShardsFaction.Order)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
                 .Plays(E.Seq(E.Draw(1), new If(HighestMastery, E.Gems(2))))
-                .Text("Draw a card. If your mastery is higher than every enemy player's, gain 2 gems.")
+                .Text("Draw a card.\nIf your mastery is higher than every enemy player's, gain 2 gems.")
                 .Art("floating oracles conferring inside a storm cloud of data").Register();
 
             var swyft = SoiCard.New("swyft", "Swyft").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Champion).Cost(5).Qty(2).Defense(3)
                 .Exhausts(E.Mix(gems: 2, power: 2))
-                .Text("Exhaust: gain 2 gems and 2 power. If your character is Rez, you may keep cards you fast-play (they join your discard).")
+                .Text("Exhaust: gain 2 gems and 2 power.\nIf your character is Rez, you may keep cards you fast-play. They go to your discard pile.")
                 .Art("a lithe time-runner leaving afterimages of light mid-sprint");
             swyft.Def.KeepFastPlaysCharacter = "rez";
             swyft.Register();
@@ -33,7 +33,7 @@ namespace Shards.Content
             var breaker = SoiCard.New("breaker", "Breaker").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Ally).Cost(6).Qty(1).Shield(4)
                 .Plays(new WarpUpTo(-1))
-                .Text("Shield 4. When you recruit this, it goes to your hand instead of your discard pile. Warp.")
+                .Text("Shield 4.\nWhen you recruit this, it goes to your hand instead of your discard pile.\nWarp.")
                 .Art("a heavyset dimension-breaker punching a rift open bare-handed");
             breaker.Def.RecruitsToHand = true;
             breaker.Register();
@@ -41,19 +41,19 @@ namespace Shards.Content
             SoiCard.New("brute", "Brute").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Ally).Cost(3).Qty(2).Shield(2)
                 .Plays(E.Seq(E.Power(4), new WarpUpTo(2)))
-                .Text("Shield 2. Gain 4 power. Warp 2.")
+                .Text("Shield 2.\nGain 4 power.\nWarp 2.")
                 .Art("a bruiser wreathed in unstable warp energy cracking knuckles").Register();
 
             SoiCard.New("dash", "Dash").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(2).Shield(2)
                 .Plays(E.Seq(new Custom(DashFlow), E.Draw(1)))
-                .Text("Shield 2. You may put an Aion card from your discard pile on top of your deck. Draw a card.")
+                .Text("Shield 2.\nYou may put an Aion card from your discard pile on top of your deck.\nDraw a card.")
                 .Art("a blur of motion threading between frozen raindrops").Register();
 
             SoiCard.New("lucky", "Lucky").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Ally).Cost(4).Qty(2).Shield(2)
                 .Plays(E.Seq(E.Gems(2), new WarpUpTo(3)))
-                .Text("Shield 2. Gain 2 gems. Warp 3.")
+                .Text("Shield 2.\nGain 2 gems.\nWarp 3.")
                 .Art("a grinning gambler flipping a coin that lands on its edge").Register();
 
             // ---- Rez's relics (normal relic rules; need DLC1 to be recruitable) ----
@@ -61,13 +61,13 @@ namespace Shards.Content
             SoiCard.New("slipstream_shard", "Slipstream Shard").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Relic).Character("rez").Qty(1)
                 .Plays(E.Seq(E.Mix(mastery: 1, draw: 1), E.At(20, new Custom(ExtraTurn))))
-                .Text("Gain 1 mastery and draw a card. M20: take an extra turn (once per game).")
+                .Text("Gain 1 mastery and draw a card.\nM20: take an extra turn. Once per game.")
                 .Art("a sliver of crystallized time bending light around it").Register();
 
             SoiCard.New("warpquartz", "Warpquartz").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Relic).Character("rez").Qty(1)
                 .Plays(E.Seq(E.Mix(gems: 3, power: 3), E.At(20, new Custom(WarpquartzBanish))))
-                .Text("Gain 3 gems and 3 power. M20: banish up to 3 allies from your hand/discard and gain their effects.")
+                .Text("Gain 3 gems and 3 power.\nM20: banish up to 3 allies from your hand/discard and gain their effects.")
                 .Art("a jagged quartz cluster humming with compressed warp energy").Register();
         }
 

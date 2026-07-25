@@ -138,6 +138,18 @@ namespace Shards.Bots
                 case FactionTrigger trigger:
                     Walk(def, trigger.Inner, slot, mastery, atoms, EffectAtoms.FactionClass, mult);
                     return;
+                case AllegianceEffect allegiance:
+                    // Duel deck-composition gate — value it like other conditional gates.
+                    Walk(def, allegiance.Inner, slot, mastery, atoms, EffectAtoms.IfClass, mult);
+                    return;
+                case Scry:
+                case ReorderCenterTop:
+                    // Center-deck filtering/reordering — no direct resource, neutral.
+                    return;
+                case OpponentDrawsThenDiscards:
+                    // Targeted hand disruption that REPLACES what it takes (the victim
+                    // draws first) — structurally near-neutral for valuation.
+                    return;
                 case PerCount per:
                 {
                     var unit = per.PerUnit;

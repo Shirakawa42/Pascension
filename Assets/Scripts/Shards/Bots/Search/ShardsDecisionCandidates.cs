@@ -50,6 +50,15 @@ namespace Shards.Bots
                 case "soi.confirm":
                 case "soi.maglev":
                 case "soi.keepfast":
+                // Duel of Doom pick-one/decline decisions: hero draft (branch over every
+                // hero), Reactor Drone's mode choice (both modes), the intel hand-pick,
+                // Order Initiate's shop removal and Shard Defiant's keep-or-banish.
+                case "soi.herodraft":
+                case "soi.mode":
+                case "soi.handpick":
+                case "soi.removeshop":
+                case "soi.defiant":
+                case "soi.tutor":
                 {
                     // Small pick-one style spaces: branch over every single option, and
                     // over declining when legal. This is exactly where search beats a
@@ -75,6 +84,20 @@ namespace Shards.Bots
 
                 case "soi.discard":
                     break; // forced discards: the model's lowest-value pick suffices
+
+                case "soi.scry":
+                {
+                    // Rez's center-deck Scry: keep everything on top, or bottom everything
+                    // — the two extremes bracket the useful answers.
+                    Add(new List<int>());
+                    var all = new List<int>();
+                    foreach (var option in request.Options) all.Add(option.Id);
+                    Add(all);
+                    break;
+                }
+
+                case "soi.reorder":
+                    break; // Index of Futures: keeping the shown order is the model answer
 
                 default:
                 {

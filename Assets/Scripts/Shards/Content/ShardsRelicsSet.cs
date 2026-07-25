@@ -25,7 +25,7 @@ namespace Shards.Content
             var axia = SoiCard.New("axia", "Axia").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Champion).Cost(7).Qty(1).Defense(7)
                 .Exhausts(E.Power(7))
-                .Text("Costs 1 less per Homodeus champion you control. Exhaust: gain 7 power.")
+                .Text("Costs 1 less per Homodeus champion you control.\nExhaust: gain 7 power.")
                 .Art("a prototype war-titan being lowered from an assembly gantry");
             axia.Def.CostModifier = buyer =>
             {
@@ -40,13 +40,13 @@ namespace Shards.Content
             SoiCard.New("limiter_drones", "Limiter Drones").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
                 .Plays(E.Seq(If.Inspire(new BanishUpTo(1)), E.Draw(1)))
-                .Text("Inspire: you may banish a card from your hand or discard pile. Draw a card.")
+                .Text("Inspire: you may banish a card from your hand or discard pile.\nDraw a card.")
                 .Art("regulator drones clamping suppression rings onto a reactor").Register();
 
             var ferrata = SoiCard.New("ferrata_guard", "Ferrata Guard").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Champion).Cost(4).Qty(2).Defense(4)
                 .Exhausts(new PerCount(ctx => ShardsBaseSet.CountChampions(ctx, H), gems: 1))
-                .Text("If your character is Decima, your champions get +2 defense. Exhaust: gain 1 gem per Homodeus champion you control.")
+                .Text("If your character is Decima, your champions get +2 defense.\nExhaust: gain 1 gem per Homodeus champion you control.")
                 .Art("an iron-clad praetorian guard with an energized bulwark");
             ferrata.Def.DefenseAura = (owner, source, champion) =>
                 owner.CharacterId == "decima" ? 2 : 0;
@@ -56,13 +56,13 @@ namespace Shards.Content
             SoiCard.New("cloud_oracles", "Cloud Oracles").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
                 .Plays(E.Seq(E.Draw(1), new If(HighestMastery, E.Gems(2))))
-                .Text("Draw a card. If your mastery is higher than every other player's, gain 2 gems.")
+                .Text("Draw a card.\nIf your mastery is higher than every other player's, gain 2 gems.")
                 .Art("floating oracles conferring inside a storm cloud of data").Register();
 
             var raidian = SoiCard.New("raidian", "Raidian, Cloud Master").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Champion).Cost(5).Qty(1).Defense(3)
                 .Exhausts(E.Draw(1))
-                .Text("Players with lower mastery than yours can't attack this champion. Exhaust: draw a card.")
+                .Text("Players with lower mastery than yours can't attack this champion.\nExhaust: draw a card.")
                 .Art("a sky-lord standing on a platform of compressed cloud, staff raised");
             raidian.Def.CanBeAttacked = (state, attacker, owner, card) =>
                 attacker.Mastery >= owner.Mastery;
@@ -71,14 +71,14 @@ namespace Shards.Content
             SoiCard.New("mainframe_abbot", "Mainframe Abbot").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Ally).Cost(3).Qty(2).Shield(3)
                 .Plays(E.Seq(E.Draw(1), If.Character("tetra", E.Mastery(1))))
-                .Text("Shield 3. Draw a card. If your character is Tetra, gain 1 mastery.")
+                .Text("Shield 3.\nDraw a card.\nIf your character is Tetra, gain 1 mastery.")
                 .Art("a monk tending a cathedral-sized computer core by candlelight").Register();
 
             // ---- Undergrowth (6) ----
             SoiCard.New("arach_devotees", "Arach Devotees").InSet(SET).Faction(U)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
                 .Plays(E.Seq(E.Draw(1), new Unify(E.Health(3))))
-                .Text("Draw a card. Unify: gain 3 health.")
+                .Text("Draw a card.\nUnify: gain 3 health.")
                 .Art("robed devotees weaving silk offerings beneath a great web").Register();
 
             SoiCard.New("taur_arachpriest", "Taur, Arachpriest").InSet(SET).Faction(U)
@@ -90,27 +90,27 @@ namespace Shards.Content
             SoiCard.New("hounds_of_volos", "Hounds of Volos").InSet(SET).Faction(U)
                 .Type(ShardsCardType.Mercenary).Cost(3).Qty(2)
                 .Plays(E.Seq(E.Health(5), If.Character("volos", E.Power(5))))
-                .Text("Gain 5 health. If your character is Volos, also gain 5 power.")
+                .Text("Gain 5 health.\nIf your character is Volos, also gain 5 power.")
                 .Art("a pack of moss-furred hunting beasts bounding through ferns").Register();
 
             // ---- Wraethe (6) ----
             SoiCard.New("pall_shades", "Pall Shades").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
                 .Plays(E.Seq(If.Echo(E.Power(3)), E.Draw(1)))
-                .Text("Echo: gain 3 power. Draw a card.")
+                .Text("Echo: gain 3 power.\nDraw a card.")
                 .Art("funeral shrouds drifting upright through a darkened hall").Register();
 
             SoiCard.New("ru_bo_vai", "Ru Bo Vai, The Transcendant").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Champion).Cost(5).Qty(1).Defense(4)
                 .Exhausts(E.Seq(E.Power(4),
                     E.At(10, new Do(ctx => ctx.Controller.IgnoreShieldsThisTurn = true))))
-                .Text("Exhaust: gain 4 power. M10: your damage ignores shields this turn.")
+                .Text("Exhaust: gain 4 power.\nM10: your damage ignores shields this turn.")
                 .Art("an ascended wraith phasing through a wall of shields").Register();
 
             SoiCard.New("the_lost", "The Lost").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Mercenary).Cost(4).Qty(2)
                 .Plays(E.Seq(E.Power(6), If.Character("kosynwu", new BanishUpTo(1))))
-                .Text("Gain 6 power. If your character is Ko Syn Wu, you may banish a card from your hand or discard pile.")
+                .Text("Gain 6 power.\nIf your character is Ko Syn Wu, you may banish a card from your hand or discard pile.")
                 .Art("a procession of hollow-eyed wanderers with broken weapons").Register();
         }
 
@@ -129,14 +129,14 @@ namespace Shards.Content
             var p01 = SoiCard.New("praetorian_01", "Praetorian-01").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Relic).Character("decima").Qty(1)
                 .Plays(E.Seq(E.Power(8), E.At(20, E.Power(4))))
-                .Text("Gain 8 power. M20: 12 instead. While in your discard pile: when you play a champion, return this to your hand.")
+                .Text("Gain 8 power.\nM20: 12 instead.\nWhile in your discard pile: when you play a champion, return this to your hand.")
                 .Art("a relic warframe gauntlet crackling with stored power");
             p01.Def.ReturnsFromDiscardOnChampionPlay = true;
             p01.Register();
 
             var p02 = SoiCard.New("praetorian_02", "Praetorian-02").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Relic).Character("decima").Qty(1).Defense(9).Shield(3)
-                .Text("Relic champion, defense 9. While in play: shield 3 (M20: 6). Its shield never works from hand.")
+                .Text("Relic champion, defense 9.\nWhile in play: shield 3.\nM20: shield 6 instead.\nIts shield never works from hand.")
                 .Art("an ancient guardian automaton kneeling with a deployed barrier");
             p02.Def.ShieldInPlay = true;
             p02.Def.DynamicShield = owner => owner.Mastery >= 20 ? 6 : 3;
@@ -148,7 +148,7 @@ namespace Shards.Content
             var robes = SoiCard.New("datic_robes", "Datic Robes").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Relic).Character("tetra").Qty(1).Shield(1)
                 .Plays(new BestByMastery((0, E.Draw(1)), (20, E.Draw(2))))
-                .Text("Shield equal to your mastery. Draw a card. M20: draw two instead.")
+                .Text("Shield equal to your mastery.\nDraw a card.\nM20: draw two instead.")
                 .Art("flowing robes stitched from woven strands of pure data");
             robes.Def.DynamicShield = owner => owner.Mastery;
             robes.Register();
@@ -158,7 +158,7 @@ namespace Shards.Content
                 .Plays(E.Seq(E.Mastery(1), new BestByMastery(
                     (0, new PerCount(ctx => (ctx.Controller.Mastery + 1) / 2, power: 1)),
                     (20, new PerCount(ctx => ctx.Controller.Mastery, power: 1)))))
-                .Text("Gain 1 mastery, then power equal to half your mastery (rounded up). M20: equal to your full mastery.")
+                .Text("Gain 1 mastery, then power equal to half your mastery, rounded up.\nM20: equal to your full mastery.")
                 .Art("twin crescent blades orbiting each other like binary moons").Register();
 
             // Volos (Undergrowth)
@@ -167,13 +167,13 @@ namespace Shards.Content
                 .Plays(E.Seq(E.Draw(2),
                     new Do(ctx => ctx.Controller.HealthToPowerThisTurn = true),
                     E.At(20, E.Health(10))))
-                .Text("Draw two cards. This turn, gain 1 power per health you gain (even at the 50 cap). M20: also gain 10 health.")
+                .Text("Draw two cards.\nThis turn, gain 1 power per health you gain, even at the 50 health cap.\nM20: also gain 10 health.")
                 .Art("claws of crystallized decay dripping motes of green light").Register();
 
             SoiCard.New("panconscious_crown", "Panconscious Crown").InSet(SET).Faction(U)
                 .Type(ShardsCardType.Relic).Character("volos").Qty(1)
                 .Plays(E.Seq(E.Mix(mastery: 2, health: 2), E.At(20, new Unify(E.Health(50)))))
-                .Text("Gain 2 mastery and 2 health. M20 Unify: gain 50 health.")
+                .Text("Gain 2 mastery and 2 health.\nM20 Unify: gain 50 health.")
                 .Art("a living crown of root and crystal linking many minds").Register();
 
             // Ko Syn Wu (Wraethe)
@@ -182,7 +182,7 @@ namespace Shards.Content
                 .Plays(E.Seq(E.Power(5),
                     new Do(ctx => ctx.Controller.BonusDrawsOnBigHit = 3),
                     E.At(20, E.Power(5))))
-                .Text("Gain 5 power (M20: 10). If you deal 10+ unprevented damage to one opponent this turn, draw 3 extra cards at end of turn.")
+                .Text("Gain 5 power.\nM20: gain 10 instead.\nIf you deal 10+ unprevented damage to one opponent this turn, draw 3 extra cards at end of turn.")
                 .Art("a black void-heart suspended in a cage of frozen light").Register();
 
             SoiCard.New("world_piercer", "The World Piercer").InSet(SET).Faction(W)
@@ -190,7 +190,7 @@ namespace Shards.Content
                 .Plays(E.Seq(E.Mastery(2), new BestByMastery(
                     (0, new ReturnFromDiscard(d => d.Type == ShardsCardType.Mercenary, "mercenary")),
                     (20, new ReturnFromDiscard(d => d.Type == ShardsCardType.Mercenary, "mercenary", all: true)))))
-                .Text("Gain 2 mastery. Return a mercenary from your discard pile to your hand. M20: return ALL of them.")
+                .Text("Gain 2 mastery.\nReturn a mercenary from your discard pile to your hand.\nM20: return ALL of them.")
                 .Art("a needle-thin lance long enough to thread the horizon").Register();
         }
     }

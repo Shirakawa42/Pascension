@@ -36,6 +36,9 @@ namespace Shards.Content
         public SoiCard MonsterAttack(IShardsEffect effect) { _def.MonsterAttackEffect = effect; return this; }
         public SoiCard Text(string rulesText) { _def.RulesText = rulesText; return this; }
         public SoiCard Art(string prompt) { _def.ArtPrompt = prompt; return this; }
+        /// <summary>Duel errata: this def replaces the base def with the given id when its
+        /// set is enabled (that base def is skipped from the pool).</summary>
+        public SoiCard Replaces(string baseId) { _def.ReplacesId = baseId; return this; }
 
         public void Register() => ShardsCardDatabase.Register(_def);
     }

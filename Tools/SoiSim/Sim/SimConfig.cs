@@ -10,7 +10,11 @@ namespace SoiSim
     {
         public const int SchemaVersion = 1;
 
-        public const ShardsDlc AllDlc =
+        /// <summary>The DLC mask every command simulates under. Defaults to the three
+        /// content DLCs; `--dlc duel` (parsed in Program.Main) ORs in Duel of Doom so
+        /// sims/tuning/stats include the Duel pool + rules. ConfigHash includes it, so
+        /// duel and base runs self-segregate into different JSONL files.</summary>
+        public static ShardsDlc AllDlc =
             ShardsDlc.RelicsOfTheFuture | ShardsDlc.ShadowOfSalvation | ShardsDlc.IntoTheHorizon;
 
         /// <summary>SHA-256 over the canonical config JSON — the merge guard for JSONL files.</summary>

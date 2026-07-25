@@ -294,6 +294,7 @@ namespace Shards.Bots
                 case "soi.return":
                 case "soi.destiny":
                 case "soi.relic":
+                case "soi.handpick": // Whisper Extractor: strip the victim's priciest card
                 {
                     // Pick the most expensive candidate (better card ≈ higher cost).
                     DecisionOption best = null;
@@ -310,6 +311,36 @@ namespace Shards.Bots
                     int want = System.Math.Max(request.Min, System.Math.Min(1, request.Max));
                     if (best != null && want > 0)
                         answer.ChosenOptionIds.Add(best.Id);
+                    break;
+                }
+                case "soi.target":
+                {
+                    // Hit whoever is closest to death (option ids are seat indices).
+                    DecisionOption closest = null;
+                    int lowestHealth = int.MaxValue;
+                    foreach (var option in request.Options)
+                    {
+                        if (option.Id < 0 || option.Id >= _engine.State.Players.Count) continue;
+                        var opponent = _engine.State.Players[option.Id];
+                        if (opponent.Eliminated || opponent.Health >= lowestHealth) continue;
+                        lowestHealth = opponent.Health;
+                        closest = option;
+                    }
+                    if (closest != null)
+                        answer.ChosenOptionIds.Add(closest.Id);
+                    break;
+                }
+                case "soi.herodraft":
+                {
+                    // Duel: draft the lobby-configured hero while available (the Min-pad
+                    // below falls back to the first free hero otherwise).
+                    if (request.DefaultOptionIds.Count > 0)
+                        foreach (var option in request.Options)
+                            if (option.Id == request.DefaultOptionIds[0])
+                            {
+                                answer.ChosenOptionIds.Add(option.Id);
+                                break;
+                            }
                     break;
                 }
                 default:

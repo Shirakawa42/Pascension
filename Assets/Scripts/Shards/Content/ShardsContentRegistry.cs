@@ -12,18 +12,21 @@ namespace Shards.Content
         public static void EnsureRegistered()
         {
             if (ShardsCardDatabase.TryGet("crystal", out _) &&
-                ShardsCardDatabase.TryGet("ingeminex_malice", out _))
+                ShardsCardDatabase.TryGet("ingeminex_malice", out _) &&
+                ShardsCardDatabase.TryGet("testudo_vanguard", out _))
                 return;
             ShardsCardDatabase.Clear();
             ShardsBaseSet.Register();
             ShardsRelicsSet.Register();
             ShardsShadowSet.Register();
             ShardsHorizonSet.Register();
+            ShardsDuelSet.Register();
         }
 
-        /// <summary>The playable characters; Rez requires Shadow of Salvation.</summary>
+        /// <summary>The playable characters; Rez requires Shadow of Salvation (Duel forces
+        /// it on via <see cref="ShardsEngine.NormalizeDlc"/>).</summary>
         public static IReadOnlyList<string> CharactersFor(ShardsDlc dlc) =>
-            (dlc & ShardsDlc.ShadowOfSalvation) != 0
+            (ShardsEngine.NormalizeDlc(dlc) & ShardsDlc.ShadowOfSalvation) != 0
                 ? new[] { "decima", "tetra", "volos", "kosynwu", "rez" }
                 : new[] { "decima", "tetra", "volos", "kosynwu" };
 
@@ -43,7 +46,7 @@ namespace Shards.Content
             return new ShardsConfig
             {
                 Seed = seed,
-                Dlc = dlc,
+                Dlc = ShardsEngine.NormalizeDlc(dlc), // Duel forces the other three DLCs on
                 Players = players,
                 Rules = new ShardsRules()
             };

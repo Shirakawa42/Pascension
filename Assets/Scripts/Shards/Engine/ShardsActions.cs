@@ -67,6 +67,23 @@ namespace Shards.Engine
         public override string Describe() => $"Recruit relic #{CardInstanceId}";
     }
 
+    /// <summary>Duel of Doom: pay gems to remove a center-row card (to the bottom of the
+    /// center deck) and refill the slot. The price climbs — 1 gem for the first reroll of
+    /// the turn, +1 per further reroll, reset each turn (ShardsEngine.RerollCost).</summary>
+    public sealed class ShardsRerollRowAction : PlayerAction
+    {
+        public int SlotIndex;
+        public override string Describe() => $"Reroll slot {SlotIndex}";
+    }
+
+    /// <summary>Duel of Doom: the hero's unique M5 ability — separate from Focus, usable
+    /// once per turn in addition to it (Tetra draw, Volos heal, Ko Syn Wu banish, Rez
+    /// Scry). Decima's ability is a passive buy discount, not this action.</summary>
+    public sealed class ShardsHeroAbilityAction : PlayerAction
+    {
+        public override string Describe() => "Hero ability";
+    }
+
     /// <summary>End the turn: assign pooled power to opponents (split decision), defenders
     /// reveal shields, then cleanup + draw. The safe default for timeouts/auto-clients.</summary>
     public sealed class ShardsEndTurnAction : PlayerAction, ISafeDefaultAction

@@ -15,6 +15,12 @@ namespace SoiSim
             try
             {
                 var cli = Cli.Parse(args);
+                // Global --dlc flag (consumed here so per-command RejectUnknown ignores it).
+                string dlc = cli.GetStr("--dlc", "base");
+                if (dlc == "duel")
+                    SimConfig.AllDlc |= Shards.Engine.ShardsDlc.Duel;
+                else if (dlc != "base")
+                    throw new CliError($"--dlc expects 'base' or 'duel', got '{dlc}'");
                 switch (args[0])
                 {
                     case "bench":

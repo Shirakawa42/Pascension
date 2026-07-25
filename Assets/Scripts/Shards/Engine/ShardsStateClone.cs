@@ -57,6 +57,7 @@ namespace Shards.Engine
                 dup.Exhausted = c.Exhausted;
                 dup.FastPlayed = c.FastPlayed;
                 dup.DamageThisTurn = c.DamageThisTurn;
+                dup.BanishAtCleanup = c.BanishAtCleanup;
                 map[c.InstanceId] = dup;
                 return dup;
             }
@@ -120,6 +121,7 @@ namespace Shards.Engine
                     Mix((ulong)(c.Exhausted ? 3 : 7));
                     Mix((ulong)(c.FastPlayed ? 11 : 13));
                     Mix((ulong)c.DamageThisTurn);
+                    Mix((ulong)(c.BanishAtCleanup ? 127 : 131));
                 }
 
                 Mix(Rng.State);
@@ -139,12 +141,21 @@ namespace Shards.Engine
                 {
                     foreach (char ch in p.CharacterId ?? "") Mix(ch);
                     Mix((ulong)(p.FocusedThisTurn ? 23 : 29));
+                    Mix((ulong)(p.HeroAbilityUsedThisTurn ? 97 : 101));
+                    Mix((ulong)(p.FirstBuyUsedThisTurn ? 103 : 107));
                     Mix((ulong)(p.ExtraTurnUsed ? 31 : 37));
+                    Mix((ulong)(p.DoomGateFloodUsed ? 109 : 113));
+                    Mix((ulong)p.CardsBanishedThisTurn);
+                    Mix((ulong)p.RerollsThisTurn);
                     Mix((ulong)(p.IgnoreShieldsThisTurn ? 41 : 43));
                     Mix((ulong)(p.HealthToPowerThisTurn ? 47 : 53));
+                    Mix((ulong)(p.HealingDoubledThisTurn ? 67 : 71));
+                    Mix((ulong)(p.OverflowHealthToPowerThisTurn ? 73 : 79));
+                    Mix((ulong)(p.ShieldsDoubledUntilNextTurn ? 83 : 89));
                     Mix((ulong)(p.CopyHomodeusAlliesThisTurn ? 59 : 61));
                     Mix((ulong)p.NextRecruitsToHand);
                     Mix((ulong)p.NextHomodeusChampionsIntoPlay);
+                    Mix((ulong)p.NextChampionsIntoPlay);
                     Mix((ulong)p.BonusDrawsOnBigHit);
                     Mix((ulong)p.MaxDamageDealtToOneOpponent);
                     foreach (ShardsFaction f in Enum.GetValues(typeof(ShardsFaction)))
@@ -246,17 +257,26 @@ namespace Shards.Engine
             dup.Power = Power;
             dup.CharacterExhausted = CharacterExhausted;
             dup.FocusedThisTurn = FocusedThisTurn;
+            dup.HeroAbilityUsedThisTurn = HeroAbilityUsedThisTurn;
+            dup.FirstBuyUsedThisTurn = FirstBuyUsedThisTurn;
             dup.RelicRecruited = RelicRecruited;
             dup.DestinyTaken = DestinyTaken;
             dup.ExtraTurnUsed = ExtraTurnUsed;
+            dup.DoomGateFloodUsed = DoomGateFloodUsed;
             dup.Eliminated = Eliminated;
             dup.IgnoreShieldsThisTurn = IgnoreShieldsThisTurn;
             dup.HealthToPowerThisTurn = HealthToPowerThisTurn;
+            dup.HealingDoubledThisTurn = HealingDoubledThisTurn;
+            dup.OverflowHealthToPowerThisTurn = OverflowHealthToPowerThisTurn;
+            dup.ShieldsDoubledUntilNextTurn = ShieldsDoubledUntilNextTurn;
             dup.NextRecruitsToHand = NextRecruitsToHand;
             dup.NextHomodeusChampionsIntoPlay = NextHomodeusChampionsIntoPlay;
+            dup.NextChampionsIntoPlay = NextChampionsIntoPlay;
             dup.CopyHomodeusAlliesThisTurn = CopyHomodeusAlliesThisTurn;
             dup.BonusDrawsOnBigHit = BonusDrawsOnBigHit;
             dup.MaxDamageDealtToOneOpponent = MaxDamageDealtToOneOpponent;
+            dup.CardsBanishedThisTurn = CardsBanishedThisTurn;
+            dup.RerollsThisTurn = RerollsThisTurn;
 
             void CopyList(List<ShardsCard> src, List<ShardsCard> dst)
             {

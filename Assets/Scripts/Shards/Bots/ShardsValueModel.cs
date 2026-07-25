@@ -283,6 +283,14 @@ namespace Shards.Bots
                 }
                 case ShardsFocusAction:
                     return _w[W.FocusBase];
+                case ShardsHeroAbilityAction:
+                    // Duel: spare-gem utility (draw/heal/banish/scry). Slightly better than
+                    // ending the turn, so greedy play converts leftover gems into value.
+                    return _w[W.EndTurnBase] + 0.05;
+                case ShardsRerollRowAction:
+                    // Duel: digging/denial is situational — kept just below END TURN so
+                    // greedy rollouts never spam it, while tree search still explores it.
+                    return _w[W.EndTurnBase] - 0.01;
                 case ShardsEndTurnAction:
                     return _w[W.EndTurnBase];
                 default:
@@ -352,6 +360,8 @@ namespace Shards.Bots
                 case "soi.return":
                 case "soi.destiny":
                 case "soi.relic":
+                case "soi.tutor":     // Grim Tutor: fetch the highest-value deck card
+                case "soi.handpick":  // Whisper Extractor: strip the victim's best card
                 {
                     // Best candidate by tuned model value (not raw cost).
                     DecisionOption best = null;
@@ -368,6 +378,39 @@ namespace Shards.Bots
                     int want = Math.Max(request.Min, Math.Min(1, request.Max));
                     if (best != null && want > 0)
                         answer.ChosenOptionIds.Add(best.Id);
+                    break;
+                }
+
+                case "soi.target":
+                {
+                    // Target the opponent closest to death — the same rule the damage
+                    // split uses. Option ids are seat indices (see DestroyOpponent).
+                    DecisionOption closest = null;
+                    int lowestHealth = int.MaxValue;
+                    foreach (var option in request.Options)
+                    {
+                        if (option.Id < 0 || option.Id >= engine.State.Players.Count) continue;
+                        var opponent = engine.State.Players[option.Id];
+                        if (opponent.Eliminated || opponent.Health >= lowestHealth) continue;
+                        lowestHealth = opponent.Health;
+                        closest = option;
+                    }
+                    if (closest != null)
+                        answer.ChosenOptionIds.Add(closest.Id);
+                    break;
+                }
+
+                case "soi.herodraft":
+                {
+                    // Draft the lobby-configured hero while it is still available; the
+                    // Min-pad below falls back to the first free hero otherwise.
+                    if (request.DefaultOptionIds.Count > 0)
+                        foreach (var option in request.Options)
+                            if (option.Id == request.DefaultOptionIds[0])
+                            {
+                                answer.ChosenOptionIds.Add(option.Id);
+                                break;
+                            }
                     break;
                 }
 
