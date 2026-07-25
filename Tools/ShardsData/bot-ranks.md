@@ -30,6 +30,27 @@ iterations" stops producing gate-clearing generations.
 | DIAMOND | ✅ minted (top rank) | ISMCTS, 2-turn rollouts → net | gen 8 (frozen) | 3200 it (4×), run as **K=8 × 400 root-parallel** |
 | MASTER → CHALLENGER | ❌ not pursued | — | — | net plateaued (gen-9 sweep); ladder is final at DIAMOND |
 
+> ### ⚠ 2026-07-25 — every strength number above predates Duel of Doom
+> The ladder was minted with `SimConfig.AllDlc` **excluding** `ShardsDlc.Duel`, so all of
+> it — the Elo table, the per-rank win rates, both embedded nets — describes a game
+> without hero drafts, hero abilities or row rerolls. Mirror matches hid this completely:
+> both sides shared the blind spot, so every probe read 50% while a human using those
+> mechanics took the whole edge.
+>
+> Fixed so far (see `campaign-log.md` 2026-07-25): Duel is now the default sim mask;
+> IRON's ladder gained both actions; the hero ability is priced multiplicatively so its
+> value decides whether to use it (the additive version was worth **exactly nothing** —
+> 49.8% over 784 pairs — and the multiplicative one is worth **+42 Elo**); Scry / reorder /
+> hand-strip carry real atoms; **V5** weights are tuned with Duel ON and beat V4 at
+> **69.9% [67.0–72.7]**.
+>
+> Still Duel-blind: **the two embedded nets**. `ShardsStateEncoder` has no Duel bit, no
+> hero identity and none of the 9 Duel per-player flags, so GOLD→DIAMOND evaluate Duel
+> positions with a function fit on a different game. Their *priors and rollouts* improved
+> with V5; their *value estimate* did not. Re-mint after the encoder v3 + retrain.
+>
+> Treat the Elo table as a pre-Duel baseline, not the current ladder.
+
 ---
 
 ## IRON (FER) — the original bot

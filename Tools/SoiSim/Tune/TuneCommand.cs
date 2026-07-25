@@ -31,7 +31,11 @@ namespace SoiSim
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
 
-            var start = ShardsEvalWeights.Current;
+            // Pad the champion up to the CURRENT layout before tuning. Without this, a
+            // weight appended after the last tune run would sit at its default forever:
+            // the search space is sized from start.Length, so newly added dimensions
+            // would never be explored and the emitted vector would silently drop them.
+            var start = W.Pad(ShardsEvalWeights.Current);
             int n = start.Length;
             var scale = new double[n];
             for (int i = 0; i < n; i++)

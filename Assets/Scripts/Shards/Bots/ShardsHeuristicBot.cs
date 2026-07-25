@@ -116,6 +116,37 @@ namespace Shards.Bots
                 if (action is ShardsFocusAction focus)
                     return focus;
 
+            // 7. Duel of Doom — gems do NOT carry over, so leftovers are worth nothing at
+            //    end of turn. Convert them: the hero ability first (a known effect for a
+            //    known price), then reroll DEAD row slots (nothing here is both affordable
+            //    and worth buying). Before 2026-07-25 this ladder had neither rung, so IRON
+            //    could not use two of the shipped game's action types at all.
+            foreach (var action in legal)
+                if (action is ShardsHeroAbilityAction hero)
+                    return hero;
+
+            ShardsRerollRowAction bestReroll = null;
+            double worstSlotScore = 0.6; // same "don't bother with junk" bar as the buy step
+            int rerollCost = ShardsEngine.RerollCost(player);
+            if (player.Gems >= rerollCost)
+            {
+                foreach (var action in legal)
+                {
+                    if (action is not ShardsRerollRowAction reroll) continue;
+                    var card = _engine.State.CenterRow[reroll.SlotIndex];
+                    if (card == null) continue;
+                    int cost = _engine.EffectiveCost(player, card.Def);
+                    double score = CardValue(card.Def, player) / System.Math.Max(1, cost);
+                    // Reroll the WORST slot, and only if we would not have bought it.
+                    if (score < worstSlotScore)
+                    {
+                        worstSlotScore = score;
+                        bestReroll = reroll;
+                    }
+                }
+            }
+            if (bestReroll != null) return bestReroll;
+
             return new ShardsEndTurnAction { PlayerIndex = playerIndex };
         }
 

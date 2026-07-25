@@ -20,6 +20,59 @@ namespace SoiSim
             return (Math.Max(0, center - half), Math.Min(1, center + half));
         }
 
+        /// <summary>Mean and normal-approximation CI for a sample of PAIRED scores (one
+        /// value per mirrored seed pair, already normalized to [0,1]). Paired data is not
+        /// binomial, so Wilson does not apply — this is the sample mean ± z·SE using the
+        /// observed spread. Pairing cancels the seed, character-matchup and first-player
+        /// variance (first player wins 56.5% of SoI games), which typically cuts the games
+        /// needed for a given resolution by 2-4x.</summary>
+        public static (double Mean, double Lo, double Hi, double Sd) MeanCi(
+            IReadOnlyList<double> values, double z = 1.959964)
+        {
+            int n = values.Count;
+            if (n == 0) return (0, 0, 1, 0);
+            double sum = 0;
+            for (int i = 0; i < n; i++) sum += values[i];
+            double mean = sum / n;
+            if (n < 2) return (mean, 0, 1, 0);
+            double ss = 0;
+            for (int i = 0; i < n; i++) { double d = values[i] - mean; ss += d * d; }
+            double sd = Math.Sqrt(ss / (n - 1));
+            double half = z * sd / Math.Sqrt(n);
+            return (mean, Math.Max(0, mean - half), Math.Min(1, mean + half), sd);
+        }
+
+        /// <summary>Expected score for an Elo difference.</summary>
+        public static double EloToScore(double elo) => 1.0 / (1.0 + Math.Pow(10, -elo / 400.0));
+
+        /// <summary>Score difference expressed back as Elo (for reporting).</summary>
+        public static double ScoreToElo(double score)
+        {
+            if (score <= 0) return double.NegativeInfinity;
+            if (score >= 1) return double.PositiveInfinity;
+            double elo = -400.0 * Math.Log10(1.0 / score - 1.0);
+            return elo == 0 ? 0.0 : elo; // normalize -0.0, which formats as "-0"
+        }
+
+        /// <summary>Generalized SPRT log-likelihood ratio for H0: true score = s(elo0)
+        /// against H1: true score = s(elo1), over a sample of paired scores. Normal
+        /// approximation with the observed variance — the standard form used for
+        /// engine testing, and valid for the pentanomial-ish {0,.25,.5,.75,1} pair
+        /// scores here. Compare against <see cref="SprtBounds"/>.</summary>
+        public static double GsprtLlr(IReadOnlyList<double> values, double elo0, double elo1)
+        {
+            var (mean, _, _, sd) = MeanCi(values);
+            int n = values.Count;
+            if (n < 2 || sd <= 1e-12) return 0;
+            double m0 = EloToScore(elo0), m1 = EloToScore(elo1);
+            return n * (m1 - m0) * (2 * mean - m0 - m1) / (2 * sd * sd);
+        }
+
+        /// <summary>SPRT decision bounds: LLR below Lower accepts H0, above Upper
+        /// accepts H1, in between is "keep playing".</summary>
+        public static (double Lower, double Upper) SprtBounds(double alpha = 0.05, double beta = 0.05)
+            => (Math.Log(beta / (1 - alpha)), Math.Log((1 - beta) / alpha));
+
         /// <summary>Standard normal CDF (Abramowitz-Stegun 7.1.26 via erf).</summary>
         public static double NormalCdf(double x) => 0.5 * (1 + Erf(x / Math.Sqrt(2)));
 

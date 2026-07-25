@@ -258,7 +258,9 @@ namespace Shards.Engine
         }
 
         // Duel of Doom hero draft: reverse seat order, no duplicates, on the built board.
-        private static readonly string[] DraftableCharacters = { "decima", "tetra", "volos", "kosynwu", "rez" };
+        // Public so bots can enumerate the hero pool (e.g. to precompute ability values)
+        // without duplicating the list.
+        public static readonly string[] DraftableCharacters = { "decima", "tetra", "volos", "kosynwu", "rez" };
         private List<string> _draftDefaults;
 
         private IEnumerable<ShardsStep> HeroDraftFlow(ShardsContext ctx)
@@ -663,8 +665,10 @@ namespace Shards.Engine
         };
 
         /// <summary>The activated effect behind <see cref="HeroAbilityInfo"/> (costs live
-        /// there; Decima's passive lives in <see cref="EffectiveCost"/>).</summary>
-        private static IShardsEffect HeroAbilityEffect(string characterId) => characterId switch
+        /// there; Decima's passive lives in <see cref="EffectiveCost"/>). Public so the
+        /// value model can price it through the ordinary effect walker instead of
+        /// carrying a second, hand-written table of what each hero is worth.</summary>
+        public static IShardsEffect HeroAbilityEffect(string characterId) => characterId switch
         {
             "tetra" => new Gain { Draw = 1 },
             "volos" => new Gain { Health = 3 },

@@ -93,6 +93,58 @@ namespace SoiSim.Tests
         }
 
         [Test]
+        public void MeanCi_MatchesDirectComputation()
+        {
+            // Four pair scores: mean 0.5, sample sd 0.408, SE 0.204, half-width 0.400.
+            var (mean, lo, hi, sd) = Stats.MeanCi(new[] { 0.0, 0.5, 0.5, 1.0 });
+            Assert.AreEqual(0.5, mean, 1e-9);
+            Assert.AreEqual(0.4082, sd, 0.001);
+            Assert.AreEqual(0.1, lo, 0.001);
+            Assert.AreEqual(0.9, hi, 0.001);
+
+            // A degenerate sample must not report a fake-tight interval.
+            var (m1, l1, h1, _) = Stats.MeanCi(new[] { 0.5 });
+            Assert.AreEqual(0.5, m1, 1e-9);
+            Assert.AreEqual(0, l1, 1e-9);
+            Assert.AreEqual(1, h1, 1e-9);
+        }
+
+        [Test]
+        public void EloAndScore_RoundTrip()
+        {
+            Assert.AreEqual(0.5, Stats.EloToScore(0), 1e-12);
+            Assert.AreEqual(0.0, Stats.ScoreToElo(0.5), 1e-9);
+            // ScoreToElo must never emit negative zero — it formats as "-0" and reads
+            // as a loss in reports.
+            Assert.IsFalse(double.IsNegative(Stats.ScoreToElo(0.5)));
+            foreach (double elo in new[] { -300.0, -15.0, 15.0, 300.0 })
+                Assert.AreEqual(elo, Stats.ScoreToElo(Stats.EloToScore(elo)), 1e-6);
+        }
+
+        [Test]
+        public void Gsprt_AcceptsH1OnAStrongEdge_AndH0OnANullEdge()
+        {
+            var (lower, upper) = Stats.SprtBounds();
+            Assert.Less(lower, 0);
+            Assert.Greater(upper, 0);
+
+            // A decisive edge drives the LLR above the upper bound.
+            var strong = new List<double>();
+            for (int i = 0; i < 200; i++) strong.Add(i % 10 == 0 ? 0.5 : 1.0);
+            Assert.Greater(Stats.GsprtLlr(strong, 0, 15), upper);
+
+            // A true null drives it below the lower bound (H0: <= 0 Elo).
+            var nul = new List<double>();
+            for (int i = 0; i < 3000; i++) nul.Add(i % 2 == 0 ? 0.25 : 0.75);
+            Assert.Less(Stats.GsprtLlr(nul, 0, 15), lower);
+
+            // Degenerate zero-variance input must not produce a verdict.
+            var flat = new List<double>();
+            for (int i = 0; i < 100; i++) flat.Add(0.5);
+            Assert.AreEqual(0, Stats.GsprtLlr(flat, 0, 15), 1e-12);
+        }
+
+        [Test]
         public void Percentile_Interpolates()
         {
             var sorted = new List<int> { 10, 20, 30, 40 };

@@ -50,6 +50,14 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-07-28",
+                "· The AI now actually plays Duel of Doom. Every difficulty was trained and tuned before the expansion existed, so the bots ignored two of its mechanics entirely: they never rerolled a shop card, and they fired their hero ability every single turn whether or not it was worth the cost.\n" +
+                "· Bots now reroll dead shop slots — and only dead ones, respecting the climbing price — and use their hero ability when its effect beats what it costs, so Ko Syn Wu no longer pays 3 health for a banish it doesn't want.\n" +
+                "· Scrying, reordering the shop deck and stripping an opponent's hand are now worth something to the AI; before this they were valued at exactly zero, which made Rez's entire hero ability invisible to it.",
+                "· L'IA joue enfin vraiment à Duel of Doom. Toutes les difficultés avaient été entraînées et réglées avant l'extension : les bots ignoraient purement et simplement deux de ses mécaniques — jamais de relance en boutique, et une capacité de héros déclenchée à chaque tour, qu'elle en vaille la peine ou non.\n" +
+                "· Les bots relancent désormais les emplacements sans intérêt — et seulement ceux-là, en tenant compte du prix croissant — et n'utilisent leur capacité de héros que si son effet dépasse son coût : Ko Syn Wu ne paie plus 3 points de vie pour un bannissement dont il ne veut pas.\n" +
+                "· Le Sondage, la réorganisation de la pioche centrale et le pillage de la main adverse ont enfin une valeur pour l'IA ; ils valaient exactement zéro, ce qui rendait toute la capacité de Rez invisible à ses yeux."),
+
             new Entry("2026-07-27",
                 "· New DLC — Duel of Doom (requires all other expansions), built for two-player skill:\n" +
                 "· Heroes are drafted on turn 1 — the shop is dealt first, then players pick in reverse seat order with no duplicates, so your pick answers the opening shop.\n" +

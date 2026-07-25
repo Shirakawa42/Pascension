@@ -37,7 +37,25 @@ End-turn is a chained decision flow, not a phase machine:
 - Rendering of the glow channels lives in ui-presentation (3-ring system).
 
 ## Bots & AI (2026-07-21 — the strong-AI stack)
-Difficulty ladder (ShardsModule.CreateBot kinds → menu DIFFICULTY): `heuristic` (NORMAL) · `greedy` (HARD, default) · `strong`/`strong-fast` (MASTER, ISMCTS 1.0s/0.25s wall-clock via `SearchBotSeat` worker thread).
+Difficulty ladder: **7 minted ranks** in `ShardsBotRanks.Minted` (IRON→DIAMOND); `Tools/ShardsData/bot-ranks.md` is the authoritative spec sheet. The legacy `heuristic`/`greedy`/`strong`/`strong-fast` kinds still resolve for tooling.
+
+### ⚠ THE DUEL BLIND SPOT (found + fixed 2026-07-25 — read before trusting any pre-2026-07-25 AI artifact)
+`SimConfig.AllDlc` excluded `ShardsDlc.Duel` until 2026-07-25, and Duel was opt-in via `--dlc duel` which no campaign run ever passed. **Every net and every tuned weight vector through V4 was fit to a game without hero drafts, hero abilities or row rerolls.** Compounding it, the two Duel actions were scored with hardcoded constants — `EndTurnBase + 0.05` for the hero ability (so greedy fired it *unconditionally*, every turn, regardless of cost) and `EndTurnBase - 0.01` for the reroll (strictly below passing, so an argmax policy could **never** select it → zero rerolls in every rollout and every training position). `ShardsHeuristicBot.PickAction` had no case for either action at all.
+
+Three lessons that generalize:
+1. **Mirror-match benchmarking is blind to shared blind spots.** Both bots misplayed Duel identically, so every probe read 50% while a human using the mechanics took the whole edge. A capability gap will not show up in self-play; only an *ablation* (`probe --weights-b duel-blind`) measures it.
+2. **An additive base swamps a value term.** The first fix priced the hero ability as `HeroAbilityBase(200) + net(±2)` — still unconditional, and worth **49.8% [47.9–51.7] over 784 pairs, i.e. nothing**. Making it multiplicative (`net * W.HeroAbilityValueScale`, so the SIGN of net decides) moved the same change to **56.0% [54.1–58.0] over 1000 pairs, +42 Elo**. Whether-to-act questions need the value in charge, not the ladder position.
+3. **A weight defaulting to 0.0 is untunable.** CMA-ES scales each dimension by `max(|start|, 0.05)`, so a zero default gets a search range of ~zero and never moves — which is why `EndTurnBase` has sat at ~0 since V1. Give every appended weight a non-zero default in `W.Defaults`.
+
+`W.Defaults` + `W.Pad` are the layout contract: appending a weight means appending its default, `TuneCommand` pads the champion up to `W.Count` so new dimensions actually get tuned, and `ShardsValueModel` pads on construction so older vectors stay loadable. Pinned by `WeightLayout_DefaultsCoverEveryIndex`. Bots using both Duel actions is pinned behaviourally by `SoiSimDuelBotTests` — a `case` in a switch proves nothing if the score keeps it below END TURN forever.
+
+### Measurement (rebuilt 2026-07-25 — `probe` is the instrument every strength claim rests on)
+- **Paired scoring is the default and the number to quote.** The unit of work is a mirrored PAIR (same seed + matchup, seats swapped), which cancels the seed, the matchup and the 56.5% first-player advantage. Typically ~1.4x tighter half-width than pooling games independently = ~2x fewer games for the same resolution. The unpaired Wilson figure is still printed for continuity with older log lines.
+- **`--sprt`** (GSPRT, elo0=0/elo1=+15/α=β=0.05) stops as soon as the result is decided. Verdict is recorded at the crossing; in-flight parallel pairs still land in the point estimate and can drag the final LLR back inside the bounds — that does not un-decide it.
+- **n=120 is below the noise floor** (±8.9pt): it cannot see a true 55% effect, and it produced several false conclusions in `campaign-log.md`. `probe` now refuses to write a conclusion under 200 pairs without `--allow-small` (a completed SPRT is exempt). **n≥1000 paired for a promotion gate, n≥2000 to publish.**
+- **`--weights-a/-b`** picks `current` | `duel-blind` | `V1…Vn` — the promotion gate and the ablation lever.
+- **Never gate on validation accuracy**: the log's own counterexample is a net at 80.7% val acc that played 46.0%.
+- `SoiSimProbeCalibrationTests` is the standing null calibration: an agent against an identical copy of itself must straddle 50%, pairing must beat pooling, and SPRT must not fire on a true null.
 - **ShardsHeuristicBot** — legacy greedy ladder, kept as tuner anchor + rollout-order reference.
 - **ShardsValueModel** (`Shards.Bots`) — tuned value core: `ShardsCardStatics` walks effect trees once per def into atoms at 7 mastery buckets; `ShardsCustomAnnotations` covers every Custom/Do (guard test `EveryCustomOrDoEffect_HasAnAnnotation` fails on new unannotated ones — balance patches trip it on purpose); weights in generated `ShardsEvalWeights.g.cs` (V2 = CMA-ES self-play tuned, 81.9% vs heuristic).
 - **ShardsGreedyEvalBot** — argmax over the model; instant.

@@ -131,3 +131,59 @@
 **DIAMOND shipped root-parallel** (K=8×400 = 3200 total, CPU-independent merge): ~80 ms multi-core vs ~480 ms single-tree, same budget → same strength. Registry reverted to gens 0,8. 174 EngineVerify tests green.
 
 **Balance stats** (6400 DIAMOND selfplay, `benchmark/balance_stats.json`): first-player 56.5% (front-loaded: 60.2% short / 52.9% long games), ~15 rounds, draws 0.02%, Infinity-shard win 4% of games, attack power 7→409 (rounds 10→20).
+
+---
+
+## 2026-07-25 — Phase 0/1: the measuring instrument, then the Duel blind spot
+
+**The instrument came first, and it changed the answer twice.** `probe` now scores by
+mirrored PAIR (same seed + matchup, seats swapped) instead of pooling games as if they
+were independent. Pairing cancels the seed, the matchup and the 56.5% first-player
+advantage: measured ~1.4x tighter half-width at equal games (~2x fewer games for the same
+resolution), and it makes a self-vs-self null read exactly what it should. Added GSPRT
+(`--sprt`, elo0=0/elo1=+15/α=β=0.05) so decided results stop early; added a publish floor
+of 200 pairs (`--allow-small` to override, completed SPRT exempt) because **n=120 is ±8.9pt
+and cannot see a true 55% effect** — the source of several earlier conclusions in this log.
+`SoiSimProbeCalibrationTests` pins all of it as a standing null calibration.
+
+**The blind spot.** `SimConfig.AllDlc` excluded `ShardsDlc.Duel`, and `--dlc duel` was
+never passed by any campaign run — so every net and every weight vector through V4 was fit
+to a game without hero drafts, hero abilities or row rerolls. Worse, the two Duel actions
+were scored by hardcoded constants: hero ability `EndTurnBase + 0.05` (fired
+unconditionally, every turn) and reroll `EndTurnBase - 0.01` (strictly below passing, so an
+argmax policy could NEVER pick it — zero rerolls in every rollout and every training
+position). `ShardsHeuristicBot.PickAction` had no case for either. Duel is now the default
+mask (`--dlc base` for legacy runs).
+
+**Additive bases swamp value terms — the fix that mattered.** First attempt priced the hero
+ability as `HeroAbilityBase(200) + net(±2)`. Still unconditional, and the ablation said so:
+**49.8% [47.9–51.7] over 784 pairs — worth nothing** (SPRT accepted H0). Making it
+multiplicative (`net * HeroAbilityValueScale`, so the SIGN of net decides whether to act)
+moved the identical change to **56.0% [54.1–58.0] over 1000 pairs, +42 Elo**. Ko Syn Wu had
+been paying 3 health every turn for a banish this model prices as negative.
+
+**Weights defaulting to 0.0 are untunable.** sep-CMA-ES scales each dimension by
+`max(|start|, 0.05)`, so a zero default gets a search range of ~zero and never moves —
+which is why `EndTurnBase` has sat at ~0 since V1. Every appended weight now carries a
+non-zero default in `W.Defaults`; `W.Pad` is the layout contract (TuneCommand pads the
+champion up to `W.Count` so new dimensions are actually explored; ShardsValueModel pads on
+construction so short vectors stay loadable).
+
+**V5** — sep-CMA-ES, Duel ON, 300 gens × λ16 × 240 games, seed 25, 3.0 min, 49 weights.
+Evaluate gates OK: random 100.0% · heuristic-v1 78.9% · V1 78.4% · V2 68.5% · V3 68.5% ·
+**V4 69.9% [67.0–72.7]** (matched by an independent 1000-pair probe at 69.2%, so this is not
+overfitting to a single reference opponent). Tuner's verdict on the new dimensions: it wants
+MORE rerolling (`RerollBase` −10→+0.62, `RerollRowQualityDelta` 100→149.5), keeps the hero
+scale positive but modest (50→18.2), and prices opponent hand-strip NEGATIVE (0.5→−0.30).
+
+**Caveat on the ablation tool:** `--weights-b duel-blind` is a GREEDY-side instrument only.
+`ScoreAction` also feeds ISMCTS as the move prior (`score / 4000`) and as the rollout
+policy, so the sentinel magnitude poisons the search's UCB instead of cleanly removing the
+action. Search-side capability gaps need a different mechanism.
+
+**V5 carries into search too.** `probe --a strong --b strong --budget 200 --weights-b V4`
+(both sides ISMCTS@200, Duel ON): **56.0% over 290 pairs** ([52.5–59.5], stable at 57.1%
+over the first 210). Stopped early — search-vs-search runs at 0.23 games/s, and 45 more
+minutes only tightens ±3.5pt to ±2.5pt on an already-decided question. The search ranks
+inherit the improvement through the prior and the rollout policy; their embedded NETS are
+still Duel-blind, which is the encoder-v3 work, not this.

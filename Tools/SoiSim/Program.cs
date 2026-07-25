@@ -16,11 +16,13 @@ namespace SoiSim
             {
                 var cli = Cli.Parse(args);
                 // Global --dlc flag (consumed here so per-command RejectUnknown ignores it).
-                string dlc = cli.GetStr("--dlc", "base");
-                if (dlc == "duel")
-                    SimConfig.AllDlc |= Shards.Engine.ShardsDlc.Duel;
-                else if (dlc != "base")
-                    throw new CliError($"--dlc expects 'base' or 'duel', got '{dlc}'");
+                // Default is ALL dlc incl. Duel — the shipped configuration. `--dlc base`
+                // drops Duel for legacy comparisons against pre-2026-07-25 artifacts.
+                string dlc = cli.GetStr("--dlc", "all");
+                if (dlc == "base")
+                    SimConfig.AllDlc &= ~Shards.Engine.ShardsDlc.Duel;
+                else if (dlc != "all" && dlc != "duel")
+                    throw new CliError($"--dlc expects 'all' or 'base', got '{dlc}'");
                 switch (args[0])
                 {
                     case "bench":

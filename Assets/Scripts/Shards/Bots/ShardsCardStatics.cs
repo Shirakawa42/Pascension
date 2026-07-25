@@ -29,6 +29,12 @@ namespace Shards.Bots
         public int OppMasteryLoss;
         public int AllLoseHealth;      // symmetric burn (aggression)
         public int AllLoseMastery;
+        // Duel of Doom center-deck manipulation and hand disruption. These walked to
+        // NOTHING until 2026-07-25, which meant Rez's whole hero ability (Scry 2), Index
+        // of Futures and Whisper Extractor were all valued at exactly zero.
+        public int ScryDepth;          // cards filtered off the center-deck top
+        public int ReorderDepth;       // cards freely reordered (strictly stronger per card)
+        public int OppHandStrips;      // "opponent draws then discards a card you pick"
         /// <summary>Contains a Custom/Do with NO annotation — the guard test fails on these.</summary>
         public bool Opaque;
 
@@ -72,6 +78,20 @@ namespace Shards.Bots
                 Cache[def] = statics;
                 return statics;
             }
+        }
+
+        /// <summary>Atoms for an effect that belongs to no card def — currently the Duel
+        /// hero abilities, whose effects live in a code table rather than the card
+        /// database. Routes through the SAME walker as every card, so a hero ability is
+        /// priced by the same tuned weights and a new hero needs no bespoke valuation
+        /// code. Custom/Do nodes have no def id to look up, so they mark the atoms Opaque
+        /// (no hero ability uses one today, and ShardsCardStaticsTests pins that).</summary>
+        public static EffectAtoms StandaloneAtoms(IShardsEffect effect, int mastery)
+        {
+            var atoms = new EffectAtoms();
+            if (effect == null) return atoms;
+            Walk(null, effect, "standalone", mastery, atoms, EffectAtoms.Unconditional, 1.0);
+            return atoms;
         }
 
         private static CardStatics Build(ShardsCardDef def)
@@ -142,13 +162,20 @@ namespace Shards.Bots
                     // Duel deck-composition gate — value it like other conditional gates.
                     Walk(def, allegiance.Inner, slot, mastery, atoms, EffectAtoms.IfClass, mult);
                     return;
-                case Scry:
-                case ReorderCenterTop:
-                    // Center-deck filtering/reordering — no direct resource, neutral.
+                case Scry scry:
+                    // Not neutral: pushing dead cards to the bottom raises the quality of
+                    // every future row refill, and knowing the top is real information.
+                    atoms.ScryDepth += (int)Math.Round(scry.Count * mult);
+                    return;
+                case ReorderCenterTop reorder:
+                    // Strictly stronger than Scry per card — free ordering, not just
+                    // top-or-bottom.
+                    atoms.ReorderDepth += (int)Math.Round(reorder.Count * mult);
                     return;
                 case OpponentDrawsThenDiscards:
-                    // Targeted hand disruption that REPLACES what it takes (the victim
-                    // draws first) — structurally near-neutral for valuation.
+                    // Card-neutral for the victim (they draw first) but the controller
+                    // strips their best option — that choice is the value.
+                    atoms.OppHandStrips += (int)Math.Round(mult);
                     return;
                 case PerCount per:
                 {
@@ -199,7 +226,7 @@ namespace Shards.Bots
                     return;
                 case Custom:
                 case Do:
-                    if (ShardsCustomAnnotations.TryApply(def.Id, slot, atoms, mastery, mult))
+                    if (def != null && ShardsCustomAnnotations.TryApply(def.Id, slot, atoms, mastery, mult))
                         return;
                     atoms.Opaque = true;
                     return;

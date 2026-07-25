@@ -52,6 +52,15 @@ namespace SoiSim
             return n;
         }
 
+        public double GetDouble(string name, double fallback)
+        {
+            string v = GetStr(name, null);
+            if (v == null) return fallback;
+            if (!double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out double d))
+                throw new CliError($"{name} expects a number, got '{v}'");
+            return d;
+        }
+
         public ulong GetULong(string name, ulong fallback)
         {
             string v = GetStr(name, null);

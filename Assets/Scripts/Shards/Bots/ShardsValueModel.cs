@@ -19,9 +19,17 @@ namespace Shards.Bots
 
         public double[] Weights => _w;
 
+        /// <summary>characterId → net value of activating that hero's Duel ability
+        /// (effect value minus its gem cost; the health cost is state-dependent and
+        /// priced at scoring time). Precomputed: the abilities are fixed effects, so
+        /// this is 5 entries, not a per-call effect walk.</summary>
+        private readonly Dictionary<string, double> _heroAbilityValue = new();
+
         public ShardsValueModel(double[] weights = null)
         {
-            _w = weights ?? ShardsEvalWeights.Current;
+            // Pad so a champion tuned before the current layout still reads every weight
+            // (W.Pad is a no-op once the tuner has caught up).
+            _w = W.Pad(weights ?? ShardsEvalWeights.Current);
             foreach (var def in ShardsCardDatabase.All)
             {
                 var statics = ShardsCardStatics.Get(def);
@@ -30,6 +38,15 @@ namespace Shards.Bots
                 slots[1] = CollapseSlot(statics.Exhaust);
                 slots[2] = CollapseSlot(statics.Reward);
                 _cache[def] = slots;
+            }
+            foreach (var characterId in ShardsEngine.DraftableCharacters)
+            {
+                var effect = ShardsEngine.HeroAbilityEffect(characterId);
+                if (effect == null) continue; // Decima's ability is a passive discount
+                var (res, structural) = Collapse(ShardsCardStatics.StandaloneAtoms(effect, 0));
+                var spec = ShardsEngine.HeroAbilityInfo(characterId);
+                _heroAbilityValue[characterId] =
+                    ResourceValue(res) + structural - spec.Gems * _w[W.Gems];
             }
         }
 
@@ -66,7 +83,10 @@ namespace Shards.Bots
                 atoms.CopyEffects * _w[W.CopyEffect] +
                 atoms.OppMasteryLoss * _w[W.OppMasteryLoss] +
                 atoms.AllLoseHealth * _w[W.AllLoseHealth] +
-                atoms.AllLoseMastery * _w[W.AllLoseMastery];
+                atoms.AllLoseMastery * _w[W.AllLoseMastery] +
+                atoms.ScryDepth * _w[W.ScryPerCard] +
+                atoms.ReorderDepth * _w[W.ReorderPerCard] +
+                atoms.OppHandStrips * _w[W.OppHandStrip];
             return (res, structural);
         }
 
@@ -80,11 +100,6 @@ namespace Shards.Bots
             resources[0] * _w[W.Gems] + resources[1] * _w[W.Power] +
             resources[2] * _w[W.Mastery] + resources[3] * _w[W.Health] +
             resources[4] * _w[W.Draw];
-
-        /// <summary>Weights added after a vector was tuned fall back to a default so
-        /// older ShardsEvalWeights versions stay loadable (layout contract).</summary>
-        private double WeightAt(int index, double fallback) =>
-            index < _w.Length ? _w[index] : fallback;
 
         /// <summary>Resources in this card's play effect that would NOT fire if played
         /// right now: unlit conditional lines (exact ConditionMet probes) and unlit
@@ -230,7 +245,7 @@ namespace Shards.Bots
                     {
                         double potential = ResourceValue(UnlitPotential(engine, player, card));
                         if (potential > 0)
-                            score -= potential * WeightAt(W.PlayDeferPotential, 0.6);
+                            score -= potential * _w[W.PlayDeferPotential];
                     }
                     return score;
                 }
@@ -284,13 +299,40 @@ namespace Shards.Bots
                 case ShardsFocusAction:
                     return _w[W.FocusBase];
                 case ShardsHeroAbilityAction:
-                    // Duel: spare-gem utility (draw/heal/banish/scry). Slightly better than
-                    // ending the turn, so greedy play converts leftover gems into value.
-                    return _w[W.EndTurnBase] + 0.05;
-                case ShardsRerollRowAction:
-                    // Duel: digging/denial is situational — kept just below END TURN so
-                    // greedy rollouts never spam it, while tree search still explores it.
-                    return _w[W.EndTurnBase] - 0.01;
+                {
+                    // Duel: spare-gem utility (draw / heal / banish / scry), priced from
+                    // the ability's own effect atoms rather than a constant.
+                    if (player.CharacterId == null ||
+                        !_heroAbilityValue.TryGetValue(player.CharacterId, out double net))
+                        return double.MinValue; // passive or unknown hero: nothing to activate
+                    var spec = ShardsEngine.HeroAbilityInfo(player.CharacterId);
+                    // Life is cheap at full health and near-suicidal when low, so scale the
+                    // health component of the cost by scarcity (Ko Syn Wu pays 3).
+                    if (spec.Health > 0)
+                    {
+                        double scarcity = engine.State.Rules.StartingHealth /
+                                          (double)Math.Max(1, player.Health);
+                        net -= spec.Health * _w[W.Health] * scarcity;
+                    }
+                    // Multiplicative, so a net-negative ability scores BELOW end turn and
+                    // is simply not used. See W.HeroAbilityValueScale.
+                    return net * _w[W.HeroAbilityValueScale];
+                }
+                case ShardsRerollRowAction reroll:
+                {
+                    // Duel: pay a CLIMBING price (1, 2, 3… per turn) to bottom a row card
+                    // and refill. Worth it exactly when the slot is dead — i.e. sits below
+                    // the buy threshold, so we would never spend gems on it anyway.
+                    var card = engine.State.CenterRow[reroll.SlotIndex];
+                    if (card == null) return double.MinValue;
+                    int cost = ShardsEngine.RerollCost(player);
+                    if (player.Gems < cost) return double.MinValue;
+                    int slotCost = Math.Max(1, engine.EffectiveCost(player, card.Def));
+                    double perGem = CardValue(card.Def, player.Mastery) / slotCost;
+                    double deadness = _w[W.BuyThreshold] - perGem; // > 0 ⇒ we'd never buy it
+                    return _w[W.RerollBase] + deadness * _w[W.RerollRowQualityDelta] -
+                           cost * _w[W.Gems];
+                }
                 case ShardsEndTurnAction:
                     return _w[W.EndTurnBase];
                 default:
