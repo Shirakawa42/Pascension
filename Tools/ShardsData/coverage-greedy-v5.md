@@ -1,6 +1,6 @@
 # SoI Action-Space Coverage
 
-- Bots: **bench:greedy-v5** · games 4000 (4000 finished) · DLC mask 15 · 1.6s
+- Bots: **bench:greedy-v5** · games 4000 (4000 finished) · DLC mask 15 · 1.7s
 - A **zero** below is a blind spot: a bug, a scoring hole, or a strategic
   choice that should be stated rather than assumed. Win rate cannot see any of them.
 
@@ -52,6 +52,65 @@
 
 `soi.target` is 0 as expected — auto-resolves with one living opponent (3 sites, all guarded on Count > 1).
 
+## 2b. Hero abilities, per character
+
+A total activation count hides a single hero's ability being dead. Decima's
+"Recruiting" is PASSIVE (a first-buy discount inside EffectiveCost), so it is
+correctly never an action.
+
+| Character | Games drafted | Ability used | Per drafted game |
+|---|---:|---:|---:|
+| (passive) decima | 1,574 | 0 | 0.00 |
+| 🚨 kosynwu | 1,622 | 0 | 0.00 |
+| 🚨 rez | 1,583 | 0 | 0.00 |
+| tetra | 1,654 | 546 | 0.33 |
+| volos | 1,567 | 6,774 | 4.32 |
+
+## 2c. Optional decisions — ever taken, ever declined?
+
+A `Min=0` decision the policy ALWAYS declines is an action it can never take —
+the reroll bug's shape one level down, invisible to an action-type histogram.
+Always-takes is equally suspicious: the choice is not being made.
+
+| Decision | Took | Declined | Verdict |
+|---|---:|---:|---|
+| soi.banish | 13,488 | 11,945 | both |
+| soi.confirm | 1,439 | 0 | ⚠ never declined |
+| soi.copy | 1,588 | 0 | ⚠ never declined |
+| soi.destroy | 1,127 | 0 | ⚠ never declined |
+| soi.keepfast | 1,629 | 0 | ⚠ never declined |
+| soi.maglev | 27 | 0 | ⚠ never declined |
+| soi.removeshop | 0 | 7,432 | 🚨 NEVER taken |
+| soi.reset | 0 | 1,716 | 🚨 NEVER taken |
+| soi.return | 5,970 | 0 | ⚠ never declined |
+| soi.reveal | 20,093 | 0 | ⚠ never declined |
+| soi.shields | 28,984 | 0 | ⚠ never declined |
+| soi.split | 368 | 0 | ⚠ never declined |
+| soi.warp | 24,087 | 0 | ⚠ never declined |
+
+Multi-option decisions — is the choice actually being made, or is it always
+the first option (the `ChooseAnswer` default's signature)?
+
+| Decision | Picked option 0 | Picked another | Verdict |
+|---|---:|---:|---|
+| soi.banish | 196 | 12,639 | chooses |
+| soi.copy | 2,649 | 2,067 | chooses |
+| soi.defiant | 5,847 | 0 | 🚨 ALWAYS the first option |
+| soi.destiny | 691 | 1,957 | chooses |
+| soi.destroy | 558 | 815 | chooses |
+| soi.handpick | 178 | 1,303 | chooses |
+| soi.herodraft | 1,771 | 6,229 | chooses |
+| soi.mode | 5,664 | 0 | 🚨 ALWAYS the first option |
+| soi.recruit | 21 | 97 | chooses |
+| soi.relic | 221 | 783 | chooses |
+| soi.return | 2,018 | 2,857 | chooses |
+| soi.reveal | 5,976 | 0 | 🚨 ALWAYS the first option |
+| soi.split | 3,151 | 22 | chooses |
+| soi.tutor | 475 | 3,119 | chooses |
+| soi.warp | 5,264 | 12,979 | chooses |
+
+| soi.split targeting | 26,491 hit a champion | 15,123 face only | both
+
 ## 3. Cards never acquired
 
 **0 cards were OFFERED but never once ended up owned.** These are
@@ -81,3 +140,6 @@ report's `Win type` line, which reads the terminating event.
 ## 6. Verdict
 
 - ⚠ 1 decision context(s) never reached: soi.scry — either unreachable content, or a card that is never bought.
+- 🚨 **2 hero ability NEVER activated**: kosynwu, rez
+- 🚨 2 optional decision(s) never taken: soi.removeshop, soi.reset
+- 🚨 3 decision(s) ALWAYS pick the first option (unhandled by ChooseAnswer): soi.defiant, soi.mode, soi.reveal

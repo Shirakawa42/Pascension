@@ -42,6 +42,14 @@ namespace SoiSim
             public readonly ConcurrentCounter OfferedInGames = new();
             public readonly ConcurrentCounter OwnedAtEnd = new();
             public readonly ConcurrentCounter WinType = new();
+            /// <summary>Hero ability activations keyed by character — a total hides that one
+            /// specific hero's ability is dead (Rez's Scry is, measurably).</summary>
+            public readonly ConcurrentCounter HeroByChar = new();
+            public readonly ConcurrentCounter CharDrafted = new();
+            /// <summary>"context|took" / "context|declined" — an OPTIONAL decision the bot
+            /// always declines is an action it can never take, one level below the action
+            /// histogram. That is the reroll bug's shape again, inside a decision.</summary>
+            public readonly ConcurrentCounter Branch = new();
             public int Games, Finished;
         }
 
@@ -111,8 +119,9 @@ namespace SoiSim
                     var pending = adapter.PendingInput;
                     if (pending == null) break;
 
-                    if (pending.Kind == PendingInputKind.Decision)
-                        tally.Contexts.Add(pending.Decision.Context ?? "(null)");
+                    var request = pending.Kind == PendingInputKind.Decision ? pending.Decision : null;
+                    if (request != null)
+                        tally.Contexts.Add(request.Context ?? "(null)");
                     else
                         foreach (var card in adapter.Inner.State.CenterRow)
                             if (card != null) offered.Add(card.DefId);
@@ -139,6 +148,34 @@ namespace SoiSim
                             if (card != null) tally.Played.Add(card.DefId);
                             break;
                         }
+                        case ShardsHeroAbilityAction:
+                            tally.HeroByChar.Add(
+                                adapter.Inner.State.Players[pending.PlayerIndex].CharacterId ?? "(none)");
+                            break;
+                        case SubmitDecisionAction submit when request != null:
+                        {
+                            int chosen = submit.Answer?.ChosenOptionIds?.Count ?? 0;
+                            // Only OPTIONAL decisions carry a real take/decline choice; a
+                            // Min>0 decision is forced and "declined" would be meaningless.
+                            if (request.Min == 0)
+                                tally.Branch.Add($"{request.Context}|{(chosen > 0 ? "took" : "declined")}");
+                            // A FORCED decision over several options can still be blind: the
+                            // ChooseAnswer default adds Options[0..Min), so an unhandled
+                            // context always picks the first option and the other branches
+                            // never appear in any game or any training position.
+                            if (chosen == 1 && request.Options.Count > 1)
+                            {
+                                int idx = request.Options.FindIndex(
+                                    o => o.Id == submit.Answer.ChosenOptionIds[0]);
+                                tally.Branch.Add($"{request.Context}|pick{(idx == 0 ? "0" : "N")}");
+                            }
+                            if (request.Context == "soi.split")
+                                tally.Branch.Add(submit.Answer != null &&
+                                                 submit.Answer.ChosenOptionIds.Exists(id => id >= 100000)
+                                    ? "soi.split|hits a champion"
+                                    : "soi.split|face only");
+                            break;
+                        }
                     }
 
                     if (!adapter.Submit(action).Accepted &&
@@ -147,6 +184,8 @@ namespace SoiSim
                 }
 
                 foreach (string def in offered) tally.OfferedInGames.Add(def);
+                foreach (var p in adapter.Inner.State.Players)
+                    if (p.CharacterId != null) tally.CharDrafted.Add(p.CharacterId);
                 if (adapter.GameOver)
                 {
                     Interlocked.Increment(ref finished);
@@ -280,6 +319,73 @@ namespace SoiSim
             }
             sb.AppendLine();
 
+            sb.AppendLine("## 2b. Hero abilities, per character");
+            sb.AppendLine();
+            sb.AppendLine("A total activation count hides a single hero's ability being dead. Decima's");
+            sb.AppendLine("\"Recruiting\" is PASSIVE (a first-buy discount inside EffectiveCost), so it is");
+            sb.AppendLine("correctly never an action.");
+            sb.AppendLine();
+            var heroByChar = t.HeroByChar.Merge();
+            var drafted = t.CharDrafted.Merge();
+            sb.AppendLine("| Character | Games drafted | Ability used | Per drafted game |");
+            sb.AppendLine("|---|---:|---:|---:|");
+            var deadHeroes = new List<string>();
+            foreach (var kv in drafted.OrderBy(k => k.Key))
+            {
+                long uses = heroByChar.TryGetValue(kv.Key, out long u) ? u : 0;
+                bool passive = kv.Key == "decima";
+                if (uses == 0 && !passive) deadHeroes.Add(kv.Key);
+                string mark = uses == 0 ? (passive ? "(passive) " : "🚨 ") : "";
+                sb.AppendLine($"| {mark}{kv.Key} | {kv.Value:N0} | {uses:N0} | " +
+                              $"{(double)uses / Math.Max(1, kv.Value):F2} |");
+            }
+            sb.AppendLine();
+
+            sb.AppendLine("## 2c. Optional decisions — ever taken, ever declined?");
+            sb.AppendLine();
+            sb.AppendLine("A `Min=0` decision the policy ALWAYS declines is an action it can never take —");
+            sb.AppendLine("the reroll bug's shape one level down, invisible to an action-type histogram.");
+            sb.AppendLine("Always-takes is equally suspicious: the choice is not being made.");
+            sb.AppendLine();
+            var branch = t.Branch.Merge();
+            var branchCtx = branch.Keys.Select(k => k.Split('|')[0]).Distinct().OrderBy(x => x);
+            sb.AppendLine("| Decision | Took | Declined | Verdict |");
+            sb.AppendLine("|---|---:|---:|---|");
+            var oneSided = new List<string>();
+            foreach (string ctx in branchCtx)
+            {
+                long took = branch.TryGetValue($"{ctx}|took", out long a) ? a : 0;
+                long dec = branch.TryGetValue($"{ctx}|declined", out long b) ? b : 0;
+                if (took + dec == 0) continue;
+                string verdict = took == 0 ? "🚨 NEVER taken" : dec == 0 ? "⚠ never declined" : "both";
+                if (took == 0) oneSided.Add(ctx);
+                sb.AppendLine($"| {ctx} | {took:N0} | {dec:N0} | {verdict} |");
+            }
+            sb.AppendLine();
+            sb.AppendLine("Multi-option decisions — is the choice actually being made, or is it always");
+            sb.AppendLine("the first option (the `ChooseAnswer` default's signature)?");
+            sb.AppendLine();
+            sb.AppendLine("| Decision | Picked option 0 | Picked another | Verdict |");
+            sb.AppendLine("|---|---:|---:|---|");
+            var alwaysFirst = new List<string>();
+            foreach (string ctx in branchCtx)
+            {
+                long p0 = branch.TryGetValue($"{ctx}|pick0", out long x) ? x : 0;
+                long pn = branch.TryGetValue($"{ctx}|pickN", out long y) ? y : 0;
+                if (p0 + pn == 0) continue;
+                if (pn == 0) alwaysFirst.Add(ctx);
+                sb.AppendLine($"| {ctx} | {p0:N0} | {pn:N0} | " +
+                              (pn == 0 ? "🚨 ALWAYS the first option" : "chooses") + " |");
+            }
+            sb.AppendLine();
+
+            long champHit = branch.TryGetValue("soi.split|hits a champion", out long ch) ? ch : 0;
+            long faceOnly = branch.TryGetValue("soi.split|face only", out long fo) ? fo : 0;
+            if (champHit + faceOnly > 0)
+                sb.AppendLine($"| soi.split targeting | {champHit:N0} hit a champion | {faceOnly:N0} face only | " +
+                              (champHit == 0 ? "🚨 never attacks the board" : "both"));
+            sb.AppendLine();
+
             sb.AppendLine("## 3. Cards never acquired");
             sb.AppendLine();
             var neverBought = new List<(string Def, long Offered)>();
@@ -358,8 +464,18 @@ namespace SoiSim
                               " — either unreachable content, or a card that is never bought.");
             if (neverBought.Count > 0)
                 sb.AppendLine($"- ⚠ {neverBought.Count} card(s) offered but never acquired.");
-            if (missingActions.Count == 0 && missingContexts.Count == 0 && neverBought.Count == 0)
-                sb.AppendLine("- ✅ Full coverage: every action, every context, every card.");
+            if (deadHeroes.Count > 0)
+                sb.AppendLine($"- 🚨 **{deadHeroes.Count} hero ability NEVER activated**: " +
+                              string.Join(", ", deadHeroes));
+            if (oneSided.Count > 0)
+                sb.AppendLine($"- 🚨 {oneSided.Count} optional decision(s) never taken: " +
+                              string.Join(", ", oneSided));
+            if (alwaysFirst.Count > 0)
+                sb.AppendLine($"- 🚨 {alwaysFirst.Count} decision(s) ALWAYS pick the first option " +
+                              "(unhandled by ChooseAnswer): " + string.Join(", ", alwaysFirst));
+            if (missingActions.Count == 0 && missingContexts.Count == 0 && neverBought.Count == 0 &&
+                deadHeroes.Count == 0 && oneSided.Count == 0 && alwaysFirst.Count == 0)
+                sb.AppendLine("- ✅ Full coverage: every action, context, card, hero and decision branch.");
             return sb.ToString();
         }
     }
