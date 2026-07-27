@@ -591,3 +591,121 @@ effort and the last one.
 - **2026-07-27 17:11** — fit 151,873 positions: holdout 65.6 % vs baseline 62.1 %
 - **2026-07-27 17:12** — fit 151,873 positions: holdout 63.4 % vs baseline 62.1 %
 - **2026-07-27 17:13** — fit 151,873 positions: holdout 64.3 % vs baseline 62.1 %
+- **2026-07-27 17:30** — fit 101,112 positions: holdout 61.4 % vs baseline 61.7 %
+- **2026-07-27 17:30** — fit 101,112 positions: holdout 61.4 % vs baseline 61.7 %
+- **2026-07-27 17:31** — fit 101,112 positions: holdout 61.4 % vs baseline 61.7 %
+- **2026-07-27 17:31** — fit 101,112 positions: holdout 61.4 % vs baseline 61.7 %
+- **2026-07-27 17:32** — fit 101,112 positions: holdout 61.4 % vs baseline 61.7 %
+- **2026-07-27 17:39** — rank 16 points / 270 sibling pairs: policy pick truth-best 12.5 %, headroom/decision rolloutCV +0.035 · L1 -0.008 · L0 -0.008 · clock -0.008; L1 pair-agreement 40.0 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 17:39** — rank 16 points / 270 sibling pairs: policy pick truth-best 12.5 %, headroom/decision rolloutCV +0.035 · L1 -0.008 · L0 -0.008 · clock -0.008; L1 pair-agreement 40.0 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 17:39** — rank 16 points / 270 sibling pairs: policy pick truth-best 12.5 %, headroom/decision rolloutCV +0.035 · L1 -0.008 · L0 -0.008 · clock -0.008; L1 pair-agreement 40.0 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 17:40** — rank 900 points / 19208 sibling pairs: policy pick truth-best 24.0 %, headroom/decision rolloutCV +0.002 · L1 +0.002 · L0 +0.002 · clock +0.002; L1 pair-agreement 88.6 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 17:46** — rank 16 points / 483 sibling pairs: policy pick truth-best 37.5 %, headroom/decision rolloutCV -0.035 · L1 -0.086 · L0 +0.000 · clock -0.070; L1 pair-agreement 67.1 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 17:47** — rank 894 points / 40050 sibling pairs: policy pick truth-best 45.2 %, headroom/decision rolloutCV +0.012 · L1 -0.015 · L0 -0.012 · clock -0.029; L1 pair-agreement 64.1 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 17:52** — probe: basket vs bench:greedy-v5 → 50.0 % [29.3 %–70.7 %] paired over 10 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-27 17:55** — probe: basket vs bench:greedy-v5 → 39.3 % [34.4 %–44.1 %] paired over 200 pairs
+- **2026-07-27 18:01** — probe: basket vs bench:greedy-v5 → 50.0 % [45.6 %–54.4 %] paired over 200 pairs
+- **2026-07-27 18:01** — rank 894 points / 40050 sibling pairs: policy pick truth-best 45.2 %, headroom/decision rolloutCV +0.012 · L1 -0.015 · L0 -0.012 · clock -0.029; L1 pair-agreement 64.1 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 18:08** — probe: basket vs bench:greedy-v5 → 52.1 % [50.4 %–53.8 %] paired over 1224 pairs · SPRT H1 accepted (>= 15 Elo)
+
+## 2026-07-27 evening — the loop is trustworthy, and the planner question is now measured
+
+The handoff's three problems, all closed the same way: build the instrument first, let it
+pick the design.
+
+### 1. `fit` is now deterministic to the digit (problem 2 — closed)
+
+The ±1-point run-to-run wobble was scheduler order. Game CONTENT was already reproducible —
+the fixed-weight baseline read identically across every wobbling run, which localized the
+fault to collection order: a ConcurrentBag fed the gradient accumulator in whatever order
+threads finished, and with lr 0.5 held for 4000 epochs, non-associative float addition
+amplified last-ulp differences into whole points of holdout accuracy. Samples now land in a
+per-game slot array merged in seed order. Verified: two runs byte-identical including all 22
+weights; threads=1 equals threads=15 (which also clears the suspected shared-model and
+lazy-cache races — there are none). The loop can now adjudicate a feature change.
+
+### 2. `soisim rank` — the sibling-ranking harness (problem 3 — built, and it decided everything)
+
+Holdout accuracy asks "who wins from a random position". A planner asks a different question:
+"rank the end-of-turn leaves of MY candidate turns" — siblings that differ by a card or two.
+The new harness measures exactly that, with rollout ground truth (96 CRN rollouts per leaf,
+re-determinized, V5 both seats), leaves built by the planner's own code path, and a
+cross-validated HEADROOM number: the truth uplift of replacing V5's pick with each scorer's
+pick — selection on one half-sample, valuation on the other, so noise cannot flatter it.
+
+Action granularity (900 points, 19,208 pairs, frozen tail):
+
+| | value |
+|---|---|
+| mean \|Δtruth\| between siblings | 0.033 |
+| top-2 truth gap at the decision margin | **0.013** |
+| headroom/decision: rollout-CV(32) | +0.002 |
+| headroom/decision: L1 / L0 / clock | +0.002 / +0.002 / +0.002 |
+| L1 pairwise agreement, \|Δ\|∈[0.10,0.20) | 88.6% |
+
+Read it carefully — it acquits the evaluator and convicts the granularity. L1 ranks siblings
+fine when they truly differ (88.6% at Δ≥0.10, 95.8% at Δ≥0.20 — better than the policy's own
+ordering). But at the actual decision margin siblings differ by 0.013, and headroom is +0.002
+for EVERY selector including perfect-information rollouts: V5's pick is already near-best
+among first-action deviations. That is the real autopsy of ShardsPlannerBot's 12.7% — not a
+bad evaluator, a unit of search with no headroom in it. No evaluator improvement can rescue
+this granularity; there is nothing there to win.
+
+Basket granularity (894 points, 40,050 pairs — siblings are complete purchase baskets run by
+a constrained tail, the natural V5 turn as incumbent, leaf-dedup by state hash):
+
+| | value |
+|---|---|
+| mean \|Δtruth\| between siblings | **0.060** |
+| top-2 truth gap | 0.029 |
+| headroom/turn: rollout-CV(48) | **+0.012** |
+| headroom/turn: L1 / L0 / clock | **−0.015 / −0.012 / −0.029** |
+| V5's natural turn is truth-best | 45.2% of points |
+
+Two conclusions, both decisive:
+- **Static-eval steering is dead at every granularity.** All three evaluators have NEGATIVE
+  basket headroom — worse than just playing V5's turn (their pairwise agreement also sags to
+  62–72% on basket siblings: baskets differ by deck-composition deltas the linear features
+  under-resolve).
+- **Rollout-scored baskets are the only selector measured with positive headroom** (+0.012
+  win-prob per turn) — and the ablation's 84–92% buy-share is why: baskets are where the
+  game is.
+
+### 3. The basket planner (problem 1 — built from the measurements, gated honestly)
+
+`ShardsBasketPlannerBot` ("basket" kind): at each of MY turn starts, enumerate ~15 spend-sets
+(the natural V5 turn always candidate 0; nothing; singletons; top pairs; focus/hero combos;
+top triple), simulate each to its end-of-turn leaf on determinized CRN forks, score the
+leaves by terminal rollouts (per-world leaf-dedup by hash), execute the winner through a
+state-driven cursor. It shares its enumeration, turn-execution and rollout code with the
+harness — the measured thing IS the shipped thing.
+
+**v1 failed its 6-second gate: 39.3% [34.4–44.1], −76 Elo** (n=400; process rule 3 caught in
+three minutes what the last campaign took six days to see). Mechanism, straight from the
+harness numbers: argmax over ~15 estimates whose noise (se≈0.07) exceeds the median true gap
+(0.029) deviates from V5 on noise nearly every turn — and it did so from round 1, though the
+harness only ever measured round ≥4. Crowning noise, in an unmeasured domain.
+
+v1.1 added exactly the rails that failure implies: no search before round 4 (openings stay
+pure V5); two-stage CRN refinement (screen everything on 8 rollouts/world, decide the
+finalists on 24 FRESH rollouts/world — the same selection/valuation split the harness uses);
+and a deviation margin (a challenger must beat the natural turn by 0.05 on the deciding
+sample; margin → ∞ degenerates to exactly V5, so the downside is bounded by construction).
+
+Results, both on the frozen benchmark:
+- re-gate n=400: **50.0% [45.6–54.4]** — the −76 Elo is gone, the rails hold;
+- **SPRT: H1 accepted (≥15 Elo) at 1210 pairs, LLR 2.95 — 52.1% [50.4–53.8] over 1224
+  pairs, +14 Elo**, at 14 ms/decision average think.
+
+The first planner in either campaign to beat the tuned greedy on a properly powered paired
+probe. Honest framing: +14 Elo is real but small — the rails mean the bot plays V5 almost
+everywhere and deviates only where the deciding sample clears the margin — and the think
+budget is barely touched (the search runs once per turn; the 200–500 ms/decision envelope
+could fund several times the rollouts). This is NOT Gate A: the shipping bar remains beating
+full-rollout ISMCTS (bench:rollout-1200/4800) head-to-head at equal wall-clock, n≥2000.
+
+### Instruments added
+
+`soisim rank` (actions + baskets modes) with SoiSimRankTests pinning bit-reproducibility,
+thread-count invariance and basket mode; SoiSimBasketBotTests pinning termination,
+determinism and the natural-basket-first contract. Suite: 272 green.

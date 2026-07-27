@@ -45,6 +45,8 @@ namespace SoiSim
                         return CoverageCommand.Run(cli);
                     case "fit":
                         return FitCommand.Run(cli);
+                    case "rank":
+                        return RankCommand.Run(cli);
                     case "dump-positions":
                         return DumpPositionsCommand.Run(cli);
                     case "smoke":
@@ -82,6 +84,11 @@ namespace SoiSim
             Console.WriteLine("               (buy-vs-play Elo attribution — which axis carries the strength)");
             Console.WriteLine("  soisim coverage [--bots kind] [--games 4000] [--out path.md]");
             Console.WriteLine("               (what does this policy NEVER do — actions, contexts, cards)");
+            Console.WriteLine("  soisim rank  [--games 100] [--rollouts 64] [--points-per-game 6] [--stride 2]");
+            Console.WriteLine("               [--topk 0] [--tail frozen|greedy] [--siblings actions|baskets]");
+            Console.WriteLine("               [--min-round 4] [--seed-base 880000]");
+            Console.WriteLine("               (do the evaluators rank SIBLING candidate turns correctly — the");
+            Console.WriteLine("                planner precondition; headroom column decides if reranking can win)");
             Console.WriteLine("  soisim dump-positions [--games 12] [--sample 2] [--min-round 3]");
             Console.WriteLine("  soisim smoke");
             Console.WriteLine();

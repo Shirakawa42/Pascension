@@ -173,12 +173,23 @@ namespace Shards.Bots
                 "strong-fast" => new ShardsSearchBot(seed, engine,
                     ShardsSearchConfig.ForRealGames(0.25), Model.Value),
 
-                // The Phase 2 candidate: turn-level planning scored by the clock evaluator.
-                // NOT a minted rank and not selectable in game until it clears Gate A —
-                // beating full-rollout ISMCTS head-to-head at equal WALL-CLOCK.
+                // RETIRED negative result: 1-step lookahead on a static evaluator. `soisim
+                // rank` measured why it can never work — sibling end-of-turn leaves differ
+                // by 0.013 true win-prob at the decision margin, below any evaluator's
+                // resolution. Kept resolvable so the campaign log's probes stay
+                // reproducible; never mint it.
                 "planner" => new ShardsPlannerBot(seed, engine, Model.Value),
                 "planner-w8" => new ShardsPlannerBot(seed, engine, Model.Value,
                     config: new ShardsPlannerConfig { Worlds = 8 }),
+
+                // The Phase 2 candidate: whole-turn PURCHASE BASKETS scored by terminal
+                // rollouts — the only selector `soisim rank` measured with positive
+                // headroom (+0.012/turn; every static evaluator measured negative). NOT a
+                // minted rank until it clears Gate A — beating full-rollout ISMCTS
+                // head-to-head at equal WALL-CLOCK.
+                "basket" => new ShardsBasketPlannerBot(seed, engine, Model.Value),
+                "basket-96" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
+                    new ShardsBasketPlannerConfig { Worlds = 2, RolloutsPerWorld = 48 }),
 
                 // --- frozen benchmark ladder (see the block comment above) ---
                 "bench:heuristic" => new ShardsHeuristicBot(seed, engine),
@@ -197,6 +208,7 @@ namespace Shards.Bots
         /// "strong"* tooling kinds, and the rollout benchmarks).</summary>
         public static bool IsSearchKind(string kind) =>
             Find(kind)?.IsSearch ??
-            kind is "strong" or "strong-fast" or "bench:rollout-1200" or "bench:rollout-4800";
+            kind is "strong" or "strong-fast" or "bench:rollout-1200" or "bench:rollout-4800"
+                or "basket" or "basket-96";
     }
 }

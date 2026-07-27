@@ -9,7 +9,7 @@ on branch `soi-ai-rebuild`. Read `.claude/skills/shards-engine/SKILL.md` and
 `.claude/skills/project-map/SKILL.md` first, then `Tools/ShardsData/campaign-log.md` from the
 `2026-07-27` heading down — that is the full record, including every negative result.
 
-Verify with `cd Tools/EngineVerify && dotnet test --nologo` (266 tests, all green — keep them
+Verify with `cd Tools/EngineVerify && dotnet test --nologo` (272 tests, all green — keep them
 green). The sim CLI is `dotnet run -c Release --project Tools/SoiSim -- <cmd>`.
 
 ## The goal
@@ -18,90 +18,115 @@ The strongest possible duel bot, trainable locally, fast enough to ship with a "
 stronger" knob at **200–500 ms per decision**. The training must be able to discover any
 playstyle by itself rather than have one hand-coded.
 
+## State as of 2026-07-27 evening — the three handoff problems are closed
+
+1. **`soisim fit` is deterministic to the digit.** The wobble was ConcurrentBag collection
+   order feeding gradient accumulation; samples now merge in game-seed order. Two runs are
+   byte-identical, and threads=1 == threads=15 (no shared-state races). The loop can now
+   adjudicate a feature change.
+2. **`soisim rank` exists — the sibling-ranking harness — and it settled the planner design.**
+   It builds every candidate turn's end-of-turn leaf with the bot's own code, ground-truths
+   each leaf with CRN terminal rollouts, and reports cross-validated HEADROOM (truth uplift
+   of replacing V5's pick; selection on one half-sample, valuation on the other).
+   - Action-granularity: top-2 truth gap **0.013**, headroom ≈ **+0.002/decision for every
+     selector** — nothing to win. This acquits the evaluator (L1 ranks genuinely-different
+     siblings at 88–96%) and convicts the granularity; it is the real autopsy of the old
+     eval planner's 12.7%.
+   - Basket-granularity: mean |Δtruth| **0.060**, rollout-CV headroom **+0.012/turn**,
+     static-eval headroom **negative** (L1 −0.015). Rollout-scored baskets are the ONLY
+     measured-positive selector. Do not revive eval-steered planning; do not gate anything
+     on holdout accuracy.
+3. **`ShardsBasketPlannerBot` (kind `basket`) works and beats the frozen benchmark.**
+   Whole-turn purchase-basket search: ~15 spend-sets at each of MY turn starts, leaves on
+   determinized CRN forks, terminal-rollout scoring with per-world leaf-dedup, state-driven
+   cursor execution. Three rails, each earned by a failed gate (v1 was 39.3%, −76 Elo):
+   MinRound 4 (openings stay pure V5 — the harness never measured rounds 1–3), two-stage
+   CRN refinement (screen 8/world → decide finalists on 24 FRESH/world), DeviationMargin
+   0.05 vs the natural turn (margin → ∞ degenerates to exactly V5: bounded downside).
+   **Gate result: SPRT H1 accepted (≥15 Elo) at 1210 pairs — 52.1% [50.4–53.8] over 1224
+   pairs, +14 Elo vs bench:greedy-v5**, at ~14 ms/decision average. First planner in either
+   campaign to beat tuned greedy on a properly powered probe.
+
 ## Hard measurements — treat these as constraints, not opinions
 
 | Fact | Value | Consequence |
 |---|---|---|
-| Clairvoyance (perfect-info oracle vs identical honest agent) | **+38 Elo**, n=1000 paired | Hidden info is nearly worthless. Spend nothing on belief modelling. Deck *contents* are public; only the shuffle is hidden. |
-| Buy axis vs play axis (`soisim ablation`) | **buy 126–209 Elo, play 11–39** | Acquisition carries **84–92%** of strength. Search should go wide over purchase baskets, narrow over play orderings. |
-| Axes are co-adapted | interaction −15 to −82 Elo | Never ship a mismatched play/buy pair; tune them jointly. |
-| ISMCTS crossover | 300 it = 21.2% vs instant greedy; ~1200 it = break-even; then ~115 Elo/doubling | Below the crossover, more search is **worse than none**. |
-| Overwhelm (M30 + Infinity Shard) wins | **51.1%** for tuned V5, **5.7%** for the heuristic, identical rules | The mastery race is a property of GOOD PLAY, not of the ruleset. Confirmed by human match history (both humans Focus 5–10×/game, M10 by round 7–9). |
-| Engine throughput | 1051 games/s single-thread, 287 submits/game (~3.3 µs/submit), 11.4× on 15 threads | Training throughput is not the bottleneck. |
-| Old neural ladder | shipped DIAMOND scored **8.5% vs BRONZE** (−410 Elo) | Deleted. Do not resurrect. |
+| Clairvoyance (oracle vs honest) | +38 Elo, n=1000 paired | Spend nothing on hidden info. |
+| Buy vs play axis (`soisim ablation`) | buy 126–209 Elo, play 11–39 | Acquisition carries 84–92% of strength. |
+| Sibling headroom at ACTION granularity | +0.002/decision, all selectors | 1-step lookahead can never beat V5, with any evaluator. Retired. |
+| Sibling headroom at BASKET granularity | rollout +0.012/turn; static evals NEGATIVE | Search baskets, score with rollouts only. |
+| Basket planner v1 (no rails) | 39.3%, −76 Elo | Argmax over noisy estimates deviates on noise; act only in the measured domain, decide on fresh samples, require a margin. |
+| Basket planner v1.1 (rails) | **52.1% [50.4–53.8], SPRT H1, n=1224 pairs** | Real but small. Budget barely touched (~14 ms/decision). |
+| ISMCTS crossover | ~1200 it break-even vs greedy; +115 Elo/doubling above | The wall-clock bar the basket bot must eventually beat. |
+| Engine throughput | ~1050 games/s single-thread | Rollouts are cheap; the 200–500 ms envelope funds thousands. |
+| Old neural ladder | −410 Elo, deleted | Do not resurrect. |
 
 ## What works and is worth keeping
 
-- **`soisim fit`** — logistic regression (Texel tuning) of ~22 weights over analytic features
-  to game outcomes. 152k positions in <3 s. Convex, no generations, no collapse. Beats the
-  health+mastery baseline every run (63–65% vs 62.1%). `ShardsEvalFeatures` +
-  `ShardsLinearEval` + `ShardsEvalLinearWeights.g.cs`.
-- **`soisim coverage`** — finds what a policy NEVER does (actions, decision branches, hero
-  abilities, cards). It has already caught six dead branches that win-rate testing cannot see,
-  because a blind spot shared by both seats is invisible to win rate by construction.
-- **`soisim ablation`** — buy-vs-play Elo attribution.
-- **`soisim probe`** — paired, seat-mirrored, SPRT. The only trustworthy strength instrument.
-- **Frozen benchmark**: `bench:heuristic`, `bench:greedy-v5`, `bench:rollout-1200`,
-  `bench:rollout-4800`, pinned by tests including a 353-move play fingerprint.
-- `ShardsDeckStats` — analytic per-deck rates (gems/power/mastery/draws per turn, D as a fixed
-  point, faction composition, Unify liveness, board output kept OUTSIDE the deck cycle).
+- **`soisim probe`** (paired, seat-mirrored, SPRT) — the only trustworthy strength instrument.
+- **`soisim rank`** — sibling-ranking harness; run it BEFORE building any new selector.
+  Modes: `--siblings actions|baskets`, `--tail frozen|greedy`. Deterministic (pinned by tests).
+- **`soisim fit`** — now-deterministic Texel tuning of the 22 linear eval weights. The
+  evaluator's remaining use is screening/analysis, NOT steering search (measured negative).
+- **`soisim coverage` / `ablation`** — blind-spot detector / axis attribution.
+- **Frozen benchmark ladder** `bench:heuristic | bench:greedy-v5 | bench:rollout-1200 |
+  bench:rollout-4800` — never change these.
+- **Shared code discipline**: the rank harness builds leaves with ShardsBasketPlannerBot's
+  own statics (EnumerateBaskets / RunToTurnEnd / RolloutToTerminal / ShardsBasketCursor).
+  Keep it that way — the measured thing must be the shipped thing.
 
-## The three open problems, in priority order
+## Open problems, in priority order
 
-### 1. The planner does not work, and the evaluator is not why
-`ShardsPlannerBot` scores **12.7%** against instant greedy. Improving evaluation accuracy from
-58.1% to ~64% moved it only 11.7% → 12.7% — nine points of evaluator bought one point of play.
-So the search design is wrong, not what it steers by.
+### 1. Grow the basket bot's edge (+14 Elo → something worth shipping)
+The budget is barely used: the search runs once per turn (~200 ms) while cursor steps are
+free, so per-DECISION average is 14 ms against a 200–500 ms envelope. Levers, cheapest first,
+each gated by `probe --a <candidate> --b bench:greedy-v5 --games 400 --allow-small` then SPRT:
+- **More deciding rollouts** (`basket-96` kind exists: 2×48) — noise se scales 1/√n and the
+  margin can then shrink; re-measure the margin/rollout pair jointly.
+- **Wider basket space**: pairs+focus, triple+focus are MISSING today (V5's real turns often
+  buy AND focus, so challengers are handicapped vs natural); reroll-then-buy baskets;
+  destiny/relic-aware baskets.
+- **Search rounds 1–3** — but ONLY after extending `soisim rank` to measure opening turns
+  (`--min-round 1`); v1's collapse shows what acting unmeasured costs.
+- **Margin/refinement tuning**: stage-2 CRN pairing means the margin could key off the
+  PAIRED diff se rather than a constant 0.05.
 
-Current design: for each candidate action, fork → submit → complete the turn with free
-(non-gem-spending) actions → evaluate the end-of-turn leaf. Two ideas not yet tried:
-- **Rank the tuned policy's top-k candidates instead of replacing it.** V5 is a strong
-  hand-tuned policy refined over 1.2M games; replacing its entire action selection with a
-  1-step lookahead on a 64%-accurate evaluator plausibly loses more than it gains. ISMCTS
-  *uses* V5 as prior and rollout policy and beats it above 1200 iterations.
-- **Enumerate complete purchase BASKETS**, per the original plan — that is where 84–92% of the
-  strength was measured, and two baskets differ substantially at the leaf, whereas
-  first-action-plus-greedy-tail differences wash out.
+### 2. Gate A — the reason this line of work exists
+Beat full-rollout ISMCTS head-to-head at **equal wall-clock**, paired, SPRT, n≥2000:
+`bench:rollout-1200` first (it is break-even vs greedy, so basket+14 may already beat it
+cheaply — measure, don't assume), then `bench:rollout-4800`. Only after Gate A does the
+basket bot deserve a rank.
 
-### 2. `soisim fit` has ~1 point of unexplained run-to-run variance
-Raising epochs 400 → 4000 narrowed it but did not remove it, so something in the parallel
-collection is not reproducible. **Until this is fixed the loop cannot adjudicate a 2-point
-feature change.** Suspects: shared `ShardsValueModel` across threads, `ConcurrentBag` ordering
-feeding gradient accumulation in a different order each run, lazy caches in `ShardsCardStatics`
-or `ShardsState.FindCard`. Fix by making collection deterministic (per-thread ordered buffers
-merged by game seed) and confirming two runs agree to the digit.
-
-### 3. Mid-game prediction has a low ceiling — know what the metric can and cannot say
-~40% of wins are comebacks, so a static evaluator scoring mid-game positions caps somewhere
-near 65%. Accuracy is a fast *screening* tool, not a strength gate. The real question for a
-planner is whether the evaluator RANKS SIBLING candidate turns correctly, which is not the same
-thing and is not yet measured. Consider building that harness before tuning the evaluator
-further.
+### 3. Then: joint retune under the planner
+V5's weights were tuned for pure-greedy play; the basket bot changes the state distribution
+its own rollouts see. A CMA-ES retune with the basket bot in the loop (expensive) — or at
+least re-run `soisim rank` with the retuned vector — before any mint.
 
 ## Process rules, each learned expensively here
 
 1. **Measure strength against a FROZEN external benchmark**, never champion-vs-challenger only.
-   Non-transitive cycling is what let nine neural generations all read ~50% while the shipped
-   agent was −410 Elo.
-2. **Never gate on a proxy.** Validation accuracy killed the last campaign; structural elegance
-   killed my clock evaluator (58.1% against a naive two-term baseline's 64.7%). Gate on
-   outcomes.
-3. **Run the cheap disqualifying probe FIRST.** New agent vs `bench:greedy-v5` at n=400 costs
-   ~6 seconds and would have saved the previous campaign six days.
-4. **n≥2000 paired with SPRT before any claim.** n=120 unpaired has a ±9 point half-width.
-5. **A zero in coverage is a question, not a verdict.** Investigate, then measure. Rez's dead
-   Scry was measured at +3 Elo and correctly left alone; Ko Syn Wu's needed a structural fix.
-6. **Distrust a good number.** A 67.5% accuracy that looked great was label leakage from a
-   thread-order-dependent train/test split.
-7. Any card/rules change updates the `shards-cards` registry, `LocFrench.cs`, and a dated EN+FR
-   `Changelog.cs` entry in the same commit.
+2. **Never gate on a proxy.** Validation accuracy killed the last campaign; structural
+   elegance killed the clock evaluator; and holdout accuracy said nothing about sibling
+   ranking — `soisim rank` exists because the proxy was measured to be the wrong question.
+3. **Run the cheap disqualifying probe FIRST.** n=400 costs ~2 minutes and killed basket v1
+   before a day was spent on it.
+4. **n≥1000 paired with SPRT before any claim; n≥2000 to publish.**
+5. **A zero in coverage is a question, not a verdict.**
+6. **Distrust a good number.** The 67.5% fit accuracy was a thread-order train/test leak.
+7. **Act only inside the measured domain.** Basket v1 searched rounds 1–3, which rank had
+   never measured, and paid −76 Elo for it.
+8. Any card/rules change updates the `shards-cards` registry, `LocFrench.cs`, and a dated
+   EN+FR `Changelog.cs` entry in the same commit.
 
 ## Suggested first moves
 
-1. Fix problem 2 (fit determinism) — everything downstream depends on trusting that number.
-2. Build the sibling-ranking harness from problem 3.
-3. Then attack problem 1 with the "rank the tuned policy's top-k" idea, gating on
-   `probe --a <new> --b bench:greedy-v5 --games 400 --allow-small` before anything else.
+1. `probe --a basket-96 --b bench:greedy-v5 --games 400 --allow-small` — does doubling the
+   deciding sample move the point estimate? (Then SPRT if yes.)
+2. Add the missing focus-combo baskets, re-run `soisim rank --siblings baskets` to confirm
+   headroom rises, then gate the enlarged space.
+3. First Gate A skirmish: `probe --a basket --b bench:rollout-1200 --games 400 --allow-small`
+   — bench:rollout-1200 is ~break-even vs greedy, so basket+14 may already beat it at a
+   fraction of the wall-clock. Quote both think times in the log line.
 
-Do not ship any evaluator into a bot until it beats full-rollout ISMCTS head-to-head at equal
-**wall-clock**, paired, SPRT, n≥2000. That bar is the whole reason this rewrite exists.
+Do not mint any rank from the basket bot until it clears Gate A. That bar is the whole
+reason this rewrite exists.

@@ -154,10 +154,23 @@ namespace Shards.Bots
             //
             // The bot is not limited to one purchase a turn: it re-plans at the next priority
             // point, so baskets are built one fully-evaluated step at a time.
+            CompleteTurn(fork, me, _model, freeOnly: true, _config.MaxTurnSubmits);
+            return _eval.Evaluate(fork.State, me);
+        }
+
+        /// <summary>Drives <paramref name="fork"/> until the active player's turn is over
+        /// (or the game ends). Decisions resolve through the tuned model either way;
+        /// <paramref name="freeOnly"/> selects the tail policy — true withholds all
+        /// gem-spending actions ("if this is my last spend, where do I land"), false
+        /// completes with the full greedy policy. Shared with the `soisim rank` harness so
+        /// the leaf construction it measures is EXACTLY the one the planner uses.</summary>
+        public static void CompleteTurn(ShardsEngine fork, int me, ShardsValueModel model,
+            bool freeOnly, int maxSubmits)
+        {
             int submits = 0;
             while (!fork.State.GameOver &&
                    fork.State.TurnPlayerIndex == me &&
-                   submits++ < _config.MaxTurnSubmits)
+                   submits++ < maxSubmits)
             {
                 var next = fork.PendingInput;
                 if (next == null) break;
@@ -166,22 +179,24 @@ namespace Shards.Bots
                     action = new SubmitDecisionAction
                     {
                         PlayerIndex = next.PlayerIndex,
-                        Answer = _model.ChooseAnswer(fork, next.Decision)
+                        Answer = model.ChooseAnswer(fork, next.Decision)
                     };
-                else
-                    action = FreeAction(fork, next.PlayerIndex)
+                else if (freeOnly)
+                    action = BestFreeAction(fork, next.PlayerIndex, model)
                              ?? new ShardsEndTurnAction { PlayerIndex = next.PlayerIndex };
+                else
+                    action = model.ChooseAction(fork, next.PlayerIndex);
                 if (!fork.Submit(action).Accepted &&
                     !fork.Submit(DefaultActions.For(ToSnap(fork.PendingInput))).Accepted)
                     break;
             }
-            return _eval.Evaluate(fork.State, me);
         }
 
         /// <summary>Best action that costs no gems — play a card, fire a free exhaust, kill a
         /// reachable Ingeminex, take a destiny or relic. Returns null when only gem-spending
         /// options remain, which is the planner's signal to end the simulated turn.</summary>
-        private PlayerAction FreeAction(ShardsEngine fork, int playerIndex)
+        public static PlayerAction BestFreeAction(ShardsEngine fork, int playerIndex,
+            ShardsValueModel model)
         {
             var legal = fork.LegalActions(playerIndex);
             var player = fork.State.Players[playerIndex];
@@ -201,7 +216,7 @@ namespace Shards.Bots
                     _ => false
                 };
                 if (!free) continue;
-                double score = _model.ScoreAction(fork, player, action);
+                double score = model.ScoreAction(fork, player, action);
                 if (score > bestScore) { bestScore = score; best = action; }
             }
             return best;
