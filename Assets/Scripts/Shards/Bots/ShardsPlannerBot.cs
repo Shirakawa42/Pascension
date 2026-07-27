@@ -137,8 +137,20 @@ namespace Shards.Bots
             if (!fork.Submit(candidate).Accepted)
                 return double.NegativeInfinity; // rejected on the fork: not a real option
 
-            // Finish the turn with the tuned policy. Stop when the turn leaves us — that is
-            // the end-of-turn leaf, after ResetTurn has zeroed gems and power.
+            // Finish the turn WITHOUT further discretionary spending, then score the leaf.
+            //
+            // This is the fix for the 4% version. Completing with the full greedy policy let
+            // the tail spend the rest of the turn however it liked, so every candidate landed
+            // on a near-identical end position and the choice collapsed into noise — visible
+            // as 24 rerolls a game against greedy's 0.49.
+            //
+            // Holding the tail fixed makes the comparison mean something: "if this is my last
+            // gem-spending act this turn, where do I end up?" Cards still get played (holding
+            // one is pointless — the hand is discarded at cleanup), free value is still taken,
+            // and decisions still resolve. Only gem spends are withheld.
+            //
+            // The bot is not limited to one purchase a turn: it re-plans at the next priority
+            // point, so baskets are built one fully-evaluated step at a time.
             int submits = 0;
             while (!fork.State.GameOver &&
                    fork.State.TurnPlayerIndex == me &&
@@ -146,18 +158,50 @@ namespace Shards.Bots
             {
                 var next = fork.PendingInput;
                 if (next == null) break;
-                PlayerAction action = next.Kind == PendingInputKind.Decision
-                    ? new SubmitDecisionAction
+                PlayerAction action;
+                if (next.Kind == PendingInputKind.Decision)
+                    action = new SubmitDecisionAction
                     {
                         PlayerIndex = next.PlayerIndex,
                         Answer = _model.ChooseAnswer(fork, next.Decision)
-                    }
-                    : _model.ChooseAction(fork, next.PlayerIndex);
+                    };
+                else
+                    action = FreeAction(fork, next.PlayerIndex)
+                             ?? new ShardsEndTurnAction { PlayerIndex = next.PlayerIndex };
                 if (!fork.Submit(action).Accepted &&
                     !fork.Submit(DefaultActions.For(ToSnap(fork.PendingInput))).Accepted)
                     break;
             }
             return _eval.Evaluate(fork.State, me);
+        }
+
+        /// <summary>Best action that costs no gems — play a card, fire a free exhaust, kill a
+        /// reachable Ingeminex, take a destiny or relic. Returns null when only gem-spending
+        /// options remain, which is the planner's signal to end the simulated turn.</summary>
+        private PlayerAction FreeAction(ShardsEngine fork, int playerIndex)
+        {
+            var legal = fork.LegalActions(playerIndex);
+            var player = fork.State.Players[playerIndex];
+            PlayerAction best = null;
+            double bestScore = double.NegativeInfinity;
+            foreach (var action in legal)
+            {
+                bool free = action switch
+                {
+                    ShardsPlayCardAction => true,
+                    // Exhausts can carry a gem cost; only the free ones qualify.
+                    ShardsExhaustAction ex =>
+                        (fork.State.FindCard(ex.CardInstanceId)?.Def.ExhaustGemCost ?? 1) == 0,
+                    ShardsAttackMonsterAction => true,   // advertised only when lethal
+                    ShardsTakeDestinyAction => true,     // M5 gate, no gem cost
+                    ShardsRecruitRelicAction => true,    // M10 gate, no gem cost
+                    _ => false
+                };
+                if (!free) continue;
+                double score = _model.ScoreAction(fork, player, action);
+                if (score > bestScore) { bestScore = score; best = action; }
+            }
+            return best;
         }
 
         private static PendingSnap ToSnap(PendingInput pending) => pending == null ? null : new PendingSnap
