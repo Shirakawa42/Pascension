@@ -76,6 +76,21 @@ namespace SoiSim
                 WeightNames[blind] = "duel-blind";
                 return blind;
             }
+            if (name == "scry-live")
+            {
+                // `soisim coverage` found that Rez's ENTIRE hero ability (Scry 2) is
+                // unreachable under V5, exactly like the row reroll was before 2026-07-25:
+                //   value = 2 x ScryPerCard(0.1958) = 0.392
+                //   cost  = 1 gem x Gems(0.5370)    = 0.537   -> net -0.145 -> below END TURN
+                // Break-even is ScryPerCard = 0.2685. This vector lifts it clear of that so
+                // the ability actually fires, which answers the question the zero cannot:
+                // did the tuner correctly price Scry as worthless, or did it simply never
+                // explore a value where the action becomes reachable and could pay off?
+                var live = (double[])W.Pad(ShardsEvalWeights.Current).Clone();
+                live[W.ScryPerCard] = 0.40;
+                WeightNames[live] = "scry-live";
+                return live;
+            }
             foreach (var field in typeof(ShardsEvalWeights).GetFields())
                 if (field.FieldType == typeof(double[]) &&
                     string.Equals(field.Name, name, System.StringComparison.OrdinalIgnoreCase))
@@ -84,7 +99,8 @@ namespace SoiSim
                     WeightNames[resolved] = field.Name;
                     return resolved;
                 }
-            throw new CliError($"unknown weights '{name}' (expected current, duel-blind, or V1…Vn)");
+            throw new CliError(
+                $"unknown weights '{name}' (expected current, duel-blind, scry-live, or V1…Vn)");
         }
 
         /// <summary>Goes into the RunHeader — bump when a bot's behavior changes.</summary>

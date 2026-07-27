@@ -456,6 +456,58 @@ Two honest caveats:
 Architecture control: the two-stage split itself costs **24 Elo** against a single blended
 argmax (46.6% vs 50%). Real but small, and identical across all four arms.
 
+## Coverage: measuring what the policy NEVER does
+
+`soisim coverage` — a detector for the most expensive bug class in this project. The row
+reroll was priced strictly below passing until 2026-07-25, so an argmax policy could never
+choose it: zero rollouts, zero training positions, six days, nine neural generations. It
+survived because **every instrument here measured win rate, and a blind spot shared by both
+seats is invisible to win rate by construction.** The balance report cannot see it either —
+its card test requires ≥100 acquisitions before a card is considered, so a card the bot never
+buys is structurally absent from the output.
+
+So this measures presence, not performance: every priority action type, every decision
+context, and every card's offered-vs-acquired counts, with zeros called out.
+
+**First run (bench:greedy-v5, 4,000 games, Duel ON) found two zeros. Both were investigated
+rather than assumed:**
+
+1. **`soi.target` — FALSE POSITIVE, and the detector was wrong, not the bot.** All three sites
+   (`ShardsEffects.cs:540`, `ShardsDuelEffects.cs:205`, `ShardsDuelSet.cs:949`) auto-resolve
+   when there is exactly one living opponent, which in a duel there always is. The tool now
+   carries an explicit unreachable-in-duel list and asserts the *reverse* — that these stay at
+   zero. A blind-spot detector that cries wolf gets ignored, which costs more than the thing
+   it detects.
+2. **`soi.scry` — REAL, and measured to be harmless.** `Scry(2)` exists in exactly one place:
+   Rez's hero ability (`ShardsEngine.cs:676`). No card uses it. Under V5 it is unreachable by
+   the same arithmetic that killed the reroll:
+   ```
+   value = 2 × ScryPerCard(0.1958) = 0.392
+   cost  = 1 gem × Gems(0.5370)    = 0.537   →  net −0.145  →  scores below END TURN
+   ```
+   Break-even is `ScryPerCard = 0.2685`. Unlike the reroll, this one was **measured before
+   being called a bug**: forcing it live (`--weights-a scry-live`, ScryPerCard 0.40) scored
+   **50.4% [49.9-50.9] over 10,000 pairs — +3 Elo, a tie.** So the tuner priced it correctly
+   and the zero is a legitimate strategic choice. Documented, not "fixed".
+
+That two-step is the process the last campaign lacked: **detect the blind spot, then probe
+whether it matters.** A zero is a question, not a verdict.
+
+Other results from the same run: every offered card is acquired at least once (no rejected
+cards); every owned non-destiny card is played at least once; 52 defs never appear in the
+center row, all of them relics, destinies, or base cards displaced by a `_duel` errata via
+`ReplacesId`.
+
+**The detector is now standing** (`SoiSimCoverageTests`): all ten priority action types must
+be reachable by BOTH shipped policies, plus mercenary fast-play — which a type histogram
+cannot see going dead, since it is a second use of the same buy action. Rez's dead ability is
+pinned as a documented exception carrying its own measurement, so it stays *true* rather than
+assumed.
+
+Teeth verified rather than trusted: run against `--dlc base`, the detector correctly flags
+`ShardsRerollRowAction` and `ShardsHeroAbilityAction` at 🚨 0 — the exact signature of the
+2026-07-25 bug.
+
 ## The bar, from here on
 
 Any evaluator must beat full-rollout ISMCTS **head-to-head at equal wall-clock**, paired,
@@ -468,3 +520,4 @@ effort and the last one.
 - **2026-07-27 14:15** — stats run (bench:heuristic): 30,000 games, 0 failures → duel-heuristic.jsonl
 - **2026-07-27 14:19** — ablation 10000 pairs: buy 209 Elo · play 39 Elo · both 166 Elo
 - **2026-07-27 14:20** — ablation 10000 pairs: buy 126 Elo · play 11 Elo · both 122 Elo
+- **2026-07-27 14:37** — probe: greedy-scry-live vs greedy-V5 → 50.4 % [49.9 %–50.9 %] paired over 10000 pairs

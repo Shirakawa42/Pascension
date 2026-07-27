@@ -41,6 +41,8 @@ namespace SoiSim
                         return ConvergeCommand.Run(cli);
                     case "ablation":
                         return AblationCommand.Run(cli);
+                    case "coverage":
+                        return CoverageCommand.Run(cli);
                     case "dump-positions":
                         return DumpPositionsCommand.Run(cli);
                     case "smoke":
@@ -76,6 +78,8 @@ namespace SoiSim
             Console.WriteLine("  soisim converge [--games 40] [--budgets 16,32,...] [--sample-stride 3]");
             Console.WriteLine("  soisim ablation [--games 2000] [--seed-base 770000] [--threads N-1]");
             Console.WriteLine("               (buy-vs-play Elo attribution — which axis carries the strength)");
+            Console.WriteLine("  soisim coverage [--bots kind] [--games 4000] [--out path.md]");
+            Console.WriteLine("               (what does this policy NEVER do — actions, contexts, cards)");
             Console.WriteLine("  soisim dump-positions [--games 12] [--sample 2] [--min-round 3]");
             Console.WriteLine("  soisim smoke");
             Console.WriteLine();
