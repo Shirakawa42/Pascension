@@ -99,10 +99,14 @@ basket-96; the only probe kind that separates configs):
   (smaller margin, same rollouts) **47.5%** — all dead at 200-game screens. The current
   basket space's headroom is FULLY harvested at 96 rollouts / 0.05 margin; looser filters
   admit only noise-deviations. Champion config: **basket-96**. Do not re-tune these knobs.
-The live lever is the basket SPACE, round 2: reroll-then-buy baskets, destiny/relic-aware
-baskets, late-game 4-item baskets. Process identical to the combo tier that paid +18→+30:
-extend EnumerateBaskets → `rank --siblings baskets` must show headroom ABOVE +0.0149 →
-200-game screen → SPRT.
+Space round 2 (v3: feasible pairs, quad, reroll-then-buy) was TRIED and REVERTED: the
+harness scored the space richer (+0.0208 ideal-selector headroom vs +0.0149) but the bot
+screened WORSE (49.5–51.5% vs v2's 52.7–53.2), because the stage-1 funnel tax over 30
+candidates grows faster than the space's headroom — and 5 finalist slots did not close it.
+The reroll cursor capability is built and dormant. **Growing the space again requires a
+sublinear funnel first**: successive halving across stage 1, or a stage-0 prior filter
+(model CardValue / feasibility) that only rollouts plausibly-live candidates. Design that,
+verify the funnel recovers v2's numbers ON the v2 space, then re-enable the v3 tier.
 Coverage flags to fix at a deliberate benchmark freeze point (they move the SHARED
 ChooseAnswer — re-run key probes after, like the four-decisions fix): `soi.scry` options
 never taken (Rez pays 1 gem then always keeps — a live no-op now that baskets fire his
@@ -134,10 +138,13 @@ least re-run `soisim rank` with the retuned vector — before any mint.
 
 ## Suggested first moves
 
-1. Basket space round 2 (reroll-then-buy first — it is the only spend the cursor cannot
-   express today): extend EnumerateBaskets, then `rank --siblings baskets` (headroom must
-   beat +0.0149), then a 200-game screen of the new bot vs basket-96, then SPRT.
-2. When the space stabilizes, Gate A on the frozen champion: `probe --a basket-96
+1. **The sublinear funnel** (the prerequisite everything else waits on): successive
+   halving over stage 1 — e.g. all candidates × 4 rollouts/world, keep top half, ×8 more,
+   keep top 4, then the stage-2 deciding sample. Verify on the CURRENT v2 space first: it
+   must reproduce v2's screens (52.7–53.2 vs greedy) at equal-or-less cost. Then re-enable
+   the v3 tier (one `git revert` of the reversion commit's enumeration hunk; the reroll
+   cursor is already live) and re-screen.
+2. When the space+funnel stabilize, Gate A on the frozen champion: `probe --a basket-96
    --b bench:rollout-1200 --games 2000 --sprt` — OVERNIGHT, detached (~7 h; the verdict
    auto-appends to campaign-log.md). Never mid-session.
 3. At the next benchmark freeze point: handlers for soi.scry and soi.reveal (reuse tuned

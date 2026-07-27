@@ -17,6 +17,10 @@ namespace Shards.Bots
         public List<string> Defs;
         public bool Focus;
         public bool Hero;
+        /// <summary>Reroll the DEADEST row slot (lowest value-per-gem) before buying, and
+        /// allow buying whatever the refill reveals. The one spend the def-list cannot
+        /// express, since the refill's identity does not exist at plan time.</summary>
+        public bool Reroll;
     }
 
     /// <summary>Executes one basket through a turn, one action at a time: free actions by
@@ -27,13 +31,15 @@ namespace Shards.Bots
     public sealed class ShardsBasketCursor
     {
         private readonly List<string> _remaining;
-        private bool _focus, _hero;
+        private bool _focus, _hero, _reroll;
+        private int _rerolledSlot = -1;
 
         public ShardsBasketCursor(ShardsBasketPlan plan)
         {
             _remaining = plan.Defs == null ? null : new List<string>(plan.Defs);
             _focus = plan.Focus;
             _hero = plan.Hero;
+            _reroll = plan.Reroll;
         }
 
         /// <summary>Natural basket: defer to the tuned greedy policy wholesale.</summary>
@@ -43,11 +49,59 @@ namespace Shards.Bots
         {
             if (IsNatural)
                 return model.ChooseAction(engine, playerIndex);
+
+            // A prescribed reroll refilled a slot last step: the reveal joins the
+            // allowed-buy set IF it clears the tuned buy bar — "reroll, then buy the
+            // refill if it is actually worth it". Force-buying an unknown reveal would
+            // make every reroll leaf carry a coin-flip junk purchase.
+            if (_rerolledSlot >= 0)
+            {
+                var revealed = engine.State.CenterRow[_rerolledSlot];
+                if (revealed != null && !_remaining.Contains(revealed.DefId))
+                {
+                    var owner = engine.State.Players[playerIndex];
+                    double perGem = model.CardValue(revealed.Def, owner.Mastery) /
+                                    Math.Max(1, engine.EffectiveCost(owner, revealed.Def));
+                    if (perGem >= model.Weights[W.BuyThreshold])
+                        _remaining.Add(revealed.DefId);
+                }
+                _rerolledSlot = -1;
+            }
+
             var action = ShardsPlannerBot.BestFreeAction(engine, playerIndex, model);
             if (action != null) return action;
 
             var legal = engine.LegalActions(playerIndex);
             var player = engine.State.Players[playerIndex];
+
+            // Reroll BEFORE buying, so the refill is still purchasable this turn. Target
+            // the deadest slot — lowest value-per-gem, the same rule the tuned model's
+            // own reroll scoring uses — and never a slot we intend to buy from.
+            if (_reroll)
+            {
+                ShardsRerollRowAction bestReroll = null;
+                double deadest = double.MaxValue;
+                foreach (var la in legal)
+                {
+                    if (la is not ShardsRerollRowAction reroll) continue;
+                    var card = engine.State.CenterRow[reroll.SlotIndex];
+                    if (card == null || _remaining.Contains(card.DefId)) continue;
+                    double perGem = model.CardValue(card.Def, player.Mastery) /
+                                    Math.Max(1, engine.EffectiveCost(player, card.Def));
+                    if (perGem < deadest)
+                    {
+                        deadest = perGem;
+                        bestReroll = reroll;
+                    }
+                }
+                if (bestReroll != null)
+                {
+                    _reroll = false;
+                    _rerolledSlot = bestReroll.SlotIndex;
+                    return bestReroll;
+                }
+            }
+
             bool late = player.Mastery >= model.Weights[W.FastPlayMasteryGate] * 30.0;
             ShardsBuyCardAction bestBuy = null;
             double bestValue = double.MinValue;
@@ -104,7 +158,10 @@ namespace Shards.Bots
         /// <summary>Stage-1 screening rollouts per (basket, world) — just enough to sort
         /// the field before the deciding sample is spent on the finalists.</summary>
         public int Stage1RolloutsPerWorld = 8;
-        /// <summary>Non-natural finalists advanced to stage 2 (natural always advances).</summary>
+        /// <summary>Non-natural finalists advanced to stage 2 (natural always advances).
+        /// Sized to the ~21-basket v2 field. The v3 experiment showed this knob cannot
+        /// rescue a bigger field by itself (5 slots over 30 candidates still screened
+        /// below v2) — growing the space needs a sublinear funnel, not more slots.</summary>
         public int Finalists = 3;
         /// <summary>Stage-2 deciding rollouts per (finalist, world). FRESH seeds — stage 1
         /// selected on its own sample, so reusing it would let selection noise masquerade
@@ -318,14 +375,22 @@ namespace Shards.Bots
 
         // ------------------------------------------------------------ shared statics
 
-        /// <summary>The candidate spend-sets for this turn: the natural greedy turn
-        /// (always index 0 — the incumbent), spend-nothing, focus/hero alone, every
-        /// distinct row def alone, the six best pairs by tuned card value, the three best
-        /// defs with focus, the top triple — plus the combo tier added after the first
-        /// SPRT pass: top pairs with focus, the triple with focus, focus+hero, and the
-        /// best def with hero. V5's real turns often buy AND focus, so a challenger space
-        /// without those combos was handicapped against the natural incumbent.
-        /// ~21 candidates before dedup.</summary>
+        /// <summary>The candidate spend-sets for this turn. Grown in measured tiers, each
+        /// gated by `soisim rank` before any bot probe:
+        ///  · v1: natural (always index 0 — the incumbent), nothing, focus/hero alone,
+        ///    singletons, top-6 pairs by value, top-3 def+focus, top triple;
+        ///  · v2 (+18→+30 Elo): the combo tier — pairs+focus, triple+focus, focus+hero,
+        ///    def+hero. V5's real turns buy AND focus; a space without the combos was
+        ///    handicapped against the incumbent. ~21 candidates. THE SHIPPED SPACE.
+        ///
+        /// ⚠ v3 (feasible pairs + late quad + reroll-then-buy, ~30 candidates) was built,
+        /// measured, and REVERTED 2026-07-27: the harness scored the space itself higher
+        /// (+0.0208 vs +0.0149 ideal-selector headroom, same seeds) but the BOT screened
+        /// 49.5–51.5% vs greedy against v2's 52.7–53.2 — the stage-1 funnel tax over 30
+        /// candidates (expected max of 30 noise draws at 16 rollouts ≈ 0.26) exceeds the
+        /// space gain, and widening to 5 finalists did not close it. Growing the space
+        /// again requires a funnel that scales sublinearly (successive halving, or a
+        /// stage-0 prior filter) — the cursor's Reroll support stays for that day.</summary>
         public static List<ShardsBasketPlan> EnumerateBaskets(ShardsEngine engine, int me,
             ShardsValueModel model)
         {
@@ -354,7 +419,9 @@ namespace Shards.Bots
                 for (int k = i + 1; k < defs.Count; k++)
                     pairs.Add((new List<string> { defs[i].Id, defs[k].Id },
                         defs[i].Value + defs[k].Value));
-            pairs.Sort((x, y) => y.Value.CompareTo(x.Value));
+            pairs.Sort((x, y) => x.Value != y.Value
+                ? y.Value.CompareTo(x.Value)
+                : string.CompareOrdinal(x.Defs[0] + x.Defs[1], y.Defs[0] + y.Defs[1]));
             for (int i = 0; i < pairs.Count && i < 6; i++)
                 baskets.Add(new ShardsBasketPlan { Defs = pairs[i].Defs });
             for (int i = 0; i < defs.Count && i < 3; i++)

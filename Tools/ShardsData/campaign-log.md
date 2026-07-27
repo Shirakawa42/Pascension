@@ -830,3 +830,32 @@ destiny/relic-aware and late-game 4-item baskets; re-measure with `rank --siblin
 baskets` before gating, exactly like the combo tier; (2) the shared ChooseAnswer holes
 (soi.scry no-op, soi.reveal default) at a deliberate benchmark freeze point; (3) Gate A
 on the frozen basket-96, overnight, detached.
+- **2026-07-27 20:16** — rank 894 points / 80597 sibling pairs: policy pick truth-best 35.5 %, headroom/decision rolloutCV +0.021 · L1 -0.013 · L0 -0.009 · clock -0.027; L1 pair-agreement 64.4 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 20:19** — probe: basket-96 vs bench:greedy-v5 → 49.5 % [42.5 %–56.5 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-27 20:22** — probe: basket-96 vs bench:greedy-v5 → 51.5 % [44.6 %–58.4 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+
+## 2026-07-27 last — basket space v3 measured richer, shipped WORSE, and reverted
+
+The instructive negative of the night, one level subtler than the margin family.
+
+v3 grew the space ~21 → ~30 candidates: feasibility-aware pairs (value-ranked pairs skew
+unaffordable), a late-game quad, and reroll-then-buy (new cursor capability — reroll the
+deadest slot, buy the reveal iff it clears the tuned buy bar). The harness scored the space
+itself clearly better: ideal-selector headroom **+0.0149 → +0.0208** on identical seeds,
+sibling pairs 50k → 80k (genuinely distinct turns, not dedup fodder).
+
+The BOT then screened **49.5%** vs greedy against v2's like-for-like **53.2%**, and widening
+the funnel to 5 finalists only recovered to **51.5%**. The mechanism: stage 1 argmaxes 16
+noisy rollouts over the field, and the expected max of 30 noise draws (~0.26) swamps most
+true gaps — the genuinely-best challenger misses the finalist cut more often in a bigger
+field, so the funnel tax grows FASTER than the space's headroom. `rank` measures the space
+under an ideal selector; the bot pays for selection. Both numbers are true; only together
+do they say what to ship.
+
+Reverted to the v2 enumeration (the SPRT-proven +30 config, byte-equivalent behaviour —
+diff-verified). Kept: the cursor's dormant Reroll support and this lesson: **the next space
+growth must come WITH a sublinear funnel** (successive halving, or a stage-0 prior filter
+that only rollouts the plausibly-live candidates), not before it.
+
+Session cost of the whole v3 question: one harness run + three 200-game screens ≈ 15
+minutes. The same question answered by SPRTs would have cost over an hour and said less.
