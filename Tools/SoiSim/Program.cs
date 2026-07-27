@@ -43,6 +43,8 @@ namespace SoiSim
                         return AblationCommand.Run(cli);
                     case "coverage":
                         return CoverageCommand.Run(cli);
+                    case "fit":
+                        return FitCommand.Run(cli);
                     case "dump-positions":
                         return DumpPositionsCommand.Run(cli);
                     case "smoke":

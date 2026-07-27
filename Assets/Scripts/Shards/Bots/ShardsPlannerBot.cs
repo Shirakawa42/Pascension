@@ -80,7 +80,10 @@ namespace Shards.Bots
         {
             _engine = engine;
             _model = model ?? new ShardsValueModel();
-            _eval = evaluator ?? new ShardsClockEval();
+            // The FITTED linear evaluator, not the hand-designed clock model. Measured on
+            // identical position sets: clock 58.1%, hand-set health+mastery 61.5%, fitted
+            // linear over the analytic features 67.5%.
+            _eval = evaluator ?? new ShardsLinearEval();
             _config = config ?? new ShardsPlannerConfig();
             _rng = new DeterministicRng(seed, 37);
         }

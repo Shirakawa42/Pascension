@@ -582,3 +582,12 @@ effort and the last one.
 - **2026-07-27 16:37** — probe: planner vs bench:greedy-v5 → 6.0 % [3.5 %–8.5 %] paired over 200 pairs
 - **2026-07-27 16:38** — probe: planner vs bench:greedy-v5 → 4.0 % [2.1 %–5.9 %] paired over 200 pairs
 - **2026-07-27 16:42** — probe: planner vs bench:greedy-v5 → 11.7 % [8.2 %–15.3 %] paired over 200 pairs
+- **2026-07-27 17:06** — fit 101,112 positions: holdout 61.3 % vs baseline 61.5 %
+- **2026-07-27 17:07** — fit 151,873 positions: holdout 67.5 % vs baseline 61.5 %
+- **2026-07-27 17:08** — probe: planner vs bench:greedy-v5 → 12.7 % [10.0 %–15.4 %] paired over 300 pairs
+- **2026-07-27 17:08** — probe: planner vs bench:greedy-v5 → 11.5 % [8.6 %–14.4 %] paired over 300 pairs
+- **2026-07-27 17:09** — fit 151,873 positions: holdout 62.3 % vs baseline 61.5 %
+- **2026-07-27 17:11** — fit 151,873 positions: holdout 64.1 % vs baseline 62.1 %
+- **2026-07-27 17:11** — fit 151,873 positions: holdout 65.6 % vs baseline 62.1 %
+- **2026-07-27 17:12** — fit 151,873 positions: holdout 63.4 % vs baseline 62.1 %
+- **2026-07-27 17:13** — fit 151,873 positions: holdout 64.3 % vs baseline 62.1 %
