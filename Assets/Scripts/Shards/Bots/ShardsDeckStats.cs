@@ -37,6 +37,13 @@ namespace Shards.Bots
 
         // ---- per-turn rates (what the deck produces, on average, each turn) ----
         public double GemsPerTurn, PowerPerTurn, MasteryPerTurn, HealthPerTurn, DrawsPerTurn;
+        /// <summary>Shield points expected in hand on a given opponent turn. Belongs in the
+        /// kill clock's DENOMINATOR as prevented damage, never as bonus health: when
+        /// prevention meets the incoming rate the clock goes to infinity, which is the
+        /// behaviour a flat "+N effective HP" term cannot produce. The measured "shields stop
+        /// only 2-3% of damage" is a denominator artifact — a 9999-power Infinity Shard turn
+        /// dominates total-damage sums (V5's games carry 175M against the heuristic's 22M).</summary>
+        public double ShieldPerTurn;
         /// <summary>Per-turn output from the BOARD — champion and destiny exhausts. Not
         /// divided by N: these fire every turn regardless of what is drawn.</summary>
         public double BoardGems, BoardPower, BoardMastery;
@@ -84,7 +91,7 @@ namespace Shards.Bots
             };
             int bucket = CardStatics.BucketOf(player.Mastery);
 
-            double gems = 0, power = 0, mastery = 0, health = 0, draws = 0;
+            double gems = 0, power = 0, mastery = 0, health = 0, draws = 0, shield = 0;
             int undergrowthAllies = 0;
 
             void Count(ShardsCard card, bool inCycle)
@@ -103,6 +110,7 @@ namespace Shards.Bots
                 mastery += atoms.Gains[EffectAtoms.Unconditional, EffectAtoms.Mastery];
                 health += atoms.Gains[EffectAtoms.Unconditional, EffectAtoms.Health];
                 draws += atoms.Gains[EffectAtoms.Unconditional, EffectAtoms.Draw];
+                shield += def.Shield;
                 if (faction == ShardsFaction.Undergrowth && !def.IsChampion) undergrowthAllies++;
             }
 
@@ -143,6 +151,7 @@ namespace Shards.Bots
             s.MasteryPerTurn = mastery * perTurn + s.BoardMastery;
             s.HealthPerTurn = health * perTurn;
             s.DrawsPerTurn = draws * perTurn;
+            s.ShieldPerTurn = shield * perTurn;
 
             int pool = 0;
             foreach (var kv in s.FactionCounts) pool += kv.Value;
