@@ -43,10 +43,6 @@ namespace SoiSim
             double wallclockB = cli.GetDouble("--wallclock-b", wallclock);
             int workersA = cli.GetInt("--workers-a", 1);
             int workersB = cli.GetInt("--workers-b", 1);
-            int netA = cli.GetInt("--net-a", -1);
-            int netB = cli.GetInt("--net-b", -1);
-            string netAFile = cli.GetStr("--net-a-file", null);
-            string netBFile = cli.GetStr("--net-b-file", null);
             // Tuned weight vector per side: current | duel-blind | V1…Vn. Drives the
             // promotion gate (Vn vs Vn-1) and the Duel-awareness ablation.
             string weightsA = cli.GetStr("--weights-a", null);
@@ -59,10 +55,10 @@ namespace SoiSim
             // Early-stop budget fraction applied to BOTH search seats: -1 default,
             // 0 off, >0 the fraction (1.0 exact, lower = more aggressive).
             double earlyStop = cli.Has("--earlystop") ? cli.GetDouble("--earlystop", -1) : -1;
-            // Optionally SAVE the played positions as v1 training data — the deep-search
-            // test games are champion-quality, so reuse them instead of discarding.
-            string recordDir = cli.GetStr("--record", null);
-            int recordPerGame = cli.GetInt("--record-per-game", 20);
+            // NOTE: `--record`/`--record-per-game` (v1-schema position capture) were removed
+            // 2026-07-27 with the encoder. Position capture returns in Phase 3 against the
+            // clock-feature schema, with dedup, opening-ply skipping and quiet-position
+            // filtering — none of which the old writer did.
             // Machine-readable result (score/decisive/games) for cross-worker aggregation.
             string resultPath = cli.GetStr("--result", null);
             // Sequential testing: stop as soon as the result is decided either way.
@@ -80,9 +76,9 @@ namespace SoiSim
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
             var factoryA = new BotFactory(kindA, budgetA)
-                { Epsilon = epsilon, TruncateEndTurns = truncateA, WallClockSeconds = wallclockA, RootWorkers = workersA, NetGeneration = netA, NetFilePath = netAFile, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsA), PerfectInformation = oracleA };
+                { Epsilon = epsilon, WallClockSeconds = wallclockA, RootWorkers = workersA, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsA), PerfectInformation = oracleA };
             var factoryB = new BotFactory(kindB, budgetB)
-                { Epsilon = epsilon, TruncateEndTurns = truncateB, WallClockSeconds = wallclockB, RootWorkers = workersB, NetGeneration = netB, NetFilePath = netBFile, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsB), PerfectInformation = oracleB };
+                { Epsilon = epsilon, WallClockSeconds = wallclockB, RootWorkers = workersB, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsB), PerfectInformation = oracleB };
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
 
             // One work item = one mirrored PAIR (both seat orientations of one seed).
@@ -109,19 +105,6 @@ namespace SoiSim
             var (sprtLo, sprtHi) = Stats.SprtBounds(alpha, beta);
             using var cts = new CancellationTokenSource();
 
-            // Shared recorder (v1 schema, one file; per-game writes under a brief lock —
-            // ~20 positions once per game, so contention is negligible).
-            PositionWriter recorder = null;
-            long recorded = 0;
-            object recordSync = new();
-            if (recordDir != null)
-            {
-                Directory.CreateDirectory(recordDir);
-                recorder = new PositionWriter(Path.Combine(recordDir, $"probe-{seedBase}.soip"),
-                    1, ShardsStateEncoder.V1FeatureCount);
-                Console.WriteLine($"  recording v1 positions ({recordPerGame}/game) -> {recordDir}");
-            }
-
             // Plays one orientation of a pair. Returns -1 for a game that never terminated.
             double PlayOne(ulong seed, bool aFirst, string c0, string c1,
                            ref long submits, ref long aMs, ref long aCount)
@@ -140,40 +123,14 @@ namespace SoiSim
 
                 int guard = 0;
                 var decisionSw = new Stopwatch();
-                var reservoir = recorder != null
-                    ? new List<(float[] X, byte Seat, float Q)>(recordPerGame) : null;
-                var recRng = recorder != null
-                    ? new DeterministicRng(seed * 6367 + (aFirst ? 11UL : 13UL), 29) : null;
-                int priorityPoints = 0;
                 while (!adapter.GameOver && guard++ < SimGameRunner.GuardLimit)
                 {
                     var pending = adapter.PendingInput;
                     if (pending == null) break;
                     bool isA = pending.PlayerIndex == aSeat;
-                    // Reservoir-sample priority points; encode the v1 information set of
-                    // the acting seat BEFORE its move, then backfill the search's root Q.
-                    int sampledSlot = -1;
-                    if (reservoir != null && pending.Kind == PendingInputKind.Priority)
-                    {
-                        priorityPoints++;
-                        int slot = reservoir.Count < recordPerGame ? reservoir.Count : recRng.Next(priorityPoints);
-                        if (slot < recordPerGame)
-                        {
-                            var x = new float[ShardsStateEncoder.V1FeatureCount];
-                            ShardsStateEncoder.EncodeV1(adapter.Inner.State, pending.PlayerIndex, x);
-                            var entry = (x, (byte)pending.PlayerIndex, -1f);
-                            if (slot < reservoir.Count) reservoir[slot] = entry; else reservoir.Add(entry);
-                            sampledSlot = slot;
-                        }
-                    }
                     if (isA) decisionSw.Restart();
                     var actingBot = seats[pending.PlayerIndex];
                     var action = actingBot.Choose(pending, null) ?? adapter.DefaultActionFor(pending);
-                    if (sampledSlot >= 0 && actingBot is ShardsSearchBot searchBot)
-                    {
-                        var e = reservoir[sampledSlot];
-                        reservoir[sampledSlot] = (e.X, e.Seat, (float)searchBot.LastRootQ);
-                    }
                     if (isA)
                     {
                         aMs += decisionSw.ElapsedMilliseconds;
@@ -184,17 +141,6 @@ namespace SoiSim
                         break;
                 }
                 submits += guard;
-
-                if (reservoir != null && adapter.GameOver)
-                {
-                    int w = adapter.WinnerIndex;
-                    lock (recordSync)
-                    {
-                        foreach (var (x, seat, q) in reservoir)
-                            recorder.Write(x, w < 0 ? 0.5f : w == seat ? 1f : 0f, q, seed, 0, seat, flags: 0);
-                        recorded += reservoir.Count;
-                    }
-                }
 
                 return !adapter.GameOver ? -1
                     : adapter.WinnerIndex < 0 ? 0.5
@@ -300,9 +246,6 @@ namespace SoiSim
 
             Console.WriteLine($"  wall: {sw.Elapsed.TotalSeconds:F1}s ({done / sw.Elapsed.TotalSeconds:F2} games/s on {threads} threads)");
             Console.WriteLine($"  A think time: {(aDecisions == 0 ? 0 : aDecisionMs / (double)aDecisions):F0} ms/decision ({aDecisions} decisions)");
-            recorder?.Dispose();
-            if (recordDir != null)
-                Console.WriteLine($"  recorded {recorded:N0} positions -> {recordDir}");
             if (resultPath != null)
             {
                 var inv = System.Globalization.CultureInfo.InvariantCulture;

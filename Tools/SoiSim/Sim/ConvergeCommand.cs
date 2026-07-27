@@ -22,8 +22,6 @@ namespace SoiSim
     {
         public static int Run(Cli cli)
         {
-            int netGen = cli.GetInt("--net", -1);
-            int truncate = cli.GetInt("--truncate", 2);
             int games = cli.GetInt("--games", 40);
             int stride = cli.GetInt("--sample-stride", 3);
             ulong seedBase = cli.GetULong("--seed-base", 50000);
@@ -37,13 +35,9 @@ namespace SoiSim
             ShardsContentRegistry.EnsureRegistered();
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
             var model = new ShardsValueModel();
-            IShardsValueEvaluator eval = truncate >= 0
-                ? (netGen >= 0 ? ShardsNeuralEval.LoadGeneration(netGen) : ShardsNeuralEval.LoadCurrent())
-                : null;
 
-            Console.WriteLine($"converge: net gen {(netGen >= 0 ? netGen : ShardsNetWeights.Generation)}, " +
-                              $"truncate {truncate}, budgets [{string.Join(",", budgets)}], {games} games, " +
-                              $"every {stride}th priority point");
+            Console.WriteLine($"converge: full-rollout ISMCTS, budgets [{string.Join(",", budgets)}], " +
+                              $"{games} games, every {stride}th priority point");
 
             // agree[i] = # sampled points where budget[i]'s move == the max-budget move.
             long[] agree = new long[budgets.Length];
@@ -66,7 +60,7 @@ namespace SoiSim
                 var adapter = new ShardsEngineAdapter(
                     ShardsContentRegistry.StandardConfig(seed, specs, SimConfig.AllDlc));
                 // Drive with instant greedy to reach realistic positions cheaply; the
-                // convergence measurement itself uses the real net-truncated search.
+                // convergence measurement itself uses the real full-rollout search.
                 var driver = new IBotAgent[]
                 {
                     new ShardsGreedyEvalBot(seed * 100, adapter.Inner, model),
@@ -88,10 +82,9 @@ namespace SoiSim
                         for (int i = 0; i < budgets.Length; i++)
                         {
                             var cfg = ShardsSearchConfig.ForSims(budgets[i]);
-                            cfg.RolloutEndTurns = truncate;
                             cfg.EarlyStopWhenDecided = false; // measure exact per-budget argmax
                             var bot = new ShardsSearchBot(seed * 977 + (ulong)priorityPoints,
-                                adapter.Inner, cfg, model, eval);
+                                adapter.Inner, cfg, model);
                             moves[i] = bot.Choose(pending, null)?.Describe() ?? "";
                         }
                         final = moves[^1];
@@ -135,7 +128,7 @@ namespace SoiSim
                 Console.WriteLine($"  {budgets[i],8} | {mf,10:F1} % | {(i == 0 ? "-" : mp.ToString("F1") + " %"),11}");
             }
             CampaignStatus.Complete("converge",
-                $"converge net {(netGen >= 0 ? netGen : ShardsNetWeights.Generation)} T{truncate}: " +
+                "converge full-rollout: " +
                 string.Join("  ", budgets.Select((bd, i) =>
                     $"{bd}:{(sampled == 0 ? 0 : 100.0 * agree[i] / sampled):F0}%")));
             return 0;

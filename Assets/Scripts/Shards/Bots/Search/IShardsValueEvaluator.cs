@@ -2,59 +2,31 @@ using Shards.Engine;
 
 namespace Shards.Bots
 {
-    /// <summary>Win-probability estimate for truncated rollouts. Implementations must
-    /// be pure reads (called on cloned states inside the search) and cheap (µs-scale).
-    /// The neural net (Part C) implements this; ShardsBaselineEvaluator is the interim.</summary>
+    /// <summary>Win-probability estimate for a position. Implementations must be pure
+    /// reads (called on cloned states inside a search) and cheap (µs-scale).
+    ///
+    /// NOTHING IMPLEMENTS THIS TODAY, on purpose. Both previous implementations were
+    /// removed 2026-07-27:
+    ///  · ShardsNeuralEval (the trained nets) measured 40.6% against a full-rollout
+    ///    agent at equal budget — worse than having no evaluator at all — and 8.5%
+    ///    against instant greedy as shipped.
+    ///  · ShardsBaselineEvaluator was a hand-coefficient logistic whose LARGEST term was
+    ///    linear health, which four independent expert reviews each named as its single
+    ///    biggest error: health is only meaningful through the kill clock
+    ///    (TTK = health / damage-per-turn), never as a linear term.
+    ///
+    /// The replacement is the clock evaluator (Phase 2): analytic ratio features
+    /// (N, D, killClock, ascendClock, TTK, burst) computed exactly, a learned
+    /// per-(defId, masteryBucket) card-value table, and a learned residual composed
+    /// MULTIPLICATIVELY with the sigmoid base.
+    ///
+    /// ⚠ The bar for shipping any evaluator: it must beat full-rollout ISMCTS
+    /// head-to-head at equal WALL-CLOCK, measured paired with SPRT at n≥2000. Running
+    /// that probe first — rather than after nine training generations — is the single
+    /// process change this rewrite exists to enforce.</summary>
     public interface IShardsValueEvaluator
     {
         /// <summary>P(playerIndex wins) in [0,1] for a 2-player state.</summary>
         double Evaluate(ShardsState state, int playerIndex);
-    }
-
-    /// <summary>Interim hand-coefficient logistic over cheap state aggregates: health,
-    /// mastery race, deck quality (tuned card values), champion walls. Good enough to
-    /// stop rollouts 2 end-turns out; superseded by the trained net.</summary>
-    public sealed class ShardsBaselineEvaluator : IShardsValueEvaluator
-    {
-        private readonly ShardsValueModel _model;
-
-        public ShardsBaselineEvaluator(ShardsValueModel model) => _model = model;
-
-        public double Evaluate(ShardsState state, int playerIndex)
-        {
-            if (state.GameOver)
-                return state.WinnerIndex < 0 ? 0.5 : state.WinnerIndex == playerIndex ? 1 : 0;
-            var me = state.Players[playerIndex];
-            var opp = state.Players[1 - playerIndex];
-            if (me.Eliminated) return 0;
-            if (opp.Eliminated) return 1;
-
-            double x =
-                2.8 * (me.Health - opp.Health) / 50.0 +
-                1.6 * (me.Mastery - opp.Mastery) / 30.0 +
-                1.0 * (DeckQuality(me) - DeckQuality(opp)) / 40.0 +
-                0.5 * (ChampionWall(me) - ChampionWall(opp)) / 12.0 +
-                0.15 * (state.TurnPlayerIndex == playerIndex ? 1 : -1);
-            return 1.0 / (1.0 + System.Math.Exp(-x));
-        }
-
-        private double DeckQuality(ShardsPlayer p)
-        {
-            double sum = 0;
-            foreach (var c in p.Deck) sum += _model.CardValue(c.Def, p.Mastery);
-            foreach (var c in p.Hand) sum += _model.CardValue(c.Def, p.Mastery);
-            foreach (var c in p.Discard) sum += _model.CardValue(c.Def, p.Mastery);
-            foreach (var c in p.PlayZone) sum += _model.CardValue(c.Def, p.Mastery);
-            foreach (var c in p.Destinies) sum += _model.CardValue(c.Def, p.Mastery);
-            return sum;
-        }
-
-        private static double ChampionWall(ShardsPlayer p)
-        {
-            double sum = 0;
-            foreach (var c in p.Champions)
-                sum += System.Math.Max(0, c.Def.Defense - c.DamageThisTurn) + (c.Def.Taunt ? 2 : 0);
-            return sum;
-        }
     }
 }

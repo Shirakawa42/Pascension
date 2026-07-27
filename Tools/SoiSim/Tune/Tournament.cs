@@ -52,7 +52,6 @@ namespace SoiSim
                 return new ShardsGreedyEvalBot(seed, adapter.Inner, model);
             var config = ShardsSearchConfig.ForSims(
                 Math.Max(1, SearchBudget / Math.Max(1, SearchWorkers)));
-            config.RolloutEndTurns = -1;            // full rollouts — the shipped mode
             config.EarlyStopBudgetFraction = 1.0;
             config.RootWorkers = SearchWorkers;
             return new ShardsSearchBot(seed, adapter.Inner, config, model);

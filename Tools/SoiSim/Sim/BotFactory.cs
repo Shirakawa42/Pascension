@@ -16,19 +16,11 @@ namespace SoiSim
         /// <summary>Optional rollout-ε override for "strong" (-1 = config default).</summary>
         public double Epsilon { get; set; } = -1;
 
-        /// <summary>-1 = full rollouts; 0 = evaluate the expansion leaf directly;
-        /// N&gt;0 = roll N end-turns then evaluate.</summary>
-        public int TruncateEndTurns { get; set; } = -1;
-
         /// <summary>&gt;0: wall-clock budget in seconds (replaces the iteration budget).</summary>
         public double WallClockSeconds { get; set; }
 
         /// <summary>&gt;1: root-parallel worker trees (probe outer threads accordingly).</summary>
         public int RootWorkers { get; set; } = 1;
-
-        /// <summary>≥0: pin "strong" to a specific FROZEN net generation instead of
-        /// Current — the promotion-duel knob (gen N vs gen N-1).</summary>
-        public int NetGeneration { get; set; } = -1;
 
         /// <summary>RESEARCH ONLY — makes "strong" cheat by skipping determinization, so
         /// it plans against the real hidden state. Used to bound what hidden information
@@ -38,21 +30,6 @@ namespace SoiSim
         /// <summary>Early-stop budget fraction for "strong": -1 = config default,
         /// 0 = OFF, &gt;0 = that fraction (1.0 exact/neutral, lower = more aggressive).</summary>
         public double EarlyStopFraction { get; set; } = -1;
-
-        /// <summary>Load "strong"'s net from a weights.bin file (sibling weights.json
-        /// carries layers/schema/sha) instead of the embedded registry — lets us gate
-        /// freshly-trained candidates without re-embedding + rebuilding.</summary>
-        public string NetFilePath { get; set; }
-
-        private static readonly ConcurrentDictionary<string, IShardsValueEvaluator> FileNets = new();
-
-        private static IShardsValueEvaluator LoadNetFromFile(string binPath) =>
-            FileNets.GetOrAdd(binPath, p =>
-            {
-                var h = JObject.Parse(File.ReadAllText(Path.Combine(Path.GetDirectoryName(p), "weights.json")));
-                return new ShardsNeuralEval(File.ReadAllBytes(p),
-                    h["layers"].ToObject<int[]>(), h.Value<int>("schemaVersion"), h.Value<string>("sha256"));
-            });
 
         /// <summary>Tuned weight vector for this side's value model (null = the current
         /// champion). Lets a probe pit two weight vectors against each other — the V(n)
@@ -157,8 +134,6 @@ namespace SoiSim
                 : ShardsSearchConfig.ForSims(Budget > 0 ? Budget : 200);
             if (Epsilon >= 0)
                 config.RolloutEpsilon = Epsilon;
-            if (TruncateEndTurns >= 0)
-                config.RolloutEndTurns = TruncateEndTurns;
             config.RootWorkers = RootWorkers;
             config.PerfectInformation = PerfectInformation;
             if (EarlyStopFraction == 0) config.EarlyStopWhenDecided = false;
@@ -172,9 +147,7 @@ namespace SoiSim
             "random" => new ShardsHeuristicBot(gameSeed * 100 + (ulong)seat, engine, random: true),
             "greedy" => new ShardsGreedyEvalBot(gameSeed * 100 + (ulong)seat, engine, Model),
             "strong" => new ShardsSearchBot(gameSeed * 100 + (ulong)seat, engine,
-                StrongConfig(), Model,
-                NetFilePath != null ? LoadNetFromFile(NetFilePath)
-                    : NetGeneration >= 0 ? ShardsNeuralEval.LoadGeneration(NetGeneration) : null),
+                StrongConfig(), Model),
             _ => ShardsBotRanks.Create(Kind, gameSeed * 100 + (ulong)seat, engine)
         };
     }

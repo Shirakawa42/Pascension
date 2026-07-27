@@ -37,7 +37,6 @@ namespace Shards.Bots
         private readonly int _viewer;
         private readonly ShardsValueModel _model;
         private readonly ShardsSearchConfig _config;
-        private readonly IShardsValueEvaluator _evaluator;
         private readonly DeterministicRng _rng;
         private readonly List<(Node Node, Child Child, int Actor)> _path = new();
         // Iteration clones recycle their whole object graph through this arena — the
@@ -56,13 +55,12 @@ namespace Shards.Bots
         public double LastRootQ { get; private set; } = -1;
 
         public ShardsIsmcts(ShardsEngine live, int viewer, ShardsValueModel model,
-            ShardsSearchConfig config, ulong seed, IShardsValueEvaluator evaluator = null)
+            ShardsSearchConfig config, ulong seed)
         {
             _live = live;
             _viewer = viewer;
             _model = model;
             _config = config;
-            _evaluator = evaluator;
             _rng = new DeterministicRng(seed, 17);
         }
 
@@ -268,37 +266,17 @@ namespace Shards.Bots
                 node = pick.Node;
             }
 
-            // Rollout from the expansion point (or terminal) with the ε-greedy model.
-            bool truncated = false;
+            // Rollout from the expansion point (or terminal) with the ε-greedy model,
+            // ALWAYS to terminal. Truncated rollouts scored by a leaf evaluator were
+            // removed 2026-07-27: measured at equal budget the truncate-2 net agent
+            // scored 40.6% against this full-rollout agent — worse than having no
+            // evaluator at all — and it flattened search scaling to zero (4× budget:
+            // rollouts 79.3%, net 52.2%). A leaf evaluator returns only when one beats
+            // full rollouts head-to-head at equal wall-clock.
             if (expanded)
-            {
-                bool evalMode = _config.RolloutEndTurns >= 0 && _evaluator != null &&
-                                clone.State.Players.Count == 2;
-                if (evalMode && _config.RolloutEndTurns == 0)
-                    truncated = !clone.State.GameOver; // score the expansion leaf directly
-                else
-                    truncated = Rollout(clone, ref submits);
-            }
+                Rollout(clone, ref submits);
 
-            double[] scores;
-            if (truncated && !clone.State.GameOver)
-            {
-                // Truncated leaf: the evaluator's win-prob replaces the playout tail.
-                // ALWAYS query from the TURN player's perspective — training positions
-                // are sampled at priority points from the acting seat, so that is the
-                // only in-distribution viewpoint (querying the off-turn view scored 0%
-                // in the adoption probe before this flip).
-                int turn = clone.State.TurnPlayerIndex;
-                double vTurn = _evaluator.Evaluate(clone.State, turn);
-                double v = turn == _viewer ? vTurn : 1 - vTurn;
-                scores = new double[players];
-                scores[_viewer] = v;
-                scores[1 - _viewer] = 1 - v;
-            }
-            else
-            {
-                scores = Score(clone, players);
-            }
+            double[] scores = Score(clone, players);
             foreach (var (_, child, _) in _path)
             {
                 child.Visits++;
@@ -397,20 +375,13 @@ namespace Shards.Bots
             }
         }
 
-        /// <summary>Plays the ε-greedy model policy; returns true if the rollout was
-        /// TRUNCATED at the end-turn budget (leaf to be scored by the evaluator).</summary>
-        private bool Rollout(ShardsEngine clone, ref int submits)
+        /// <summary>Plays the ε-greedy model policy to terminal (or the submit guard).</summary>
+        private void Rollout(ShardsEngine clone, ref int submits)
         {
-            bool truncate = _config.RolloutEndTurns >= 0 && _evaluator != null &&
-                            clone.State.Players.Count == 2;
-            int endTurns = 0;
             while (!clone.State.GameOver && submits < _config.MaxIterationSubmits)
             {
-                if (truncate && endTurns >= _config.RolloutEndTurns &&
-                    clone.PendingInput?.Kind == PendingInputKind.Priority)
-                    return true;
                 var pending = clone.PendingInput;
-                if (pending == null) return false;
+                if (pending == null) return;
                 PlayerAction action;
                 if (pending.Kind == PendingInputKind.Decision)
                 {
@@ -433,12 +404,9 @@ namespace Shards.Bots
 
                 if (!clone.Submit(action).Accepted &&
                     !clone.Submit(Pascension.Core.DefaultActions.For(ToSnap(clone.PendingInput))).Accepted)
-                    return false;
+                    return;
                 submits++;
-                if (action is ShardsEndTurnAction)
-                    endTurns++;
             }
-            return false;
         }
 
         private double[] Score(ShardsEngine clone, int players)

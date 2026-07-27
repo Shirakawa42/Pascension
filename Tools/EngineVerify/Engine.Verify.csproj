@@ -20,8 +20,12 @@
     <Compile Include="..\..\Assets\Scripts\Net\Host\**\*.cs" LinkBase="NetHost" />
     <Compile Include="..\..\Assets\Tests\EngineTests\**\*.cs" LinkBase="Tests" />
     <!-- SoiSim library + smoke tests (NOT Program.cs — no second Main). The console
-         exe itself is never built by CI; these links keep its logic under test. -->
+         exe itself is never built by CI; these links keep its logic under test.
+         Tune/ added 2026-07-27: the CMA-ES tuner, the tournament harness and the
+         weights emitter were the ONLY sim code CI never compiled, let alone tested —
+         and they are what produces every shipped weight vector. -->
     <Compile Include="..\SoiSim\Sim\**\*.cs" LinkBase="SoiSim" />
+    <Compile Include="..\SoiSim\Tune\**\*.cs" LinkBase="SoiSimTune" />
     <Compile Include="..\SoiSim\Tests\**\*.cs" LinkBase="SoiSimTests" />
   </ItemGroup>
 

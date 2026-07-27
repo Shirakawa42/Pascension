@@ -13,14 +13,14 @@ namespace Shards.Bots
     public static class ShardsRootParallelSearch
     {
         public static PlayerAction Search(ShardsEngine live, int viewer, ShardsValueModel model,
-            ShardsSearchConfig config, ulong seed, IShardsValueEvaluator evaluator,
+            ShardsSearchConfig config, ulong seed,
             out ShardsIsmcts.PlanCursor plan, out int totalIterations, out double rootQ)
         {
             int workers = System.Math.Max(1, config.RootWorkers);
             var searches = new ShardsIsmcts[workers];
             for (int w = 0; w < workers; w++)
                 searches[w] = new ShardsIsmcts(live, viewer, model, config,
-                    seed ^ ((ulong)(w + 1) * 0x9E3779B97F4A7C15UL), evaluator);
+                    seed ^ ((ulong)(w + 1) * 0x9E3779B97F4A7C15UL));
 
             var roots = new ShardsIsmcts.Node[workers];
             Parallel.For(0, workers, w => roots[w] = searches[w].RunSearch());

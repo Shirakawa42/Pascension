@@ -309,3 +309,71 @@ the matchup produced nothing in 21 minutes of pod time. If the top rung ever nee
 number, budget it properly — a single 24000-vs-24000 game is ~10 minutes of one core.
 
 Session spend: ~$17 across five tournaments.
+
+---
+
+# 2026-07-27 — the neural campaign is deleted; a new agent starts from measurements
+
+Everything below this line belongs to a new effort. The nets are gone, not parked.
+
+## Why (nothing here is new evidence — it is the old evidence, acted on)
+
+Three numbers already in this log determine the next architecture, and the campaign did not
+follow them:
+
+1. **Clairvoyance is worth +38 Elo** (oracle 55.4% [53.2–57.6], n=1000 pairs). Hidden
+   information is nearly worthless in SoI — deck *contents* are public, only the shuffle is
+   hidden. So belief modelling, richer encoders and better determinization are all capped at
+   a rounding error. **Do not spend there.**
+2. **Search is worth ~115 Elo/doubling above a ~1200-iteration crossover, and is worse than
+   nothing below it** (300 it = 21.2% vs instant greedy). A 200-iteration micro-action ISMCTS
+   barely escapes the *first turn* of a ~10–25 submit turn. That is a **formulation** problem,
+   not a budget problem.
+3. **The net was worse than no evaluator** (40.6% at equal budget) and shipped at **−410 Elo**
+   vs BRONZE.
+
+## The diagnosis that matters for the rewrite
+
+From `eval-rules.md`, and consistent with every measurement: the value function is built from
+**ratios, minima and thresholds** — `5/N × Σ`, `min(killClock, ascendClock)`, `health/damage`.
+An MLP over *summed bags of card vectors* cannot compute `Σ/N`: it never sees `N`
+multiplicatively against the sum. It was asked to learn division from features that do not
+contain a denominator. The encoder also carried **no card identity at all** (deliberately,
+for DLC-proofing) — in a deck-builder, card identity is the game — and **no Duel features**.
+
+## Removed today
+
+- `ShardsNetWeights.g.cs` (7.5 MB), `ShardsNeuralEval`, `ShardsStateEncoder`,
+  `ShardsBaselineEvaluator` (its largest coefficient was linear health, which four independent
+  expert reviews each named as the single biggest error — health is only meaningful through
+  the kill clock).
+- `ShardsSearchConfig.RolloutEndTurns` and all truncated-rollout evaluation — the mechanism
+  that inverted the ladder.
+- `legacy-gold` / `legacy-platinum` / `legacy-diamond` kinds; `emit-net`, `netfixture`,
+  `selfplay` commands; `PositionWriter`; probe `--record`/`--net-*` flags.
+- **~10.3 GB of self-play data** (`selfplay` 5.21 GB / 602 files, `selfplay2` 5.12 GB / 30
+  files) — every byte generated with Duel EXCLUDED, by policies that could never reroll and
+  always fired the hero ability, on the v1 schema. Structurally poisoned, not merely stale.
+- The published Elo table in `bot-ranks.md` — inverted at the top, so deleted rather than cited.
+
+## Added today
+
+- **A frozen benchmark ladder**: `bench:heuristic`, `bench:greedy-v5`, `bench:rollout-1200`,
+  `bench:rollout-4800`. `bench:greedy-v5` pins `ShardsEvalWeights.V5` **explicitly** rather
+  than following `Current`, because a reference that moves when the tuner runs makes every
+  comparison read ~50%. Guarded by `SoiSimBenchmarkLadderTests` — budgets, determinism,
+  V5's checksum, and the *absence* of any leaf evaluator field on `ShardsSearchBot`.
+- `Tools/SoiSim/Tune/**` is now compile-linked into `Engine.Verify.csproj`. It was the only
+  sim code CI never compiled — and it is what produces every shipped weight vector.
+
+First measurement on the new frozen ladder (sanity, underpowered on purpose):
+bench:greedy-v5 vs bench:heuristic → **78.5% [71.9–85.1]**, 100 pairs, Duel ON.
+
+## The bar, from here on
+
+Any evaluator must beat full-rollout ISMCTS **head-to-head at equal wall-clock**, paired,
+SPRT, **n≥2000**, before it ships. Running that probe *first* — rather than after nine
+generations of net-vs-net mirror matches at n=120 — is the entire difference between this
+effort and the last one.
+
+- **2026-07-27 14:11** — probe: bench:greedy-v5 vs bench:heuristic → 78.5 % [71.9 %–85.1 %] paired over 100 pairs · UNDERPOWERED (--allow-small)

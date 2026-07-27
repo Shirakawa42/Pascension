@@ -6,13 +6,18 @@ using Shards.Engine;
 namespace Shards.Bots
 {
     /// <summary>
-    /// The SoI bot ladder, named after League ranks. IRON/BRONZE/SILVER wrap the three
-    /// shipped agents unchanged; GOLD → CHALLENGER are MINTED by the neural training
-    /// campaign (each promoted checkpoint pins the next rank; CHALLENGER always tracks
-    /// the newest champion at the full think budget). Unminted ranks are absent from
-    /// <see cref="Minted"/> and therefore hidden from the menu.
+    /// The SoI bot ladder, named after League ranks. IRON/BRONZE wrap the two instant
+    /// agents; SILVER → DIAMOND are full-rollout ISMCTS at doubling iteration budgets.
+    /// Unminted ranks are absent from <see cref="Minted"/> and hidden from the menu.
     /// DisplayName is the Loc.T key — FR entries live in LocFrench (FER, BRONZE,
-    /// ARGENT, OR, PLATINE, ÉMERAUDE, DIAMANT, MAÎTRE, GRAND MAÎTRE, CHALLENGER).
+    /// ARGENT, OR, PLATINE, ÉMERAUDE, DIAMANT).
+    ///
+    /// ⚠ NO NEURAL NETS ANYWHERE. The 2026-07-21→26 campaign minted GOLD→DIAMOND from
+    /// trained nets and the result was a ladder INVERTED AT THE TOP: the shipped DIAMOND
+    /// scored 8.5% [5.6-11.4] against BRONZE, an instant greedy policy — roughly −410
+    /// Elo. Everything net-shaped was removed 2026-07-27. The replacement agent (the
+    /// turn planner) is being built against a FROZEN external benchmark — see the
+    /// `bench:*` kinds in <see cref="Create"/> — rather than against itself.
     /// </summary>
     public static class ShardsBotRanks
     {
@@ -42,9 +47,10 @@ namespace Shards.Bots
             Factory = factory
         };
 
-        /// <summary>Minted ranks in ascending strength. The neural campaign appends
-        /// GOLD, PLATINUM, EMERALD, DIAMOND, MASTER, GRANDMASTER, CHALLENGER here as
-        /// checkpoints pass their promotion gates.</summary>
+        /// <summary>Minted ranks in ascending strength.
+        /// ⚠ SILVER→DIAMOND budgets above 4800 are EXTRAPOLATED, not measured — the
+        /// crossover run stopped at 4800 (71.4%) plus a partial 6000 (n=40). Re-measure
+        /// before citing them.</summary>
         public static readonly IReadOnlyList<RankSpec> Minted = new[]
         {
             Rank("iron", "IRON", isSearch: false,
@@ -70,14 +76,6 @@ namespace Shards.Bots
                 (seed, engine) => new ShardsSearchBot(seed, engine,
                     Rollout(DiamondIterations, DiamondWorkers), Model.Value)),
         };
-
-        /// <summary>The frozen nets, kept ONLY for the legacy benchmark kinds below.
-        /// No minted rank uses them any more — see <see cref="Rollout"/>.</summary>
-        private static readonly Lazy<IShardsValueEvaluator> Gen0Net =
-            new(() => ShardsNeuralEval.LoadGeneration(0));
-
-        private static readonly Lazy<IShardsValueEvaluator> Gen8Net =
-            new(() => ShardsNeuralEval.LoadGeneration(8));
 
         // ------------------------------------------------------- rank budgets
         //
@@ -127,18 +125,6 @@ namespace Shards.Bots
             // Root-parallel budgets are PER TREE, so divide to keep `totalIterations`
             // the honest total the rank is gated at.
             var config = ShardsSearchConfig.ForSims(Math.Max(1, totalIterations / Math.Max(1, workers)));
-            config.RolloutEndTurns = -1;          // full rollouts to terminal — no evaluator
-            config.EarlyStopBudgetFraction = 1.0;
-            config.RootWorkers = workers;
-            return config;
-        }
-
-        /// <summary>The retired net configuration, preserved as a tooling kind so the new
-        /// ladder can be benchmarked against what shipped before. Not selectable in game.</summary>
-        private static ShardsSearchConfig LegacyNetConfig(int perTreeIterations, int workers)
-        {
-            var config = ShardsSearchConfig.ForSims(perTreeIterations);
-            config.RolloutEndTurns = 2;
             config.EarlyStopBudgetFraction = 1.0;
             config.RootWorkers = workers;
             return config;
@@ -152,8 +138,27 @@ namespace Shards.Bots
             return null;
         }
 
-        /// <summary>Resolves rank kind strings AND the legacy/tooling kinds
-        /// ("heuristic", "random", "greedy", "strong", "strong-fast").</summary>
+        // ------------------------------------------------- the FROZEN benchmark ladder
+        //
+        // These four kinds are the fixed yardstick every future candidate is measured
+        // against. THEY MUST NEVER CHANGE — not their weights, not their budgets, not
+        // their worker counts. The previous campaign's central failure was gating
+        // net-vs-net in mirror matches, which is structurally blind to a shared blind
+        // spot: nine generations all read ~50% against each other while the shipped top
+        // rank was losing to instant greedy 8.5% of the time. An external, immovable
+        // reference is the only thing that can catch that.
+        //
+        // `bench:greedy-v5` pins V5 EXPLICITLY rather than following ShardsEvalWeights
+        // .Current, because Current moves the moment the tuner runs and a moving
+        // yardstick measures nothing.
+        //
+        // Single-threaded on purpose: root-parallel merges are CPU-independent but
+        // single trees are bit-reproducible, which is what a benchmark wants.
+        private static readonly Lazy<ShardsValueModel> FrozenV5 =
+            new(() => new ShardsValueModel(ShardsEvalWeights.V5));
+
+        /// <summary>Resolves rank kind strings, the frozen `bench:*` benchmark kinds, and
+        /// the tooling kinds ("heuristic", "random", "greedy", "strong", "strong-fast").</summary>
         public static IBotAgent Create(string kind, ulong seed, ShardsEngine engine)
         {
             var rank = Find(kind);
@@ -167,22 +172,24 @@ namespace Shards.Bots
                     ShardsSearchConfig.ForRealGames(1.0), Model.Value),
                 "strong-fast" => new ShardsSearchBot(seed, engine,
                     ShardsSearchConfig.ForRealGames(0.25), Model.Value),
-                // The pre-2026-07-25 net ladder, for benchmarking the re-mint against
-                // what actually shipped. Never offered as a difficulty.
-                "legacy-diamond" => new ShardsSearchBot(seed, engine,
-                    LegacyNetConfig(400, 8), Model.Value, Gen8Net.Value),
-                "legacy-platinum" => new ShardsSearchBot(seed, engine,
-                    LegacyNetConfig(200, 1), Model.Value, Gen8Net.Value),
-                "legacy-gold" => new ShardsSearchBot(seed, engine,
-                    LegacyNetConfig(200, 1), Model.Value, Gen0Net.Value),
+
+                // --- frozen benchmark ladder (see the block comment above) ---
+                "bench:heuristic" => new ShardsHeuristicBot(seed, engine),
+                "bench:greedy-v5" => new ShardsGreedyEvalBot(seed, engine, FrozenV5.Value),
+                // 1200 ≈ the measured crossover (51.4% vs instant greedy); 4800 ≈ 70%.
+                "bench:rollout-1200" => new ShardsSearchBot(seed, engine,
+                    Rollout(1200), FrozenV5.Value),
+                "bench:rollout-4800" => new ShardsSearchBot(seed, engine,
+                    Rollout(4800), FrozenV5.Value),
+
                 _ => new ShardsHeuristicBot(seed, engine)
             };
         }
 
-        /// <summary>Whether the kind needs the worker-thread seat (search ranks and
-        /// the legacy "strong"* tooling kinds).</summary>
+        /// <summary>Whether the kind needs the worker-thread seat (search ranks, the
+        /// "strong"* tooling kinds, and the rollout benchmarks).</summary>
         public static bool IsSearchKind(string kind) =>
             Find(kind)?.IsSearch ??
-            kind is "strong" or "strong-fast" or "legacy-diamond" or "legacy-platinum" or "legacy-gold";
+            kind is "strong" or "strong-fast" or "bench:rollout-1200" or "bench:rollout-4800";
     }
 }

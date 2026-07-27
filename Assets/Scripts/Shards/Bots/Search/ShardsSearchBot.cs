@@ -18,7 +18,6 @@ namespace Shards.Bots
         private readonly ShardsEngine _engine;
         private readonly ShardsValueModel _model;
         private readonly ShardsSearchConfig _config;
-        private readonly IShardsValueEvaluator _evaluator;
         private readonly ulong _seed;
         private ulong _searches;
         private ShardsIsmcts.PlanCursor _plan;
@@ -38,18 +37,12 @@ namespace Shards.Bots
         public double LastRootQ { get; private set; } = -1;
 
         public ShardsSearchBot(ulong seed, ShardsEngine engine,
-            ShardsSearchConfig config = null, ShardsValueModel model = null,
-            IShardsValueEvaluator evaluator = null)
+            ShardsSearchConfig config = null, ShardsValueModel model = null)
         {
             _seed = seed;
             _engine = engine;
             _config = config ?? ShardsSearchConfig.ForSims(200);
             _model = model ?? new ShardsValueModel();
-            _evaluator = evaluator ?? (_config.RolloutEndTurns >= 0
-                ? ShardsNetWeights.Available
-                    ? (IShardsValueEvaluator)ShardsNeuralEval.LoadCurrent()
-                    : new ShardsBaselineEvaluator(_model)
-                : null);
         }
 
         public PlayerAction Choose(PendingSnap pending, SnapshotBase view)
@@ -69,14 +62,14 @@ namespace Shards.Bots
             if (_config.RootWorkers > 1)
             {
                 var parallelAction = ShardsRootParallelSearch.Search(_engine, pending.PlayerIndex,
-                    _model, _config, searchSeed, _evaluator, out _plan, out int iterations, out double q);
+                    _model, _config, searchSeed, out _plan, out int iterations, out double q);
                 LastIterations = iterations;
                 LastRootQ = q;
                 return parallelAction;
             }
 
             var search = new ShardsIsmcts(_engine, pending.PlayerIndex, _model, _config,
-                searchSeed, _evaluator);
+                searchSeed);
             var action = search.Search();
             LastIterations = search.IterationsRun;
             LastRootQ = search.LastRootQ;

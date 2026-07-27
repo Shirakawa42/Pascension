@@ -332,7 +332,6 @@ namespace Pascension.Engine.Tests
         {
             Mode = ShardsSearchConfig.BudgetMode.Iterations,
             Iterations = 120,
-            RolloutEndTurns = 0,
             EarlyStopWhenDecided = on,
             EarlyStopBudgetFraction = fraction
         };
@@ -346,7 +345,6 @@ namespace Pascension.Engine.Tests
             // is literally uncatchable). And it must fire — fewer iterations on decided
             // positions — or it buys nothing.
             var model = new ShardsValueModel();
-            var eval = ShardsNetWeights.Available ? ShardsNeuralEval.LoadCurrent() : null;
             int compared = 0, cheaper = 0;
             for (ulong seed = 41; seed <= 46 && compared < 30; seed++)
             {
@@ -360,9 +358,9 @@ namespace Pascension.Engine.Tests
                     if (pending.Kind == PendingInputKind.Priority)
                     {
                         var botFull = new ShardsSearchBot(777, adapter.Inner,
-                            EarlyStopConfig(on: false, 1.0), model, eval);
+                            EarlyStopConfig(on: false, 1.0), model);
                         var botEarly = new ShardsSearchBot(777, adapter.Inner,
-                            EarlyStopConfig(on: true, 1.0), model, eval);
+                            EarlyStopConfig(on: true, 1.0), model);
                         var aFull = botFull.Choose(pending, null);
                         var aEarly = botEarly.Choose(pending, null);
                         Assert.AreEqual(aFull.Describe(), aEarly.Describe(),
@@ -388,7 +386,6 @@ namespace Pascension.Engine.Tests
             // guarantee is win-rate parity, checked by probe), and it must run STRICTLY
             // fewer total iterations than exact mode or it earns nothing extra.
             var model = new ShardsValueModel();
-            var eval = ShardsNetWeights.Available ? ShardsNeuralEval.LoadCurrent() : null;
             int compared = 0, changed = 0;
             long itersExact = 0, itersProb = 0;
             for (ulong seed = 41; seed <= 48 && compared < 40; seed++)
@@ -403,9 +400,9 @@ namespace Pascension.Engine.Tests
                     if (pending.Kind == PendingInputKind.Priority)
                     {
                         var botExact = new ShardsSearchBot(777, adapter.Inner,
-                            EarlyStopConfig(on: true, 1.0), model, eval);
+                            EarlyStopConfig(on: true, 1.0), model);
                         var botProb = new ShardsSearchBot(777, adapter.Inner,
-                            EarlyStopConfig(on: true, 0.4), model, eval);
+                            EarlyStopConfig(on: true, 0.4), model);
                         var aExact = botExact.Choose(pending, null);
                         var aProb = botProb.Choose(pending, null);
                         if (aExact.Describe() != aProb.Describe()) changed++;

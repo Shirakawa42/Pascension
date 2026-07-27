@@ -39,12 +39,6 @@ namespace SoiSim
                         return ProbeCommand.Run(cli);
                     case "converge":
                         return ConvergeCommand.Run(cli);
-                    case "selfplay":
-                        return SelfplayCommand.Run(cli);
-                    case "emit-net":
-                        return EmitNetCommand.RunEmit(cli);
-                    case "netfixture":
-                        return EmitNetCommand.RunFixture(cli);
                     case "dump-positions":
                         return DumpPositionsCommand.Run(cli);
                     case "smoke":
@@ -76,7 +70,14 @@ namespace SoiSim
             Console.WriteLine("               [--sigma 0.15] [--seed 1] [--threads N-1] [--no-emit] [--out path]");
             Console.WriteLine("  soisim evaluate [--games 1000] [--seed-base 424242] [--threads N-1]");
             Console.WriteLine("  soisim probe [--a strong] [--budget 200] [--b greedy] [--games 100] [--threads N-1]");
+            Console.WriteLine("               [--sprt] [--elo0 0] [--elo1 15] [--result path.json] [--allow-small]");
+            Console.WriteLine("  soisim converge [--games 40] [--budgets 16,32,...] [--sample-stride 3]");
+            Console.WriteLine("  soisim dump-positions [--games 12] [--sample 2] [--min-round 3]");
             Console.WriteLine("  soisim smoke");
+            Console.WriteLine();
+            Console.WriteLine("bot kinds: random | heuristic | greedy | strong | strong-fast | rank:iron..diamond");
+            Console.WriteLine("FROZEN benchmarks (never change these — every candidate is measured against them):");
+            Console.WriteLine("  bench:heuristic | bench:greedy-v5 | bench:rollout-1200 | bench:rollout-4800");
         }
     }
 }

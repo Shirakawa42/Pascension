@@ -24,13 +24,6 @@ namespace Shards.Bots
         /// <summary>Hard safety cap on submits per iteration (descent + rollout).</summary>
         public int MaxIterationSubmits = 3000;
 
-        /// <summary>-1 = roll every game to terminal (legacy default). 0 = NO rollout:
-        /// the evaluator scores the expansion leaf directly (~4× cheaper iterations —
-        /// the net was trained on exactly these pending-point positions). N&gt;0 = roll
-        /// N end-turns first, then evaluate. Truncation modes need a 2-player game and
-        /// an evaluator; otherwise legacy full rollouts apply.</summary>
-        public int RolloutEndTurns = -1;
-
         /// <summary>Root-parallel worker trees (real games; sims stay 1 for
         /// bit-reproducibility). Each worker forks + searches independently; root
         /// visits merge by action key.</summary>
