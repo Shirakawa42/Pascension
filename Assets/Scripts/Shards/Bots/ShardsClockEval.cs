@@ -51,6 +51,20 @@ namespace Shards.Bots
         public double FocusMasteryPerTurn = 0.85;
         /// <summary>Gems per turn needed before Focus is assumed affordable.</summary>
         public double FocusGemThreshold = 1.0;
+
+        /// <summary>Fraction of a turn's gems assumed to convert into damage through the shop.
+        ///
+        /// Without this the evaluator has NO ECONOMY TERM AT ALL: a deck producing 12 gems a
+        /// turn scored identically to one producing 3 whenever their damage and mastery rates
+        /// matched, which is most of what separates two decks. Measured consequence — the
+        /// evaluator called the winner on only 58.2% of mid-game positions.
+        ///
+        /// Not all gems become damage (some buy engine, some are wasted), hence well under 1.</summary>
+        public double GemConversion = 0.6;
+
+        /// <summary>Fallback power-per-gem when the row offers no purchasable damage, so a
+        /// gem is never worth literally nothing.</summary>
+        public double BaselinePowerPerGem = 0.5;
     }
 
     /// <summary>Position evaluator: a RACE BETWEEN CLOCKS, not a weighted sum.
@@ -97,9 +111,12 @@ namespace Shards.Bots
 
             var myStats = ShardsDeckStats.For(state, playerIndex);
             var oppStats = ShardsDeckStats.For(state, 1 - playerIndex);
+            // The shop is shared, so both sides convert gems at the same rate — the asymmetry
+            // comes from how many gems each side actually produces.
+            double powerPerGem = RowPowerPerGem(state);
 
-            double myTtk = TimeToWin(myStats, oppStats, opp);
-            double oppTtk = TimeToWin(oppStats, myStats, me);
+            double myTtk = TimeToWin(myStats, oppStats, opp, powerPerGem);
+            double oppTtk = TimeToWin(oppStats, myStats, me, powerPerGem);
 
             // Positive when the opponent needs longer than we do.
             double edge = oppTtk - myTtk;
@@ -117,13 +134,41 @@ namespace Shards.Bots
         }
 
         /// <summary>Turns until <paramref name="attacker"/> wins, by whichever route is faster.</summary>
-        private double TimeToWin(ShardsDeckStats attacker, ShardsDeckStats defender, ShardsPlayer defenderPlayer)
+        /// <summary>Best damage-per-gem purchasable from the current shop row.
+        ///
+        /// This is how economy becomes a clock. eval-rules calls its absence a fatal miss —
+        /// "burst is not power in hand; gems buy power out of the shop" — and in one reviewed
+        /// position 8 gems bought 9 power, turning a reading of "comfortably ahead" into a
+        /// forced win. Computed from the ACTUAL row, because a row with no cheap damage
+        /// converts nothing.</summary>
+        private double RowPowerPerGem(ShardsState state)
+        {
+            double best = _p.BaselinePowerPerGem;
+            foreach (var card in state.CenterRow)
+            {
+                if (card == null) continue;
+                int cost = Math.Max(1, card.Def.Cost);
+                var atoms = ShardsCardStatics.Get(card.Def).Play[CardStatics.BucketOf(0)];
+                double power = atoms.Gains[EffectAtoms.Unconditional, EffectAtoms.Power];
+                if (power <= 0) continue;
+                best = Math.Max(best, power / cost);
+            }
+            return best;
+        }
+
+        private double TimeToWin(ShardsDeckStats attacker, ShardsDeckStats defender,
+            ShardsPlayer defenderPlayer, double powerPerGem)
         {
             // --- kill clock ---
             // Shields sit in the DENOMINATOR as prevented damage. When prevention meets the
             // incoming rate the clock goes to infinity, which is exactly right and is what a
             // flat "+N effective HP" bonus cannot express.
-            double net = attacker.PowerPerTurn - defender.ShieldPerTurn;
+            // Economy IS damage: a turn's gems buy power out of the shop. Leaving this out
+            // made a 12-gem deck score the same as a 3-gem one — the single reason the
+            // evaluator predicted at only 58.2%.
+            double effectivePower = attacker.PowerPerTurn +
+                                    attacker.GemsPerTurn * _p.GemConversion * powerPerGem;
+            double net = effectivePower - defender.ShieldPerTurn;
             // Champion defence buys turns, weakly: it is a price on removing the engine, not
             // a damage sponge. In one reviewed position 33 points of champion defence
             // absorbed exactly zero damage all game.

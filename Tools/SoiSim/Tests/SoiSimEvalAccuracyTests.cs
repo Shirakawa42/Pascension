@@ -22,6 +22,21 @@ namespace SoiSim.Tests
     [TestFixture]
     public sealed class SoiSimEvalAccuracyTests
     {
+        /// <summary>The crudest defensible evaluator: health and mastery differences, nothing
+        /// else. The control the clock model has to beat to justify existing.</summary>
+        private sealed class NaiveEval : IShardsValueEvaluator
+        {
+            public double Evaluate(ShardsState state, int playerIndex)
+            {
+                if (state.GameOver)
+                    return state.WinnerIndex < 0 ? 0.5 : state.WinnerIndex == playerIndex ? 1 : 0;
+                var me = state.Players[playerIndex];
+                var opp = state.Players[1 - playerIndex];
+                double x = (me.Health - opp.Health) / 50.0 + (me.Mastery - opp.Mastery) / 30.0;
+                return 1.0 / (1.0 + System.Math.Exp(-2.0 * x));
+            }
+        }
+
         private static ShardsDlc AllWithDuel =>
             ShardsDlc.RelicsOfTheFuture | ShardsDlc.ShadowOfSalvation |
             ShardsDlc.IntoTheHorizon | ShardsDlc.Duel;
@@ -107,12 +122,39 @@ namespace SoiSim.Tests
             // The floor below guards against REGRESSION while that is fixed. The target is
             // 0.60+, and the planner should not be revisited until it is met — measuring the
             // evaluator is far cheaper than measuring a bot that depends on it.
-            double accuracy = Accuracy(new ShardsClockEval(), out int samples);
+            // A raw number means nothing without a reference: mid-game positions from
+            // evenly-matched self-play are genuinely hard, so even a good evaluator will not
+            // approach the ~76% the old nets reported (measured over ALL positions, including
+            // near-terminal ones where the answer is obvious — not a comparable figure).
+            //
+            // So compare against the crudest possible baseline on the SAME sample. If the
+            // clock model cannot beat "who has more health and mastery", its entire structure
+            // is buying nothing.
+            double clock = Accuracy(new ShardsClockEval(), out int samples);
+            double naive = Accuracy(new NaiveEval(), out _);
             Assert.Greater(samples, 200, "too few sampled positions to conclude anything");
-            Assert.Greater(accuracy, 0.55,
-                $"ShardsClockEval predicted the winner on {accuracy:P1} of {samples} mid-game " +
-                "end-of-turn positions — BELOW the 58.2% measured on 2026-07-27, so this is a " +
-                "regression, not merely an unfinished evaluator.");
+            // MEASURED 2026-07-27: clock 58.1%, naive 64.7%, over 1,311 positions.
+            // The elaborate structure is WORSE than two linear terms.
+            //
+            // Two mechanisms, both information-destroying, both mine rather than the game's:
+            //  · min(killClock, ascendClock) discards a whole route. Holding both a 5-turn
+            //    ascend and a 6-turn kill is plainly better than holding only the 5, and the
+            //    min cannot say so.
+            //  · the soft horizon and the relative-urgency denominator each compress large
+            //    differences, and stacked they flatten exactly the health and mastery gaps
+            //    the naive function reads directly.
+            //
+            // The deeper mistake was mine: I audited eval-rules' EVIDENCE and found it
+            // unreliable, then adopted its STRUCTURE on faith anyway. "Do not build a
+            // weighted sum, build a race between clocks" was four LLM agents' opinion, and
+            // it is now measured to be wrong here.
+            //
+            // Target: clock > naive + 0.02, and Phase 2 is blocked until then. The floor
+            // below only catches further regression.
+            Assert.Greater(clock, naive - 0.10,
+                $"clock model {clock:P1} vs naive health+mastery {naive:P1} over {samples} " +
+                "positions — worse than the 2026-07-27 measurement, so this is a regression " +
+                "on top of an already-unearned structure.");
         }
     }
 }
