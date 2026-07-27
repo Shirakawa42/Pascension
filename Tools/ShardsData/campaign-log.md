@@ -709,3 +709,54 @@ full-rollout ISMCTS (bench:rollout-1200/4800) head-to-head at equal wall-clock, 
 `soisim rank` (actions + baskets modes) with SoiSimRankTests pinning bit-reproducibility,
 thread-count invariance and basket mode; SoiSimBasketBotTests pinning termination,
 determinism and the natural-basket-first contract. Suite: 272 green.
+- **2026-07-27 18:46** — rank 894 points / 50327 sibling pairs: policy pick truth-best 43.4 %, headroom/decision rolloutCV +0.015 · L1 -0.011 · L0 -0.010 · clock -0.027; L1 pair-agreement 65.4 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 18:47** — probe: basket vs bench:greedy-v5 → 49.5 % [45.0 %–54.0 %] paired over 200 pairs
+- **2026-07-27 18:52** — probe: basket vs bench:greedy-v5 → 52.5 % [50.6 %–54.5 %] paired over 904 pairs · SPRT H1 accepted (>= 15 Elo)
+- **2026-07-27 18:54** — rank 600 points / 29595 sibling pairs: policy pick truth-best 46.0 %, headroom/decision rolloutCV +0.027 · L1 -0.070 · L0 -0.056 · clock -0.090; L1 pair-agreement 63.0 % at |Δ|∈[0.10,0.20)
+- **2026-07-27 18:57** — probe: basket vs bench:greedy-v5 → 52.7 % [48.1 %–57.4 %] paired over 200 pairs
+- **2026-07-27 19:00** — probe: basket vs bench:greedy-v5 → 54.2 % [51.2 %–57.3 %] paired over 424 pairs · SPRT H1 accepted (>= 15 Elo)
+- **2026-07-27 19:03** — probe: basket-96 vs bench:greedy-v5 → 53.2 % [48.8 %–57.7 %] paired over 200 pairs
+
+## 2026-07-27 night — measure, open, gate: +14 → +30 Elo in two moves
+
+Both moves came straight off the harness, and each was gated before the next.
+
+### Move 1 — the missing combo baskets (+18 Elo)
+
+The basket space had no buy-AND-focus candidates (pairs+focus, triple+focus, focus+hero,
+def+hero), yet V5's real turns do both — challengers were handicapped against the natural
+incumbent. Added the combo tier (~15 → ~21 candidates), then let the harness judge the SPACE
+before any bot probe: on identical seeds and points, rollout-CV headroom rose
+**+0.0120 → +0.0149/turn** and ~10k more genuinely-distinct sibling pairs survive the leaf
+dedup. Bot re-gate: n=400 read 49.5% (inconclusive, as expected at ±4.5pt); **SPRT accepted
+H1 at 890 pairs — 52.5% [50.6–54.5], +18 Elo.**
+
+### Move 2 — the opening is the richest domain, so the MinRound rail opens (+30 Elo)
+
+`soisim rank` gained `--max-round`, and the previously-unmeasured domain got measured:
+rounds 1–3 basket siblings differ by **0.103** mean |Δtruth| (vs 0.059 mid-game), top-2 gap
+**0.052**, rollout-CV headroom **+0.0273/turn — the largest measured anywhere**. Opening buys
+compound through the whole game. (Static evals are also at their WORST there: L1 −0.070,
+clock −0.090 — eval steering stays dead.) v1's opening losses were its biased same-sample
+argmax, not the domain; with the two-stage/margin rails carrying the anti-noise burden,
+MinRound went 4 → 1.
+
+Gate: n=400 read **52.7%** — the first cheap gate to move; then **SPRT accepted H1 at 410
+pairs — 54.2% [51.2–57.3], +30 Elo vs bench:greedy-v5**, at 19 ms/decision.
+
+The progression, all against the same frozen reference: rails-only **+14** → combo baskets
+**+18** → opening search **+30**, with the SPRT firing earlier each time (1210 → 890 → 410
+pairs). Every point of it came from measure-first: the two failed configs this line COULD
+have shipped (eval-steered baskets, unrailed argmax) were killed by the harness and the
+6-second gate before costing anything.
+
+### Parked with numbers, not opinions
+
+- **basket-96** (2×48 deciding rollouts): 53.2% [48.8–57.7] at n=400 — indistinguishable
+  from basket's 52.7% at this n. Whether 96 beats 48 needs a paired basket-96-vs-basket
+  probe at n≥1000; deferred, budget went to Gate A instead.
+- **Gate A skirmish launched** (detached): `basket` vs `bench:rollout-1200`, SPRT, up to
+  1000 pairs. At ~19 ms vs ~1,200 ms per decision this is a ~60× compute handicap for the
+  basket bot; transitivity says it should win (+30 vs rollout-1200's ~break-even against
+  the same greedy), but transitivity is exactly what this project got burned by — hence the
+  probe. Its result line auto-appends below when it lands.

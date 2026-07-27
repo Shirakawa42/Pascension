@@ -20,6 +20,10 @@ namespace SoiSim
         public ulong SeedBase = 880000;
         public int Threads = Math.Max(1, Environment.ProcessorCount - 1);
         public int MinRound = 4;
+        /// <summary>Upper sampling bound (inclusive) — lets a run isolate the OPENING
+        /// (e.g. --min-round 1 --max-round 3), the domain the planner's MinRound rail
+        /// currently excludes because it was never measured.</summary>
+        public int MaxRound = int.MaxValue;
         /// <summary>Sample every Nth eligible turn (both seats — the game is a V5 mirror).</summary>
         public int Stride = 2;
         /// <summary>Cap on sampled decision points per game.</summary>
@@ -115,6 +119,7 @@ namespace SoiSim
                 SeedBase = cli.GetULong("--seed-base", 880000),
                 Threads = cli.GetInt("--threads", Math.Max(1, Environment.ProcessorCount - 1)),
                 MinRound = cli.GetInt("--min-round", 4),
+                MaxRound = cli.GetInt("--max-round", int.MaxValue),
                 Stride = Math.Max(1, cli.GetInt("--stride", 2)),
                 MaxPointsPerGame = cli.GetInt("--points-per-game", 6),
                 Rollouts = Math.Max(4, cli.GetInt("--rollouts", 64)),
@@ -256,7 +261,7 @@ namespace SoiSim
                 var state = adapter.Inner.State;
                 if (pending.Kind == PendingInputKind.Priority &&
                     state.TurnPlayerIndex == pending.PlayerIndex &&
-                    state.Round >= opt.MinRound &&
+                    state.Round >= opt.MinRound && state.Round <= opt.MaxRound &&
                     records.Count < opt.MaxPointsPerGame)
                 {
                     var key = (state.Round, state.TurnPlayerIndex);

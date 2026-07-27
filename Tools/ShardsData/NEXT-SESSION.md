@@ -36,16 +36,19 @@ playstyle by itself rather than have one hand-coded.
      static-eval headroom **negative** (L1 −0.015). Rollout-scored baskets are the ONLY
      measured-positive selector. Do not revive eval-steered planning; do not gate anything
      on holdout accuracy.
-3. **`ShardsBasketPlannerBot` (kind `basket`) works and beats the frozen benchmark.**
-   Whole-turn purchase-basket search: ~15 spend-sets at each of MY turn starts, leaves on
-   determinized CRN forks, terminal-rollout scoring with per-world leaf-dedup, state-driven
-   cursor execution. Three rails, each earned by a failed gate (v1 was 39.3%, −76 Elo):
-   MinRound 4 (openings stay pure V5 — the harness never measured rounds 1–3), two-stage
-   CRN refinement (screen 8/world → decide finalists on 24 FRESH/world), DeviationMargin
-   0.05 vs the natural turn (margin → ∞ degenerates to exactly V5: bounded downside).
-   **Gate result: SPRT H1 accepted (≥15 Elo) at 1210 pairs — 52.1% [50.4–53.8] over 1224
-   pairs, +14 Elo vs bench:greedy-v5**, at ~14 ms/decision average. First planner in either
-   campaign to beat tuned greedy on a properly powered probe.
+3. **`ShardsBasketPlannerBot` (kind `basket`) beats the frozen benchmark by +30 Elo.**
+   Whole-turn purchase-basket search: ~21 spend-sets at each of MY turn starts (incl. the
+   buy+focus/hero combo tier), leaves on determinized CRN forks, terminal-rollout scoring
+   with per-world leaf-dedup, state-driven cursor execution. Two rails, each earned by a
+   failed gate (v1 was 39.3%, −76 Elo): two-stage CRN refinement (screen 8/world → decide
+   finalists on 24 FRESH/world) and DeviationMargin 0.05 vs the natural turn (margin → ∞
+   degenerates to exactly V5: bounded downside). The measured progression, all vs
+   bench:greedy-v5, all SPRT-decided: rails-only **+14 Elo** (1210 pairs) → combo baskets
+   **+18** (890 pairs) → opening search enabled (MinRound 4→1) **+30 Elo — 54.2%
+   [51.2–57.3], H1 at 410 pairs**, at 19 ms/decision. The opening turned out to be the
+   richest domain of all once measured (`rank --min-round 1 --max-round 3`: headroom
+   +0.0273/turn, sibling gaps 2× mid-game) — v1's opening losses were its biased
+   same-sample argmax, not the domain.
 
 ## Hard measurements — treat these as constraints, not opinions
 
@@ -54,9 +57,10 @@ playstyle by itself rather than have one hand-coded.
 | Clairvoyance (oracle vs honest) | +38 Elo, n=1000 paired | Spend nothing on hidden info. |
 | Buy vs play axis (`soisim ablation`) | buy 126–209 Elo, play 11–39 | Acquisition carries 84–92% of strength. |
 | Sibling headroom at ACTION granularity | +0.002/decision, all selectors | 1-step lookahead can never beat V5, with any evaluator. Retired. |
-| Sibling headroom at BASKET granularity | rollout +0.012/turn; static evals NEGATIVE | Search baskets, score with rollouts only. |
-| Basket planner v1 (no rails) | 39.3%, −76 Elo | Argmax over noisy estimates deviates on noise; act only in the measured domain, decide on fresh samples, require a margin. |
-| Basket planner v1.1 (rails) | **52.1% [50.4–53.8], SPRT H1, n=1224 pairs** | Real but small. Budget barely touched (~14 ms/decision). |
+| Sibling headroom at BASKET granularity | rollout +0.015/turn mid-game, **+0.027 opening**; static evals NEGATIVE everywhere | Search baskets, score with rollouts only; the opening is the richest domain. |
+| Basket planner v1 (no rails) | 39.3%, −76 Elo | Argmax over noisy estimates deviates on noise; decide on fresh samples, require a margin. |
+| Basket planner current (rails + combos + opening) | **54.2% [51.2–57.3], +30 Elo, SPRT H1 at 410 pairs** | Real. Budget barely touched (~19 ms/decision vs the 200–500 ms envelope). |
+| basket-96 (2×48 deciding rollouts) | 53.2% [48.8–57.7] at n=400 | Indistinguishable from basket at this n; needs a paired basket-96-vs-basket probe at n≥1000. |
 | ISMCTS crossover | ~1200 it break-even vs greedy; +115 Elo/doubling above | The wall-clock bar the basket bot must eventually beat. |
 | Engine throughput | ~1050 games/s single-thread | Rollouts are cheap; the 200–500 ms envelope funds thousands. |
 | Old neural ladder | −410 Elo, deleted | Do not resurrect. |
@@ -77,25 +81,24 @@ playstyle by itself rather than have one hand-coded.
 
 ## Open problems, in priority order
 
-### 1. Grow the basket bot's edge (+14 Elo → something worth shipping)
-The budget is barely used: the search runs once per turn (~200 ms) while cursor steps are
-free, so per-DECISION average is 14 ms against a 200–500 ms envelope. Levers, cheapest first,
-each gated by `probe --a <candidate> --b bench:greedy-v5 --games 400 --allow-small` then SPRT:
-- **More deciding rollouts** (`basket-96` kind exists: 2×48) — noise se scales 1/√n and the
-  margin can then shrink; re-measure the margin/rollout pair jointly.
-- **Wider basket space**: pairs+focus, triple+focus are MISSING today (V5's real turns often
-  buy AND focus, so challengers are handicapped vs natural); reroll-then-buy baskets;
-  destiny/relic-aware baskets.
-- **Search rounds 1–3** — but ONLY after extending `soisim rank` to measure opening turns
-  (`--min-round 1`); v1's collapse shows what acting unmeasured costs.
-- **Margin/refinement tuning**: stage-2 CRN pairing means the margin could key off the
-  PAIRED diff se rather than a constant 0.05.
+### 1. Gate A — CHECK THE CAMPAIGN LOG TAIL FIRST
+A detached SPRT probe `basket vs bench:rollout-1200` (up to 1000 pairs) was launched
+2026-07-27 ~19:05 and auto-appends its result line to campaign-log.md when it lands (log
+file: `Tools/ShardsData/sim/gateA-basket-vs-rollout1200.log`). At 19 ms vs ~1,200 ms per
+decision it is a ~60× compute handicap for the basket bot. If H1 accepted: run the same vs
+`bench:rollout-4800`, then the formal equal-wall-clock framing (give basket the SAME
+per-decision budget via a bigger RolloutsPerWorld) at n≥2000 before any mint talk. If H0:
+the crossover story stands and the basket line needs more per-turn budget before retrying.
 
-### 2. Gate A — the reason this line of work exists
-Beat full-rollout ISMCTS head-to-head at **equal wall-clock**, paired, SPRT, n≥2000:
-`bench:rollout-1200` first (it is break-even vs greedy, so basket+14 may already beat it
-cheaply — measure, don't assume), then `bench:rollout-4800`. Only after Gate A does the
-basket bot deserve a rank.
+### 2. Grow the edge further (+30 → ?)
+The budget is still barely used (19 ms vs the 200–500 ms envelope). Levers, cheapest first,
+each gated by n=400 then SPRT vs bench:greedy-v5:
+- **Deciding-rollout budget**: settle basket-96-vs-basket with a DIRECT paired probe at
+  n≥1000 (vs-greedy probes cannot separate them). Then consider margin ∝ paired-diff se.
+- **Wider basket space, round 2**: reroll-then-buy baskets; destiny/relic-aware baskets;
+  4-item baskets late-game (economy peaks at 10+ gems).
+- **Per-round margin**: the opening's true gaps are 2× mid-game — a smaller margin there
+  may harvest more; measure per-round headroom-vs-margin with rank before changing.
 
 ### 3. Then: joint retune under the planner
 V5's weights were tuned for pure-greedy play; the basket bot changes the state distribution
@@ -120,13 +123,12 @@ least re-run `soisim rank` with the retuned vector — before any mint.
 
 ## Suggested first moves
 
-1. `probe --a basket-96 --b bench:greedy-v5 --games 400 --allow-small` — does doubling the
-   deciding sample move the point estimate? (Then SPRT if yes.)
-2. Add the missing focus-combo baskets, re-run `soisim rank --siblings baskets` to confirm
-   headroom rises, then gate the enlarged space.
-3. First Gate A skirmish: `probe --a basket --b bench:rollout-1200 --games 400 --allow-small`
-   — bench:rollout-1200 is ~break-even vs greedy, so basket+14 may already beat it at a
-   fraction of the wall-clock. Quote both think times in the log line.
+1. Read the campaign-log tail: did the detached Gate A probe (basket vs bench:rollout-1200,
+   SPRT) land, and which hypothesis did it accept? Everything branches on that.
+2. `probe --a basket-96 --b basket --games 2000 --sprt` — settle the deciding-rollout budget
+   directly (paired; vs-greedy probes cannot separate the two).
+3. If Gate A skirmish won: `probe --a basket --b bench:rollout-4800 --games 2000 --sprt`,
+   then the equal-wall-clock framing at n≥2000.
 
 Do not mint any rank from the basket bot until it clears Gate A. That bar is the whole
 reason this rewrite exists.

@@ -110,10 +110,13 @@ namespace Shards.Bots
         /// selected on its own sample, so reusing it would let selection noise masquerade
         /// as a real lead (the same cross-validation split `soisim rank` uses).</summary>
         public int RolloutsPerWorld = 24;
-        /// <summary>Do not search before this round: `soisim rank` measured headroom on
-        /// round ≥ 4 turn starts only, and the first gate probe (39.3%, −76 Elo) showed
-        /// what acting outside the measured domain costs. Openings stay pure V5.</summary>
-        public int MinRound = 4;
+        /// <summary>Do not search before this round. Was 4 while rounds 1–3 were an
+        /// unmeasured domain (v1's −76 Elo was partly noise-deviations there); then
+        /// `soisim rank --min-round 1 --max-round 3` measured the OPENING as the richest
+        /// domain of all — rollout headroom +0.027/turn vs +0.015 mid-game, top-2 truth
+        /// gap 0.052 — because opening buys compound through the whole game. With the
+        /// two-stage/margin rails carrying the anti-noise burden, the gate opens at 1.</summary>
+        public int MinRound = 1;
         /// <summary>A challenger must beat the NATURAL turn's stage-2 score by this much
         /// to be executed. The search argmaxes over ~15 noisy estimates, so without a
         /// margin it deviates on noise at nearly every turn; with margin → ∞ the bot is
@@ -318,7 +321,11 @@ namespace Shards.Bots
         /// <summary>The candidate spend-sets for this turn: the natural greedy turn
         /// (always index 0 — the incumbent), spend-nothing, focus/hero alone, every
         /// distinct row def alone, the six best pairs by tuned card value, the three best
-        /// defs with focus, and the top triple. ~15 candidates before dedup.</summary>
+        /// defs with focus, the top triple — plus the combo tier added after the first
+        /// SPRT pass: top pairs with focus, the triple with focus, focus+hero, and the
+        /// best def with hero. V5's real turns often buy AND focus, so a challenger space
+        /// without those combos was handicapped against the natural incumbent.
+        /// ~21 candidates before dedup.</summary>
         public static List<ShardsBasketPlan> EnumerateBaskets(ShardsEngine engine, int me,
             ShardsValueModel model)
         {
@@ -360,6 +367,31 @@ namespace Shards.Bots
                 baskets.Add(new ShardsBasketPlan
                 {
                     Defs = new List<string> { defs[0].Id, defs[1].Id, defs[2].Id }
+                });
+            // Combo tier: buy AND focus/hero in the same turn.
+            for (int i = 0; i < pairs.Count && i < 3; i++)
+                baskets.Add(new ShardsBasketPlan
+                {
+                    Defs = new List<string>(pairs[i].Defs),
+                    Focus = true
+                });
+            if (defs.Count >= 3)
+                baskets.Add(new ShardsBasketPlan
+                {
+                    Defs = new List<string> { defs[0].Id, defs[1].Id, defs[2].Id },
+                    Focus = true
+                });
+            baskets.Add(new ShardsBasketPlan
+            {
+                Defs = new List<string>(),
+                Focus = true,
+                Hero = true
+            });
+            if (defs.Count >= 1)
+                baskets.Add(new ShardsBasketPlan
+                {
+                    Defs = new List<string> { defs[0].Id },
+                    Hero = true
                 });
             return baskets;
         }
