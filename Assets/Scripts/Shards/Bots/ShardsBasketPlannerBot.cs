@@ -262,25 +262,40 @@ namespace Shards.Bots
                 return new ShardsBasketCursor(natural);
 
             var baskets = EnumerateBaskets(_engine, me, _model);
+            int n = baskets.Count;
             int worlds = Math.Max(1, _config.Worlds);
             var worldSeeds = new ulong[worlds];
             for (int w = 0; w < worlds; w++)
                 worldSeeds[w] = (((ulong)_rng.NextUInt() << 32) | _rng.NextUInt()) | 1UL;
-            var stage1Seeds = DrawSeeds(worlds, Math.Max(1, _config.Stage1RolloutsPerWorld));
+            int round1 = Math.Max(2, _config.Stage1RolloutsPerWorld / 2);
+            int round2 = Math.Max(2, _config.Stage1RolloutsPerWorld);
+            var screenSeeds = DrawSeeds(worlds, round1 + round2);
             var stage2Seeds = DrawSeeds(worlds, Math.Max(1, _config.RolloutsPerWorld));
 
-            // Stage 1 — screen the whole field on a cheap CRN sample.
-            var screened = ScoreBaskets(baskets, me, worldSeeds, stage1Seeds);
+            // Stage 1, successive halving — the funnel that scales sublinearly with the
+            // field. A flat screen pays (field × rollouts) and its argmax drowns as the
+            // field grows (space v3: expected max of 30 noise draws ≈ 0.26, above most
+            // true gaps). Halving pays a cheap look at everyone, then concentrates the
+            // evidence on the half that earned it: ~same total cost, ~1.5× the rollouts
+            // behind every candidate that reaches the finalist cut.
+            var all = new List<int>(n);
+            for (int i = 0; i < n; i++) all.Add(i);
+            var sums = new double[n];
+            var counts = new int[n];
+            Accumulate(baskets, all, me, worldSeeds, screenSeeds, 0, round1, sums, counts);
+            var survivors = KeepBest(all, sums, counts,
+                Math.Max(_config.Finalists + 1, (n + 1) / 2));
+            Accumulate(baskets, survivors, me, worldSeeds, screenSeeds,
+                round1, round1 + round2, sums, counts);
 
-            // Stage 2 — natural plus the best challengers, on FRESH CRN seeds. Selecting
-            // on stage 1 and deciding on stage 2 is what stops the argmax from crowning
-            // its own noise (the first gate probe, 39.3%, is what happens otherwise).
+            // Stage 2 — natural plus the best survivors, on FRESH CRN seeds. Selecting
+            // on the screen and deciding on stage 2 is what stops the argmax from
+            // crowning its own noise (the first gate probe, 39.3%, is what happens
+            // otherwise).
             var finalists = new List<ShardsBasketPlan> { baskets[0] };
-            foreach (int i in Enumerable_RangeByScoreDesc(screened))
-            {
-                if (finalists.Count > _config.Finalists) break;
-                if (i != 0) finalists.Add(baskets[i]);
-            }
+            foreach (int i in KeepBest(survivors, sums, counts, survivors.Count))
+                if (i != 0 && finalists.Count <= _config.Finalists)
+                    finalists.Add(baskets[i]);
             var decided = ScoreBaskets(finalists, me, worldSeeds, stage2Seeds);
 
             int best = 0; // index into finalists; 0 = natural
@@ -293,25 +308,56 @@ namespace Shards.Bots
             return new ShardsBasketCursor(finalists[best]);
         }
 
-        /// <summary>Indices of <paramref name="scores"/> in descending score order —
-        /// explicit insertion sort so ties keep basket-enumeration order (Array.Sort is
-        /// unstable, and a nondeterministic finalist set would break replay).</summary>
-        private static int[] Enumerable_RangeByScoreDesc(double[] scores)
+        /// <summary>The kept indices, ordered by mean screen score (descending), the
+        /// natural candidate (index 0) always surviving. Comparator is a total order
+        /// (index as the tie-break), so the sort is deterministic — a nondeterministic
+        /// finalist set would break replay.</summary>
+        private static List<int> KeepBest(List<int> candidates, double[] sums, int[] counts,
+            int keep)
         {
-            var order = new int[scores.Length];
-            for (int i = 0; i < order.Length; i++) order[i] = i;
-            for (int i = 1; i < order.Length; i++)
+            var order = new List<int>(candidates);
+            order.Sort((a, b) =>
             {
-                int key = order[i];
-                int k = i - 1;
-                while (k >= 0 && scores[order[k]] < scores[key])
-                {
-                    order[k + 1] = order[k];
-                    k--;
-                }
-                order[k + 1] = key;
+                double ma = counts[a] == 0 ? double.MinValue : sums[a] / counts[a];
+                double mb = counts[b] == 0 ? double.MinValue : sums[b] / counts[b];
+                return ma != mb ? mb.CompareTo(ma) : a.CompareTo(b);
+            });
+            var kept = new List<int>(Math.Min(keep, order.Count));
+            if (candidates.Contains(0))
+                kept.Add(0);
+            foreach (int i in order)
+            {
+                if (kept.Count >= keep) break;
+                if (i != 0) kept.Add(i);
             }
-            return order;
+            return kept;
+        }
+
+        /// <summary>Adds the rollout outcomes of seed range [jStart, jEnd) to each subset
+        /// candidate's running sum. CRN: every candidate sees the same seeds. Identical
+        /// leaves within a world are rolled out once per range (hash cache).</summary>
+        private void Accumulate(List<ShardsBasketPlan> baskets, List<int> subset, int me,
+            ulong[] worldSeeds, ulong[,] seeds, int jStart, int jEnd,
+            double[] sums, int[] counts)
+        {
+            var leafSums = new Dictionary<ulong, double>[worldSeeds.Length];
+            for (int w = 0; w < worldSeeds.Length; w++)
+                leafSums[w] = new Dictionary<ulong, double>();
+            foreach (int b in subset)
+                for (int w = 0; w < worldSeeds.Length; w++)
+                {
+                    var sim = _engine.Fork(rngReseed: worldSeeds[w], quiet: true, arena: _leafArena);
+                    ShardsDeterminizer.Sample(sim.State, me, sim.State.Rng);
+                    RunToTurnEnd(sim, me, _model, baskets[b], _config.MaxTurnSubmits);
+                    ulong hash = sim.State.ComputeFullHash();
+                    if (!leafSums[w].TryGetValue(hash, out double sum))
+                    {
+                        sum = ScoreLeafRange(sim, me, w, seeds, jStart, jEnd);
+                        leafSums[w][hash] = sum;
+                    }
+                    sums[b] += sum;
+                    counts[b] += jEnd - jStart;
+                }
         }
 
         /// <summary>Scores each basket as the mean over worlds of its end-of-turn leaf's
@@ -358,19 +404,29 @@ namespace Shards.Bots
 
         private double ScoreLeaf(ShardsEngine leaf, int me, int world, ulong[,] rolloutSeeds)
         {
-            if (leaf.State.GameOver)
-                return leaf.State.WinnerIndex < 0 ? 0.5 : leaf.State.WinnerIndex == me ? 1 : 0;
-            if (leaf.PendingInput?.Kind != PendingInputKind.Priority)
-                return 0.5; // parked mid-decision; cannot fork — price as unknown
             int n = rolloutSeeds.GetLength(1);
+            return ScoreLeafRange(leaf, me, world, rolloutSeeds, 0, n) / n;
+        }
+
+        /// <summary>SUM (not mean) of rollout outcomes over the seed range — the halving
+        /// rounds accumulate ranges of different sizes into one running total.</summary>
+        private double ScoreLeafRange(ShardsEngine leaf, int me, int world,
+            ulong[,] rolloutSeeds, int jStart, int jEnd)
+        {
+            int span = jEnd - jStart;
+            if (leaf.State.GameOver)
+                return span * (leaf.State.WinnerIndex < 0 ? 0.5
+                    : leaf.State.WinnerIndex == me ? 1 : 0);
+            if (leaf.PendingInput?.Kind != PendingInputKind.Priority)
+                return span * 0.5; // parked mid-decision; cannot fork — price as unknown
             double sum = 0;
-            for (int j = 0; j < n; j++)
+            for (int j = jStart; j < jEnd; j++)
             {
                 var rf = leaf.Fork(rngReseed: rolloutSeeds[world, j], quiet: true, arena: _rolloutArena);
                 ShardsDeterminizer.Sample(rf.State, me, rf.State.Rng);
                 sum += RolloutToTerminal(rf, me, _model, _config.RolloutGuard);
             }
-            return sum / n;
+            return sum;
         }
 
         // ------------------------------------------------------------ shared statics
@@ -381,25 +437,23 @@ namespace Shards.Bots
         ///    singletons, top-6 pairs by value, top-3 def+focus, top triple;
         ///  · v2 (+18→+30 Elo): the combo tier — pairs+focus, triple+focus, focus+hero,
         ///    def+hero. V5's real turns buy AND focus; a space without the combos was
-        ///    handicapped against the incumbent. ~21 candidates. THE SHIPPED SPACE.
-        ///
-        /// ⚠ v3 (feasible pairs + late quad + reroll-then-buy, ~30 candidates) was built,
-        /// measured, and REVERTED 2026-07-27: the harness scored the space itself higher
-        /// (+0.0208 vs +0.0149 ideal-selector headroom, same seeds) but the BOT screened
-        /// 49.5–51.5% vs greedy against v2's 52.7–53.2 — the stage-1 funnel tax over 30
-        /// candidates (expected max of 30 noise draws at 16 rollouts ≈ 0.26) exceeds the
-        /// space gain, and widening to 5 finalists did not close it. Growing the space
-        /// again requires a funnel that scales sublinearly (successive halving, or a
-        /// stage-0 prior filter) — the cursor's Reroll support stays for that day.</summary>
+        ///    handicapped against the incumbent. ~21 candidates;
+        ///  · v3 (feasible pairs + late quad + reroll-then-buy, ~30 candidates): richer
+        ///    on the harness (+0.0208 vs +0.0149 ideal-selector headroom) but WORSE in
+        ///    the bot under the flat stage-1 screen — the funnel tax over 30 candidates
+        ///    exceeded the space gain, so it was reverted UNTIL the successive-halving
+        ///    funnel landed (which screens the field cheaply and concentrates evidence
+        ///    on survivors), then re-enabled and re-gated.</summary>
         public static List<ShardsBasketPlan> EnumerateBaskets(ShardsEngine engine, int me,
             ShardsValueModel model)
         {
             var player = engine.State.Players[me];
-            var defs = new List<(string Id, double Value)>();
+            var defs = new List<(string Id, double Value, int Cost)>();
             var seen = new HashSet<string>();
             foreach (var card in engine.State.CenterRow)
                 if (card != null && seen.Add(card.DefId))
-                    defs.Add((card.DefId, model.CardValue(card.Def, player.Mastery)));
+                    defs.Add((card.DefId, model.CardValue(card.Def, player.Mastery),
+                        engine.EffectiveCost(player, card.Def)));
             // Deterministic order: value desc, id as the tie-break.
             defs.Sort((x, y) => x.Value != y.Value
                 ? y.Value.CompareTo(x.Value)
@@ -412,18 +466,31 @@ namespace Shards.Bots
                 new() { Defs = new List<string>(), Focus = true },
                 new() { Defs = new List<string>(), Hero = true }
             };
-            foreach (var (id, _) in defs)
+            foreach (var (id, _, _) in defs)
                 baskets.Add(new ShardsBasketPlan { Defs = new List<string> { id } });
-            var pairs = new List<(List<string> Defs, double Value)>();
+            var pairs = new List<(List<string> Defs, double Value, int Cost)>();
             for (int i = 0; i < defs.Count; i++)
                 for (int k = i + 1; k < defs.Count; k++)
                     pairs.Add((new List<string> { defs[i].Id, defs[k].Id },
-                        defs[i].Value + defs[k].Value));
+                        defs[i].Value + defs[k].Value,
+                        defs[i].Cost + defs[k].Cost));
             pairs.Sort((x, y) => x.Value != y.Value
                 ? y.Value.CompareTo(x.Value)
                 : string.CompareOrdinal(x.Defs[0] + x.Defs[1], y.Defs[0] + y.Defs[1]));
             for (int i = 0; i < pairs.Count && i < 6; i++)
                 baskets.Add(new ShardsBasketPlan { Defs = pairs[i].Defs });
+            // v3: the best pairs the economy can actually PAY for this turn. Raw
+            // value-ranked pairs skew expensive; when unaffordable they underfill into a
+            // singleton and dedup away, leaving the mid-cost combination space unexplored.
+            double budget = player.Gems +
+                            ShardsDeckStats.For(engine.State, me).GemsPerTurn * 1.25;
+            int added = 0;
+            for (int i = 6; i < pairs.Count && added < 3; i++)
+                if (pairs[i].Cost <= budget)
+                {
+                    baskets.Add(new ShardsBasketPlan { Defs = pairs[i].Defs });
+                    added++;
+                }
             for (int i = 0; i < defs.Count && i < 3; i++)
                 baskets.Add(new ShardsBasketPlan
                 {
@@ -459,6 +526,30 @@ namespace Shards.Bots
                 {
                     Defs = new List<string> { defs[0].Id },
                     Hero = true
+                });
+            // v3: the late-game quad — economies past 10 gems/turn can clear four buys.
+            if (defs.Count >= 4)
+                baskets.Add(new ShardsBasketPlan
+                {
+                    Defs = new List<string>
+                    {
+                        defs[0].Id, defs[1].Id, defs[2].Id, defs[3].Id
+                    }
+                });
+            // v3: reroll-then-buy — churn the deadest slot first; the refill joins the
+            // allowed-buy set iff it clears the tuned buy bar (see the cursor).
+            baskets.Add(new ShardsBasketPlan { Defs = new List<string>(), Reroll = true });
+            baskets.Add(new ShardsBasketPlan
+            {
+                Defs = new List<string>(),
+                Reroll = true,
+                Focus = true
+            });
+            if (defs.Count >= 1)
+                baskets.Add(new ShardsBasketPlan
+                {
+                    Defs = new List<string> { defs[0].Id },
+                    Reroll = true
                 });
             return baskets;
         }

@@ -859,3 +859,42 @@ that only rollouts the plausibly-live candidates), not before it.
 
 Session cost of the whole v3 question: one harness run + three 200-game screens ≈ 15
 minutes. The same question answered by SPRTs would have cost over an hour and said less.
+- **2026-07-27 20:30** — probe: basket-96 vs bench:greedy-v5 → 56.5 % [49.7 %–63.3 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-27 20:33** — probe: basket-96 vs bench:greedy-v5 → 56.4 % [52.9 %–60.0 %] paired over 264 pairs · SPRT H1 accepted (>= 15 Elo)
+- **2026-07-27 20:36** — probe: basket-96 vs bench:greedy-v5 → 58.0 % [51.1 %–64.9 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-27 20:40** — probe: basket-96 vs bench:greedy-v5 → 54.4 % [51.2 %–57.6 %] paired over 304 pairs · SPRT H1 accepted (>= 15 Elo)
+
+## 2026-07-27 end — the halving funnel lands, and it resurrects the v3 space
+
+The v3 post-mortem said "the next space growth must come WITH a sublinear funnel." Both
+halves shipped within the hour:
+
+**Successive halving replaces the flat stage-1 screen.** Round 1 gives every candidate a
+cheap CRN look (Stage1/2 rollouts per world); the top half survives and earns Stage1 more;
+the finalist cut is then made on ~1.5× the evidence at the same total cost, and the cost
+now scales sublinearly with the field. Stage 2 (fresh seeds + deviation margin) is
+unchanged. On the SAME v2 space this alone screened 56.5% and **SPRT'd at +45 Elo
+[52.9–60.0], H1 at 250 pairs** — the funnel was leaving strength on the table even at 21
+candidates.
+
+**Then the v3 space (feasible pairs, late quad, reroll-then-buy) was re-enabled** — the
+space the flat funnel had drowned — and screened 58.0%, **SPRT +31 Elo [51.2–57.6], H1 at
+290 pairs**. The two halving configs are statistically indistinguishable at these n (the
+early-stop point estimates carry noise; the CIs overlap almost entirely); v3 is kept as
+champion on the secondary instruments — ideal-selector headroom +0.0208 vs +0.0149 and the
+higher screen — with this ambiguity recorded rather than smoothed over.
+
+**The night's ladder vs the frozen bench:greedy-v5, every rung SPRT-decided:**
+
+| Config | Result | H1 at |
+|---|---|---|
+| rails only (2×24, flat funnel, MinRound 4) | +14 Elo | 1210 pairs |
+| + combo baskets | +18 Elo | 890 |
+| + opening search (MinRound 1) | +30 Elo | 410 |
+| + halving funnel (v2 space) | **+45 Elo** | **250** |
+| + v3 space | +31–45 Elo (see above) | 290 |
+
+Champion: **basket-96** — v3 space, halving funnel, 2×48 deciding rollouts, margin 0.05,
+MinRound 1 — at **~29 ms/decision**, under a tenth of the shipping think budget. Next:
+Gate A on THIS frozen config (overnight, detached), then the shared-ChooseAnswer holes at
+a declared freeze point, then the joint retune.

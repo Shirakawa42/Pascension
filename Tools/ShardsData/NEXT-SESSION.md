@@ -36,19 +36,21 @@ playstyle by itself rather than have one hand-coded.
      static-eval headroom **negative** (L1 −0.015). Rollout-scored baskets are the ONLY
      measured-positive selector. Do not revive eval-steered planning; do not gate anything
      on holdout accuracy.
-3. **`ShardsBasketPlannerBot` (kind `basket`) beats the frozen benchmark by +30 Elo.**
-   Whole-turn purchase-basket search: ~21 spend-sets at each of MY turn starts (incl. the
-   buy+focus/hero combo tier), leaves on determinized CRN forks, terminal-rollout scoring
-   with per-world leaf-dedup, state-driven cursor execution. Two rails, each earned by a
-   failed gate (v1 was 39.3%, −76 Elo): two-stage CRN refinement (screen 8/world → decide
-   finalists on 24 FRESH/world) and DeviationMargin 0.05 vs the natural turn (margin → ∞
-   degenerates to exactly V5: bounded downside). The measured progression, all vs
-   bench:greedy-v5, all SPRT-decided: rails-only **+14 Elo** (1210 pairs) → combo baskets
-   **+18** (890 pairs) → opening search enabled (MinRound 4→1) **+30 Elo — 54.2%
-   [51.2–57.3], H1 at 410 pairs**, at 19 ms/decision. The opening turned out to be the
-   richest domain of all once measured (`rank --min-round 1 --max-round 3`: headroom
-   +0.0273/turn, sibling gaps 2× mid-game) — v1's opening losses were its biased
-   same-sample argmax, not the domain.
+3. **`ShardsBasketPlannerBot` beats the frozen benchmark by +31–45 Elo; champion kind is
+   `basket-96`.** Whole-turn purchase-basket search: ~30 spend-sets at each of MY turn
+   starts (v3 space: combo tier + feasible pairs + late quad + reroll-then-buy), leaves on
+   determinized CRN forks, terminal-rollout scoring with per-world leaf-dedup,
+   state-driven cursor execution. The load-bearing pieces, each earned by a failed gate:
+   **successive-halving stage 1** (cheap CRN look at the whole field → top half earns
+   ~1.5× evidence; sublinear in field size — the flat screen's noise-argmax is what
+   killed space growth), **fresh-seed stage 2** (selection never peeks at the deciding
+   sample; v1 without this was −76 Elo), **DeviationMargin 0.05** vs the natural turn
+   (margin → ∞ degenerates to exactly V5: bounded downside), **MinRound 1** (the opening
+   measured as the RICHEST domain: +0.0273/turn headroom, sibling gaps 2× mid-game).
+   Ladder vs bench:greedy-v5, every rung SPRT-decided: +14 → +18 (combos) → +30 (opening)
+   → **+45 (halving, v2 space, H1 at 250 pairs)** → +31–45 (v3 space; indistinguishable
+   from v2+halving at current n, kept on harness headroom +0.0208 vs +0.0149 and the
+   higher screen). **~29 ms/decision** — under a tenth of the think budget.
 
 ## Hard measurements — treat these as constraints, not opinions
 
@@ -59,9 +61,9 @@ playstyle by itself rather than have one hand-coded.
 | Sibling headroom at ACTION granularity | +0.002/decision, all selectors | 1-step lookahead can never beat V5, with any evaluator. Retired. |
 | Sibling headroom at BASKET granularity | rollout +0.015/turn mid-game, **+0.027 opening**; static evals NEGATIVE everywhere | Search baskets, score with rollouts only; the opening is the richest domain. |
 | Basket planner v1 (no rails) | 39.3%, −76 Elo | Argmax over noisy estimates deviates on noise; decide on fresh samples, require a margin. |
-| Basket planner (rails + combos + opening) | **+30 Elo vs greedy-v5, SPRT H1 at 410 pairs** | The design works; measured, not assumed. |
-| basket-96 vs basket, head-to-head | **+30 Elo more, SPRT H1 at 470 pairs** | CHAMPION CONFIG. 27 ms/decision. |
-| basket-192 / 192m / 96m vs basket-96 | 49.9% · 47.0% · 47.5% — all dead | Rollout/margin knobs are AT optimum for this space. Only the basket SPACE can move the needle. |
+| Basket planner ladder vs greedy-v5 | +14 → +18 → +30 → **+45** (halving) → +31–45 (v3 space) — all SPRT H1 | Measure → open → gate works. Champion: basket-96, ~29 ms/decision. |
+| basket-192 / 192m / 96m vs basket-96 | 49.9% · 47.0% · 47.5% — all dead (flat-funnel era) | Rollout/margin knobs at optimum. ⚠ measured BEFORE halving landed — may deserve ONE re-screen under the new funnel. |
+| Flat screen vs halving funnel | v3 space: 49.5–51.5% flat vs 58.0% halving (screens) | `rank` measures spaces under an IDEAL selector; the bot pays for selection. A richer space needs a funnel that scales. |
 | ISMCTS crossover | ~1200 it break-even vs greedy; +115 Elo/doubling above | The wall-clock bar the basket bot must eventually beat. |
 | Engine throughput | ~1050 games/s single-thread | Rollouts are cheap; the 200–500 ms envelope funds thousands. |
 | Old neural ladder | −410 Elo, deleted | Do not resurrect. |
@@ -99,14 +101,15 @@ basket-96; the only probe kind that separates configs):
   (smaller margin, same rollouts) **47.5%** — all dead at 200-game screens. The current
   basket space's headroom is FULLY harvested at 96 rollouts / 0.05 margin; looser filters
   admit only noise-deviations. Champion config: **basket-96**. Do not re-tune these knobs.
-Space round 2 (v3: feasible pairs, quad, reroll-then-buy) was TRIED and REVERTED: the
-harness scored the space richer (+0.0208 ideal-selector headroom vs +0.0149) but the bot
-screened WORSE (49.5–51.5% vs v2's 52.7–53.2), because the stage-1 funnel tax over 30
-candidates grows faster than the space's headroom — and 5 finalist slots did not close it.
-The reroll cursor capability is built and dormant. **Growing the space again requires a
-sublinear funnel first**: successive halving across stage 1, or a stage-0 prior filter
-(model CardValue / feasibility) that only rollouts plausibly-live candidates. Design that,
-verify the funnel recovers v2's numbers ON the v2 space, then re-enable the v3 tier.
+The successive-halving funnel LANDED and the v3 space is LIVE (see the ladder above) —
+the "sublinear funnel first" prerequisite is done. Remaining growth candidates, all
+200-game-screened first:
+- **Re-screen the deciding-rollout ladder under halving** (basket-192 died in the
+  flat-funnel era; the funnel change may have moved the optimum — one screen answers it).
+- Space v4 ideas: destiny/relic-prescribed baskets (currently free-action greedy),
+  multi-reroll baskets late-game, per-round margins (opening gaps are 2× mid-game).
+- Separate v2-vs-v3 space properly only if it ever matters: the two are indistinguishable
+  at current n and the next lever will likely change both.
 Coverage flags to fix at a deliberate benchmark freeze point (they move the SHARED
 ChooseAnswer — re-run key probes after, like the four-decisions fix): `soi.scry` options
 never taken (Rez pays 1 gem then always keeps — a live no-op now that baskets fire his
@@ -138,15 +141,12 @@ least re-run `soisim rank` with the retuned vector — before any mint.
 
 ## Suggested first moves
 
-1. **The sublinear funnel** (the prerequisite everything else waits on): successive
-   halving over stage 1 — e.g. all candidates × 4 rollouts/world, keep top half, ×8 more,
-   keep top 4, then the stage-2 deciding sample. Verify on the CURRENT v2 space first: it
-   must reproduce v2's screens (52.7–53.2 vs greedy) at equal-or-less cost. Then re-enable
-   the v3 tier (one `git revert` of the reversion commit's enumeration hunk; the reroll
-   cursor is already live) and re-screen.
-2. When the space+funnel stabilize, Gate A on the frozen champion: `probe --a basket-96
-   --b bench:rollout-1200 --games 2000 --sprt` — OVERNIGHT, detached (~7 h; the verdict
-   auto-appends to campaign-log.md). Never mid-session.
+1. **Gate A on the frozen champion** — the config is now worth the spend: launch
+   `probe --a basket-96 --b bench:rollout-1200 --games 2000 --sprt` OVERNIGHT, detached
+   (~7 h; Start-Process pattern, verdict auto-appends to campaign-log.md). Never
+   mid-session. Read its line before doing anything else next session.
+2. While it runs elsewhere: one 200-game re-screen of basket-192 vs basket-96 (the
+   rollout ladder was closed in the flat-funnel era; halving may have moved the optimum).
 3. At the next benchmark freeze point: handlers for soi.scry and soi.reveal (reuse tuned
    quantities, same recipe as the four-decisions fix), then re-run the ablation and the
    basket-96 SPRT since bench:greedy-v5's behaviour moves.
