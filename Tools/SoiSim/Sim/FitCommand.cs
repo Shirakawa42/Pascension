@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -46,14 +45,6 @@ namespace SoiSim
             int games = cli.GetInt("--games", 4000);
             ulong seedBase = cli.GetULong("--seed-base", 990000);
             int threads = cli.GetInt("--threads", Math.Max(1, Environment.ProcessorCount - 1));
-            // ⚠ OPEN ISSUE: repeated runs over what should be identical data still land
-            // within about a point of each other (63.4 / 64.3 / 64.1 / 65.6). Raising epochs
-            // 400 -> 4000 narrowed it but did not remove it, so it is not only convergence;
-            // something in the parallel collection is not reproducible. Until that is found,
-            // treat any single fit's accuracy as ±1 point and never compare two fits by less
-            // than that. The DIRECTION is stable — every run beats the health+mastery
-            // baseline — but the magnitude is not yet trustworthy, and this loop cannot be
-            // used to accept or reject a feature until it is.
             int epochs = cli.GetInt("--epochs", 4000);
             double lr = cli.GetDouble("--lr", 0.5);
             double l2 = cli.GetDouble("--l2", 1e-4);
@@ -68,7 +59,16 @@ namespace SoiSim
 
             Console.WriteLine($"fit: {games} games, dlc mask {(int)SimConfig.AllDlc}, min round {minRound}");
             var sw = Stopwatch.StartNew();
-            var samples = new ConcurrentBag<Sample>();
+            // One slot per game, merged in game order below. The first version used a
+            // ConcurrentBag, whose enumeration order depends on thread scheduling; game
+            // CONTENT was already reproducible (the fixed-weight baseline accuracy was
+            // identical across every run), but the ORDER the samples reached the gradient
+            // accumulator was not, and floating-point addition is not associative. With
+            // lr held at 0.5 for 4000 epochs those last-ulp differences are amplified
+            // rather than damped, which is exactly the 63.4/64.3/64.1/65.6 spread the
+            // campaign log records. Distinct array slots need no lock, and the merge
+            // order is the game index — nothing downstream sees the scheduler.
+            var perGame = new List<Sample>[games];
 
             Parallel.For(0, games, new ParallelOptions { MaxDegreeOfParallelism = threads }, g =>
             {
@@ -116,10 +116,16 @@ namespace SoiSim
                 }
                 if (!adapter.GameOver || adapter.WinnerIndex < 0) return;
                 double y = adapter.WinnerIndex == 0 ? 1 : 0;
-                foreach (var x in local) samples.Add(new Sample { X = x, Y = y, Game = seed });
+                var bucket = new List<Sample>(local.Count);
+                foreach (var x in local) bucket.Add(new Sample { X = x, Y = y, Game = seed });
+                perGame[g] = bucket;
             });
 
-            var data = samples.ToArray();
+            var merged = new List<Sample>();
+            foreach (var bucket in perGame)
+                if (bucket != null)
+                    merged.AddRange(bucket);
+            var data = merged.ToArray();
             Console.WriteLine($"  {data.Length:N0} positions in {sw.Elapsed.TotalSeconds:F1}s");
             if (data.Length < 1000) { Console.Error.WriteLine("fit: too few samples"); return 2; }
 
