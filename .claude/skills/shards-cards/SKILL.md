@@ -176,6 +176,27 @@ needed.
 - **Characters**: decima / tetra / volos / kosynwu (+ rez with SoS). All identical:
   Focus = exhaust character + 1 gem → +1 mastery, once per turn. Relic pairs bind via
   `ShardsCardDef.Character`.
+- **Duel hero abilities** — single source of truth is `ShardsEngine.HeroAbilityInfo`
+  (costs, names, rules text); the effect body is `ShardsEngine.HeroAbilityEffect`. Every UI
+  and the value model read those, so a cost change is made in ONE place — plus the two FR
+  strings in `LocFrench.cs` and a Changelog entry.
+
+  | Hero | Ability | Cost | Effect |
+  |---|---|---|---|
+  | decima | Recruiting | — | **passive**: first buy each turn costs 1 less (lives in `EffectiveCost`) |
+  | tetra | Perception | 3 gems | draw 1 |
+  | volos | First Aid | 1 gem | gain 3 health |
+  | kosynwu | Sacrifice | **2 gems + 3 health** | banish 1 from hand/discard |
+  | rez | Futureproof | **free** | Scry 2 the center deck |
+
+  ⚠ **Rebalanced 2026-07-27** (was: Sacrifice 3 gems, Futureproof 1 gem). Both abilities
+  were measurably unusable — `soisim coverage` recorded **0 activations across 1,622 and
+  1,583 drafted games**. Futureproof is designed to PAIR with the row reroll (bury a card
+  that would help an Undergrowth-heavy opponent, or set up a reroll target), which is
+  unaffordable if the Scry itself costs the reroll's gem. Sacrifice is a strong effect whose
+  3-health cost genuinely is not worth it in a damage race, so the gem side gave way instead.
+  Any further cost change must be re-checked with `soisim coverage` — an ability nobody can
+  afford is invisible to win-rate testing, because both seats share the blind spot.
 - **Tests**: `ShardsContentTests.cs` (counts, setup, termination, conservation),
   `ShardsRulingsTests.cs` (one test per FAQ ruling), `ShardsEngineTests.cs` (structural,
   stub set). Keep `Tools/EngineVerify` green.

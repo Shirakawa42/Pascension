@@ -137,10 +137,10 @@ namespace Pascension.Game.UI
                 "M5, une fois par tour : payez 3 cristaux, piochez une carte.",
             ["M5, once per turn: pay 1 gem, gain 3 health."] =
                 "M5, une fois par tour : payez 1 cristal, gagnez 3 santé.",
-            ["M5, once per turn: pay 3 gems and 3 health, banish a card from your hand or discard pile."] =
-                "M5, une fois par tour : payez 3 cristaux et 3 santé, bannissez une carte de votre main ou de votre défausse.",
-            ["M5, once per turn: pay 1 gem, Scry 2 the center deck."] =
-                "M5, une fois par tour : payez 1 cristal, Sondez 2 la pioche commune.",
+            ["M5, once per turn: pay 2 gems and 3 health, banish a card from your hand or discard pile."] =
+                "M5, une fois par tour : payez 2 cristaux et 3 santé, bannissez une carte de votre main ou de votre défausse.",
+            ["M5, once per turn: Scry 2 the center deck."] =
+                "M5, une fois par tour : Sondez 2 la pioche commune.",
             ["drafted"] = "drafté",
             [" drafts "] = " drafte ",
             ["rerolled"] = "relancée",

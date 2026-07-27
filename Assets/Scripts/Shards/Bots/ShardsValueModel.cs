@@ -25,6 +25,11 @@ namespace Shards.Bots
         /// this is 5 entries, not a per-call effect walk.</summary>
         private readonly Dictionary<string, double> _heroAbilityValue = new();
 
+        /// <summary>characterId → banish capacity of that hero's ability, for the heroes
+        /// whose ability removes cards. Priced at scoring time against the actual deck
+        /// (see <see cref="BanishValue"/>), never from the state-free atoms.</summary>
+        private readonly Dictionary<string, int> _heroAbilityBanish = new();
+
         /// <summary>Reverts the four decisions added 2026-07-27 (removeshop / reset /
         /// defiant / mode) to the old `default` fall-through, purely so the fix can be
         /// A/B'd against what shipped before it. Never set in a shipped bot.</summary>
@@ -49,10 +54,13 @@ namespace Shards.Bots
             {
                 var effect = ShardsEngine.HeroAbilityEffect(characterId);
                 if (effect == null) continue; // Decima's ability is a passive discount
-                var (res, structural) = Collapse(ShardsCardStatics.StandaloneAtoms(effect, 0));
+                var atoms = ShardsCardStatics.StandaloneAtoms(effect, 0);
+                var (res, structural) = Collapse(atoms);
                 var spec = ShardsEngine.HeroAbilityInfo(characterId);
                 _heroAbilityValue[characterId] =
                     ResourceValue(res) + structural - spec.Gems * _w[W.Gems];
+                if (atoms.BanishCapacity > 0)
+                    _heroAbilityBanish[characterId] = atoms.BanishCapacity;
             }
         }
 
@@ -226,6 +234,57 @@ namespace Shards.Bots
             return best ?? new ShardsEndTurnAction { PlayerIndex = playerIndex };
         }
 
+        /// <summary>Value of banishing up to <paramref name="capacity"/> cards from hand or
+        /// discard, priced against THIS deck right now.
+        ///
+        /// Why this exists. `W.BanishPerCapacity` is a flat per-card scalar, and a flat
+        /// scalar structurally cannot express what banishing is worth: removing a Blaster
+        /// from a developed deck is the best thinning in the game, while removing a good card
+        /// is actively bad. One number has to average those toward zero — V5 tuned it to
+        /// −0.026 — and near zero it can never pay for Ko Syn Wu's 2 gems + 3 health. That is
+        /// why Sacrifice fired 0 times in 1,622 drafted games.
+        ///
+        /// What actually matters is how far BELOW the deck's own average the worst reachable
+        /// card sits, because removing it lifts the quality of every future draw. Cards are
+        /// valued at the owner's CURRENT mastery, so a starter that has stopped scaling is
+        /// correctly cheap to give up.
+        ///
+        /// Returns 0 when only at-or-above-average cards can be reached — banishing is then
+        /// correctly worthless rather than merely cheap, which is the behaviour that keeps
+        /// the bot from feeding its own engine into a Sacrifice.</summary>
+        public double BanishValue(ShardsPlayer player, int capacity)
+        {
+            if (capacity <= 0) return 0;
+            int owned = player.Deck.Count + player.Hand.Count +
+                        player.Discard.Count + player.PlayZone.Count;
+            if (owned == 0) return 0;
+
+            double total = 0;
+            foreach (var c in player.Deck) total += CardValue(c.Def, player.Mastery);
+            foreach (var c in player.Hand) total += CardValue(c.Def, player.Mastery);
+            foreach (var c in player.Discard) total += CardValue(c.Def, player.Mastery);
+            foreach (var c in player.PlayZone) total += CardValue(c.Def, player.Mastery);
+            double average = total / owned;
+
+            // BanishUpTo reaches hand and discard only.
+            double gain = 0;
+            for (int taken = 0; taken < capacity; taken++)
+            {
+                double best = 0;
+                foreach (var c in player.Hand)
+                    best = Math.Max(best, average - CardValue(c.Def, player.Mastery));
+                foreach (var c in player.Discard)
+                    best = Math.Max(best, average - CardValue(c.Def, player.Mastery));
+                if (best <= 0) break; // nothing below average left to remove
+                gain += best;
+                // Removing the worst card raises the average slightly; a second banish is
+                // therefore worth strictly less. Only Sacrifice (capacity 1) exists today,
+                // but the loop must not credit the same card twice if capacity grows.
+                average += best / Math.Max(1, owned);
+            }
+            return gain * _w[W.BanishBelowAverage];
+        }
+
         public double ScoreAction(ShardsEngine engine, ShardsPlayer player, PlayerAction action)
         {
             switch (action)
@@ -312,6 +371,13 @@ namespace Shards.Bots
                         !_heroAbilityValue.TryGetValue(player.CharacterId, out double net))
                         return double.MinValue; // passive or unknown hero: nothing to activate
                     var spec = ShardsEngine.HeroAbilityInfo(player.CharacterId);
+                    // A banishing ability (Ko Syn Wu) is worth what it would actually REMOVE,
+                    // which the precomputed atoms cannot know — they are state-free. See
+                    // BanishValue: a flat per-capacity weight averages "banish a Blaster" and
+                    // "banish your engine" into a number near zero, so the ability could never
+                    // pay for itself and fired 0 times in 1,622 games.
+                    if (_heroAbilityBanish.TryGetValue(player.CharacterId, out int capacity))
+                        net += BanishValue(player, capacity);
                     // Life is cheap at full health and near-suicidal when low, so scale the
                     // health component of the cost by scarcity (Ko Syn Wu pays 3).
                     if (spec.Health > 0)

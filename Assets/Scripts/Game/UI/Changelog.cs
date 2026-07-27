@@ -50,6 +50,14 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-07-29",
+                "· Two hero abilities rebalanced. Rez's Futureproof is now FREE (was 1 gem) and Ko Syn Wu's Sacrifice costs 2 gems instead of 3 — the 3 health is unchanged.\n" +
+                "· Why: both were priced out of their own game plan. Futureproof is meant to pair with a shop reroll — bury a card that would feed your opponent's faction, or set up something better to reroll into — and you could not afford both in the same turn. Sacrifice was strong but rarely worth 3 gems AND 3 health while an opponent was simply racing damage.\n" +
+                "· The AI now uses both. It also judges banishing by WHAT it would remove instead of by a flat 'banishing is worth X': dropping a Blaster from a developed deck is excellent, dropping a good card is not, and it no longer treats those as the same move.",
+                "· Deux capacités de héros rééquilibrées. Le Pare-Avenir de Rez est désormais GRATUIT (au lieu d'1 cristal) et le Sacrifice de Ko Syn Wu coûte 2 cristaux au lieu de 3 — les 3 points de vie ne changent pas.\n" +
+                "· Pourquoi : les deux étaient trop chères pour leur propre plan de jeu. Le Pare-Avenir est conçu pour se combiner avec une relance en boutique — enterrer une carte qui nourrirait la faction de l'adversaire, ou préparer mieux à relancer — et les deux étaient inabordables dans le même tour. Le Sacrifice était fort mais rarement digne de 3 cristaux ET 3 points de vie face à un adversaire qui course simplement les dégâts.\n" +
+                "· L'IA utilise enfin les deux. Elle juge aussi le bannissement selon CE QU'ELLE retire plutôt que par un « bannir vaut X » figé : se défausser d'un Blaster dans un deck développé est excellent, se défausser d'une bonne carte ne l'est pas, et elle ne confond plus les deux."),
+
             new Entry("2026-07-28",
                 "· The AI now actually plays Duel of Doom. Every difficulty was trained and tuned before the expansion existed, so the bots ignored two of its mechanics entirely: they never rerolled a shop card, and they fired their hero ability every single turn whether or not it was worth the cost.\n" +
                 "· Bots now reroll dead shop slots — and only dead ones, respecting the climbing price — and use their hero ability when its effect beats what it costs, so Ko Syn Wu no longer pays 3 health for a banish it doesn't want.\n" +

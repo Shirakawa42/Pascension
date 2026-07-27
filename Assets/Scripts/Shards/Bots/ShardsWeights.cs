@@ -55,7 +55,17 @@ namespace Shards.Bots
         // Rez's entire hero ability is Scry(2), so it was literally valueless.
         public const int ScryPerCard = 46, ReorderPerCard = 47, OppHandStrip = 48;
 
-        public const int Count = 49;
+        /// <summary>Scale on CONTEXTUAL thinning value: how far below the deck's own average
+        /// the best banishable card sits. Added 2026-07-27 because <see cref="BanishPerCapacity"/>
+        /// structurally cannot express what banishing is worth — removing a Blaster from a
+        /// 20-card deck is excellent and removing a good card is terrible, so a single
+        /// per-capacity scalar must average those toward zero, and near zero it can never pay
+        /// for Ko Syn Wu's 2 gems + 3 health. That is why Sacrifice fired 0 times in 1,622
+        /// drafted games. BanishPerCapacity is KEPT for card-effect atoms so no existing card
+        /// valuation shifts; this term is additive and state-aware.</summary>
+        public const int BanishBelowAverage = 49;
+
+        public const int Count = 50;
 
         /// <summary>Fallback for every index. Two consumers, one source of truth:
         /// ShardsValueModel.WeightAt uses it when an older (shorter) tuned vector is
@@ -81,7 +91,22 @@ namespace Shards.Bots
             // range near zero and never moves (which is why EndTurnBase has sat at ~0
             // since V1).
             50.0, -10.0, 100.0,
-            0.15, 0.25, 0.5
+            0.15, 0.25, 0.5,
+            // Contextual thinning — DEFAULT 0 ON PURPOSE, and this is the one place in this
+            // table where the usual "never default to 0" rule is wrong.
+            //
+            // Defaults is only consulted to PAD a vector that predates a weight. Every
+            // historical vector (V1..V5) was tuned when contextual thinning did not exist, so
+            // padding them with a non-zero value silently changes what they play. That is not
+            // hypothetical: this shipped briefly at 1.5 and measured -23 Elo [43.4-50.1],
+            // which also degraded `bench:greedy-v5` — the FROZEN benchmark every candidate is
+            // scored against. A yardstick that moves when a weight is appended is worse than
+            // no yardstick.
+            //
+            // The tunability concern does not apply here: sep-CMA-ES starts from the CURRENT
+            // champion (V6 carries 0.914, found by the 2026-07-27 re-tune), never from this
+            // table. So 0 keeps old vectors bit-identical while the live weight still tunes.
+            0.0
         };
 
         /// <summary>Pads a tuned vector up to the current layout with <see cref="Defaults"/>.

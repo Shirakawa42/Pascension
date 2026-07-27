@@ -75,6 +75,54 @@ namespace SoiSim.Tests
         }
 
         [Test]
+        public void FrozenBenchmark_PlaysAnIdenticalGame()
+        {
+            // The checksum test below pins V5's NUMBERS, but the benchmark can still drift
+            // without any weight changing — and did. Appending W.BanishBelowAverage with a
+            // non-zero default meant W.Pad silently handed V5 a term it was never tuned
+            // with, moving bench:greedy-v5 by roughly -23 Elo. Nothing caught it, because
+            // every guard was watching the weights rather than the play.
+            //
+            // So pin the PLAY: a fixed seed, a fixed move sequence, one hash. This fails on
+            // any change that alters what the benchmark does — new weight defaults, decision
+            // policy, tie-breaks, card data. When it fails, decide deliberately whether the
+            // yardstick should move, then re-mint this constant and re-baseline every
+            // measurement that cited it.
+            //
+            // Freeze point: 2026-07-27, after the four decision handlers were added.
+            var adapter = NewGame(20260727);
+            var bot = ShardsBotRanks.Create(GreedyV5, 99, adapter.Inner);
+            var driver = ShardsBotRanks.Create(GreedyV5, 100, adapter.Inner);
+            ulong hash = 1469598103934665603UL; // FNV-1a offset basis
+            int moves = 0, guard = 0;
+            while (!adapter.GameOver && guard++ < SimGameRunner.GuardLimit && moves < 400)
+            {
+                var pending = adapter.PendingInput;
+                if (pending == null) break;
+                var seat = pending.PlayerIndex == 0 ? bot : driver;
+                var action = seat.Choose(pending, null) ?? adapter.DefaultActionFor(pending);
+                foreach (char ch in action.Describe() ?? "")
+                {
+                    hash ^= ch;
+                    hash *= 1099511628211UL;
+                }
+                moves++;
+                if (!adapter.Submit(action).Accepted &&
+                    !adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput)).Accepted)
+                    break;
+            }
+            Assert.Greater(moves, 50, "too few moves to be a meaningful fingerprint");
+            Assert.AreEqual(FrozenPlayFingerprint, hash,
+                $"bench:greedy-v5 no longer plays the frozen game ({moves} moves). Something " +
+                "changed what the BENCHMARK does — check W.Defaults for a newly appended " +
+                "weight, then re-mint deliberately and re-baseline anything that cited it.");
+        }
+
+        /// <summary>Minted 2026-07-27 over a 353-move game from seed 20260727.
+        /// See FrozenBenchmark_PlaysAnIdenticalGame.</summary>
+        private const ulong FrozenPlayFingerprint = 6677764281591325285UL;
+
+        [Test]
         public void V5_IsContentFrozen()
         {
             // bench:greedy-v5 is only a fixed reference while V5's NUMBERS are fixed.

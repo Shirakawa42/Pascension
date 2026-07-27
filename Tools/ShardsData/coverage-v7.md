@@ -1,6 +1,6 @@
 # SoI Action-Space Coverage
 
-- Bots: **bench:greedy-v5** · games 4000 (4000 finished) · DLC mask 15 · 2.0s
+- Bots: **greedy** · games 3000 (3000 finished) · DLC mask 15 · 1.3s
 - A **zero** below is a blind spot: a bug, a scoring hole, or a strategic
   choice that should be stated rather than assumed. Win rate cannot see any of them.
 
@@ -8,47 +8,47 @@
 
 | Action | Times chosen | Per game |
 |---|---:|---:|
-| ShardsPlayCardAction | 707,495 | 176.87 |
-| ShardsBuyCardAction | 143,198 | 35.80 |
-| ShardsRerollRowAction | 1,746 | 0.44 |
-| ShardsFocusAction | 85,890 | 21.47 |
-| ShardsHeroAbilityAction | 23,887 | 5.97 |
-| ShardsExhaustAction | 177,620 | 44.41 |
-| ShardsAttackMonsterAction | 5,018 | 1.25 |
-| ShardsTakeDestinyAction | 7,998 | 2.00 |
-| ShardsRecruitRelicAction | 7,764 | 1.94 |
-| ShardsEndTurnAction | 106,205 | 26.55 |
-| SubmitDecisionAction | 214,902 | 53.73 |
-| ↳ of which mercenary fast-play | 28,720 | 7.18 |
+| ShardsPlayCardAction | 531,468 | 177.16 |
+| ShardsBuyCardAction | 108,064 | 36.02 |
+| ShardsRerollRowAction | 1,303 | 0.43 |
+| ShardsFocusAction | 64,521 | 21.51 |
+| ShardsHeroAbilityAction | 17,123 | 5.71 |
+| ShardsExhaustAction | 133,574 | 44.52 |
+| ShardsAttackMonsterAction | 3,735 | 1.25 |
+| ShardsTakeDestinyAction | 5,999 | 2.00 |
+| ShardsRecruitRelicAction | 5,833 | 1.94 |
+| ShardsEndTurnAction | 79,735 | 26.58 |
+| SubmitDecisionAction | 160,555 | 53.52 |
+| ↳ of which mercenary fast-play | 21,869 | 7.29 |
 
 ## 2. Decision contexts
 
 | Context | Times reached | Per game |
 |---|---:|---:|
-| soi.banish | 27,624 | 6.906 |
-| soi.confirm | 1,409 | 0.352 |
-| soi.copy | 5,477 | 1.369 |
-| soi.defiant | 5,761 | 1.440 |
-| soi.destiny | 2,629 | 0.657 |
-| soi.destroy | 1,954 | 0.488 |
-| soi.discard | 1,418 | 0.354 |
-| soi.handpick | 1,420 | 0.355 |
-| soi.herodraft | 8,000 | 2.000 |
-| soi.keepfast | 1,611 | 0.403 |
-| soi.maglev | 25 | 0.006 |
-| soi.mode | 3,302 | 0.826 |
-| soi.recruit | 49 | 0.012 |
-| soi.relic | 979 | 0.245 |
-| soi.removeshop | 7,399 | 1.850 |
-| soi.reorder | 4,526 | 1.131 |
-| soi.reset | 1,596 | 0.399 |
-| soi.return | 8,370 | 2.092 |
-| soi.reveal | 19,798 | 4.949 |
-| soi.scry | 14,276 | 3.569 |
-| soi.shields | 28,140 | 7.035 |
-| soi.split | 41,047 | 10.262 |
-| soi.tutor | 3,829 | 0.957 |
-| soi.warp | 24,263 | 6.066 |
+| soi.banish | 20,236 | 6.745 |
+| soi.confirm | 1,051 | 0.350 |
+| soi.copy | 4,155 | 1.385 |
+| soi.defiant | 4,282 | 1.427 |
+| soi.destiny | 1,923 | 0.641 |
+| soi.destroy | 1,395 | 0.465 |
+| soi.discard | 1,042 | 0.347 |
+| soi.handpick | 1,085 | 0.362 |
+| soi.herodraft | 6,000 | 2.000 |
+| soi.keepfast | 1,181 | 0.394 |
+| soi.maglev | 12 | 0.004 |
+| soi.mode | 2,451 | 0.817 |
+| soi.recruit | 39 | 0.013 |
+| soi.relic | 728 | 0.243 |
+| soi.removeshop | 5,517 | 1.839 |
+| soi.reorder | 3,402 | 1.134 |
+| soi.reset | 1,194 | 0.398 |
+| soi.return | 6,345 | 2.115 |
+| soi.reveal | 14,839 | 4.946 |
+| soi.scry | 10,672 | 3.557 |
+| soi.shields | 21,202 | 7.067 |
+| soi.split | 30,936 | 10.312 |
+| soi.tutor | 2,863 | 0.954 |
+| soi.warp | 18,005 | 6.002 |
 
 `soi.target` is 0 as expected — auto-resolves with one living opponent (3 sites, all guarded on Count > 1).
 
@@ -60,11 +60,11 @@ correctly never an action.
 
 | Character | Games drafted | Ability used | Per drafted game |
 |---|---:|---:|---:|
-| (passive) decima | 1,574 | 0 | 0.00 |
-| kosynwu | 1,622 | 2,338 | 1.44 |
-| rez | 1,583 | 14,276 | 9.02 |
-| tetra | 1,654 | 532 | 0.32 |
-| volos | 1,567 | 6,741 | 4.30 |
+| (passive) decima | 1,183 | 0 | 0.00 |
+| kosynwu | 1,232 | 1,139 | 0.92 |
+| rez | 1,181 | 10,672 | 9.04 |
+| tetra | 1,257 | 414 | 0.33 |
+| volos | 1,147 | 4,898 | 4.27 |
 
 ## 2c. Optional decisions — ever taken, ever declined?
 
@@ -74,57 +74,57 @@ Always-takes is equally suspicious: the choice is not being made.
 
 | Decision | Took | Declined | Verdict |
 |---|---:|---:|---|
-| soi.banish | 14,751 | 12,862 | both |
-| soi.confirm | 1,409 | 0 | ⚠ never declined |
-| soi.copy | 1,583 | 0 | ⚠ never declined |
-| soi.destroy | 1,099 | 0 | ⚠ never declined |
-| soi.keepfast | 1,611 | 0 | ⚠ never declined |
-| soi.maglev | 25 | 0 | ⚠ never declined |
-| soi.removeshop | 240 | 7,159 | both |
-| soi.reset | 1,596 | 0 | ⚠ never declined |
-| soi.return | 5,810 | 0 | ⚠ never declined |
-| soi.reveal | 19,798 | 0 | ⚠ never declined |
-| soi.scry | 0 | 14,276 | 🚨 NEVER taken |
-| soi.shields | 28,140 | 0 | ⚠ never declined |
-| soi.split | 363 | 0 | ⚠ never declined |
-| soi.warp | 24,263 | 0 | ⚠ never declined |
+| soi.banish | 10,609 | 9,616 | both |
+| soi.confirm | 1,051 | 0 | ⚠ never declined |
+| soi.copy | 1,189 | 0 | ⚠ never declined |
+| soi.destroy | 774 | 0 | ⚠ never declined |
+| soi.keepfast | 1,181 | 0 | ⚠ never declined |
+| soi.maglev | 12 | 0 | ⚠ never declined |
+| soi.removeshop | 172 | 5,345 | both |
+| soi.reset | 1,194 | 0 | ⚠ never declined |
+| soi.return | 4,427 | 0 | ⚠ never declined |
+| soi.reveal | 14,839 | 0 | ⚠ never declined |
+| soi.scry | 0 | 10,672 | 🚨 NEVER taken |
+| soi.shields | 21,202 | 0 | ⚠ never declined |
+| soi.split | 277 | 0 | ⚠ never declined |
+| soi.warp | 18,005 | 0 | ⚠ never declined |
 
 Multi-option decisions — is the choice actually being made, or is it always
 the first option (the `ChooseAnswer` default's signature)?
 
 | Decision | Picked option 0 | Picked another | Verdict |
 |---|---:|---:|---|
-| soi.banish | 289 | 13,831 | chooses |
-| soi.copy | 2,657 | 2,060 | chooses |
-| soi.defiant | 5,606 | 155 | chooses |
-| soi.destiny | 677 | 1,952 | chooses |
-| soi.destroy | 562 | 794 | chooses |
-| soi.handpick | 163 | 1,257 | chooses |
-| soi.herodraft | 1,771 | 6,229 | chooses |
-| soi.mode | 731 | 2,571 | chooses |
-| soi.recruit | 8 | 41 | chooses |
-| soi.relic | 200 | 779 | chooses |
-| soi.removeshop | 36 | 204 | chooses |
-| soi.reset | 424 | 577 | chooses |
-| soi.return | 1,942 | 2,744 | chooses |
-| soi.reveal | 5,944 | 0 | 🚨 ALWAYS the first option |
-| soi.split | 3,120 | 16 | chooses |
-| soi.tutor | 502 | 3,067 | chooses |
-| soi.warp | 5,475 | 13,029 | chooses |
+| soi.banish | 179 | 9,951 | chooses |
+| soi.copy | 2,069 | 1,531 | chooses |
+| soi.defiant | 4,154 | 128 | chooses |
+| soi.destiny | 498 | 1,425 | chooses |
+| soi.destroy | 407 | 563 | chooses |
+| soi.handpick | 119 | 966 | chooses |
+| soi.herodraft | 1,336 | 4,664 | chooses |
+| soi.mode | 533 | 1,918 | chooses |
+| soi.recruit | 6 | 33 | chooses |
+| soi.relic | 150 | 578 | chooses |
+| soi.removeshop | 28 | 144 | chooses |
+| soi.reset | 316 | 425 | chooses |
+| soi.return | 1,490 | 2,071 | chooses |
+| soi.reveal | 4,422 | 0 | 🚨 ALWAYS the first option |
+| soi.split | 2,415 | 15 | chooses |
+| soi.tutor | 363 | 2,297 | chooses |
+| soi.warp | 4,003 | 9,742 | chooses |
 
 Most-banished cards — thinning should prefer whatever sits furthest
 below the deck's own average, so starters should dominate this list.
 
-- crystal: 10,579
-- shard_reactor: 3,233
-- blaster: 1,581
-- dash_duel: 1
-- evokatus_duel: 1
+- crystal: 7,615
+- shard_reactor: 2,331
+- blaster: 1,154
+- g_48: 1
 - unknown_god: 1
-- shard_seer: 1
 - aegis_archivist: 1
+- shard_seer: 1
+- dash_duel: 1
 
-| soi.split targeting | 26,147 hit a champion | 14,900 face only | both
+| soi.split targeting | 19,644 hit a champion | 11,292 face only | both
 
 ## 3. Cards never acquired
 
@@ -149,8 +149,8 @@ Every owned non-destiny card was played at least once. ✅ (Destinies are exhaus
 M30 and still win by damage. For the actual win-type split use the balance
 report's `Win type` line, which reads the terminating event.
 
-- winner reached M30: **61.3%** (2,451)
-- winner below M30: **38.7%** (1,549)
+- winner reached M30: **61.3%** (1,839)
+- winner below M30: **38.7%** (1,161)
 
 ## 6. Verdict
 

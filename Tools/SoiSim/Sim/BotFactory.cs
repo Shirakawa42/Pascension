@@ -91,6 +91,17 @@ namespace SoiSim
                 WeightNames[blind] = "duel-blind";
                 return blind;
             }
+            if (name == "flat-banish")
+            {
+                // Ablates ONLY the 2026-07-27 contextual thinning term, leaving the old flat
+                // W.BanishPerCapacity behaviour, so the structural change can be measured
+                // without also changing the hero-ability costs (which are rules, and apply
+                // to both seats either way).
+                var flat = (double[])W.Pad(ShardsEvalWeights.Current).Clone();
+                flat[W.BanishBelowAverage] = 0;
+                WeightNames[flat] = "flat-banish";
+                return flat;
+            }
             if (name == "scry-live")
             {
                 // `soisim coverage` found that Rez's ENTIRE hero ability (Scry 2) is

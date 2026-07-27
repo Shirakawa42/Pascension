@@ -169,6 +169,14 @@ namespace SoiSim
                                     o => o.Id == submit.Answer.ChosenOptionIds[0]);
                                 tally.Branch.Add($"{request.Context}|pick{(idx == 0 ? "0" : "N")}");
                             }
+                            // What actually gets banished — a direct check on whether the
+                            // contextual thinning value picks the cards a strong player would.
+                            if (request.Context == "soi.banish" && chosen > 0)
+                                foreach (int id in submit.Answer.ChosenOptionIds)
+                                {
+                                    var opt = request.Options.Find(o => o.Id == id);
+                                    if (opt?.DefId != null) tally.Branch.Add("banished:" + opt.DefId);
+                                }
                             if (request.Context == "soi.split")
                                 tally.Branch.Add(submit.Answer != null &&
                                                  submit.Answer.ChosenOptionIds.Exists(id => id >= 100000)
@@ -377,6 +385,14 @@ namespace SoiSim
                 sb.AppendLine($"| {ctx} | {p0:N0} | {pn:N0} | " +
                               (pn == 0 ? "🚨 ALWAYS the first option" : "chooses") + " |");
             }
+            sb.AppendLine();
+
+            sb.AppendLine("Most-banished cards — thinning should prefer whatever sits furthest");
+            sb.AppendLine("below the deck's own average, so starters should dominate this list.");
+            sb.AppendLine();
+            foreach (var kv in branch.Where(k => k.Key.StartsWith("banished:"))
+                         .OrderByDescending(k => k.Value).Take(8))
+                sb.AppendLine($"- {kv.Key.Substring(9)}: {kv.Value:N0}");
             sb.AppendLine();
 
             long champHit = branch.TryGetValue("soi.split|hits a champion", out long ch) ? ch : 0;

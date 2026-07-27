@@ -574,3 +574,8 @@ effort and the last one.
 - **2026-07-27 14:37** — probe: greedy-scry-live vs greedy-V5 → 50.4 % [49.9 %–50.9 %] paired over 10000 pairs
 - **2026-07-27 15:34** — probe: greedy-V5 vs greedy-V5 → 50.6 % [49.5 %–51.6 %] paired over 2704 pairs · SPRT H0 accepted (<= 0 Elo)
 - **2026-07-27 15:35** — ablation 10000 pairs: buy 204 Elo · play 39 Elo · both 168 Elo
+- **2026-07-27 15:55** — probe: greedy-V5 vs greedy-flat-banish → 46.7 % [43.4 %–50.1 %] paired over 274 pairs · SPRT H0 accepted (<= 0 Elo)
+- **2026-07-27 15:58** — CMA-ES tune: 300 generations, champion 77.2 % vs heuristic-v1
+- **2026-07-27 15:58** — probe: greedy-V6 vs bench:greedy-v5 → 48.7 % [46.3 %–51.2 %] paired over 714 pairs · SPRT H0 accepted (<= 0 Elo)
+- **2026-07-27 15:59** — probe: greedy-V6 vs bench:greedy-v5 → 50.8 % [50.3 %–51.3 %] paired over 15000 pairs
+- **2026-07-27 16:06** — probe: greedy-V7 vs bench:greedy-v5 → 49.9 % [49.5 %–50.4 %] paired over 15000 pairs

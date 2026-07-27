@@ -657,10 +657,18 @@ namespace Shards.Engine
                 "M5, once per turn: pay 3 gems, draw a card.", 5, 3, 0, active: true),
             "volos" => new HeroAbilitySpec("First Aid",
                 "M5, once per turn: pay 1 gem, gain 3 health.", 5, 1, 0, active: true),
+            // Sacrifice: 3 gems → 2 (2026-07-27). The effect is strong, but it competes
+            // with simply buying, and the 3 health is a real cost in a damage race — so at
+            // 3 gems it was never worth paying. The health cost stays: it is what makes the
+            // ability a genuine decision rather than free thinning.
             "kosynwu" => new HeroAbilitySpec("Sacrifice",
-                "M5, once per turn: pay 3 gems and 3 health, banish a card from your hand or discard pile.", 5, 3, 3, active: true),
+                "M5, once per turn: pay 2 gems and 3 health, banish a card from your hand or discard pile.", 5, 2, 3, active: true),
+            // Futureproof: 1 gem → 0 (2026-07-27). Scry alone rarely justifies a gem; the
+            // ability is designed to PAIR with the row reroll — bury a card that would help
+            // an Undergrowth-heavy opponent, or set up a good card to reroll into — and that
+            // combination cannot be afforded if the Scry itself costs the reroll's gem.
             "rez" => new HeroAbilitySpec("Futureproof",
-                "M5, once per turn: pay 1 gem, Scry 2 the center deck.", 5, 1, 0, active: true),
+                "M5, once per turn: Scry 2 the center deck.", 5, 0, 0, active: true),
             _ => new HeroAbilitySpec(null, null, 0, 0, 0, active: false)
         };
 

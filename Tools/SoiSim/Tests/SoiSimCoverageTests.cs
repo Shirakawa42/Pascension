@@ -143,32 +143,85 @@ namespace SoiSim.Tests
         }
 
         [Test]
-        public void KoSynWuHeroAbility_IsDeadForAStructuralReason_NotATuningMiss()
+        public void BanishingPrefersTheBlaster_ThenTheCrystal()
         {
-            // The second documented dead hero, and the more interesting one.
+            // Player knowledge, encoded as a test: "banishing the Blaster is the best ban
+            // you can make." That holds only if the Blaster is valued BELOW the Crystal,
+            // because contextual thinning removes whatever sits furthest below the deck's
+            // own average (ShardsValueModel.BanishValue).
             //
-            // Ko Syn Wu's "Sacrifice" costs 3 gems AND 3 health to banish one card from
-            // hand or discard. It never fires in 1,622 drafted games — but unlike Rez's
-            // Scry this is NOT a value that tuning can rescue. The model prices banishing
-            // through a single scalar, W.BanishPerCapacity, which V5 tuned NEGATIVE
-            // (-0.0257): capacity to banish is, on average, slightly bad. To clear a cost of
-            // 3 gems + 3 health (~2.9 in model units) the weight would need to exceed ~2.9 —
-            // a 100x swing that would re-price every banish effect on every card.
+            // It does: Blaster is 1 POWER (W.Power 0.18) while Crystal is 1 GEM (W.Gems
+            // 0.54), and in an economy-and-mastery game raw power is the least useful thing
+            // a starter can offer. Shard Reactor scales to 4 gems and must never be banished.
             //
-            // The real problem is that a flat per-capacity weight CANNOT express what
-            // banishing is worth, because that depends entirely on WHAT is banished:
-            // removing a Crystal from a 20-card deck is excellent, removing a good card is
-            // terrible. One scalar has to average those into a number near zero, and near
-            // zero it can never pay for 3 gems and 3 health.
+            // Aggregate banish counts look the opposite (crystal 10,579 vs blaster 1,581)
+            // purely because a deck holds 7 Crystals and 1 Blaster — per copy the rates match.
+            // EnsureRegistered FIRST: the model caches a slot table for every registered def
+            // at construction, so building it against an empty database throws on lookup.
+            ShardsContentRegistry.EnsureRegistered();
+            var model = new ShardsValueModel(W.Pad(ShardsEvalWeights.V5));
+            var blaster = ShardsCardDatabase.Get("blaster");
+            var crystal = ShardsCardDatabase.Get("crystal");
+            var reactor = ShardsCardDatabase.Get("shard_reactor");
+
+            foreach (int mastery in new[] { 0, 5, 10, 15, 20, 25, 30 })
+            {
+                Assert.Less(model.CardValue(blaster, mastery), model.CardValue(crystal, mastery),
+                    $"at M{mastery} the Blaster is not the cheapest starter to give up, so " +
+                    "contextual thinning would banish the wrong card");
+                Assert.Less(model.CardValue(crystal, mastery), model.CardValue(reactor, mastery),
+                    $"at M{mastery} Shard Reactor is not valued above a Crystal — it scales " +
+                    "to 4 gems and must be the LAST starter banished");
+            }
+        }
+
+        [Test]
+        public void ThinningIsContextual_NotAFlatPerCapacityScalar()
+        {
+            // Ko Syn Wu's "Sacrifice" fired 0 times in 1,622 drafted games. The cause was
+            // structural, not a tuning miss: W.BanishPerCapacity is ONE scalar covering both
+            // "banish a Blaster" (excellent) and "banish your engine" (terrible), so it must
+            // average toward zero — V5 tuned it to -0.0257 — and near zero it can never pay
+            // for the ability's cost, whatever the cost is.
             //
-            // So this is a structural limit of the linear model, and the fix belongs in the
-            // Phase 2 clock evaluator, which prices thinning contextually as
-            // (deckAverage - bannedCardValue) x D/N (eval-rules R7) instead of per-capacity.
-            // Recorded here so nobody "fixes" it by inflating the weight.
-            Assert.Less(ShardsEvalWeights.V5[W.BanishPerCapacity], 0.5,
-                "W.BanishPerCapacity moved far enough to make Ko Syn Wu's ability reachable. " +
-                "Check it did not wreck the valuation of every other banish effect — and " +
-                "prefer contextual thinning value over a flat per-capacity scalar.");
+            // Fixed 2026-07-27 by pricing thinning against the actual deck
+            // (ShardsValueModel.BanishValue, scaled by the new W.BanishBelowAverage):
+            // how far below the deck's own average the best reachable card sits, and zero
+            // when only good cards can be reached. Sacrifice now fires 2,338 times.
+            //
+            // These assertions pin the STRUCTURE, so the fix cannot silently regress into a
+            // flat scalar again.
+            // Current, not V5: W.Defaults now pads historical vectors with thinning at 0 so
+            // the frozen benchmark cannot drift, which means V5 correctly scores 0 here.
+            ShardsContentRegistry.EnsureRegistered();
+            var model = new ShardsValueModel(W.Pad(ShardsEvalWeights.Current));
+            var chars = ShardsContentRegistry.CharactersFor(AllWithDuel);
+            var adapter = new ShardsEngineAdapter(ShardsContentRegistry.StandardConfig(
+                1234, new List<PlayerSpec>
+                {
+                    new() { Name = "S0", CharacterId = chars[0] },
+                    new() { Name = "S1", CharacterId = chars[1 % chars.Count] }
+                }, AllWithDuel));
+            var player = adapter.Inner.State.Players[0];
+
+            // A fresh starter deck holds Crystals and a Blaster — all below its own average
+            // once Shard Reactor and Infinity Shard are counted — so thinning must be worth
+            // something. A flat scalar would return a constant regardless of contents.
+            Assert.Greater(model.BanishValue(player, 1), 0,
+                "thinning a starter deck scored zero — BanishValue is not reading the deck");
+
+            // Capacity 0 is nothing; capacity 2 cannot be worth less than capacity 1.
+            Assert.AreEqual(0, model.BanishValue(player, 0), 1e-12);
+            Assert.GreaterOrEqual(model.BanishValue(player, 2), model.BanishValue(player, 1),
+                "a second banish cannot be worth less than the first");
+
+            // The load-bearing property: with nothing reachable, thinning is worth exactly
+            // zero rather than a flat per-capacity constant. This is what stops the bot
+            // paying 2 gems and 3 health to banish its own engine.
+            player.Hand.Clear();
+            player.Discard.Clear();
+            Assert.AreEqual(0, model.BanishValue(player, 1), 1e-12,
+                "with no reachable card, thinning must be worth exactly 0");
         }
     }
 }
