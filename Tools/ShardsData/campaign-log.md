@@ -508,6 +508,57 @@ Teeth verified rather than trusted: run against `--dlc base`, the detector corre
 `ShardsRerollRowAction` and `ShardsHeroAbilityAction` at 🚨 0 — the exact signature of the
 2026-07-25 bug.
 
+## The four dead decisions: fixed, measured at a TIE, adopted anyway
+
+`ChooseAnswer` had no case for `soi.removeshop`, `soi.reset`, `soi.defiant` or `soi.mode`,
+so all four hit `default: add(Options[0..Min))`. For `Min=0` that declines forever; for a
+forced choice it always takes option 0. Measured over 4,000 games: removeshop 0/7432 taken,
+reset 0/1716 taken, defiant 5847-0 Keep, mode 5664-0 mode-1.
+
+Handlers added, reusing existing tuned quantities (CardValue, the BuyThreshold /
+DeckDilutionPerCard buy bar, W.Gems) rather than new weight indices. After: removeshop
+234 taken (selective — only churns slots below the buy bar), reset 1569 taken, defiant 159
+banishes, mode 2566 thin / 710 keep.
+
+**Strength: 50.6% [49.5-51.6] over 2,704 pairs, +4 Elo, SPRT accepted H0 (≤0).** A tie.
+The "free value left on the table" hypothesis was wrong about strength — each opportunity is
+individually small and rare (removeshop fires ~1.9/game but is worth taking ~0.06/game).
+
+**Adopted regardless, for one reason that is not strength:** an unreachable branch can never
+appear in training data, and therefore can never be learned or tuned. That is precisely the
+row-reroll lesson — the reroll fix would also have measured ~0 for the greedy bot, and its
+real cost was that no net ever saw a game containing one. Reachability is a precondition for
+learning, not an optimisation.
+
+⚠ **The frozen benchmark's behaviour changed here.** `bench:greedy-v5` keeps V5's weights
+(still checksum-pinned) but now answers those four decisions. The freeze point is therefore
+**after** this commit. Everything measured before it was re-run: the ablation is unchanged
+within noise (buy 209 → 204 Elo, play 39 → 39, share 84% → 84%), which is what a +4 Elo
+change should do.
+
+⚠ A trap avoided: `soi.mode`'s options carry no `DefId` (`ShardsDuelSet.cs:531-532`), so
+reading the source card off the option would have made it null and flipped the handler to
+ALWAYS mode 2 — the same bug mirrored. The drone is located in the play zone instead, which
+also distinguishes the real card from a COPY (Ojas / Duplication Fabricator / Warpquartz),
+where mode 2 banishes nothing and is strictly free.
+
+## Ko Syn Wu's dead ability is a STRUCTURAL limit, not a tuning miss
+
+The second dead hero, and the one that matters for Phase 2. "Sacrifice" costs 3 gems AND
+3 health to banish one card; it fires 0 times in 1,622 drafted games. Unlike Rez's Scry,
+tuning cannot rescue it: the model prices banishing through one scalar,
+`W.BanishPerCapacity`, which V5 tuned **negative** (−0.0257). Clearing a ~2.9 cost would need
+that weight above ~2.9 — a 100× swing that would re-price every banish effect in the game.
+
+The reason one scalar cannot work: banishing is worth entirely different amounts depending on
+**what** is banished. Removing a Crystal from a 20-card deck is excellent; removing a good
+card is terrible. A flat per-capacity weight must average those toward zero, and near zero it
+can never pay for 3 gems and 3 health.
+
+**This is a concrete requirement for the clock evaluator**: price thinning contextually as
+`(deckAverage − bannedCardValue) × D/N` (eval-rules R7), not per-capacity. Pinned by
+`KoSynWuHeroAbility_IsDeadForAStructuralReason_NotATuningMiss` so nobody inflates the weight.
+
 ## The bar, from here on
 
 Any evaluator must beat full-rollout ISMCTS **head-to-head at equal wall-clock**, paired,
@@ -521,3 +572,5 @@ effort and the last one.
 - **2026-07-27 14:19** — ablation 10000 pairs: buy 209 Elo · play 39 Elo · both 166 Elo
 - **2026-07-27 14:20** — ablation 10000 pairs: buy 126 Elo · play 11 Elo · both 122 Elo
 - **2026-07-27 14:37** — probe: greedy-scry-live vs greedy-V5 → 50.4 % [49.9 %–50.9 %] paired over 10000 pairs
+- **2026-07-27 15:34** — probe: greedy-V5 vs greedy-V5 → 50.6 % [49.5 %–51.6 %] paired over 2704 pairs · SPRT H0 accepted (<= 0 Elo)
+- **2026-07-27 15:35** — ablation 10000 pairs: buy 204 Elo · play 39 Elo · both 168 Elo

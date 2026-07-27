@@ -141,5 +141,34 @@ namespace SoiSim.Tests
                 "reachable. That may be fine — but it was measured worth +3 Elo [tie] at " +
                 "10,000 pairs, so re-measure rather than assume.");
         }
+
+        [Test]
+        public void KoSynWuHeroAbility_IsDeadForAStructuralReason_NotATuningMiss()
+        {
+            // The second documented dead hero, and the more interesting one.
+            //
+            // Ko Syn Wu's "Sacrifice" costs 3 gems AND 3 health to banish one card from
+            // hand or discard. It never fires in 1,622 drafted games — but unlike Rez's
+            // Scry this is NOT a value that tuning can rescue. The model prices banishing
+            // through a single scalar, W.BanishPerCapacity, which V5 tuned NEGATIVE
+            // (-0.0257): capacity to banish is, on average, slightly bad. To clear a cost of
+            // 3 gems + 3 health (~2.9 in model units) the weight would need to exceed ~2.9 —
+            // a 100x swing that would re-price every banish effect on every card.
+            //
+            // The real problem is that a flat per-capacity weight CANNOT express what
+            // banishing is worth, because that depends entirely on WHAT is banished:
+            // removing a Crystal from a 20-card deck is excellent, removing a good card is
+            // terrible. One scalar has to average those into a number near zero, and near
+            // zero it can never pay for 3 gems and 3 health.
+            //
+            // So this is a structural limit of the linear model, and the fix belongs in the
+            // Phase 2 clock evaluator, which prices thinning contextually as
+            // (deckAverage - bannedCardValue) x D/N (eval-rules R7) instead of per-capacity.
+            // Recorded here so nobody "fixes" it by inflating the weight.
+            Assert.Less(ShardsEvalWeights.V5[W.BanishPerCapacity], 0.5,
+                "W.BanishPerCapacity moved far enough to make Ko Syn Wu's ability reachable. " +
+                "Check it did not wreck the valuation of every other banish effect — and " +
+                "prefer contextual thinning value over a flat per-capacity scalar.");
+        }
     }
 }

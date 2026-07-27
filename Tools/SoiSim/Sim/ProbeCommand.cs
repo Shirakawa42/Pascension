@@ -52,6 +52,9 @@ namespace SoiSim
             // therefore what any belief/encoder work could ever be worth.
             bool oracleA = cli.Has("--oracle-a");
             bool oracleB = cli.Has("--oracle-b");
+            // Ablate the 2026-07-27 decision fixes (removeshop / reset / defiant / mode).
+            bool legacyA = cli.Has("--legacy-decisions-a");
+            bool legacyB = cli.Has("--legacy-decisions-b");
             // Early-stop budget fraction applied to BOTH search seats: -1 default,
             // 0 off, >0 the fraction (1.0 exact, lower = more aggressive).
             double earlyStop = cli.Has("--earlystop") ? cli.GetDouble("--earlystop", -1) : -1;
@@ -76,9 +79,9 @@ namespace SoiSim
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
             var factoryA = new BotFactory(kindA, budgetA)
-                { Epsilon = epsilon, WallClockSeconds = wallclockA, RootWorkers = workersA, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsA), PerfectInformation = oracleA };
+                { Epsilon = epsilon, WallClockSeconds = wallclockA, RootWorkers = workersA, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsA), PerfectInformation = oracleA, LegacyDecisions = legacyA };
             var factoryB = new BotFactory(kindB, budgetB)
-                { Epsilon = epsilon, WallClockSeconds = wallclockB, RootWorkers = workersB, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsB), PerfectInformation = oracleB };
+                { Epsilon = epsilon, WallClockSeconds = wallclockB, RootWorkers = workersB, EarlyStopFraction = earlyStop, Weights = BotFactory.ResolveWeights(weightsB), PerfectInformation = oracleB, LegacyDecisions = legacyB };
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
 
             // One work item = one mirrored PAIR (both seat orientations of one seed).

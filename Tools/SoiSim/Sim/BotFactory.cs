@@ -51,9 +51,24 @@ namespace SoiSim
         /// lines that cannot be attributed after the fact.</summary>
         private static readonly ConcurrentDictionary<double[], string> WeightNames = new();
 
+        /// <summary>ABLATION: revert the four decisions fixed 2026-07-27 (removeshop /
+        /// reset / defiant / mode) to the old `default` fall-through, so the fix can be
+        /// measured against what shipped before it rather than assumed to help.</summary>
+        public bool LegacyDecisions { get; set; }
+
+        private static readonly System.Lazy<ShardsValueModel> GreedyModelLegacy =
+            new(() => new ShardsValueModel(null, legacyDecisions: true));
+
+        private static readonly ConcurrentDictionary<double[], ShardsValueModel> LegacyWeightModels = new();
+
         private ShardsValueModel Model =>
-            Weights == null ? GreedyModel.Value
-                            : WeightModels.GetOrAdd(Weights, w => new ShardsValueModel(w));
+            LegacyDecisions
+                ? Weights == null
+                    ? GreedyModelLegacy.Value
+                    : LegacyWeightModels.GetOrAdd(Weights, w => new ShardsValueModel(w, legacyDecisions: true))
+                : Weights == null
+                    ? GreedyModel.Value
+                    : WeightModels.GetOrAdd(Weights, w => new ShardsValueModel(w));
 
         /// <summary>Named weight vectors for the probe flags: `current`, any historical
         /// `V1`…`Vn` from the generated file, or `duel-blind` — the current champion with

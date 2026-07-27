@@ -25,8 +25,14 @@ namespace Shards.Bots
         /// this is 5 entries, not a per-call effect walk.</summary>
         private readonly Dictionary<string, double> _heroAbilityValue = new();
 
-        public ShardsValueModel(double[] weights = null)
+        /// <summary>Reverts the four decisions added 2026-07-27 (removeshop / reset /
+        /// defiant / mode) to the old `default` fall-through, purely so the fix can be
+        /// A/B'd against what shipped before it. Never set in a shipped bot.</summary>
+        private readonly bool _legacyDecisions;
+
+        public ShardsValueModel(double[] weights = null, bool legacyDecisions = false)
         {
+            _legacyDecisions = legacyDecisions;
             // Pad so a champion tuned before the current layout still reads every weight
             // (W.Pad is a no-op once the tuner has caught up).
             _w = W.Pad(weights ?? ShardsEvalWeights.Current);
@@ -420,6 +426,110 @@ namespace Shards.Bots
                     int want = Math.Max(request.Min, Math.Min(1, request.Max));
                     if (best != null && want > 0)
                         answer.ChosenOptionIds.Add(best.Id);
+                    break;
+                }
+
+                // ---- 2026-07-27: four decisions that fell through to `default` ----
+                //
+                // `soisim coverage` found each of these had exactly ONE reachable branch
+                // across 4000 games, because the default adds Options[0..Min): a Min=0
+                // decision was declined forever, and a forced one always took the first
+                // option. Neither branch appeared in any game or any training position —
+                // the row-reroll bug's shape, one level below the action histogram.
+                //
+                // These deliberately reuse the EXISTING tuned quantities (CardValue, the
+                // BuyThreshold/DeckDilutionPerCard buy bar, W.Gems) rather than adding new
+                // weight indices, so they are sensible immediately and tunable later
+                // without a layout change.
+
+                case "soi.removeshop" when !_legacyDecisions:
+                {
+                    // Reactor Drone / Remove-from-shop: bottom a row card and refill, FREE.
+                    // Measured 0 taken / 7432 declined. Churn the DEADEST slot — the one we
+                    // would not buy — since a fresh card is strictly better than a slot the
+                    // buy bar already rejects. If the whole row is live, decline: removing a
+                    // card we might still want is a real cost.
+                    DecisionOption deadest = null;
+                    double worst = double.MaxValue;
+                    foreach (var option in request.Options)
+                    {
+                        var card = engine.State.FindCard(option.CardInstanceId);
+                        if (card == null) continue;
+                        double perGem = CardValue(card.Def, player.Mastery) /
+                                        Math.Max(1, engine.EffectiveCost(player, card.Def));
+                        if (perGem < worst) { worst = perGem; deadest = option; }
+                    }
+                    if (deadest != null && worst < _w[W.BuyThreshold])
+                        answer.ChosenOptionIds.Add(deadest.Id);
+                    break;
+                }
+
+                case "soi.reset" when !_legacyDecisions:
+                {
+                    // Un-exhaust one of your champions — FREE, and a second activation of
+                    // the best exhaust on the board. Measured 0 taken / 1716 declined.
+                    // Take it whenever any ready-again exhaust is worth more than its gem
+                    // cost; there is nothing to trade away.
+                    DecisionOption best = null;
+                    double bestNet = 0;
+                    foreach (var option in request.Options)
+                    {
+                        var card = engine.State.FindCard(option.CardInstanceId);
+                        if (card == null) continue;
+                        var slot = Slot(card.Def, 1, player.Mastery);
+                        double net = ResourceValue(slot.Resources) + slot.Structural -
+                                     card.Def.ExhaustGemCost * _w[W.Gems];
+                        if (net > bestNet) { bestNet = net; best = option; }
+                    }
+                    if (best != null) answer.ChosenOptionIds.Add(best.Id);
+                    break;
+                }
+
+                case "soi.defiant" when !_legacyDecisions:
+                {
+                    // Shard Defiant reveals a center-deck card: recruit it or banish it.
+                    // Measured 5847 Keep / 0 Banish. It is FREE, so the buy bar runs at
+                    // cost 0 — but dilution still applies, and a card below the bar makes a
+                    // lean deck worse (eval-rules R7). Option id 1 = Keep, 2 = Banish.
+                    var revealed = request.Options.Count > 0
+                        ? ShardsCardDatabase.TryGet(request.Options[0].DefId, out var def) ? def : null
+                        : null;
+                    int size = player.Deck.Count + player.Hand.Count +
+                               player.Discard.Count + player.PlayZone.Count;
+                    double worth = revealed == null
+                        ? 0
+                        : CardValue(revealed, player.Mastery) -
+                          Math.Max(0, size - 10) * _w[W.DeckDilutionPerCard];
+                    answer.ChosenOptionIds.Add(worth > _w[W.BuyThreshold] ? 1 : 2);
+                    break;
+                }
+
+                case "soi.mode" when !_legacyDecisions:
+                {
+                    // Reactor Drone: 1 = gain 2 gems, 2 = gain 3 gems then banish this card.
+                    // Measured 5664 mode-1 / 0 mode-2. Mode 2 is +1 gem AND self-thinning,
+                    // so it is better exactly when the card's remaining per-cycle value is
+                    // below what the extra gem plus the dilution it stops are worth.
+                    // Per-cycle rather than face value because a card in a deck of N is only
+                    // drawn about 5/N times a turn (eval-rules R7).
+                    //
+                    // ⚠ ReactorChoice builds bare mode options — no CardInstanceId, no DefId
+                    // (ShardsDuelSet.cs:531-532) — so the source must be inferred. The engine
+                    // only sets BanishAtCleanup when the resolver really is a drone still in
+                    // the play zone; resolved from a COPY (Ojas / Duplication Fabricator /
+                    // Warpquartz) mode 2 banishes nothing and is +3 gems for free, so it
+                    // strictly dominates. Reading DefId off the option would have made
+                    // `source` null and flipped this to ALWAYS mode 2 — the same bug mirrored.
+                    var drone = player.PlayZone.Find(c => c.DefId == "reactor_drone_duel" ||
+                                                          c.DefId == "reactor_drone");
+                    int deckSize = player.Deck.Count + player.Hand.Count +
+                                   player.Discard.Count + player.PlayZone.Count;
+                    double throughput = 5.0 / Math.Max(5, deckSize);
+                    double keep = drone == null
+                        ? 0 // a copy: nothing of ours gets banished, so keeping costs nothing
+                        : CardValue(drone.Def, player.Mastery) * throughput;
+                    double thin = _w[W.Gems] + Math.Max(0, deckSize - 10) * _w[W.DeckDilutionPerCard];
+                    answer.ChosenOptionIds.Add(thin > keep ? 2 : 1);
                     break;
                 }
 
