@@ -188,8 +188,13 @@ namespace Shards.Bots
                 // minted rank until it clears Gate A — beating full-rollout ISMCTS
                 // head-to-head at equal WALL-CLOCK.
                 "basket" => new ShardsBasketPlannerBot(seed, engine, Model.Value),
+                // The think-longer ladder: each rung doubles the deciding rollouts.
+                // Measured head-to-head (the only probe that can separate them):
+                // basket-96 > basket at +30 Elo (54.2%, SPRT H1 at 470 pairs).
                 "basket-96" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
                     new ShardsBasketPlannerConfig { Worlds = 2, RolloutsPerWorld = 48 }),
+                "basket-192" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
+                    new ShardsBasketPlannerConfig { Worlds = 2, RolloutsPerWorld = 96 }),
 
                 // --- frozen benchmark ladder (see the block comment above) ---
                 "bench:heuristic" => new ShardsHeuristicBot(seed, engine),
@@ -209,6 +214,6 @@ namespace Shards.Bots
         public static bool IsSearchKind(string kind) =>
             Find(kind)?.IsSearch ??
             kind is "strong" or "strong-fast" or "bench:rollout-1200" or "bench:rollout-4800"
-                or "basket" or "basket-96";
+                or "basket" or "basket-96" or "basket-192";
     }
 }

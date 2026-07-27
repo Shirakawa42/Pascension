@@ -760,3 +760,45 @@ have shipped (eval-steered baskets, unrailed argmax) were killed by the harness 
   basket bot; transitivity says it should win (+30 vs rollout-1200's ~break-even against
   the same greedy), but transitivity is exactly what this project got burned by — hence the
   probe. Its result line auto-appends below when it lands.
+
+### Gate A skirmish ABORTED at 30 pairs (user call) — no conclusion drawn, one lesson kept
+
+Stopped at the user's direction with the live status reading **45.0% over 30 pairs, ETA
+436 min**. 30 pairs is ±18 points — it cannot distinguish 45% from 55%, so nothing about
+the matchup is concluded and nothing is logged as a result. The kept lesson is about
+compute allocation, not statistics: **a 7-hour probe is the wrong spend while the
+architecture is still moving** (basket space, rollout budget and margins all changed twice
+today). Gate A runs when the design is frozen — overnight, detached, with the verdict
+auto-appending here. Until then the open question stands AS a question: whether the basket
+bot's edge survives against a search opponent its rollouts do not model (its leaves assume
+V5 play from both seats; an ISMCTS opponent violates that assumption, and 30 pairs of
+non-signal are compatible with both "it holds" and "it does not").
+- **2026-07-27 19:37** — probe: basket-96 vs basket → 54.2 % [51.3 %–57.2 %] paired over 484 pairs · SPRT H1 accepted (>= 15 Elo)
+
+## 2026-07-27 late — the think-longer ladder maps itself, and finds its own ceiling
+
+Post-abort diagnostics, all cheap, all on fast bots:
+
+- **Coverage on the basket bot: fingerprint healthy.** Rerolls 0.36/game (the dead
+  planner's pathology was 24.2), Focus ~9.7/seat/game (matches human match-history rates),
+  thinning dominated by starters, Ko Syn Wu's ability alive at 0.85/game. Two flags are
+  PRE-EXISTING shared-policy holes the basket bot merely exposed, not basket bugs:
+  `soi.scry` options never taken (Rez pays 1 gem, the unhandled decision always keeps —
+  a no-op now that baskets fire his ability 7.2/drafted game) and `soi.reveal` always
+  option 0. Fixing either moves the SHARED ChooseAnswer and therefore the frozen
+  benchmark's behaviour — deferred to a deliberate freeze-point move, like the
+  four-decisions fix was.
+- **The deciding-rollout budget, settled head-to-head** (vs-greedy probes cannot separate
+  configs — both read low-50s at n=400): **basket-96 > basket, 54.2% [51.3–57.2], +30 Elo,
+  SPRT H1 at 470 pairs.** Doubling 48→96 deciding rollouts pays in full.
+- **The next doubling does NOT: basket-192 vs basket-96 stopped at 49.9% over 630 pairs**
+  (user call — and the right one; a 200-game screen would have shown it in three minutes,
+  now adopted as standing process for every matchup). The arithmetic explains the
+  plateau: at 192 rollouts the estimate se (~0.036) sits BELOW the fixed 0.05
+  DeviationMargin, so added precision cannot convert into added deviations. **The margin,
+  not the sample, is now the binding constraint** — the next lever is margin ∝ paired-se,
+  a one-line change, 200-game screened first.
+
+Ladder as measured tonight: greedy-V5 → basket (+30) → basket-96 (+30 more, 27 ms/dec) →
+basket-192 (+0 with the margin fixed). Gate A (vs bench:rollout-1200/4800) waits for a
+frozen config and an overnight detached run, per the compute-discipline rule.

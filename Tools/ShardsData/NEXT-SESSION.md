@@ -90,15 +90,22 @@ decision it is a ~60× compute handicap for the basket bot. If H1 accepted: run 
 per-decision budget via a bigger RolloutsPerWorld) at n≥2000 before any mint talk. If H0:
 the crossover story stands and the basket line needs more per-turn budget before retrying.
 
-### 2. Grow the edge further (+30 → ?)
-The budget is still barely used (19 ms vs the 200–500 ms envelope). Levers, cheapest first,
-each gated by n=400 then SPRT vs bench:greedy-v5:
-- **Deciding-rollout budget**: settle basket-96-vs-basket with a DIRECT paired probe at
-  n≥1000 (vs-greedy probes cannot separate them). Then consider margin ∝ paired-diff se.
-- **Wider basket space, round 2**: reroll-then-buy baskets; destiny/relic-aware baskets;
-  4-item baskets late-game (economy peaks at 10+ gems).
-- **Per-round margin**: the opening's true gaps are 2× mid-game — a smaller margin there
-  may harvest more; measure per-round headroom-vs-margin with rank before changing.
+### 2. Grow the edge further — the margin is now the binding constraint
+The think-longer ladder was mapped head-to-head on 2026-07-27 night:
+- basket-96 > basket: **54.2% [51.3–57.2], +30 Elo, SPRT H1 at 470 pairs** — doubling
+  deciding rollouts 48→96 pays fully;
+- basket-192 vs basket-96: **49.9% over 630 pairs (stopped)** — the NEXT doubling pays
+  nothing, and the arithmetic says why: at 192 rollouts the estimate se (~0.036) is BELOW
+  the fixed DeviationMargin (0.05), so precision can no longer convert into deviations.
+  **More rollouts only pay if the margin shrinks with them** (margin ∝ paired-diff se is
+  the natural form). That is the next lever, and it is a one-line config change measured
+  by a 200-game screen then SPRT of (margin-scaled basket-192) vs basket-96.
+Also unexplored: wider basket space round 2 (reroll-then-buy, destiny/relic-aware,
+late-game 4-item baskets) and a smaller opening margin (opening true gaps are 2× mid-game).
+Coverage flags to fix eventually (they move the SHARED ChooseAnswer, hence the frozen
+benchmark — re-run key probes after, like the four-decisions fix): `soi.scry` options are
+never taken (Rez pays 1 gem then always keeps — a no-op that matters now that baskets fire
+his ability 7.2/game) and `soi.reveal` always picks option 0 (unhandled default).
 
 ### 3. Then: joint retune under the planner
 V5's weights were tuned for pure-greedy play; the basket bot changes the state distribution
@@ -111,8 +118,11 @@ least re-run `soisim rank` with the retuned vector — before any mint.
 2. **Never gate on a proxy.** Validation accuracy killed the last campaign; structural
    elegance killed the clock evaluator; and holdout accuracy said nothing about sibling
    ranking — `soisim rank` exists because the proxy was measured to be the wrong question.
-3. **Run the cheap disqualifying probe FIRST.** n=400 costs ~2 minutes and killed basket v1
-   before a day was spent on it.
+3. **Run the cheap disqualifying probe FIRST — for EVERY matchup, 200 games before
+   anything bigger** (user directive 2026-07-27, twice). The n=400 gate killed basket v1
+   in 2 minutes; conversely a straight-to-SPRT basket-192 run burned 18 minutes to learn
+   what 200 games would have shown. Escalate to SPRT/n≥1000 only when the screen is alive,
+   and never start a multi-hour run while the architecture is still moving.
 4. **n≥1000 paired with SPRT before any claim; n≥2000 to publish.**
 5. **A zero in coverage is a question, not a verdict.**
 6. **Distrust a good number.** The 67.5% fit accuracy was a thread-order train/test leak.
