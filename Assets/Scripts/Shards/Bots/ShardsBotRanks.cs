@@ -173,6 +173,13 @@ namespace Shards.Bots
                 "strong-fast" => new ShardsSearchBot(seed, engine,
                     ShardsSearchConfig.ForRealGames(0.25), Model.Value),
 
+                // The Phase 2 candidate: turn-level planning scored by the clock evaluator.
+                // NOT a minted rank and not selectable in game until it clears Gate A —
+                // beating full-rollout ISMCTS head-to-head at equal WALL-CLOCK.
+                "planner" => new ShardsPlannerBot(seed, engine, Model.Value),
+                "planner-w8" => new ShardsPlannerBot(seed, engine, Model.Value,
+                    config: new ShardsPlannerConfig { Worlds = 8 }),
+
                 // --- frozen benchmark ladder (see the block comment above) ---
                 "bench:heuristic" => new ShardsHeuristicBot(seed, engine),
                 "bench:greedy-v5" => new ShardsGreedyEvalBot(seed, engine, FrozenV5.Value),

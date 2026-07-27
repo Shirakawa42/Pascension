@@ -159,9 +159,19 @@ namespace Shards.Bots
                 ascendClock = Math.Min(_p.DeadClock, toM30 + attacker.CycleTurns * 0.5);
             }
 
-            // Clamp to the horizon: beyond it the clock cannot run out before the game does,
-            // so two long clocks are equivalent regardless of how long.
-            return Math.Min(_p.HorizonTurns, Math.Min(killClock, ascendClock));
+            // Compress toward the horizon — SMOOTHLY, never with a hard min().
+            //
+            // A hard clamp was the first attempt and it was badly wrong: early on both
+            // clocks exceed the horizon, so every candidate turn clamped to the same value,
+            // the evaluator went FLAT, and the planner chose almost at random. It showed up
+            // as reroll spam — 24 rerolls a game against the greedy policy's 0.49 — because
+            // with no signal it picks whichever option happens to differ in the last decimal.
+            //
+            // h*c/(c+h) keeps the anti-saturation property (a 33-turn clock and a 17-turn
+            // clock stop being treated as decisively different) while remaining strictly
+            // monotonic, so shorter is always better and no region is ever flat.
+            double clock = Math.Min(killClock, ascendClock);
+            return _p.HorizonTurns * clock / (clock + _p.HorizonTurns);
         }
     }
 }

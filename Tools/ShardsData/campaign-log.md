@@ -579,3 +579,5 @@ effort and the last one.
 - **2026-07-27 15:58** — probe: greedy-V6 vs bench:greedy-v5 → 48.7 % [46.3 %–51.2 %] paired over 714 pairs · SPRT H0 accepted (<= 0 Elo)
 - **2026-07-27 15:59** — probe: greedy-V6 vs bench:greedy-v5 → 50.8 % [50.3 %–51.3 %] paired over 15000 pairs
 - **2026-07-27 16:06** — probe: greedy-V7 vs bench:greedy-v5 → 49.9 % [49.5 %–50.4 %] paired over 15000 pairs
+- **2026-07-27 16:37** — probe: planner vs bench:greedy-v5 → 6.0 % [3.5 %–8.5 %] paired over 200 pairs
+- **2026-07-27 16:38** — probe: planner vs bench:greedy-v5 → 4.0 % [2.1 %–5.9 %] paired over 200 pairs
