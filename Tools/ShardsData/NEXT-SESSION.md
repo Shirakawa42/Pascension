@@ -59,8 +59,9 @@ playstyle by itself rather than have one hand-coded.
 | Sibling headroom at ACTION granularity | +0.002/decision, all selectors | 1-step lookahead can never beat V5, with any evaluator. Retired. |
 | Sibling headroom at BASKET granularity | rollout +0.015/turn mid-game, **+0.027 opening**; static evals NEGATIVE everywhere | Search baskets, score with rollouts only; the opening is the richest domain. |
 | Basket planner v1 (no rails) | 39.3%, −76 Elo | Argmax over noisy estimates deviates on noise; decide on fresh samples, require a margin. |
-| Basket planner current (rails + combos + opening) | **54.2% [51.2–57.3], +30 Elo, SPRT H1 at 410 pairs** | Real. Budget barely touched (~19 ms/decision vs the 200–500 ms envelope). |
-| basket-96 (2×48 deciding rollouts) | 53.2% [48.8–57.7] at n=400 | Indistinguishable from basket at this n; needs a paired basket-96-vs-basket probe at n≥1000. |
+| Basket planner (rails + combos + opening) | **+30 Elo vs greedy-v5, SPRT H1 at 410 pairs** | The design works; measured, not assumed. |
+| basket-96 vs basket, head-to-head | **+30 Elo more, SPRT H1 at 470 pairs** | CHAMPION CONFIG. 27 ms/decision. |
+| basket-192 / 192m / 96m vs basket-96 | 49.9% · 47.0% · 47.5% — all dead | Rollout/margin knobs are AT optimum for this space. Only the basket SPACE can move the needle. |
 | ISMCTS crossover | ~1200 it break-even vs greedy; +115 Elo/doubling above | The wall-clock bar the basket bot must eventually beat. |
 | Engine throughput | ~1050 games/s single-thread | Rollouts are cheap; the 200–500 ms envelope funds thousands. |
 | Old neural ladder | −410 Elo, deleted | Do not resurrect. |
@@ -90,22 +91,22 @@ decision it is a ~60× compute handicap for the basket bot. If H1 accepted: run 
 per-decision budget via a bigger RolloutsPerWorld) at n≥2000 before any mint talk. If H0:
 the crossover story stands and the basket line needs more per-turn budget before retrying.
 
-### 2. Grow the edge further — the margin is now the binding constraint
-The think-longer ladder was mapped head-to-head on 2026-07-27 night:
-- basket-96 > basket: **54.2% [51.3–57.2], +30 Elo, SPRT H1 at 470 pairs** — doubling
-  deciding rollouts 48→96 pays fully;
-- basket-192 vs basket-96: **49.9% over 630 pairs (stopped)** — the NEXT doubling pays
-  nothing, and the arithmetic says why: at 192 rollouts the estimate se (~0.036) is BELOW
-  the fixed DeviationMargin (0.05), so precision can no longer convert into deviations.
-  **More rollouts only pay if the margin shrinks with them** (margin ∝ paired-diff se is
-  the natural form). That is the next lever, and it is a one-line config change measured
-  by a 200-game screen then SPRT of (margin-scaled basket-192) vs basket-96.
-Also unexplored: wider basket space round 2 (reroll-then-buy, destiny/relic-aware,
-late-game 4-item baskets) and a smaller opening margin (opening true gaps are 2× mid-game).
-Coverage flags to fix eventually (they move the SHARED ChooseAnswer, hence the frozen
-benchmark — re-run key probes after, like the four-decisions fix): `soi.scry` options are
-never taken (Rez pays 1 gem then always keeps — a no-op that matters now that baskets fire
-his ability 7.2/game) and `soi.reveal` always picks option 0 (unhandled default).
+### 2. Grow the edge further — the SPACE is the only live lever left
+The rollout/margin knob family was mapped and CLOSED on 2026-07-27 (all head-to-head vs
+basket-96; the only probe kind that separates configs):
+- basket-96 > basket: **+30 Elo, SPRT H1 at 470 pairs** (48→96 deciding rollouts pays fully);
+- basket-192 raw **49.9%/630 pairs** · basket-192m (margin ∝ se) **47.0%** · basket-96m
+  (smaller margin, same rollouts) **47.5%** — all dead at 200-game screens. The current
+  basket space's headroom is FULLY harvested at 96 rollouts / 0.05 margin; looser filters
+  admit only noise-deviations. Champion config: **basket-96**. Do not re-tune these knobs.
+The live lever is the basket SPACE, round 2: reroll-then-buy baskets, destiny/relic-aware
+baskets, late-game 4-item baskets. Process identical to the combo tier that paid +18→+30:
+extend EnumerateBaskets → `rank --siblings baskets` must show headroom ABOVE +0.0149 →
+200-game screen → SPRT.
+Coverage flags to fix at a deliberate benchmark freeze point (they move the SHARED
+ChooseAnswer — re-run key probes after, like the four-decisions fix): `soi.scry` options
+never taken (Rez pays 1 gem then always keeps — a live no-op now that baskets fire his
+ability 7.2/game) and `soi.reveal` always picks option 0 (unhandled default).
 
 ### 3. Then: joint retune under the planner
 V5's weights were tuned for pure-greedy play; the basket bot changes the state distribution
@@ -133,12 +134,15 @@ least re-run `soisim rank` with the retuned vector — before any mint.
 
 ## Suggested first moves
 
-1. Read the campaign-log tail: did the detached Gate A probe (basket vs bench:rollout-1200,
-   SPRT) land, and which hypothesis did it accept? Everything branches on that.
-2. `probe --a basket-96 --b basket --games 2000 --sprt` — settle the deciding-rollout budget
-   directly (paired; vs-greedy probes cannot separate the two).
-3. If Gate A skirmish won: `probe --a basket --b bench:rollout-4800 --games 2000 --sprt`,
-   then the equal-wall-clock framing at n≥2000.
+1. Basket space round 2 (reroll-then-buy first — it is the only spend the cursor cannot
+   express today): extend EnumerateBaskets, then `rank --siblings baskets` (headroom must
+   beat +0.0149), then a 200-game screen of the new bot vs basket-96, then SPRT.
+2. When the space stabilizes, Gate A on the frozen champion: `probe --a basket-96
+   --b bench:rollout-1200 --games 2000 --sprt` — OVERNIGHT, detached (~7 h; the verdict
+   auto-appends to campaign-log.md). Never mid-session.
+3. At the next benchmark freeze point: handlers for soi.scry and soi.reveal (reuse tuned
+   quantities, same recipe as the four-decisions fix), then re-run the ablation and the
+   basket-96 SPRT since bench:greedy-v5's behaviour moves.
 
 Do not mint any rank from the basket bot until it clears Gate A. That bar is the whole
 reason this rewrite exists.

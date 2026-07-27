@@ -802,3 +802,31 @@ Post-abort diagnostics, all cheap, all on fast bots:
 Ladder as measured tonight: greedy-V5 → basket (+30) → basket-96 (+30 more, 27 ms/dec) →
 basket-192 (+0 with the margin fixed). Gate A (vs bench:rollout-1200/4800) waits for a
 frozen config and an overnight detached run, per the compute-discipline rule.
+- **2026-07-27 20:05** — probe: basket-192m vs basket-96 → 47.0 % [40.6 %–53.4 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-27 20:09** — probe: basket-96m vs basket-96 → 47.5 % [40.9 %–54.1 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+
+## 2026-07-27 close — the margin family is exhausted; basket-96 is the champion config
+
+Two 200-game screens (the new standing discipline — each 4 minutes) closed the lever the
+plateau had suggested:
+
+| Candidate | vs basket-96 | Verdict |
+|---|---|---|
+| basket-192 (2×96, margin 0.05) | 49.9% over 630 pairs | dead — margin blocks the precision |
+| basket-192m (2×96, margin 0.035, same σ-multiple) | 47.0% [40.6–53.4] | dead |
+| basket-96m (2×48, margin 0.035 — more deviations, same precision) | 47.5% [40.9–54.1] | dead |
+
+Three independent knob-turns, one picture: **the current basket space's exploitable
+headroom is fully harvested at 96 deciding rollouts with the 0.05 margin.** Looser filters
+admit deviations whose true value is ~zero minus noise cost; more precision has nothing
+left to resolve. This is the good kind of negative result — the knobs are now measured to
+be at their optimum, so nobody re-tunes them blind.
+
+**Champion config: `basket-96`** (2×48 deciding rollouts, margin 0.05, MinRound 1, combo
+tier) — +30 Elo over `basket`, which is +30 over `bench:greedy-v5`, at 27 ms/decision.
+
+What can still move the needle, in order: (1) the basket SPACE — reroll-then-buy,
+destiny/relic-aware and late-game 4-item baskets; re-measure with `rank --siblings
+baskets` before gating, exactly like the combo tier; (2) the shared ChooseAnswer holes
+(soi.scry no-op, soi.reveal default) at a deliberate benchmark freeze point; (3) Gate A
+on the frozen basket-96, overnight, detached.

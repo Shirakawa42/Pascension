@@ -195,6 +195,26 @@ namespace Shards.Bots
                     new ShardsBasketPlannerConfig { Worlds = 2, RolloutsPerWorld = 48 }),
                 "basket-192" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
                     new ShardsBasketPlannerConfig { Worlds = 2, RolloutsPerWorld = 96 }),
+                // ── Measured-dead rungs, kept resolvable so the log's screens stay
+                // reproducible. All three 200-game screens read ≤50% vs basket-96
+                // (192-raw 49.9%/630 pairs · 192m 47.0% · 96m 47.5%): the current basket
+                // SPACE's headroom is fully harvested at 96 deciding rollouts, and a
+                // looser margin only admits noise-deviations. Do not re-tune these knobs;
+                // the next lever is the basket space itself. ──
+                "basket-192m" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
+                    new ShardsBasketPlannerConfig
+                    {
+                        Worlds = 2,
+                        RolloutsPerWorld = 96,
+                        DeviationMargin = 0.035
+                    }),
+                "basket-96m" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
+                    new ShardsBasketPlannerConfig
+                    {
+                        Worlds = 2,
+                        RolloutsPerWorld = 48,
+                        DeviationMargin = 0.035
+                    }),
 
                 // --- frozen benchmark ladder (see the block comment above) ---
                 "bench:heuristic" => new ShardsHeuristicBot(seed, engine),
@@ -214,6 +234,6 @@ namespace Shards.Bots
         public static bool IsSearchKind(string kind) =>
             Find(kind)?.IsSearch ??
             kind is "strong" or "strong-fast" or "bench:rollout-1200" or "bench:rollout-4800"
-                or "basket" or "basket-96" or "basket-192";
+                or "basket" or "basket-96" or "basket-192" or "basket-192m" or "basket-96m";
     }
 }
