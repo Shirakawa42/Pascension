@@ -52,9 +52,13 @@ Assets/Scripts/graphify-out.meta
 
 # SoiSim raw simulation output (reproducible from seeds; reports are committed instead)
 Tools/ShardsData/sim/
+# Per-game JSONL from `soisim run` — ~100-130 MB per 30k-game sweep, regenerated in
+# ~6 s from (seed-base, bots, dlc). The analyze reports beside them ARE committed.
+Tools/ShardsData/runs/
 # Live campaign status (machine-local heartbeat; history is campaign-log.md)
 Tools/ShardsData/campaign-status.md
-# Neural self-play position data (gigabytes; regenerable from seeds)
+# Self-play position data (gigabytes; regenerable from seeds). The 2026-07-27 neural
+# purge deleted the old contents — these stay ignored for the Phase 3 pipeline.
 Tools/ShardsData/selfplay/
 Tools/ShardsData/selfplay2/
 # Local secrets — RunPod API/S3 keys etc. NEVER commit these.

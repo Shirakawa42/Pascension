@@ -1,0 +1,92 @@
+﻿defId,name,faction,type,cost,offers,rowBuys,offRowRecruits,fastPlays,buyRate,acquiringPlayerGames,acquiringWinRate,avgFirstBuyRound,impactDelta,impactP,flagged
+additri_gaiamancer,"Additri, Gaiamancer",Undergrowth,Champion,5,8185,7417,233,0,0.9062,7650,0.5441,8.29,0.0645,0.00000,1
+aegis_archivist,"Aegis Archivist",Order,Champion,4,8084,7827,230,0,0.9682,8057,0.5799,7.60,0.1404,0.00000,1
+aetherbreaker,"Aetherbreaker",Wraethe,Mercenary,4,16746,10453,488,10231,0.6242,10100,0.6474,11.43,0.2120,0.00000,1
+anomaly_cleric,"Anomaly Cleric",Order,Ally,5,8345,7990,229,994,0.9575,8219,0.6254,8.19,0.2196,0.00000,1
+arach_devotees,"Arach Devotees",Undergrowth,Ally,2,24969,24552,763,3135,0.9833,21556,0.5447,7.14,0.0886,0.00000,1
+axia_duel,"Axia",Homodeus,Champion,8,8382,6334,218,0,0.7557,6552,0.6973,10.84,0.3024,0.00000,1
+bleak_communion,"Bleak Communion",Wraethe,Mercenary,3,16578,16179,536,10328,0.9759,15460,0.5743,7.42,0.1453,0.00000,1
+breaker,"Breaker",Aion,Ally,6,8082,7714,239,533,0.9545,7953,0.6379,8.30,0.2366,0.00000,1
+brute,"Brute",Aion,Ally,3,16532,16126,534,1834,0.9754,15451,0.5358,7.38,0.0582,0.00000,1
+bulwark_chanter,"Bulwark Chanter",Order,Ally,4,16319,15783,511,1730,0.9672,15017,0.5618,7.63,0.1154,0.00000,1
+cache_warden,"Cache Warden",Order,Mercenary,2,16583,16309,560,10272,0.9835,15531,0.5966,7.31,0.1814,0.00000,1
+carnivorous_vine,"Carnivorous Vine",Undergrowth,Mercenary,4,16499,15333,510,12838,0.9293,14689,0.5768,8.69,0.1379,0.00000,1
+century_forge,"Century Forge",Homodeus,Ally,5,16698,8972,502,4568,0.5373,8625,0.6438,11.62,0.1999,0.00000,1
+cinder_scars_duel,"Cinder Scars",Wraethe,Mercenary,2,41196,40498,1314,25851,0.9831,30942,0.5458,6.69,0.1146,0.00000,1
+cloud_oracles_sos,"Cloud Oracles",Order,Ally,2,24705,24327,783,3281,0.9847,21368,0.5386,7.08,0.0725,0.00000,1
+comet,"Comet",Aion,Ally,14,8296,182,265,0,0.0219,447,0.8568,12.19,0.4907,0.00000,1
+command_seer_duel,"Command Seer",Order,Ally,4,16552,12330,526,3457,0.7449,11807,0.5898,10.52,0.1352,0.00000,1
+cryptofist_monk,"Cryptofist Monk",Order,Ally,5,16681,12701,485,4531,0.7614,12095,0.6140,10.68,0.1717,0.00000,1
+dash_duel,"Dash",Aion,Ally,2,16436,16188,484,1805,0.9849,15357,0.5879,7.30,0.1644,0.00000,1
+data_heretic_duel,"Data Heretic",Order,Mercenary,4,24795,24041,773,15484,0.9696,21213,0.5709,7.36,0.1479,0.00000,1
+doomstalker,"Doomstalker",Wraethe,Mercenary,5,16628,5291,505,5278,0.3182,5322,0.6697,12.27,0.2059,0.00000,1
+drakonarius,"Drakonarius",Homodeus,Champion,6,8167,6513,243,0,0.7975,6756,0.6192,9.98,0.1715,0.00000,1
+duplication_fabricator_duel,"Duplication Fabricator",Order,Ally,3,16452,16075,530,1798,0.9771,15374,0.5885,7.43,0.1668,0.00000,1
+evokatus_duel,"Evokatus",Homodeus,Champion,4,16609,15842,453,0,0.9538,15137,0.5505,7.67,0.0912,0.00000,1
+fao_cutul,"Fao Cu'tul, The Formless",Wraethe,Champion,4,8210,7670,237,0,0.9342,7907,0.6179,9.28,0.2006,0.00000,1
+ferrata_guard_duel,"Ferrata Guard",Homodeus,Champion,4,16307,15402,437,0,0.9445,14612,0.5327,7.56,0.0563,0.00000,1
+fungal_hermit,"Fungal Hermit",Undergrowth,Mercenary,3,16634,16280,510,10366,0.9787,15575,0.5627,7.39,0.1151,0.00000,1
+furrowing_elemental_duel,"Furrowing Elemental",Undergrowth,Ally,5,16510,15007,499,3273,0.9090,14265,0.6001,8.97,0.1610,0.00000,1
+g_48,"G-48",Homodeus,Champion,4,8378,7116,229,0,0.8494,7345,0.5306,9.27,0.0442,0.00000,0
+general_decurion,"General Decurion",Homodeus,Champion,7,8141,7171,240,0,0.8809,7411,0.6409,9.87,0.2273,0.00000,1
+ghostwillow_avenger,"Ghostwillow Avenger",Undergrowth,Mercenary,4,8262,7368,253,7262,0.8918,7621,0.7418,11.22,0.4297,0.00000,1
+giga_source_adept,"Giga, Source Adept",Order,Champion,2,8284,8151,236,0,0.9839,8387,0.6521,7.57,0.2745,0.00000,1
+grand_architect,"The Grand Architect",Order,Mercenary,7,8404,7849,215,6739,0.9340,8064,0.7192,9.20,0.3982,0.00000,1
+grim_tutor,"Grim Tutor",Wraethe,Mercenary,3,16519,15936,544,11805,0.9647,15207,0.5394,7.86,0.0603,0.00000,1
+hounds_of_volos_duel,"Hounds of Volos",Undergrowth,Mercenary,3,16569,15788,512,12361,0.9529,15058,0.5426,8.06,0.0689,0.00000,1
+index_of_futures,"Index of Futures",Order,Ally,3,16368,15826,527,2594,0.9669,15138,0.5356,7.64,0.0561,0.00000,1
+j_chord_duel,"J-Chord",Aion,Champion,3,8083,7920,236,0,0.9798,8156,0.5917,7.48,0.1569,0.00000,1
+kiln_drone,"Kiln Drone",Homodeus,Ally,1,24592,24191,723,2131,0.9837,21036,0.5449,6.99,0.0868,0.00000,1
+korvus_legionnaire_duel,"Korvus Legionnaire",Homodeus,Ally,3,24696,23368,740,4760,0.9462,20662,0.5702,8.13,0.1432,0.00000,1
+legion_carrier_duel,"Legion Carrier",Homodeus,Ally,2,16499,16108,512,2779,0.9763,15316,0.5366,7.58,0.0621,0.00000,1
+leshai_knight,"Le'shai Knight",Undergrowth,Mercenary,3,24791,16214,771,14866,0.6540,15135,0.5404,9.46,0.0596,0.00000,1
+li_hin_duel,"Li Hin, The Shattered",Wraethe,Champion,3,8285,7608,229,0,0.9183,7837,0.5582,8.39,0.0950,0.00000,1
+lifebloom_ritual,"Lifebloom Ritual",Undergrowth,Mercenary,6,8398,520,247,520,0.0619,767,0.6741,12.52,0.1938,0.00000,1
+limiter_drones,"Limiter Drones",Homodeus,Ally,2,24794,24352,760,3073,0.9822,21458,0.5402,7.15,0.0800,0.00000,1
+longshot,"Longshot",Aion,Ally,4,16541,2120,477,714,0.1282,2484,0.5789,11.19,0.0881,0.00000,1
+lucky,"Lucky",Aion,Ally,4,16367,15893,481,1531,0.9710,14947,0.5633,7.28,0.1202,0.00000,1
+mainframe_abbot_duel,"Mainframe Abbot",Order,Ally,3,16577,16187,527,1965,0.9765,15458,0.5498,7.45,0.0897,0.00000,1
+mining_drones,"Mining Drones",Homodeus,Ally,2,24726,24294,737,3131,0.9825,21288,0.5507,7.02,0.1013,0.00000,1
+nectar_alchemist,"Nectar Alchemist",Undergrowth,Ally,3,16533,15247,524,3530,0.9222,14653,0.5451,8.87,0.0723,0.00000,1
+nil_assassin_duel,"Nil Assassin",Wraethe,Mercenary,2,25074,23125,745,18522,0.9223,20532,0.5325,7.92,0.0638,0.00000,1
+numeri_drones,"Numeri Drones",Homodeus,Champion,3,16342,15880,499,0,0.9717,15084,0.5459,7.29,0.0855,0.00000,1
+oblivion_gatekeeper,"Oblivion Gatekeeper",Wraethe,Champion,4,8311,8078,238,0,0.9720,8316,0.5744,7.57,0.1261,0.00000,1
+ojas_genesis_druid,"Ojas, Genesis Druid",Undergrowth,Ally,4,8415,1917,214,1008,0.2278,2131,0.7349,12.65,0.2706,0.00000,1
+omnius,"Omnius, The All-Knowing",Order,Mercenary,6,8386,7974,272,5891,0.9509,8246,0.6872,8.43,0.3435,0.00000,1
+optio_crusher,"Optio Crusher",Homodeus,Champion,5,16818,15358,481,0,0.9132,14689,0.6039,9.42,0.1885,0.00000,1
+order_initiate_duel,"Order Initiate",Order,Ally,1,24507,24263,766,1358,0.9900,21133,0.5719,6.98,0.1371,0.00000,1
+orm_madu_duel,"Orm Madu",Undergrowth,Champion,7,8365,7677,243,0,0.9178,7920,0.6076,9.29,0.1730,0.00000,1
+pall_shades,"Pall Shades",Wraethe,Ally,2,24669,24254,782,3017,0.9832,21405,0.5411,7.09,0.0797,0.00000,1
+portal_monk,"Portal Monk",Order,Ally,3,16379,354,509,366,0.0216,839,0.5745,10.42,0.1352,0.00000,1
+primus_pilus_duel,"Primus Pilus",Homodeus,Champion,2,8217,8092,209,0,0.9848,8301,0.5792,7.45,0.1264,0.00000,1
+prism,"Prism",Aion,Ally,3,16436,15856,496,2716,0.9647,15126,0.5763,7.86,0.1415,0.00000,1
+raidian,"Raidian, Cloud Master",Order,Champion,5,8377,8059,251,0,0.9620,8310,0.5514,7.71,0.0768,0.00000,1
+reactor_drone_duel,"Reactor Drone",Homodeus,Ally,3,24762,23147,736,5085,0.9348,20477,0.5300,8.38,0.0452,0.00000,0
+riposte_doctrine,"Riposte Doctrine",Homodeus,Mercenary,2,16551,15483,485,12205,0.9355,14811,0.5402,8.01,0.0717,0.00000,1
+root_of_the_forest_duel,"Root of the Forest",Undergrowth,Mercenary,7,8351,4921,225,4902,0.5893,5146,0.6729,11.41,0.2468,0.00000,1
+ru_bo_vai_duel,"Ru Bo Vai, The Transcendant",Wraethe,Champion,5,8351,7099,233,0,0.8501,7332,0.5957,9.81,0.1470,0.00000,1
+scion_of_nothingness,"Scion of Nothingness",Wraethe,Mercenary,5,16751,3452,493,3440,0.2061,3628,0.6833,12.54,0.2091,0.00000,1
+shadebound_sentry,"Shadebound Sentry",Wraethe,Ally,3,16655,15849,469,3217,0.9516,15132,0.5448,8.30,0.0733,0.00000,1
+shadow_apostle,"Shadow Apostle",Wraethe,Mercenary,2,24887,20876,740,16982,0.8388,18885,0.5240,7.92,0.0476,0.00000,0
+shard_abstractor,"Shard Abstractor",Order,Mercenary,3,25109,24579,851,15497,0.9789,21796,0.6053,7.12,0.2233,0.00000,1
+shard_seer,"Shard Seer",Order,Ally,2,25044,24649,751,2238,0.9842,21545,0.5762,7.07,0.1509,0.00000,1
+shardwood_guardian_duel,"Shardwood Guardian",Undergrowth,Ally,4,25042,23477,801,4112,0.9375,20754,0.5772,8.25,0.1484,0.00000,1
+spore_cleric_duel,"Spore Cleric",Undergrowth,Mercenary,2,24812,23795,765,17871,0.9590,21014,0.5206,7.57,0.0323,0.00000,0
+swyft_duel,"Swyft",Aion,Champion,5,16509,15683,476,0,0.9500,14877,0.5638,7.74,0.1187,0.00000,1
+systema_ai,"Systema A.I.",Order,Champion,3,8365,8191,215,0,0.9792,8406,0.6332,7.42,0.2328,0.00000,1
+taur_arachpriest,"Taur, Arachpriest",Undergrowth,Champion,5,8284,5775,238,0,0.6971,6013,0.5950,10.59,0.1326,0.00000,1
+testudo_vanguard,"Testudo Vanguard",Homodeus,Champion,4,16151,15591,477,0,0.9653,14694,0.6064,7.41,0.2114,0.00000,1
+the_dispossessed,"The Dispossessed",Wraethe,Ally,1,16782,16033,507,1707,0.9554,15352,0.5241,7.50,0.0395,0.00000,0
+the_lost_duel,"The Lost",Wraethe,Mercenary,4,16580,7038,451,6701,0.4245,7031,0.6057,10.95,0.1288,0.00000,1
+the_rotten_duel,"The Rotten",Undergrowth,Mercenary,3,25123,24580,718,15435,0.9784,21884,0.5840,7.11,0.1806,0.00000,1
+thorn_zealot,"Thorn Zealot",Undergrowth,Ally,3,16362,15979,543,1820,0.9766,15286,0.5586,7.31,0.1058,0.00000,1
+thornshell_warden,"Thornshell Warden",Undergrowth,Champion,2,16503,16236,499,0,0.9838,15441,0.5442,7.26,0.0715,0.00000,1
+torian_commandos,"Torian Commandos",Homodeus,Ally,3,24654,22142,773,4947,0.8981,19582,0.5491,8.78,0.0917,0.00000,1
+umbral_scourge,"Umbral Scourge",Wraethe,Mercenary,3,24929,24356,769,15527,0.9770,21748,0.5620,7.18,0.1285,0.00000,1
+undergrowth_aspirant_duel,"Undergrowth Aspirant",Undergrowth,Ally,1,24774,24366,758,2191,0.9835,21460,0.5241,7.04,0.0394,0.00000,0
+venator_of_the_wastes,"Venator of the Wastes",Homodeus,Mercenary,4,8188,7530,264,6407,0.9196,7794,0.6062,9.04,0.1771,0.00000,1
+whisper_extractor,"Whisper Extractor",Wraethe,Ally,3,16644,6517,502,2468,0.3916,6709,0.5390,9.24,0.0533,0.00000,1
+wraethe_skirmisher_duel,"Wraethe Skirmisher",Wraethe,Ally,1,24681,23269,769,2390,0.9428,20794,0.5032,7.24,0.0020,0.69323,0
+zara_ra,"Zara Ra, Soulflayer",Wraethe,Mercenary,5,8380,7982,249,5565,0.9525,8231,0.6121,8.24,0.2057,0.00000,1
+zen_chi_set,"Zen Chi Set, Godkiller",Wraethe,Champion,7,8359,7424,240,0,0.8881,7664,0.6146,9.51,0.1821,0.00000,1
+zetta_encryptor,"Zetta, The Encryptor",Order,Champion,5,8356,4007,200,0,0.4795,4207,0.6320,11.61,0.1675,0.00000,1

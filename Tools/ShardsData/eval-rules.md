@@ -1,5 +1,63 @@
 # SoI end-of-turn evaluator — rules for review
 
+> ## 🚨 CORRECTION 2026-07-27 — §4's "[measured]" table was played with Duel of Doom OFF
+>
+> §4 says its 30,000-game table *"outranks opinion where they conflict."* It does not.
+> `balance-report.md:5-8` records **greedy-V2, DLC mask 7** (Relics|Shadow|Horizon), dated
+> 2026-07-21 — four days before Duel was enabled in `SimConfig.AllDlc`. No hero drafts, no
+> hero abilities, no rerolls, no Allegiance, and the *base* Dominion rule. The 24 positions
+> in `positions/` were generated **with Duel ON**, so the document silently mixes two
+> rulesets. Three of its bullets also blend three different reports with three different bots.
+>
+> Re-measured 2026-07-27 with **Duel ON** (mask 15), 30,000 games each, two policies:
+> `balance-report-duel.md` (bench:greedy-v5) and `balance-report-duel-heuristic.md`
+> (bench:heuristic). What changed:
+>
+> | Claim in §4 | Duel-OFF (greedy-V2) | Duel-ON greedy-V5 | Duel-ON heuristic |
+> |---|---|---|---|
+> | Overwhelm (Infinity Shard) wins | 7.0% | **51.1%** | **5.7%** |
+> | early aggression | OR **1.67** (41.6→62.2%) | OR 1.29 (50.4→53.4%) | — |
+> | total acquisitions | OR 1.65 | OR **2.67** (28.7→76.4%) | — |
+> | mastery at round 8 | OR 1.32 | OR **1.84** (40.8→67.2%) | — |
+> | faction concentration | OR 1.10 **inverted** | OR 1.07, **still inverted** (57.8→38.0%) | — |
+> | champion share | p=0.440 n.s. | p=0.405 **n.s.** | — |
+> | shields prevent | 3.2% | **0.5%** | 3.1% |
+> | rounds p10/p50/p90 | 10/13/18 | 11/14/17 | 10/12/15 |
+>
+> **Four consequences for this document:**
+>
+> 1. **The ascend clock is not a side-line.** A *tuned* policy wins **half** its games through
+>    M30 + Infinity Shard; the hand-written one wins 5.7% the same way under identical rules.
+>    So 51% is a property of good play, not of the ruleset — which makes R6's `ascendClock`
+>    co-equal with `killClock`, not a special case. The two-clock structure is **validated**.
+> 2. **⚔D2 resolves to Expert D, empirically.** He called the 2–3% shield figure *"a
+>    denominator artifact"* dominated by the 9999-power Shard turn. Confirmed: V5's 30k games
+>    carry **175M** total incoming damage against the heuristic's **22M**, because ~15,000
+>    overwhelm turns each dump ~9999 into the sum. Same rules, same shields, 0.5% vs 3.1%.
+>    Price shields into the TTK denominator as expected turns of survival, never as a share
+>    of damage.
+> 3. **⚔D1 resolves to Expert A — but only now is the evidence admissible.** Faction
+>    concentration stays *anti*-correlated with Duel ON and Allegiance present (57.8% → 38.0%,
+>    steeper than before). Compute the named conditions directly; no generic concentration term.
+> 4. **R4's premise is ~4× overstated.** Of the eight cards named as multipliers to
+>    special-case, exactly **two** actually multiply: Fao Cu'tul (M20 ×2) and Unknown God
+>    (M20 doubles all exhausts) — and Unknown God is not on the list. Axia is a flat 7;
+>    Multitask Brain and Scion of Nothingness are per-count adds. Detect multipliers from the
+>    effect tree, not from a hardcoded list.
+>
+> **§6's 13 win-probability anchors are unsourced** — they exist only in this file, the
+> position renderer emits no evaluation, and the document itself calls them *"judgement, not
+> sim output."* At least two are wrong: pos-020's justification claims the opponent holds a
+> 22-power Terminal Crescents (the file shows them at M14, Crystals in hand, that card 7th in
+> the draw pile), and pos-013's "forced win" does not reproduce (best line is 7 power into
+> 8 HP). pos-007's forced loss does check out. Replace them with **playout-measured** win
+> rates before using them as a gate.
+>
+> Everything structural below — clock race over weighted sum, ratios a summed-bag MLP cannot
+> compute, board-per-turn vs deck-per-cycle, health only through the kill clock — is
+> uncontradicted by code or data. Use the structure; re-derive the evidence.
+
+
 > **⛔ THIS FILE IS THE REVIEW GATE. Nothing gets implemented until you have edited it.**
 >
 > Add, delete, reweight, or contradict anything. Where the experts disagreed I have kept

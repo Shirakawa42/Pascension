@@ -369,6 +369,93 @@ for DLC-proofing) — in a deck-builder, card identity is the game — and **no 
 First measurement on the new frozen ladder (sanity, underpowered on purpose):
 bench:greedy-v5 vs bench:heuristic → **78.5% [71.9–85.1]**, 100 pairs, Duel ON.
 
+## Balance re-measured with Duel ON — and the headline number is a POLICY property
+
+The old `balance-report.md` (the one `eval-rules.md` §4 calls "[measured]" and says
+"outranks opinion") was greedy-V2 at **DLC mask 7**. Re-ran 30,000 games each at **mask 15**,
+with two very different policies, to separate ruleset from policy:
+
+| | Duel-OFF greedy-V2 | Duel-ON **greedy-V5** | Duel-ON **heuristic** |
+|---|---|---|---|
+| Infinity-Shard overwhelm wins | 7.0% | **51.1%** | **5.7%** |
+| total acquisitions | OR 1.65 | **OR 2.67** (28.7→76.4%) | — |
+| mastery at round 8 | OR 1.32 | **OR 1.84** (40.8→67.2%) | — |
+| early aggression | **OR 1.67** | OR 1.29 (50.4→53.4%, nearly flat) | — |
+| faction concentration | OR 1.10 inverted | OR 1.07, **still inverted** (57.8→38.0%) | — |
+| champion share | p=0.440 n.s. | p=0.405 **n.s.** | — |
+| shields prevented | 3.2% | **0.5%** | 3.1% |
+| rounds p10/p50/p90 | 10/13/18 | 11/14/17 | 10/12/15 |
+| P0 win rate | 58.6% | 59.4% | 58.5% |
+
+**Same rules, same seeds, 51.1% vs 5.7%.** The mastery race is not a property of the ruleset —
+it is what a *tuned* policy converges on and a hand-written one never finds. V5's
+`W.Mastery` is 5.96 against V1's hand-set 3.0; CMA-ES roughly doubled it and then rode the
+M30 + Infinity Shard line into half of all wins. Two consequences:
+
+1. **`ascendClock` is co-equal with `killClock`, not a special case.** Any evaluator that
+   treats the Shard route as a corner case is wrong about half the games good play produces.
+2. **The old "overwhelm 5.5–9.3%, real but not a gimmick" line was measuring greedy-V2's
+   policy, not the game.** Every observational number in a balance report describes the bots
+   that played it. Re-derive per policy; never inherit.
+
+**The shield figure is a denominator artifact — now confirmed, not argued.** eval-rules ⚔D2's
+Expert D claimed the 2–3% number was distorted by the 9999-power Shard turn. V5's 30k games
+carry **174.6M** total incoming damage; the heuristic's carry **22.0M**. Identical rules,
+identical shields: ~15,000 overwhelm turns dumping ~9999 each inflate the denominator 8×, and
+the "shields prevent 0.5%" reading falls straight out. Price shields as expected turns of
+survival in the TTK denominator, never as a share of damage.
+
+Also: **early aggression collapsed** from the strongest predictor (OR 1.67) to nearly flat
+(OR 1.29, 50.4→53.4% across quartiles), while **total acquisitions became by far the
+strongest** (OR 2.67). Under Duel-ON tuned play the game is an economy race, not a rush.
+
+Character spread at V5: decima 57.9% · rez 52.9% · tetra 49.0% · volos 44.2% · kosynwu 39.8%
+— an 18-point gap. Flagged for balance, out of scope for the AI work.
+
+## ⭐ The decisive experiment: buying carries ~85-92% of the strength
+
+`soisim ablation` — the question that decides where the new planner spends its search budget.
+The deck-builder literature is split (Dominion's Provincial uses a deliberately dumb play
+model and still dominates; Slay the Spire is the inverse), and SoI has two properties Dominion
+lacks — mastery thresholds resolving mid-sequence, and multiplicative burst — so neither
+answer transfers. Measured rather than inherited.
+
+Method: all four arms share ONE two-stage architecture (`PhaseHybridBot`), so only the weight
+vector governing each phase differs and the architecture cancels out. Each arm plays 10,000
+mirrored PAIRS against a fixed `bench:greedy-v5`. Two-stage rather than one blended argmax
+because scores from two vectors are not on a common scale (V1's `PlayBase` is 2000, V5's 810).
+
+| Arm | vs V5, weak = **V1** | vs V5, weak = **V4** |
+|---|---|---|
+| strong play / strong buy | 46.6% [46.1-47.0] · −24 Elo | 46.6% · −24 Elo |
+| strong play / **WEAK buy** | **20.7%** [20.1-21.3] · −233 Elo | **29.6%** [29.0-30.3] · −150 Elo |
+| **WEAK play** / strong buy | 41.1% [40.5-41.6] · −63 Elo | 45.0% [44.5-45.6] · −35 Elo |
+| WEAK play / WEAK buy | 25.1% · −190 Elo | 30.2% · −146 Elo |
+| **Elo lost — BUY axis alone** | **209** | **126** |
+| **Elo lost — PLAY axis alone** | **39** | **11** |
+| **buy share of attributable strength** | **84%** | **92%** |
+| interaction (both − sum of parts) | −82 | −15 |
+
+**Answer: the acquisition axis carries 84-92% of the strength; play ordering carries 8-16%.**
+Two independent degradations of very different size agree, so this is a property of the game
+and not of one particular weakening. **The planner should go wide over purchase baskets and
+narrow over play orderings** — which is also what makes a 3-turn-deep turn-level search
+affordable, since the order-sensitive minority is typically 1-3 cards per turn.
+
+Two honest caveats:
+1. This measures the **tuned-vs-untuned** gap on each axis, not the **remaining headroom
+   above V5**. Buying dominating the gap does not prove play ordering has no headroom left —
+   only that untuning it costs little. The planner still evaluates orderings; it just should
+   not spend beam width there.
+2. **The axes are co-adapted, not independent.** At the large V1 gap, strong-play/weak-buy
+   (−233) is *worse* than weak/weak (−190): an interaction of −82 Elo. V5's play policy chases
+   the M30 mastery line (`W.Mastery` 5.96 vs V1's 3.0) that V1's buy policy never funds, so a
+   strong player commits to a plan its own economy cannot pay for. The effect shrinks to
+   −15 Elo at the V4 gap. **Tune play and buy jointly; never ship a mismatched pair.**
+
+Architecture control: the two-stage split itself costs **24 Elo** against a single blended
+argmax (46.6% vs 50%). Real but small, and identical across all four arms.
+
 ## The bar, from here on
 
 Any evaluator must beat full-rollout ISMCTS **head-to-head at equal wall-clock**, paired,
@@ -377,3 +464,7 @@ generations of net-vs-net mirror matches at n=120 — is the entire difference b
 effort and the last one.
 
 - **2026-07-27 14:11** — probe: bench:greedy-v5 vs bench:heuristic → 78.5 % [71.9 %–85.1 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-27 14:13** — stats run (bench:greedy-v5): 30,000 games, 0 failures → duel-greedy-v5.jsonl
+- **2026-07-27 14:15** — stats run (bench:heuristic): 30,000 games, 0 failures → duel-heuristic.jsonl
+- **2026-07-27 14:19** — ablation 10000 pairs: buy 209 Elo · play 39 Elo · both 166 Elo
+- **2026-07-27 14:20** — ablation 10000 pairs: buy 126 Elo · play 11 Elo · both 122 Elo

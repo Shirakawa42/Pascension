@@ -39,6 +39,8 @@ namespace SoiSim
                         return ProbeCommand.Run(cli);
                     case "converge":
                         return ConvergeCommand.Run(cli);
+                    case "ablation":
+                        return AblationCommand.Run(cli);
                     case "dump-positions":
                         return DumpPositionsCommand.Run(cli);
                     case "smoke":
@@ -72,6 +74,8 @@ namespace SoiSim
             Console.WriteLine("  soisim probe [--a strong] [--budget 200] [--b greedy] [--games 100] [--threads N-1]");
             Console.WriteLine("               [--sprt] [--elo0 0] [--elo1 15] [--result path.json] [--allow-small]");
             Console.WriteLine("  soisim converge [--games 40] [--budgets 16,32,...] [--sample-stride 3]");
+            Console.WriteLine("  soisim ablation [--games 2000] [--seed-base 770000] [--threads N-1]");
+            Console.WriteLine("               (buy-vs-play Elo attribution — which axis carries the strength)");
             Console.WriteLine("  soisim dump-positions [--games 12] [--sample 2] [--min-round 3]");
             Console.WriteLine("  soisim smoke");
             Console.WriteLine();
