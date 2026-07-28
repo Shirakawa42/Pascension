@@ -898,3 +898,56 @@ Champion: **basket-96** — v3 space, halving funnel, 2×48 deciding rollouts, m
 MinRound 1 — at **~29 ms/decision**, under a tenth of the shipping think budget. Next:
 Gate A on THIS frozen config (overnight, detached), then the shared-ChooseAnswer holes at
 a declared freeze point, then the joint retune.
+- **2026-07-28 10:57** — probe: basket-192 vs basket-96 → 48.0 % [42.3 %–53.7 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+
+## 2026-07-28 — Gate A day
+
+Two moves per the handoff, in order:
+
+1. **basket-192 re-screened under the halving funnel: still dead** (48.0% [42.3–53.7],
+   200 games). The 96-rollout optimum is a property of the deciding stage, not of the old
+   flat screen — the ladder question stays closed, now under both funnels.
+2. **Gate A screen: ALIVE.** `basket-96` (champion: v3 space + halving, ~27 ms/decision)
+   vs `bench:rollout-1200` (~1.2 s/decision — a ~40× compute handicap): **56.0%
+   [49.1–62.9] over 100 pairs, +42 Elo** — the turn-level formulation beats the
+   micro-action tree at a fraction of its budget, on the first properly-run look.
+   (The aborted 2026-07-27 skirmish's 45%-over-30-pairs was, as recorded then, noise.)
+3. **Full Gate A SPRT launched, detached** (frozen config, per the compute rule):
+   n up to 2000, verdict auto-appends below. If H1 lands, the bar this rewrite was built
+   around — beat full-rollout ISMCTS head-to-head — is cleared at 1/40th the wall-clock,
+   with `bench:rollout-4800` as the remaining rung above.
+- **2026-07-28 11:35** — probe: basket-96 vs bench:rollout-1200 → 56.0 % [49.1 %–62.9 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-28 12:06** — probe: ismcts-V7-100it vs bench:greedy-v5 → 2.0 % [0.1 %–3.9 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-28 12:10** — probe: basket-96 vs ismcts-V7-100it → 98.0 % [96.1 %–99.9 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+
+## 2026-07-28 midday — Gate A vs rollout-1200 closed (user call), and the ladder sanity triangle
+
+**Gate A vs `bench:rollout-1200` closed by decision, not by SPRT**: screen 56.0% [49.1–62.9]
+over 100 pairs plus SPRT interim 51.9% over 80 pairs (stopped) — recorded as **~53–54% over
+180 pairs at ~40× less compute per decision** (27 ms vs ~1.2 s). The formal H1 was not
+collected; the direction and the efficiency claim are considered established for campaign
+purposes, and the full SPRT can be re-run any time the record needs it.
+
+**The sanity triangle** (user question: are the bots all just bad? would rollout-100 score
+the same as rollout-1200?): no, and emphatically no —
+
+| matchup | result |
+|---|---|
+| rollout-100 vs bench:greedy-v5 | **2.0% [0.1–3.9], −676 Elo** |
+| rollout-1200 vs bench:greedy-v5 | ~50–51% (the recorded crossover) |
+| basket-96 vs bench:greedy-v5 | ~54%, +31–45 (SPRT'd) |
+| basket-96 vs rollout-1200 | ~53–54% over 180 pairs |
+| basket-96 vs rollout-100 | **98.0% [96.1–99.9], +676 Elo** |
+
+Every score tracks opponent strength; there is no shared-mediocrity ceiling. Sub-crossover
+search is even worse than the 300-iteration measurement suggested (2% at 100 iters — the
+tree spends its whole budget inside one turn and the plan cursor commits to noise).
+
+**What the triangle exposes strategically**: rollout-1200 sits AT greedy's level, so
+beating it certifies formulation efficiency, not a new absolute tier. The absolute rung
+above is `bench:rollout-4800` (~+147 over greedy) — almost certainly still stronger than
+basket-96 (+31–45), and the deciding-rollout knob saturates at 96, so basket cannot reach
+it by thinking longer. The path to 4800-class strength at basket-class cost is the next
+campaign question: joint retune under the planner (on-policy basket-96 self-play data for
+`fit`/validation, greedy inner loop for CMA-ES, coverage checks + off-policy mix against
+self-play blind spots), then space v4.

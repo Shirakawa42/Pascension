@@ -141,15 +141,25 @@ least re-run `soisim rank` with the retuned vector — before any mint.
 
 ## Suggested first moves
 
-1. **Gate A on the frozen champion** — the config is now worth the spend: launch
-   `probe --a basket-96 --b bench:rollout-1200 --games 2000 --sprt` OVERNIGHT, detached
-   (~7 h; Start-Process pattern, verdict auto-appends to campaign-log.md). Never
-   mid-session. Read its line before doing anything else next session.
-2. While it runs elsewhere: one 200-game re-screen of basket-192 vs basket-96 (the
-   rollout ladder was closed in the flat-funnel era; halving may have moved the optimum).
-3. At the next benchmark freeze point: handlers for soi.scry and soi.reveal (reuse tuned
+Gate A vs rollout-1200 is CLOSED (~53–54% at ~40× less compute, user-accepted; the ladder
+sanity triangle is in the log — every score tracks opponent strength, rollout-100 loses
+2%/98% on both sides). basket-192 re-screened dead under halving too (48.0%). The open
+frontier is ABSOLUTE strength: `bench:rollout-4800` (~+147 over greedy) is still above
+basket-96 (+31–45), and the rollout knob saturates — thinking longer cannot close it.
+
+1. **The joint-retune data pipeline** (the main lever now): collect basket-96 SELF-PLAY
+   games (on-policy — the distribution the shipped agent actually visits) for `fit` and
+   for tuner validation; keep the CMA-ES inner loop on cheap greedy seats; gate every
+   champion via basket-vs-frozen-benchmark probes; mix in basket-vs-greedy/heuristic
+   games and run `coverage` on the data policy first (self-play blind-spot insurance).
+   Then re-run `rank` under the retuned vector before adopting.
+2. At the next benchmark freeze point: handlers for soi.scry and soi.reveal (reuse tuned
    quantities, same recipe as the four-decisions fix), then re-run the ablation and the
    basket-96 SPRT since bench:greedy-v5's behaviour moves.
+3. Optional bookkeeping when idle cores allow: the formal Gate A SPRT vs rollout-1200
+   (detached overnight) if the record ever needs the H1 stamp; and a 200-game look at
+   basket-96 vs bench:rollout-4800 (~3 h detached — slow opponent) to measure the actual
+   gap to the 4800 tier before trying to close it.
 
 Do not mint any rank from the basket bot until it clears Gate A. That bar is the whole
 reason this rewrite exists.
