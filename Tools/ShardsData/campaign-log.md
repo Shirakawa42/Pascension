@@ -984,3 +984,39 @@ decisions AND every rollout it scores leaves with.
 
 Ladder to date: +14 → +18 → +30 → +45 → **+62**, five SPRT-decided rungs in two days,
 every one preceded by its measurement.
+- **2026-07-28 12:42** — probe: basket-96-V5 vs basket-96 → 35.0 % [14.1 %–55.9 %] paired over 10 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-28 12:44** — CMA-ES tune: 300 generations, champion 78.6 % vs heuristic-v1
+- **2026-07-28 12:48** — probe: basket-96 vs basket-96-V7 → 52.0 % [44.9 %–59.1 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-28 13:19** — probe: basket-96 vs basket-96-V7 → 52.3 % [50.2 %–54.5 %] paired over 1000 pairs
+- **2026-07-28 13:20** — probe: greedy-V8 vs bench:greedy-v5 → 48.2 % [43.6 %–52.9 %] paired over 200 pairs
+
+## 2026-07-28 afternoon — V8: the first vector gated UNDER the planner
+
+The joint-retune's tractable form, delivered: greedy stays the CMA-ES inner loop (basket
+seats would turn 3 minutes into weeks), but the PROMOTION GATE moved to where the vector
+actually lives — head-to-head under basket-96. Plumbing added for exactly that:
+`ShardsBotRanks.Create` takes a model override, `BotFactory` routes `--weights-a/-b` into
+the Current-following kinds (bench:* ignores it by construction — a benchmark that accepts
+an override is not frozen), and probe lines now print the vector (`basket-96-V7`).
+
+- Fresh `tune` (~2.4 min, 300 gens) with the six newly-reachable decision branches in its
+  games → **V8** (champion 78.6% vs heuristic).
+- **Under the planner: basket-96(V8) beats basket-96(V7) 52.3% [50.2–54.5] over 1000
+  pairs, +16 Elo.** SPRT formally inconclusive (LLR 2.31 of 2.94 — the true effect sits at
+  the elo1=15 boundary), but the CI excludes zero at the campaign's n≥1000-paired bar.
+  Adopted.
+- At greedy level V8 is the usual tie vs frozen V5 (48.2% [43.6–52.9]) — the gain lives
+  under the planner, where the reachable branches actually fire. This is the reachability
+  thesis paying out: branches that could never appear in tuning games now can, and the
+  tuner priced them into +16 the greedy mirror cannot even see.
+- **Coverage caught a fragility before commit**: under V8 the scry deadness filter went
+  0/1,147 (it was 22/1,121 under V7 — already marginal). The other deadness decisions
+  stay alive (removeshop 14/597, defiant/mode choosing), and full scry usage was measured
+  at +3 Elo (tie), so the regression is worth ~0 and V8 stands. The detector keeps
+  reporting the zero; the pinned pricing test is untouched.
+- `fit --bots <kind>` added — on-policy position collection from basket-96 self-play is
+  now one flag, sized by the ~30× per-game cost.
+
+Ladder: +14 → +18 → +30 → +45 → +62 → **~+78 vs the frozen benchmark implied** (+62
+measured at freeze point #2 with V7, +16 under-planner on top; the direct basket-96(V8)
+vs bench:greedy-v5 SPRT is the next bookkeeping run when cores idle).

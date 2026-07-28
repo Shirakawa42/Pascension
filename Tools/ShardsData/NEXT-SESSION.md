@@ -152,19 +152,23 @@ rule) and soi.reveal (Disabled-aware, best-by-value) holes → re-baseline **SPR
 pairs, 58.8% [54.5–63.2], +62 Elo** — the current champion mark. Ladder: +14 → +18 → +30
 → +45 → +62, five SPRT rungs in two days.
 
-1. **The joint-retune data pipeline** (the main lever now): collect basket-96 SELF-PLAY
-   games (on-policy — the distribution the shipped agent actually visits) for `fit` and
-   for tuner validation; keep the CMA-ES inner loop on cheap greedy seats; gate every
-   champion via basket-vs-frozen-benchmark probes; mix in basket-vs-greedy/heuristic
-   games and run `coverage` on the data policy first (self-play blind-spot insurance).
-   Then re-run `rank` under the retuned vector before adopting. NOTE: `fit` needs a
-   `--bots` flag first (it hardcodes greedy seats), and probing custom weight vectors on
-   basket kinds needs Weights plumbed through BotFactory → ShardsBotRanks.Create.
-2. Optional bookkeeping when idle cores allow: the formal Gate A SPRT vs rollout-1200
-   (detached overnight) if the record ever needs the H1 stamp; and a 200-game look at
-   basket-96 vs bench:rollout-4800 (~3 h detached — slow opponent) to measure the actual
-   gap to the 4800 tier before trying to close it (basket-96 is +62 over greedy now;
-   4800 is ~+147 — the gap may be smaller than it was).
+DONE 2026-07-28 afternoon: the retune loop CLOSED its first cycle — weights plumbing
+(`--weights-a/-b` now reaches basket kinds; bench:* immune), fresh tune with the six
+newly-reachable branches → **V8, adopted on 52.3% [50.2–54.5] over 1000 pairs vs V7
+UNDER THE PLANNER** (+16 Elo; greedy-level tie as always — the gain lives where the
+branches fire). `fit --bots <kind>` exists for on-policy collection. Known accepted
+fragility: V8 re-kills the scry deadness filter (was 2% usage, worth ~0 — coverage keeps
+reporting it).
+
+1. **Repeat the cycle**: the tune→gate-under-planner loop is now one command each
+   (`tune`, then `probe --a basket-96 --b basket-96 --weights-b V8 --games 200
+   --allow-small` → SPRT). Different CMA-ES seeds/sigma explore different basins; each
+   cycle costs ~30 min end-to-end. Also try the on-policy fit
+   (`fit --bots basket-96 --games 1200`, ~20 min) and compare holdout vs greedy-data fit.
+2. Bookkeeping when idle cores allow: direct basket-96(V8) vs bench:greedy-v5 SPRT (the
+   ladder's +62 was measured with V7); the formal Gate A H1 stamp vs rollout-1200; and
+   the 200-game gap-look at bench:rollout-4800 (~3 h detached — the +16 may have moved
+   the needle toward the ~+147 tier).
 
 Do not mint any rank from the basket bot until it clears Gate A. That bar is the whole
 reason this rewrite exists.

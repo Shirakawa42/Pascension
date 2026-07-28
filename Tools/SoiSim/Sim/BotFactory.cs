@@ -137,7 +137,9 @@ namespace SoiSim
             "greedy" => "greedy-" + WeightsName(),
             "strong" => $"ismcts-{WeightsName()}-{(Budget > 0 ? Budget : 200)}it" +
                         (PerfectInformation ? "-ORACLE" : ""),
-            _ => Kind
+            // Weight overrides must be visible in probe lines — a V8-vs-V7 duel where
+            // both sides print "basket-96" is unattributable after the fact.
+            _ => Kind + (Weights != null ? "-" + WeightsName() : "")
         };
 
         /// <summary>Names this side's weights so probe lines and run headers say WHICH
@@ -190,7 +192,12 @@ namespace SoiSim
             "greedy" => new ShardsGreedyEvalBot(gameSeed * 100 + (ulong)seat, engine, Model),
             "strong" => new ShardsSearchBot(gameSeed * 100 + (ulong)seat, engine,
                 StrongConfig(), Model),
-            _ => ShardsBotRanks.Create(Kind, gameSeed * 100 + (ulong)seat, engine)
+            // Weights/legacy overrides reach the Current-following kinds (basket*,
+            // planner, …) so a probe can pit two vectors UNDER THE PLANNER; passing null
+            // keeps the ranks registry's shared default, and the frozen bench:* kinds
+            // ignore the override by construction.
+            _ => ShardsBotRanks.Create(Kind, gameSeed * 100 + (ulong)seat, engine,
+                Weights == null && !LegacyDecisions ? null : Model)
         };
     }
 }

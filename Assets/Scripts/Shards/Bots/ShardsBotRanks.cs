@@ -158,28 +158,35 @@ namespace Shards.Bots
             new(() => new ShardsValueModel(ShardsEvalWeights.V5));
 
         /// <summary>Resolves rank kind strings, the frozen `bench:*` benchmark kinds, and
-        /// the tooling kinds ("heuristic", "random", "greedy", "strong", "strong-fast").</summary>
-        public static IBotAgent Create(string kind, ulong seed, ShardsEngine engine)
+        /// the tooling kinds ("heuristic", "random", "greedy", "strong", "strong-fast").
+        /// <paramref name="model"/> overrides the shared Current-weights model for the
+        /// kinds that follow Current — the lever that lets a probe pit two weight vectors
+        /// against each other UNDER THE PLANNER (`--a basket-96 --weights-a V8`). The
+        /// frozen `bench:*` kinds and the minted ranks deliberately ignore it: a
+        /// benchmark that accepts an override is not frozen.</summary>
+        public static IBotAgent Create(string kind, ulong seed, ShardsEngine engine,
+            ShardsValueModel model = null)
         {
             var rank = Find(kind);
             if (rank != null)
                 return rank.Factory(seed, engine);
+            model ??= Model.Value;
             return kind switch
             {
                 "random" => new ShardsHeuristicBot(seed, engine, random: true),
-                "greedy" => new ShardsGreedyEvalBot(seed, engine, Model.Value),
+                "greedy" => new ShardsGreedyEvalBot(seed, engine, model),
                 "strong" => new ShardsSearchBot(seed, engine,
-                    ShardsSearchConfig.ForRealGames(1.0), Model.Value),
+                    ShardsSearchConfig.ForRealGames(1.0), model),
                 "strong-fast" => new ShardsSearchBot(seed, engine,
-                    ShardsSearchConfig.ForRealGames(0.25), Model.Value),
+                    ShardsSearchConfig.ForRealGames(0.25), model),
 
                 // RETIRED negative result: 1-step lookahead on a static evaluator. `soisim
                 // rank` measured why it can never work — sibling end-of-turn leaves differ
                 // by 0.013 true win-prob at the decision margin, below any evaluator's
                 // resolution. Kept resolvable so the campaign log's probes stay
                 // reproducible; never mint it.
-                "planner" => new ShardsPlannerBot(seed, engine, Model.Value),
-                "planner-w8" => new ShardsPlannerBot(seed, engine, Model.Value,
+                "planner" => new ShardsPlannerBot(seed, engine, model),
+                "planner-w8" => new ShardsPlannerBot(seed, engine, model,
                     config: new ShardsPlannerConfig { Worlds = 8 }),
 
                 // The Phase 2 candidate: whole-turn PURCHASE BASKETS scored by terminal
@@ -187,13 +194,13 @@ namespace Shards.Bots
                 // headroom (+0.012/turn; every static evaluator measured negative). NOT a
                 // minted rank until it clears Gate A — beating full-rollout ISMCTS
                 // head-to-head at equal WALL-CLOCK.
-                "basket" => new ShardsBasketPlannerBot(seed, engine, Model.Value),
+                "basket" => new ShardsBasketPlannerBot(seed, engine, model),
                 // The think-longer ladder: each rung doubles the deciding rollouts.
                 // Measured head-to-head (the only probe that can separate them):
                 // basket-96 > basket at +30 Elo (54.2%, SPRT H1 at 470 pairs).
-                "basket-96" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
+                "basket-96" => new ShardsBasketPlannerBot(seed, engine, model,
                     new ShardsBasketPlannerConfig { Worlds = 2, RolloutsPerWorld = 48 }),
-                "basket-192" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
+                "basket-192" => new ShardsBasketPlannerBot(seed, engine, model,
                     new ShardsBasketPlannerConfig { Worlds = 2, RolloutsPerWorld = 96 }),
                 // ── Measured-dead rungs, kept resolvable so the log's screens stay
                 // reproducible. All three 200-game screens read ≤50% vs basket-96
@@ -201,14 +208,14 @@ namespace Shards.Bots
                 // SPACE's headroom is fully harvested at 96 deciding rollouts, and a
                 // looser margin only admits noise-deviations. Do not re-tune these knobs;
                 // the next lever is the basket space itself. ──
-                "basket-192m" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
+                "basket-192m" => new ShardsBasketPlannerBot(seed, engine, model,
                     new ShardsBasketPlannerConfig
                     {
                         Worlds = 2,
                         RolloutsPerWorld = 96,
                         DeviationMargin = 0.035
                     }),
-                "basket-96m" => new ShardsBasketPlannerBot(seed, engine, Model.Value,
+                "basket-96m" => new ShardsBasketPlannerBot(seed, engine, model,
                     new ShardsBasketPlannerConfig
                     {
                         Worlds = 2,

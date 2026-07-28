@@ -49,15 +49,21 @@ namespace SoiSim
             double lr = cli.GetDouble("--lr", 0.5);
             double l2 = cli.GetDouble("--l2", 1e-4);
             int minRound = cli.GetInt("--min-round", 4);
+            // The policy that PLAYS the data games. Default greedy (fast — thousands of
+            // games in seconds); "basket-96" collects ON-POLICY positions from the
+            // shipped planner's own distribution (~30× slower per game — size --games
+            // accordingly). The retune rule: train on the distribution the shipped
+            // agent actually visits.
+            string bots = cli.GetStr("--bots", "greedy");
             bool emit = !cli.Has("--no-emit");
             cli.RejectUnknown();
 
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
             var chars = ShardsContentRegistry.CharactersFor(SimConfig.AllDlc);
-            var model = new ShardsValueModel(W.Pad(ShardsEvalWeights.Current));
+            var factory = new BotFactory(bots, 0);
 
-            Console.WriteLine($"fit: {games} games, dlc mask {(int)SimConfig.AllDlc}, min round {minRound}");
+            Console.WriteLine($"fit: {games} games, bots {bots}, dlc mask {(int)SimConfig.AllDlc}, min round {minRound}");
             var sw = Stopwatch.StartNew();
             // One slot per game, merged in game order below. The first version used a
             // ConcurrentBag, whose enumeration order depends on thread scheduling; game
@@ -85,8 +91,8 @@ namespace SoiSim
                     }, SimConfig.AllDlc));
                 var seats = new IBotAgent[]
                 {
-                    new ShardsGreedyEvalBot(seed * 100, adapter.Inner, model),
-                    new ShardsGreedyEvalBot(seed * 100 + 1, adapter.Inner, model)
+                    factory.Create(seed, 0, adapter.Inner),
+                    factory.Create(seed, 1, adapter.Inner)
                 };
 
                 var local = new List<double[]>();
