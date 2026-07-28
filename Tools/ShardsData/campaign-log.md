@@ -951,3 +951,36 @@ it by thinking longer. The path to 4800-class strength at basket-class cost is t
 campaign question: joint retune under the planner (on-policy basket-96 self-play data for
 `fit`/validation, greedy inner loop for CMA-ES, coverage checks + off-policy mix against
 self-play blind spots), then space v4.
+- **2026-07-28 12:28** — probe: basket-96 vs bench:greedy-v5 → 62.5 % [56.2 %–68.8 %] paired over 100 pairs · UNDERPOWERED (--allow-small)
+- **2026-07-28 12:32** — probe: basket-96 vs bench:greedy-v5 → 58.8 % [54.5 %–63.2 %] paired over 244 pairs · SPRT H1 accepted (>= 15 Elo)
+
+## 2026-07-28 afternoon — freeze point #2: scry and reveal handled, +62 Elo confirmed
+
+Declared a benchmark freeze point (the four-decisions protocol) and closed the two
+ChooseAnswer holes coverage had flagged, both now LIVE bugs because the basket planner
+fires hero abilities on rollout evidence:
+
+- **`soi.scry`** (Rez's center-deck Scry 2): was the `default` fall-through — decline
+  everything. The champion fired the ability **7.51/drafted game and declined all 1,156
+  scry decisions**: a paid no-op, 1 gem each. Handler: bottom exactly the cards the buy
+  bar rejects (the removeshop/reroll deadness rule). Post-fix coverage: 22 bottomed /
+  1,099 kept — selective, and the option-position split (11/11) shows a real choice.
+- **`soi.reveal`** (five sites): the take-first group ignored `Disabled` (the Horizon
+  champion-pick greys non-champions — take-first landed on exactly those) and never chose
+  WHICH card. Handler: skip Disabled, best-by-tuned-value when Max=1, all-enabled
+  otherwise. Post-fix: 1,587 took / 345 declined (the declines are Disabled-only sets),
+  164 non-first picks.
+
+Both reuse tuned quantities only; both sit behind the `legacyDecisions` A/B flag with the
+2026-07-27 four. The greedy pricing of Rez's activation is untouched (still below END
+TURN — the pinned exception test stays true), so bench:greedy-v5's own games move only
+via the reveal tweak.
+
+**Re-baseline at the new freeze point: screen 62.5% [56.2–68.8], then SPRT H1 at 230
+pairs — 58.8% [54.5–63.2], +62 Elo vs bench:greedy-v5** — the fastest H1 and largest
+confirmed edge of the campaign (previous band +31–45; cross-freeze comparison approximate
+since the benchmark moved a hair too). The fix reached the basket bot twice: its own
+decisions AND every rollout it scores leaves with.
+
+Ladder to date: +14 → +18 → +30 → +45 → **+62**, five SPRT-decided rungs in two days,
+every one preceded by its measurement.

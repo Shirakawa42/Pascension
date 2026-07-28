@@ -456,7 +456,64 @@ namespace Shards.Bots
                     break;
                 }
 
-                case "soi.reveal":
+                case "soi.reveal" when !_legacyDecisions:
+                {
+                    // Reveals are free value (the card stays in hand / the bonus fires),
+                    // so take them — but never a Disabled option (the Horizon
+                    // champion-pick greys non-champions, and the old take-first fell on
+                    // exactly those), and when only ONE may be taken, take the BEST by
+                    // tuned value rather than the first.
+                    if (request.Max == 1)
+                    {
+                        DecisionOption best = null;
+                        double bestValue = double.MinValue;
+                        foreach (var option in request.Options)
+                        {
+                            if (option.Disabled) continue;
+                            double value = OptionValue(engine, player, option);
+                            if (value > bestValue)
+                            {
+                                bestValue = value;
+                                best = option;
+                            }
+                        }
+                        if (best != null) answer.ChosenOptionIds.Add(best.Id);
+                    }
+                    else
+                    {
+                        foreach (var option in request.Options)
+                            if (!option.Disabled && answer.ChosenOptionIds.Count < request.Max)
+                                answer.ChosenOptionIds.Add(option.Id);
+                    }
+                    break;
+                }
+
+                case "soi.scry" when !_legacyDecisions:
+                {
+                    // Rez's center-deck Scry: bottom exactly the cards we would never buy
+                    // — the same deadness rule removeshop and the reroll use. Unhandled,
+                    // this was a PAID NO-OP: the basket planner fires the ability
+                    // ~7×/drafted game on rollout evidence, and every activation kept
+                    // both cards regardless of what they were. (The greedy policy still
+                    // prices the activation below END TURN — pinned by
+                    // RezHeroAbility_IsKnownDeadAndThatIsMeasured — so bench:greedy-v5's
+                    // games are unchanged by this handler.)
+                    foreach (var option in request.Options)
+                    {
+                        if (answer.ChosenOptionIds.Count >= request.Max) break;
+                        ShardsCardDef def = null;
+                        if (option.DefId != null)
+                            ShardsCardDatabase.TryGet(option.DefId, out def);
+                        if (def == null) continue;
+                        double perGem = CardValue(def, player.Mastery) /
+                                        Math.Max(1, engine.EffectiveCost(player, def));
+                        if (perGem < _w[W.BuyThreshold])
+                            answer.ChosenOptionIds.Add(option.Id);
+                    }
+                    break;
+                }
+
+                case "soi.reveal": // legacy A/B: the old take-first fall-through
                 case "soi.confirm":
                 case "soi.maglev":
                 case "soi.keepfast":

@@ -147,19 +147,24 @@ sanity triangle is in the log — every score tracks opponent strength, rollout-
 frontier is ABSOLUTE strength: `bench:rollout-4800` (~+147 over greedy) is still above
 basket-96 (+31–45), and the rollout knob saturates — thinking longer cannot close it.
 
+DONE 2026-07-28 afternoon: freeze point #2 closed the soi.scry (paid no-op, deadness
+rule) and soi.reveal (Disabled-aware, best-by-value) holes → re-baseline **SPRT H1 at 230
+pairs, 58.8% [54.5–63.2], +62 Elo** — the current champion mark. Ladder: +14 → +18 → +30
+→ +45 → +62, five SPRT rungs in two days.
+
 1. **The joint-retune data pipeline** (the main lever now): collect basket-96 SELF-PLAY
    games (on-policy — the distribution the shipped agent actually visits) for `fit` and
    for tuner validation; keep the CMA-ES inner loop on cheap greedy seats; gate every
    champion via basket-vs-frozen-benchmark probes; mix in basket-vs-greedy/heuristic
    games and run `coverage` on the data policy first (self-play blind-spot insurance).
-   Then re-run `rank` under the retuned vector before adopting.
-2. At the next benchmark freeze point: handlers for soi.scry and soi.reveal (reuse tuned
-   quantities, same recipe as the four-decisions fix), then re-run the ablation and the
-   basket-96 SPRT since bench:greedy-v5's behaviour moves.
-3. Optional bookkeeping when idle cores allow: the formal Gate A SPRT vs rollout-1200
+   Then re-run `rank` under the retuned vector before adopting. NOTE: `fit` needs a
+   `--bots` flag first (it hardcodes greedy seats), and probing custom weight vectors on
+   basket kinds needs Weights plumbed through BotFactory → ShardsBotRanks.Create.
+2. Optional bookkeeping when idle cores allow: the formal Gate A SPRT vs rollout-1200
    (detached overnight) if the record ever needs the H1 stamp; and a 200-game look at
    basket-96 vs bench:rollout-4800 (~3 h detached — slow opponent) to measure the actual
-   gap to the 4800 tier before trying to close it.
+   gap to the 4800 tier before trying to close it (basket-96 is +62 over greedy now;
+   4800 is ~+147 — the gap may be smaller than it was).
 
 Do not mint any rank from the basket bot until it clears Gate A. That bar is the whole
 reason this rewrite exists.
