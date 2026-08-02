@@ -51,11 +51,10 @@ namespace Shards.Bots
                 case "soi.maglev":
                 case "soi.keepfast":
                 // Duel of Doom pick-one/decline decisions: hero draft (branch over every
-                // hero), Reactor Drone's mode choice (both modes), the intel hand-pick,
-                // Order Initiate's shop removal and Shard Defiant's keep-or-banish.
+                // hero), Reactor Drone's mode choice (both modes), Order Initiate's shop
+                // removal and Shard Defiant's keep-or-banish.
                 case "soi.herodraft":
                 case "soi.mode":
-                case "soi.handpick":
                 case "soi.removeshop":
                 case "soi.defiant":
                 case "soi.tutor":

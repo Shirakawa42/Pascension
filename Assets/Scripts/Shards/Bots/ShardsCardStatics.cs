@@ -30,10 +30,12 @@ namespace Shards.Bots
         public int AllLoseHealth;      // symmetric burn (aggression)
         public int AllLoseMastery;
         // Duel of Doom center-deck manipulation and hand disruption. These walked to
-        // NOTHING until 2026-07-25, which meant Rez's whole hero ability (Scry 2), Index
-        // of Futures and Whisper Extractor were all valued at exactly zero.
+        // NOTHING until 2026-07-25, which meant Rez's whole hero ability (Scry 2) and
+        // Index of Futures were valued at exactly zero.
         public int ScryDepth;          // cards filtered off the center-deck top
         public int ReorderDepth;       // cards freely reordered (strictly stronger per card)
+        // No producer since whisper_extractor's removal (2026-08-02) — the atom (and its
+        // weight) stay: W layout is append-only so older tuned vectors keep loading.
         public int OppHandStrips;      // "opponent draws then discards a card you pick"
         /// <summary>Contains a Custom/Do with NO annotation — the guard test fails on these.</summary>
         public bool Opaque;
@@ -171,11 +173,6 @@ namespace Shards.Bots
                     // Strictly stronger than Scry per card — free ordering, not just
                     // top-or-bottom.
                     atoms.ReorderDepth += (int)Math.Round(reorder.Count * mult);
-                    return;
-                case OpponentDrawsThenDiscards:
-                    // Card-neutral for the victim (they draw first) but the controller
-                    // strips their best option — that choice is the value.
-                    atoms.OppHandStrips += (int)Math.Round(mult);
                     return;
                 case PerCount per:
                 {

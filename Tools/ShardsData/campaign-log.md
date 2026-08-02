@@ -1020,3 +1020,19 @@ an override is not frozen), and probe lines now print the vector (`basket-96-V7`
 Ladder: +14 → +18 → +30 → +45 → +62 → **~+78 vs the frozen benchmark implied** (+62
 measured at freeze point #2 with V7, +16 under-planner on top; the direct basket-96(V8)
 vs bench:greedy-v5 SPRT is the next bookkeeping run when cores idle).
+
+## 2026-08-02 — environment moved: balance patch (a game change, not an AI change)
+
+- Card pool changed by user decision: **whisper_extractor removed** from the Duel pool
+  (with the `OpponentDrawsThenDiscards` effect and the `soi.handpick` context),
+  **Tetra's Perception 3 → 2 gems**, and the Deadly Recruits duel errata now carries a
+  real keep-or-not decision (`soi.keepfast`, timeout/bot default = keep). Snapshots also
+  gained per-viewer row prices (display only — no policy reads them).
+- **bench:greedy-v5's frozen play fingerprint re-minted** (same seed 20260727, now a
+  400-move prefix). Bench numbers recorded before this line cite a different game than
+  numbers after it — do not compare raw values across the line.
+- Detection-floor note: greedy(Current) rerolls fell to 0/60 in the duel-bot coverage
+  test after the pool perturbation — not a lost capability (present again at 400 games);
+  the test's sample grew 60 → 400, assertions unchanged.
+- No retune, no promotion: **V8 stands**. The next tune's games will include the new
+  pool; gate under basket-96 per protocol when it happens.

@@ -23,7 +23,12 @@ namespace SoiSim.Tests
     [TestFixture]
     public sealed class SoiSimDuelBotTests
     {
-        private const int Games = 60;
+        // 60 → 400 (2026-08-02): the whisper_extractor removal perturbed the center-deck
+        // pool enough that greedy's rerolls (already rare, ~0.44/game for V5) landed on
+        // exactly 0 across the old 60-game sample — a detection-floor miss, not a lost
+        // capability (at 400 games both actions show up again). The assertions are
+        // unchanged; only the sample grew. Still ~1s.
+        private const int Games = 400;
 
         private sealed class Usage
         {

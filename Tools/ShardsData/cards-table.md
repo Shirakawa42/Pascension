@@ -254,8 +254,6 @@ M20: you may copy any number of effects from the revealed cards instead. |
 | mainframe_abbot_duel | Mainframe Abbot | duel | Order | Ally | 3 | 2 | – | 3 | Shield 3. Draw a card.
 Allegiance Order 4: gain 1 mastery. |
 | order_initiate_duel | Order Initiate | duel | Order | Ally | 1 | 3 | – | – | You may remove a card from the shop. Gain 2 gems. Dominion: gain 2 mastery. |
-| whisper_extractor | Whisper Extractor | duel | Wraethe | Ally | 3 | 2 | – | – | Gain 2 power.
-Target opponent draws a card, then choose a card in their hand — they discard it. |
 | wraethe_skirmisher_duel | Wraethe Skirmisher | duel | Wraethe | Ally | 1 | 3 | – | – | Gain 2 power.
 Echo: gain 5 instead. |
 | comet | Comet | duel | Aion | Ally | 14 | 1 | – | – | Destroy target opponent.

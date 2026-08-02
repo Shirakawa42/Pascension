@@ -133,8 +133,8 @@ namespace Pascension.Game.UI
             ["Futureproof"] = "Pare-Avenir",
             ["M5 passive: the first card you buy each turn costs 1 less."] =
                 "M5 passif : la première carte que vous achetez chaque tour coûte 1 de moins.",
-            ["M5, once per turn: pay 3 gems, draw a card."] =
-                "M5, une fois par tour : payez 3 cristaux, piochez une carte.",
+            ["M5, once per turn: pay 2 gems, draw a card."] =
+                "M5, une fois par tour : payez 2 cristaux, piochez une carte.",
             ["M5, once per turn: pay 1 gem, gain 3 health."] =
                 "M5, une fois par tour : payez 1 cristal, gagnez 3 santé.",
             ["M5, once per turn: pay 2 gems and 3 health, banish a card from your hand or discard pile."] =
@@ -504,6 +504,8 @@ namespace Pascension.Game.UI
                 "Détruisez un champion adverse"),
             (new Regex(@"^Keep fast-played cards\? \(they join your discard pile\)$"),
                 "Conserver les cartes enrôlées ? (elles rejoignent votre défausse)"),
+            (new Regex(@"^Keep the fast-played card\? \(it joins your discard pile\)$"),
+                "Conserver la carte enrôlée ? (elle rejoint votre défausse)"),
             (new Regex(@"^Put an Aion card from your discard pile on top of your deck\?$"),
                 "Placer une carte Aion de votre défausse sur votre deck ?"),
             (new Regex(@"^Put one revealed champion into your hand\?$"),
@@ -532,10 +534,6 @@ namespace Pascension.Game.UI
             (new Regex(@"^Choose an opponent to lose (\d+) health$"),
                 "Choisissez un adversaire qui perd $1 santé"),
             // "$1 : sa main" avoids the de/d' elision a player name would break.
-            (new Regex(@"^Choose an opponent — they draw a card, then discard one you choose$"),
-                "Choisissez un adversaire — il pioche une carte, puis défausse celle que vous choisissez"),
-            (new Regex(@"^Choose a card in (.+)'s hand — they discard it$"),
-                "$1 : choisissez une carte dans sa main — il la défausse"),
             (new Regex(@"^Search your draw pile for a card to put into your hand$"),
                 "Cherchez dans votre pioche une carte à mettre dans votre main"),
             (new Regex(@"^Destroy an Ingeminex$"),
@@ -562,6 +560,8 @@ namespace Pascension.Game.UI
                 "Défaussez $1 carte(s)"),
             (new Regex(@"^Fast-play an ally costing (\d+) or less for free \(you keep it\)\?$"),
                 "Enrôler gratuitement un allié coûtant $1 ou moins (vous le gardez) ?"),
+            (new Regex(@"^Fast-play an ally costing (\d+) or less for free \(you may keep it\)\?$"),
+                "Enrôler gratuitement un allié coûtant $1 ou moins (vous pouvez le garder) ?"),
             (new Regex(@"^Put (.+) on top of your deck\?$"),
                 "Placer $1 sur votre deck ?"),
             (new Regex(@"^Recruit a card costing (\d+) or less for free$"),

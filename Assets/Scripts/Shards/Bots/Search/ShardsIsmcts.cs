@@ -181,10 +181,10 @@ namespace Shards.Bots
         /// Valid only when every chosen id exists in the REAL request's options and the
         /// count fits Min/Max. Most option ids reference public objects (champions, row
         /// slots, the bot's own hand) and so are stable between the search's
-        /// determinizations and reality; ids drawn from a HIDDEN zone are not — an
-        /// opponent's hand is re-dealt per determinization ("soi.handpick") — which is
-        /// exactly what the membership check below catches, falling back to the model.
-        /// Returns false to fall back.</summary>
+        /// determinizations and reality; ids drawn from a HIDDEN zone are not — a
+        /// decision over an opponent's re-dealt hand would differ per determinization —
+        /// which is exactly what the membership check below catches, falling back to the
+        /// model. Returns false to fall back.</summary>
         public static bool TryPlannedAnswer(ref PlanCursor cursor, DecisionRequest request, out List<int> ids)
         {
             ids = null;

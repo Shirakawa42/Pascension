@@ -90,16 +90,16 @@ live climbing price. **Ability ART** (2026-07-25) is its own piece per hero —
 not card defs and no test exports them. The card wears a pulsing gold outer halo exactly
 while the ability is usable.
 
-**New defs (21)**: relics praetorian_03/multitask_brain/unknown_god/star_seeker/doom_gate
+**New defs (20)**: relics praetorian_03/multitask_brain/unknown_god/star_seeker/doom_gate
 (one per hero); cards testudo_vanguard, century_forge, riposte_doctrine, index_of_futures,
 bulwark_chanter, aegis_archivist, thornshell_warden, nectar_alchemist, lifebloom_ritual,
-whisper_extractor, doomstalker, bleak_communion, grim_tutor, comet, prism, longshot.
-**whisper_extractor** (nerfed 2026-07-25 to the ORIGINAL session-JSON intent, which the
-first build dropped): `OpponentDrawsThenDiscards` — target opponent (auto at 1 opponent,
-else a `soi.target` pick) DRAWS 1, then the controller picks a card from their hand to
-discard. Card-neutral for the victim, so it steals the best card instead of stripping one.
-Hand options are sorted by DefId/InstanceId: `ShardsCardDrawnEvent` redacts the def for
-other viewers, so an unsorted list would reveal exactly which card was just drawn.
+doomstalker, bleak_communion, grim_tutor, comet, prism, longshot.
+**whisper_extractor REMOVED 2026-08-02** (user decision: too strong even after the
+2026-07-25 redraw nerf). Gone with it: the `OpponentDrawsThenDiscards` effect class, the
+`soi.handpick` context (bot handlers, search candidates, SoiSim coverage expectation) and
+the two FR decision-title patterns. The `OppHandStrips` atom + weight STAY (W layout is
+append-only); the art png/CardArtIndex entry remain on disk until the next
+`Rebuild Card Art Index` (editor-only).
 **grim_tutor** (2026-07-25, Wraethe Mercenary, cost 3, qty 2): Custom flow — decision over
 the player's DECK sorted by DefId/InstanceId (never deck order — the World Piercer
 anti-leak rule), chosen card to hand, `Rng.Shuffle(deck)`, `LoseHealth(3)` (a loss, not
@@ -184,11 +184,13 @@ needed.
   | Hero | Ability | Cost | Effect |
   |---|---|---|---|
   | decima | Recruiting | — | **passive**: first buy each turn costs 1 less (lives in `EffectiveCost`) |
-  | tetra | Perception | 3 gems | draw 1 |
+  | tetra | Perception | **2 gems** | draw 1 |
   | volos | First Aid | 1 gem | gain 3 health |
   | kosynwu | Sacrifice | **2 gems + 3 health** | banish 1 from hand/discard |
   | rez | Futureproof | **free** | Scry 2 the center deck |
 
+  ⚠ **Perception 3 gems → 2 (2026-08-02, user decision)** — at 3 the draw competed with
+  a whole buy and was rarely worth it.
   ⚠ **Rebalanced 2026-07-27** (was: Sacrifice 3 gems, Futureproof 1 gem). Both abilities
   were measurably unusable — `soisim coverage` recorded **0 activations across 1,622 and
   1,583 drafted games**. Futureproof is designed to PAIR with the row reroll (bury a card
@@ -248,7 +250,10 @@ needed.
   champions) cancels the attack, defeated → bottom of center deck, defeater alone
   gets the reward.
 - Warp N (an EFFECT, not a card property): fast-play a row ally costing ≤ N for free;
-  Deadly Recruits' fast-play is NOT warp — the card is kept (discard at cleanup).
+  Deadly Recruits' fast-play is NOT warp — base destiny: the card is always kept
+  (discard at cleanup); **duel errata "you may keep it" is a real keep-or-not decision**
+  (2026-08-02 fix — `soi.keepfast`, default/bots = keep; declined, the card follows
+  fast-play rules to the bottom of the center deck).
 - End phase order: fast-plays → center-deck bottom, play zone → discard, discard hand,
   ready champions/destinies/character (readying happens at END phase, not turn start),
   draw 5 (+ Heart of Nothing bonus), pools/turn-flags reset. Mid-draw reshuffle: never

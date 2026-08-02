@@ -1005,9 +1005,22 @@ namespace Pascension.Game.Soi
                 slot.gameObject.SetActive(true);
                 slot.BindDef(card.DefId, card.InstanceId);
                 ApplyRowGlows(slot, card, s);
+                ApplyRowPrice(slot, card, s);
                 SyncRerollVisibility(s);
                 _boardViews[card.InstanceId] = slot;
             }
+        }
+
+        /// <summary>Live shop price: the host computes the viewer's per-slot effective
+        /// cost (Axia's per-champion discount, Decima's M5 first-buy discount) into the
+        /// snapshot; show it on the cost disc — green when cheaper than printed, red
+        /// when pricier. Rebinding restores the printed cost, so no stale tints.</summary>
+        private void ApplyRowPrice(CardView slot, ShardsCardSnap card, int slotIndex)
+        {
+            if (_snap?.RowEffectiveCosts == null || slotIndex >= _snap.RowEffectiveCosts.Count) return;
+            int effective = _snap.RowEffectiveCosts[slotIndex];
+            if (effective < 0 || !ShardsCardDatabase.TryGet(card.DefId, out var def)) return;
+            slot.SetLiveCost(effective, def.Cost);
         }
 
         /// <summary>The NEXT reroll's gem price for the viewer (1, then 2, 3… this turn).</summary>
@@ -1097,6 +1110,7 @@ namespace Pascension.Game.Soi
             slot.gameObject.SetActive(true);
             slot.BindDef(card.DefId, card.InstanceId);
             ApplyRowGlows(slot, card, slotIndex);
+            ApplyRowPrice(slot, card, slotIndex);
             SyncRerollVisibility(slotIndex);
             _boardViews[card.InstanceId] = slot;
             if (isActiveAndEnabled)

@@ -50,6 +50,15 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-08-02",
+                "· Whisper Extractor is removed from the Duel of Doom pool — stealing the opponent's best card every cycle was too strong even after its earlier nerf.\n" +
+                "· Deadly Recruits (Duel version) now really asks whether you keep the fast-played ally, as its text always said — decline and it returns to the bottom of the common deck instead of joining your discard pile.\n" +
+                "· Tetra's Perception ability now costs 2 gems instead of 3.\n" +
+                "· Shop prices now show what YOU would pay: cost reductions like Decima's first-buy discount or Axia's aura appear right on the card, in green.",
+                "· L'Extracteur de Murmures est retiré du pool Duel of Doom — voler la meilleure carte de l'adversaire à chaque cycle restait trop fort même après sa précédente correction.\n" +
+                "· Dangereuses Recrues (version Duel) demande désormais vraiment si vous conservez l'allié enrôlé, comme son texte l'a toujours dit — refusez et il retourne sous la pioche commune au lieu de rejoindre votre défausse.\n" +
+                "· La capacité Perception de Tetra coûte désormais 2 cristaux au lieu de 3.\n" +
+                "· La boutique affiche désormais le prix que VOUS paieriez : les réductions comme la remise premier-achat de Decima ou l'aura d'Axia apparaissent directement sur la carte, en vert."),
             new Entry("2026-07-29",
                 "· Two hero abilities rebalanced. Rez's Futureproof is now FREE (was 1 gem) and Ko Syn Wu's Sacrifice costs 2 gems instead of 3 — the 3 health is unchanged.\n" +
                 "· Why: both were priced out of their own game plan. Futureproof is meant to pair with a shop reroll — bury a card that would feed your opponent's faction, or set up something better to reroll into — and you could not afford both in the same turn. Sacrifice was strong but rarely worth 3 gems AND 3 health while an opponent was simply racing damage.\n" +

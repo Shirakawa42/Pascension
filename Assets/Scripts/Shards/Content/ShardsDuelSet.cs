@@ -141,12 +141,8 @@ namespace Shards.Content
                 .Art("a fallen colossus re-sprouting from a ring of luminous flowers").Register();
 
             // ----- Wraethe -----
-            SoiCard.New("whisper_extractor", "Whisper Extractor").InSet(SET).Faction(W)
-                .Type(ShardsCardType.Ally).Cost(3).Qty(2)
-                .Plays(E.Seq(E.Power(2), new OpponentDrawsThenDiscards()))
-                .Text("Gain 2 power.\nTarget opponent draws a card, then choose a card in their hand — they discard it.")
-                .Art("a shade pulling a single glowing card from a fanned hand of shadows").Register();
-
+            // whisper_extractor lived here (draw-then-strip hand attack) — removed
+            // 2026-08-02, user decision: too strong even after the redraw nerf.
             SoiCard.New("doomstalker", "Doomstalker").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Mercenary).Cost(5).Qty(2)
                 .Plays(E.Seq(E.Power(5), new If(ctx => ctx.Engine.State.ActiveMonsters.Count > 0, E.Power(3))))
@@ -788,7 +784,7 @@ namespace Shards.Content
             {
                 PlayerIndex = ctx.ControllerIndex,
                 Kind = DecisionKind.ChooseCards,
-                Title = $"Fast-play an ally costing {maxCost} or less for free (you keep it)?",
+                Title = $"Fast-play an ally costing {maxCost} or less for free (you may keep it)?",
                 Context = "soi.warp",
                 Min = 0,
                 Max = 1
@@ -800,7 +796,27 @@ namespace Shards.Content
             }
             yield return ShardsStep.AwaitDecision(req);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
-            engine.WarpFromRow(ctx.ControllerIndex, ctx.Answer.ChosenOptionIds[0], keep: true);
+            int slot = ctx.Answer.ChosenOptionIds[0];
+            var picked = engine.State.CenterRow[slot];
+            if (picked == null) yield break;
+
+            // "You may keep it" is a real choice (fixed 2026-08-02 — the first build
+            // always kept): kept, the card joins the discard at cleanup like a buy;
+            // declined, it follows fast-play rules to the bottom of the center deck.
+            // Timeout/bot default = keep, the stronger play and the pre-fix behavior.
+            var keep = new DecisionRequest
+            {
+                PlayerIndex = ctx.ControllerIndex,
+                Kind = DecisionKind.ChooseCards,
+                Title = "Keep the fast-played card? (it joins your discard pile)",
+                Context = "soi.keepfast",
+                Min = 0,
+                Max = 1
+            };
+            keep.Options.Add(new DecisionOption(picked.InstanceId, picked.Def.Name) { CardInstanceId = picked.InstanceId, DefId = picked.DefId });
+            keep.DefaultOptionIds.Add(picked.InstanceId);
+            yield return ShardsStep.AwaitDecision(keep);
+            engine.WarpFromRow(ctx.ControllerIndex, slot, keep: ctx.Answer.ChosenOptionIds.Count > 0);
         }
 
         /// <summary>Grim Tutor: search the draw pile for any card → hand, shuffle, lose 3

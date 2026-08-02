@@ -277,6 +277,7 @@ namespace Pascension.Game.View
             RulesBox.rectTransform.offsetMax = new Vector2(offsetMax.x, boxTop);
             CostGroup.SetActive(face.ShowCost);
             if (face.ShowCost) CostText.text = face.CostText;
+            CostText.color = UiPalette.Background; // clear any stale SetLiveCost tint
             HpGroup.SetActive(face.ShowBadge);
             if (face.ShowBadge) HpText.text = face.BadgeText;
             // Champions show BOTH: the defense badge keeps the right slot, the cost
@@ -323,6 +324,18 @@ namespace Pascension.Game.View
         {
             if (Group != null)
                 Group.alpha = greyed ? 0.45f : 1f;
+        }
+
+        /// <summary>Override the cost disc after a bind — SoI shop slots show the
+        /// VIEWER's live price with modifiers applied (green cheaper than printed,
+        /// red pricier). Rebinding the view restores the printed cost.</summary>
+        public void SetLiveCost(int effective, int printed)
+        {
+            if (CostText == null) return;
+            CostText.text = effective.ToString();
+            CostText.color = effective < printed ? UiPalette.DiscountGreen
+                : effective > printed ? UiPalette.WoundedRed
+                : UiPalette.Background;
         }
 
         /// <summary>Override the HP badge value/color after a bind — the SoI split

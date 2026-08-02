@@ -249,7 +249,7 @@ namespace SoiSim
         {
             "soi.split", "soi.shields", "soi.keepfast", "soi.herodraft", "soi.maglev",
             "soi.reveal", "soi.banish", "soi.return", "soi.destroy", "soi.warp",
-            "soi.recruit", "soi.copy", "soi.discard", "soi.scry", "soi.reorder", "soi.handpick",
+            "soi.recruit", "soi.copy", "soi.discard", "soi.scry", "soi.reorder",
             "soi.mode", "soi.removeshop", "soi.tutor", "soi.reset", "soi.relic", "soi.destiny",
             "soi.defiant", "soi.confirm"
         };
@@ -258,10 +258,9 @@ namespace SoiSim
         /// reported as blind spots — a detector that cries wolf gets ignored, which would
         /// cost far more than the thing it detects.
         ///
-        /// `soi.target` is the "which opponent?" prompt. All three sites — OpponentLosesMastery
-        /// (ShardsEffects.cs:540), OpponentDrawsThenDiscards (ShardsDuelEffects.cs:205) and
-        /// Reactor Drone's DestroyOpponent (ShardsDuelSet.cs:949) — auto-resolve when there is
-        /// exactly one living opponent. In a 2-player game there always is.</summary>
+        /// `soi.target` is the "which opponent?" prompt. Both sites — OpponentLosesMastery
+        /// (ShardsEffects.cs) and Comet's DestroyOpponent (ShardsDuelSet.cs) — auto-resolve
+        /// when there is exactly one living opponent. In a 2-player game there always is.</summary>
         private static readonly Dictionary<string, string> UnreachableInDuel = new()
         {
             ["soi.target"] = "auto-resolves with one living opponent (3 sites, all guarded on Count > 1)"

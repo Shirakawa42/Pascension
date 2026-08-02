@@ -532,7 +532,6 @@ namespace Shards.Bots
                 case "soi.destiny":
                 case "soi.relic":
                 case "soi.tutor":     // Grim Tutor: fetch the highest-value deck card
-                case "soi.handpick":  // Whisper Extractor: strip the victim's best card
                 {
                     // Best candidate by tuned model value (not raw cost).
                     DecisionOption best = null;

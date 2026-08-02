@@ -87,6 +87,11 @@ namespace Shards.Engine
         public List<int> KillableIds = new();
         /// <summary>Center-row slots the viewer can afford to buy right now.</summary>
         public List<int> BuyableSlots = new();
+        /// <summary>Per row slot, the price the VIEWER would pay right now — printed cost
+        /// plus modifiers (Axia's per-champion discount, Decima's M5 first-buy discount).
+        /// −1 for an empty slot; parallel to <see cref="CenterRow"/>. Lets the shop
+        /// display live prices instead of printed ones.</summary>
+        public List<int> RowEffectiveCosts = new();
 
         public sealed class PendingSnapInfo
         {
@@ -215,6 +220,7 @@ namespace Shards.Engine
             for (int s = 0; s < state.CenterRow.Length; s++)
             {
                 var card = state.CenterRow[s];
+                snapshot.RowEffectiveCosts.Add(card == null ? -1 : engine.EffectiveCost(viewer, card.Def));
                 if (card == null) continue;
                 if (viewerCanBuy && viewer.Gems >= engine.EffectiveCost(viewer, card.Def))
                     snapshot.BuyableSlots.Add(s);

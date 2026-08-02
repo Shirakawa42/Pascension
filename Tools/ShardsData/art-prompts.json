@@ -138,7 +138,6 @@
   { "id": "index_of_futures", "prompt": "a librarian monk leafing through a floating card catalogue of tomorrows" },
   { "id": "mainframe_abbot_duel", "prompt": "" },
   { "id": "order_initiate_duel", "prompt": "" },
-  { "id": "whisper_extractor", "prompt": "a shade pulling a single glowing card from a fanned hand of shadows" },
   { "id": "wraethe_skirmisher_duel", "prompt": "" },
   { "id": "comet", "prompt": "a crimson comet-rider streaking low over a row of market stalls" },
   { "id": "dash_duel", "prompt": "" },

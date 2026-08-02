@@ -653,8 +653,10 @@ namespace Shards.Engine
         {
             "decima" => new HeroAbilitySpec("Recruiting",
                 "M5 passive: the first card you buy each turn costs 1 less.", 5, 0, 0, active: false),
+            // Perception: 3 gems → 2 (2026-08-02, user decision) — at 3 the draw
+            // competed with a whole buy and was rarely worth it.
             "tetra" => new HeroAbilitySpec("Perception",
-                "M5, once per turn: pay 3 gems, draw a card.", 5, 3, 0, active: true),
+                "M5, once per turn: pay 2 gems, draw a card.", 5, 2, 0, active: true),
             "volos" => new HeroAbilitySpec("First Aid",
                 "M5, once per turn: pay 1 gem, gain 3 health.", 5, 1, 0, active: true),
             // Sacrifice: 3 gems → 2 (2026-07-27). The effect is strong, but it competes

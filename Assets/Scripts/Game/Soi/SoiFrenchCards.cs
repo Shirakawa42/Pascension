@@ -171,7 +171,6 @@ namespace Pascension.Game.Soi
             ["thornshell_warden"] = ("Gardien Carapace-d'Épines", "Activez : gagnez 2 santé.\nSi vous êtes à 50 PV, gagnez aussi 2 puissance."),
             ["nectar_alchemist"] = ("Alchimiste du Nectar", "Gagnez 4 santé.\nCe tour-ci, la santé que vous gagneriez au-delà de la limite de 50 devient de la puissance à la place."),
             ["lifebloom_ritual"] = ("Rituel d'Éclosion", "Jusqu'à la fin du tour, tous les soins que vous recevez sont doublés.\nUnion : gagnez 4 santé."),
-            ["whisper_extractor"] = ("Extracteur de Murmures", "Gagnez 2 puissance.\nUn adversaire ciblé pioche une carte, puis choisissez une carte dans sa main — il la défausse."),
             ["doomstalker"] = ("Traqueur du Destin", "Gagnez 5 puissance.\nSi un Ingeminex est en jeu, gagnez-en 8 à la place."),
             ["grim_tutor"] = ("Tuteur Sinistre", "Cherchez une carte dans votre pioche et mettez-la dans votre main, puis mélangez.\nVous perdez 3 santé."),
             ["bleak_communion"] = ("Communion Lugubre", "Perdez 4 santé — ce ne sont pas des dégâts.\nPiochez deux cartes.\nÉcho : un adversaire perd cette santé à votre place."),

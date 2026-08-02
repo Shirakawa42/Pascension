@@ -118,9 +118,14 @@ namespace SoiSim.Tests
                 "weight, then re-mint deliberately and re-baseline anything that cited it.");
         }
 
-        /// <summary>Minted 2026-07-27 over a 353-move game from seed 20260727.
+        /// <summary>Re-minted 2026-08-02 (400-move prefix, seed 20260727) after the
+        /// balance patch: whisper_extractor removed from the Duel pool, Tetra's
+        /// Perception 3 → 2 gems, Deadly Recruits duel keep-or-not decision. The
+        /// yardstick moved DELIBERATELY with the card pool — bench:greedy-v5 numbers
+        /// recorded before this line are not comparable to numbers after it.
+        /// (Original mint 2026-07-27: 6677764281591325285, a 353-move game.)
         /// See FrozenBenchmark_PlaysAnIdenticalGame.</summary>
-        private const ulong FrozenPlayFingerprint = 6677764281591325285UL;
+        private const ulong FrozenPlayFingerprint = 2716434134284504216UL;
 
         [Test]
         public void V5_IsContentFrozen()

@@ -340,7 +340,7 @@ namespace Pascension.Engine.Tests
             CompleteDraft(adapter);
             var engine = adapter.Inner;
             var p0 = engine.State.Players[0];
-            p0.CharacterId = "tetra"; // pay 3 gems: draw 1
+            p0.CharacterId = "tetra"; // pay 2 gems: draw 1
             p0.Mastery = 5;
             p0.Gems = 5;
             int handBefore = p0.Hand.Count;
@@ -523,62 +523,11 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void Duel_WhisperExtractor_OpponentDrawsThenDiscardsYourPick()
+        public void Duel_WhisperExtractor_IsGone()
         {
-            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 23);
-            CompleteDraft(adapter);
-            var engine = adapter.Inner;
-            var p0 = engine.State.Players[0];
-            var p1 = engine.State.Players[1];
-            var whisper = Plant(engine, p0, "whisper_extractor", ShardsZone.Hand);
-            int victimHandBefore = p1.Hand.Count;
-            int victimDeckBefore = p1.Deck.Count;
-            int victimDiscardBefore = p1.Discard.Count;
-
-            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = whisper.InstanceId }).Accepted);
-
-            // Two players: the target is forced, so the only decision is the hand pick —
-            // over the victim's hand AFTER their draw.
-            var request = engine.PendingInput.Decision;
-            Assert.AreEqual("soi.handpick", request.Context);
-            Assert.AreEqual(victimHandBefore + 1, request.Options.Count, "the victim drew before the pick");
-            Assert.AreEqual(victimDeckBefore - 1, p1.Deck.Count, "the draw came off their deck");
-            for (int i = 1; i < request.Options.Count; i++)
-            {
-                int byDef = string.CompareOrdinal(request.Options[i - 1].DefId, request.Options[i].DefId);
-                Assert.LessOrEqual(byDef, 0, "hand options sorted by def id — the drawn card must not be identifiable");
-                if (byDef == 0)
-                    Assert.Less(request.Options[i - 1].CardInstanceId, request.Options[i].CardInstanceId);
-            }
-
-            int pickedId = request.Options[0].Id;
-            AnswerPending(engine, new[] { pickedId });
-
-            Assert.AreEqual(victimHandBefore, p1.Hand.Count, "draw + discard is card-neutral for the victim");
-            Assert.IsFalse(p1.Hand.Exists(c => c.InstanceId == pickedId), "the chosen card left their hand");
-            Assert.AreEqual(victimDiscardBefore + 1, p1.Discard.Count);
-            Assert.IsTrue(p1.Discard.Exists(c => c.InstanceId == pickedId), "it went to their discard");
-            Assert.AreEqual(2, p0.Power, "the card's own 2 power still applies");
-        }
-
-        [Test]
-        public void Duel_WhisperExtractor_EmptyVictim_ResolvesWithoutDecision()
-        {
-            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 23);
-            CompleteDraft(adapter);
-            var engine = adapter.Inner;
-            var p0 = engine.State.Players[0];
-            var p1 = engine.State.Players[1];
-            p1.Hand.Clear();
-            p1.Deck.Clear();
-            p1.Discard.Clear();
-            engine.State.InvalidateCardIndex();
-            var whisper = Plant(engine, p0, "whisper_extractor", ShardsZone.Hand);
-
-            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = whisper.InstanceId }).Accepted);
-            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind,
-                "nothing to draw and nothing to pick — the effect must not park on a decision");
-            Assert.AreEqual(2, p0.Power);
+            // Removed 2026-08-02 (user decision): the draw-then-strip attack was too
+            // strong even after the redraw nerf. The def must not resurface.
+            Assert.IsFalse(ShardsCardDatabase.TryGet("whisper_extractor", out _));
         }
 
         [Test]
@@ -828,20 +777,137 @@ namespace Pascension.Engine.Tests
             CompleteDraft(adapter);
             var engine = adapter.Inner;
             var p0 = engine.State.Players[0];
-            // Whisper Extractor's hand-pick: try answering with the same option twice.
-            var extractor = engine.State.CenterDeck.Find(c => c.DefId == "whisper_extractor");
-            engine.State.CenterDeck.Remove(extractor);
-            extractor.Owner = 0; extractor.Zone = ShardsZone.Hand; p0.Hand.Add(extractor);
+            // Index of Futures' reorder (Min = Max = 3): answering with a duplicated id
+            // keeps the COUNT legal, so only the duplicate check can reject it.
+            var index = engine.State.CenterDeck.Find(c => c.DefId == "index_of_futures");
+            engine.State.CenterDeck.Remove(index);
+            index.Owner = 0; index.Zone = ShardsZone.Hand; p0.Hand.Add(index);
             engine.State.InvalidateCardIndex();
-            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = extractor.InstanceId }).Accepted);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = index.InstanceId }).Accepted);
             Assert.IsNotNull(adapter.PendingInput);
             Assert.AreEqual(PendingInputKind.Decision, adapter.PendingInput.Kind);
             var request = adapter.PendingInput.Decision;
+            Assert.AreEqual("soi.reorder", request.Context);
+            Assert.AreEqual(3, request.Options.Count);
             var dup = new DecisionAnswer { DecisionId = request.Id };
             dup.ChosenOptionIds.Add(request.Options[0].Id);
             dup.ChosenOptionIds.Add(request.Options[0].Id);
+            dup.ChosenOptionIds.Add(request.Options[1].Id);
             Assert.IsFalse(engine.Submit(new SubmitDecisionAction { PlayerIndex = 0, Answer = dup }).Accepted,
                 "duplicate option ids must be rejected outside the damage split");
+        }
+
+        /// <summary>Force Mining Drones (plain effect, no errata, cost 2) into row slot 0,
+        /// give P0 the Duel Deadly Recruits destiny and exhaust it, answering the pick
+        /// with slot 0. Leaves the keep-or-not decision pending; returns the row ally.</summary>
+        private static ShardsCard ExhaustDeadlyRecruitsOnRowAlly(ShardsEngineAdapter adapter)
+        {
+            var engine = adapter.Inner;
+            var p0 = engine.State.Players[0];
+            var cheap = engine.State.CenterDeck.Find(c => c.DefId == "mining_drones");
+            Assert.IsNotNull(cheap, "mining_drones available in the center deck");
+            engine.State.CenterDeck.Remove(cheap);
+            var displaced = engine.State.CenterRow[0];
+            if (displaced != null)
+            {
+                displaced.Zone = ShardsZone.CenterDeck;
+                engine.State.CenterDeck.Insert(0, displaced);
+            }
+            cheap.Zone = ShardsZone.CenterRow;
+            engine.State.CenterRow[0] = cheap;
+
+            var destiny = new ShardsCard
+            {
+                InstanceId = engine.State.NextInstanceId++,
+                DefId = "deadly_recruits_duel",
+                Owner = 0,
+                Zone = ShardsZone.DestinyRow
+            };
+            p0.Destinies.Add(destiny);
+            engine.State.InvalidateCardIndex();
+
+            Assert.IsTrue(engine.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = destiny.InstanceId }).Accepted);
+            var pick = engine.PendingInput.Decision;
+            Assert.AreEqual("soi.warp", pick.Context);
+            Assert.IsTrue(pick.Options.Exists(o => o.Id == 0), "the forced slot-0 ally is offered");
+            AnswerPending(engine, new[] { 0 });
+            return cheap;
+        }
+
+        [Test]
+        public void Duel_DeadlyRecruitsErrata_KeepIsARealChoice_KeptCardJoinsTheDeck()
+        {
+            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 17);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var picked = ExhaustDeadlyRecruitsOnRowAlly(adapter);
+
+            var keep = engine.PendingInput.Decision;
+            Assert.AreEqual("soi.keepfast", keep.Context, "'you may keep it' is a real decision");
+            Assert.AreEqual(0, keep.Min, "declining must be legal");
+            Assert.AreEqual(picked.InstanceId, keep.Options[0].CardInstanceId, "the decision shows the picked card");
+            CollectionAssert.AreEqual(new[] { picked.InstanceId }, keep.DefaultOptionIds,
+                "timeout/bot default = keep, the pre-fix behavior");
+
+            AnswerPending(engine, new[] { picked.InstanceId });
+            Assert.AreEqual(ShardsZone.PlayZone, picked.Zone);
+            Assert.IsFalse(picked.FastPlayed, "kept: cleanup files it into the discard like a buy");
+        }
+
+        [Test]
+        public void Duel_DeadlyRecruitsErrata_DeclinedKeep_FollowsFastPlayRules()
+        {
+            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 17);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var picked = ExhaustDeadlyRecruitsOnRowAlly(adapter);
+
+            Assert.AreEqual("soi.keepfast", engine.PendingInput.Decision.Context);
+            AnswerPending(engine, new int[0]);
+            Assert.AreEqual(ShardsZone.PlayZone, picked.Zone, "the ally still fast-plays");
+            Assert.IsTrue(picked.FastPlayed, "declined: it returns to the bottom of the center deck at cleanup");
+        }
+
+        [Test]
+        public void Duel_SnapshotRowPrices_ShowDecimaFirstBuyDiscount()
+        {
+            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 21);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var p0 = engine.State.Players[0];
+            p0.CharacterId = "decima";
+            p0.Mastery = 5;
+            p0.Gems = 20;
+
+            var snap = ShardsSnapshotBuilder.Build(engine, 0);
+            Assert.AreEqual(engine.State.CenterRow.Length, snap.RowEffectiveCosts.Count, "one price per slot");
+            for (int s = 0; s < engine.State.CenterRow.Length; s++)
+            {
+                var card = engine.State.CenterRow[s];
+                if (card == null) continue;
+                Assert.AreEqual(System.Math.Max(0, card.Def.Cost - 1), snap.RowEffectiveCosts[s],
+                    "M5 Decima sees every slot 1 cheaper before her first buy");
+            }
+
+            // The opponent has no modifier (post-draft mastery is always < 5): printed prices.
+            var oppSnap = ShardsSnapshotBuilder.Build(engine, 1);
+            for (int s = 0; s < engine.State.CenterRow.Length; s++)
+            {
+                var card = engine.State.CenterRow[s];
+                if (card == null) continue;
+                Assert.AreEqual(card.Def.Cost, oppSnap.RowEffectiveCosts[s]);
+            }
+
+            // Buying spends the discount for the rest of the turn.
+            int slot = System.Array.FindIndex(engine.State.CenterRow, c => c != null);
+            Assert.IsTrue(engine.Submit(new ShardsBuyCardAction { PlayerIndex = 0, SlotIndex = slot }).Accepted);
+            snap = ShardsSnapshotBuilder.Build(engine, 0);
+            for (int s = 0; s < engine.State.CenterRow.Length; s++)
+            {
+                var card = engine.State.CenterRow[s];
+                if (card == null) continue;
+                Assert.AreEqual(card.Def.Cost, snap.RowEffectiveCosts[s], "discount spent after the first buy");
+            }
         }
 
         [Test]

@@ -325,7 +325,6 @@ namespace Shards.Bots
                 case "soi.return":
                 case "soi.destiny":
                 case "soi.relic":
-                case "soi.handpick": // Whisper Extractor: strip the victim's priciest card
                 {
                     // Pick the most expensive candidate (better card ≈ higher cost).
                     DecisionOption best = null;
