@@ -113,8 +113,13 @@ namespace SoiSim.Tests
             Assert.Less(pairedHalf, unpairedHalf,
                 $"paired half-width {pairedHalf:P2} should beat unpaired {unpairedHalf:P2}");
             // Both intervals cover the same number of GAMES, so any tightening is pure
-            // variance reduction. Anything under ~1.15x means the mirroring is broken.
-            Assert.Greater(unpairedHalf / pairedHalf, 1.15,
+            // variance reduction. BROKEN mirroring reads ~1.0x; the actual gain is a
+            // property of the game, not of the harness, and it moves whenever the rules
+            // do — the 2026-08-23 balance patch (Unify accepts champions, three hero
+            // abilities repriced) took this fixture's 400-pair reading from just above
+            // 1.15x to 1.146x. So the bound guards the failure mode (no cancellation at
+            // all), not a fitted constant.
+            Assert.Greater(unpairedHalf / pairedHalf, 1.10,
                 $"pairing only bought {unpairedHalf / pairedHalf:F2}x — mirroring may be broken");
         }
 

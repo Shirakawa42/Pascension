@@ -16,6 +16,7 @@ End-turn is a chained decision flow, not a phase machine:
 
 ## Core rules encoded (each pinned by a test — details per card in shards-cards)
 - Champion damage ACCUMULATES within a turn; marks clear at end phase. Destruction needs full effective defense assigned in one split.
+- **Unify counts any CARD of the faction, champions included** (user decision 2026-08-23; deliberate deviation from the printed "Ally" reminder). Played this turn OR revealed from hand; a champion already in play satisfies nothing, and a card never satisfies its own Unify. `Unify` reads `FactionPlays`, NOT `FactionAllyPlays` — the ally-only counter still exists and is what Order's "2 Order allies" cards read.
 - **Champions die ONLY in the end-of-turn damage split or via destroy-EFFECTS** (locked decision 2026-07-20): `ShardsAttackChampionAction` is rejected outright and never advertised. Ingeminex remain the only mid-turn power targets. `CanBeAttacked` vetoes (Li Hin/Raidian/Drakonarius) filter the split's target list.
 - Focus once/turn (exhaust character + 1 gem → +1 mastery). Staggered start mastery 0/1/2/3; cap 30.
 - Mastery thresholds check at play/exhaust time; a card's own gain counts for its own threshold.

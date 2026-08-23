@@ -133,12 +133,12 @@ namespace Pascension.Game.UI
             ["Futureproof"] = "Pare-Avenir",
             ["M5 passive: the first card you buy each turn costs 1 less."] =
                 "M5 passif : la première carte que vous achetez chaque tour coûte 1 de moins.",
-            ["M5, once per turn: pay 2 gems, draw a card."] =
-                "M5, une fois par tour : payez 2 cristaux, piochez une carte.",
-            ["M5, once per turn: pay 1 gem, gain 3 health."] =
-                "M5, une fois par tour : payez 1 cristal, gagnez 3 santé.",
-            ["M5, once per turn: pay 2 gems and 3 health, banish a card from your hand or discard pile."] =
-                "M5, une fois par tour : payez 2 cristaux et 3 santé, bannissez une carte de votre main ou de votre défausse.",
+            ["M5, once per turn: pay 2 gems, draw 2 cards."] =
+                "M5, une fois par tour : payez 2 cristaux, piochez 2 cartes.",
+            ["M5, once per turn: gain 4 health."] =
+                "M5, une fois par tour : gagnez 4 santé.",
+            ["M5, once per turn: pay 3 health, banish a card from your hand or discard pile."] =
+                "M5, une fois par tour : payez 3 santé, bannissez une carte de votre main ou de votre défausse.",
             ["M5, once per turn: Scry 2 the center deck."] =
                 "M5, une fois par tour : Sondez 2 la pioche commune.",
             ["drafted"] = "drafté",
@@ -170,8 +170,8 @@ namespace Pascension.Game.UI
                 "Recrutez-le, ou enrôlez-le pour son coût : effet immédiat, puis sous la pioche commune.",
             ["Tap this ready card to use its ability. It readies at your end phase."] =
                 "Activez cette carte prête pour utiliser sa capacité. Elle se redresse en fin de tour.",
-            ["Active if you played or reveal another {0} ally as you play this card."] =
-                "Actif si vous avez joué ou que vous révélez un autre allié {0} en jouant cette carte.",
+            ["Active if you played or reveal another {0} card as you play this card."] =
+                "Actif si vous avez joué ou que vous révélez une autre carte {0} en jouant cette carte.",
             ["Active if you played or revealed a Homodeus, an Undergrowth and a Wraethe card this turn."] =
                 "Actif si vous avez joué ou révélé une carte Homodeus, une Maquis et une Spectra ce tour-ci.",
             ["Active if you played or revealed at least 3 other cards of 3 different factions this turn."] =
@@ -576,8 +576,8 @@ namespace Pascension.Game.UI
                 "Reprenez ($1) de votre défausse en main$2"),
             (new Regex(@"^Return (.+) from your discard pile to your hand\?$"),
                 "Reprenez $1 de votre défausse en main ?"),
-            (new Regex(@"^Reveal a (.+) ally from your hand to trigger Unify\?$"),
-                "Révéler un allié $1 de votre main pour l'Union ?"),
+            (new Regex(@"^Reveal a (.+) card from your hand to trigger Unify\?$"),
+                "Révéler une carte $1 de votre main pour l'Union ?"),
             (new Regex(@"^Take a destiny \((\d+) of 2\)$"),
                 "Prenez une Destinée ($1 sur 2)"),
             (new Regex(@"^(.+): recruit it or banish it\?$"),

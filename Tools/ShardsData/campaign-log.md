@@ -1036,3 +1036,27 @@ vs bench:greedy-v5 SPRT is the next bookkeeping run when cores idle).
   the test's sample grew 60 → 400, assertions unchanged.
 - No retune, no promotion: **V8 stands**. The next tune's games will include the new
   pool; gate under basket-96 per protocol when it happens.
+
+## 2026-08-23 — environment moved again: rules + hero-ability patch (a game change, not an AI change)
+
+- Rules changed by user decision: **Unify now counts CHAMPIONS** (played this turn or
+  revealed from hand — `Unify` reads `FactionPlays` instead of `FactionAllyPlays` and no
+  longer filters `IsChampion` out of the hand-reveal candidates), **Tetra's Perception
+  draws 2**, **Volos' First Aid is free and heals 4** (was 1 gem / 3), **Ko Syn Wu's
+  Sacrifice costs 0 gems** (the 3 health is the whole price).
+- **bench:greedy-v5's frozen play fingerprint re-minted** again (same seed 20260727,
+  400-move prefix): `2716434134284504216` → `16209146448264227099`. Bench numbers from
+  before this line cite a different game than numbers after it — do not compare raw
+  values across the line.
+- `ShardsDeckStats.UnifyLiveness` follows the rule: it now counts Undergrowth cards in
+  the CYCLE, champions included (a champion already in play still counts for nothing —
+  Unify wants a play or a hand reveal).
+- Calibration note: `Pairing_IsTighterThanPoolingGamesIndependently` read 1.146x after
+  the patch, just under its fitted 1.15 bound. The pairing gain is a property of the
+  GAME, not of the harness, and broken mirroring reads ~1.0x — so the bound moved to
+  1.10 and now guards the failure mode instead of a fitted constant. The primary null
+  (`NullCalibration_SelfVersusSelf_StraddlesFiftyPercent`) never moved.
+- No retune, no promotion: **V8 stands**. Three hero abilities got cheaper, which the
+  value model prices through its own effect atoms (`_heroAbilityValue` is recomputed from
+  `HeroAbilityInfo`/`HeroAbilityEffect`), so nothing was hardcoded around the old costs.
+  The next tune's games will include the new rules; gate under basket-96 per protocol.

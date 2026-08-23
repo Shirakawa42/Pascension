@@ -249,9 +249,11 @@ namespace Shards.Engine
             new(ctx => ctx.Controller.Health >= ctx.Engine.State.Rules.MaxHealth, inner);
     }
 
-    /// <summary>Unify: fires if the controller played ANOTHER ally of the faction this
-    /// turn, or reveals one from hand (a decision when it matters). Champions never
-    /// satisfy it; fast-played mercenaries do; the card never satisfies itself.</summary>
+    /// <summary>Unify: fires if the controller played ANOTHER card of the faction this
+    /// turn, or reveals one from hand (a decision when it matters). CHAMPIONS COUNT
+    /// (user decision 2026-08-23 — an Undergrowth champion in hand is an Undergrowth
+    /// card and now satisfies it, played or revealed); fast-played mercenaries count
+    /// too; the card never satisfies itself.</summary>
     public sealed class Unify : IShardsEffect, IShardsConditionalEffect
     {
         private readonly ShardsFaction _faction;
@@ -263,19 +265,19 @@ namespace Shards.Engine
             _faction = faction;
         }
 
-        /// <summary>Lit when another faction ally was already played OR a hand reveal
+        /// <summary>Lit when another faction card was already played OR a hand reveal
         /// could satisfy it (the probed card itself never counts).</summary>
         public bool ConditionMet(ShardsContext ctx)
         {
             var player = ctx.Controller;
-            int plays = player.FactionAllyPlays(_faction);
+            int plays = player.FactionPlays(_faction);
             var source = ctx.Source;
             if (source != null && ShardsEngine.CountsAs(player, source.Def, _faction) &&
-                !source.Def.IsChampion && player.PlayedThisTurn.Contains(source))
+                player.PlayedThisTurn.Contains(source))
                 plays--;
             if (plays >= 1) return true;
             foreach (var card in player.Hand)
-                if (card != source && ShardsEngine.CountsAs(player, card.Def, _faction) && !card.Def.IsChampion)
+                if (card != source && ShardsEngine.CountsAs(player, card.Def, _faction))
                     return true;
             return false;
         }
@@ -283,22 +285,22 @@ namespace Shards.Engine
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {
             var player = ctx.Controller;
-            int plays = player.FactionAllyPlays(_faction);
+            int plays = player.FactionPlays(_faction);
             var source = ctx.Source;
             if (source != null && ShardsEngine.CountsAs(player, source.Def, _faction) &&
-                !source.Def.IsChampion && player.PlayedThisTurn.Contains(source))
+                player.PlayedThisTurn.Contains(source))
                 plays--; // "another" — itself never counts
 
             if (plays < 1)
             {
                 var candidates = player.Hand.FindAll(c =>
-                    ShardsEngine.CountsAs(player, c.Def, _faction) && !c.Def.IsChampion);
+                    c != source && ShardsEngine.CountsAs(player, c.Def, _faction));
                 if (candidates.Count == 0) yield break;
                 var request = new DecisionRequest
                 {
                     PlayerIndex = player.Index,
                     Kind = DecisionKind.ChooseCards,
-                    Title = $"Reveal a {_faction} ally from your hand to trigger Unify?",
+                    Title = $"Reveal a {_faction} card from your hand to trigger Unify?",
                     Context = "soi.reveal",
                     Min = 0,
                     Max = 1

@@ -50,6 +50,15 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-08-23",
+                "· Unify now counts CHAMPIONS. An Undergrowth champion satisfies Unify whether you played it this turn or reveal it from your hand — previously it was dead weight for every Unify card in the same hand.\n" +
+                "· Three hero abilities rebalanced. Tetra's Perception draws 2 cards instead of 1. Volos' First Aid is now FREE and heals 4 instead of 3. Ko Syn Wu's Sacrifice costs no gems at all — the 3 health is the whole price.\n" +
+                "· Why: at their old prices these competed with simply buying a card, and losing a whole buy for one draw or 3 health was almost never the right line.\n" +
+                "· Cards put on top of your deck — Dash, Maglev Tunnels — now fly to the DRAW pile instead of to your hand, and cards pulled out of your draw pile fly from it. Dash's draw always worked; the animation claimed the card had already reached your hand, so the draw that followed looked like it did nothing.",
+                "· L'Union compte désormais les CHAMPIONS. Un champion Maquis déclenche l'Union que vous l'ayez joué ce tour-ci ou que vous le révéliez de votre main — auparavant il ne servait à rien pour les cartes Union de la même main.\n" +
+                "· Trois capacités de héros rééquilibrées. La Perception de Tetra pioche 2 cartes au lieu d'1. Les Premiers Soins de Volos sont désormais GRATUITS et rendent 4 points de vie au lieu de 3. Le Sacrifice de Ko Syn Wu ne coûte plus aucun cristal — les 3 points de vie sont le prix entier.\n" +
+                "· Pourquoi : à leur ancien prix, ces capacités concurrençaient l'achat d'une carte, et perdre un achat entier pour une pioche ou 3 points de vie n'était presque jamais la bonne ligne.\n" +
+                "· Les cartes placées au-dessus de votre deck — Flash, Tunnels Maglev — volent désormais vers la PIOCHE et non vers votre main, et les cartes tirées de votre pioche en partent. La pioche de Flash a toujours fonctionné ; l'animation prétendait que la carte était déjà dans votre main, ce qui faisait passer la pioche suivante pour un effet nul."),
             new Entry("2026-08-02",
                 "· Whisper Extractor is removed from the Duel of Doom pool — stealing the opponent's best card every cycle was too strong even after its earlier nerf.\n" +
                 "· Deadly Recruits (Duel version) now really asks whether you keep the fast-played ally, as its text always said — decline and it returns to the bottom of the common deck instead of joining your discard pile.\n" +

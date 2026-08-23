@@ -119,6 +119,99 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
+        public void Unify_SatisfiedByAnUndergrowthChampion_PlayedOrRevealedFromHand()
+        {
+            // 2026-08-23 (user decision): Unify counts Undergrowth CARDS, champions
+            // included. Before this an Undergrowth champion in hand was dead weight for
+            // every Unify card in the same hand.
+            var engine = NewGame(seed: 11);
+            var p0 = engine.State.Players[0];
+            p0.Hand.RemoveAll(_ => true);
+
+            // A champion sitting in HAND is a legal reveal.
+            var additri = Give(engine, p0, "additri_gaiamancer", ShardsZone.Hand);
+            var aspirant = Give(engine, p0, "undergrowth_aspirant", ShardsZone.Hand);
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = aspirant.InstanceId });
+            Assert.AreEqual("soi.reveal", engine.PendingInput.Decision.Context,
+                "the champion in hand offers the reveal");
+            Answer(engine, additri.InstanceId);
+            Assert.AreEqual(5, p0.Power, "Unify satisfied by revealing a champion");
+            Assert.Contains(additri, p0.Hand, "a revealed champion stays in hand");
+
+            // PLAYING the champion satisfies it outright — no reveal window at all.
+            p0.ResetTurn();
+            p0.Power = 0;
+            var champion = Give(engine, p0, "additri_gaiamancer", ShardsZone.Hand);
+            var second = Give(engine, p0, "undergrowth_aspirant", ShardsZone.Hand);
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = champion.InstanceId });
+            DrainDecisionsWithDefaults(engine);
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = second.InstanceId });
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind,
+                "already satisfied by the played champion — no reveal decision");
+            Assert.AreEqual(5, p0.Power, "Unify satisfied by the played champion");
+        }
+
+        [Test]
+        public void Unify_TheUnifyCardItselfNeverCounts_EvenAsTheOnlyUndergrowthCard()
+        {
+            var engine = NewGame(seed: 12);
+            var p0 = engine.State.Players[0];
+            p0.Hand.RemoveAll(_ => true);
+            var aspirant = Give(engine, p0, "undergrowth_aspirant", ShardsZone.Hand);
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = aspirant.InstanceId });
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind, "nothing to reveal");
+            Assert.AreEqual(0, p0.Power, "a card never satisfies its own Unify");
+        }
+
+        // ------------------------------------------------------------- deck-top returns
+
+        [Test]
+        public void Dash_PutsACardOnTopOfTheDeckAndThenDrawsIt()
+        {
+            // Reported as "the draw part of Flash does not work". It does: the returned
+            // card IS the drawn card. What lied was the animation (see PlayReturn) — the
+            // flight ended on the HAND, so the draw that followed looked like a no-op.
+            var engine = NewGame(ShardsDlc.ShadowOfSalvation, seed: 11);
+            var p0 = engine.State.Players[0];
+            p0.Hand.RemoveAll(_ => true);
+            var dash = Give(engine, p0, "dash", ShardsZone.Hand);
+            var aion = Give(engine, p0, "brute", ShardsZone.Discard);
+
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = dash.InstanceId });
+            Assert.AreEqual("soi.return", engine.PendingInput.Decision.Context);
+            Answer(engine, aion.InstanceId);
+
+            Assert.AreEqual(1, p0.Hand.Count, "the draw fired");
+            Assert.AreEqual("brute", p0.Hand[0].DefId, "and it took the card just put on top");
+
+            var returned = engine.Log.FilterFor(-1).Find(e => e is ShardsCardReturnedEvent) as ShardsCardReturnedEvent;
+            Assert.IsNotNull(returned, "the deck-top move is announced");
+            Assert.IsTrue(returned.ToDeckTop, "flagged as a DECK-TOP return so the flight lands on the draw pile");
+        }
+
+        [Test]
+        public void Dash_DrawsEvenWhenTheReturnIsDeclinedOrImpossible()
+        {
+            var engine = NewGame(ShardsDlc.ShadowOfSalvation, seed: 11);
+            var p0 = engine.State.Players[0];
+            p0.Hand.RemoveAll(_ => true);
+            var dash = Give(engine, p0, "dash", ShardsZone.Hand);
+            Give(engine, p0, "brute", ShardsZone.Discard);
+            MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = dash.InstanceId });
+            Answer(engine); // decline
+            Assert.AreEqual(1, p0.Hand.Count, "declining the return still draws");
+
+            var empty = NewGame(ShardsDlc.ShadowOfSalvation, seed: 11);
+            var q0 = empty.State.Players[0];
+            q0.Hand.RemoveAll(_ => true);
+            q0.Discard.RemoveAll(_ => true);
+            var dash2 = Give(empty, q0, "dash", ShardsZone.Hand);
+            MustSubmit(empty, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = dash2.InstanceId });
+            Assert.AreEqual(PendingInputKind.Priority, empty.PendingInput.Kind, "no candidates, no decision");
+            Assert.AreEqual(1, q0.Hand.Count, "and the draw still fires");
+        }
+
+        [Test]
         public void Unify_SatisfiedByFastPlayedMercenary_NoDecision()
         {
             var engine = NewGame(seed: 5);

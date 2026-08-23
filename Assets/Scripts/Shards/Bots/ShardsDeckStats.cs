@@ -60,9 +60,11 @@ namespace Shards.Bots
         public int DistinctFactions;
 
         // ---- conditional liveness ----
-        /// <summary>Rough per-turn probability that another Undergrowth ALLY is available to
-        /// satisfy Unify — champions never satisfy it. This is exactly why a Unify card is
-        /// worth more the more Undergrowth you own: liveness, not a synergy bonus.</summary>
+        /// <summary>Rough per-turn probability that another Undergrowth CARD is available to
+        /// satisfy Unify — champions count too since 2026-08-23, as long as they are still in
+        /// the cycle (a champion already in play is neither played nor revealed from hand).
+        /// This is exactly why a Unify card is worth more the more Undergrowth you own:
+        /// liveness, not a synergy bonus.</summary>
         public double UnifyLiveness;
         /// <summary>Factions where the owned count already meets Allegiance 4. The card
         /// itself counts toward its own Allegiance, so a 4th copy is a threshold, not a
@@ -92,7 +94,7 @@ namespace Shards.Bots
             int bucket = CardStatics.BucketOf(player.Mastery);
 
             double gems = 0, power = 0, mastery = 0, health = 0, draws = 0, shield = 0;
-            int undergrowthAllies = 0;
+            int undergrowthCards = 0;
 
             void Count(ShardsCard card, bool inCycle)
             {
@@ -111,7 +113,7 @@ namespace Shards.Bots
                 health += atoms.Gains[EffectAtoms.Unconditional, EffectAtoms.Health];
                 draws += atoms.Gains[EffectAtoms.Unconditional, EffectAtoms.Draw];
                 shield += def.Shield;
-                if (faction == ShardsFaction.Undergrowth && !def.IsChampion) undergrowthAllies++;
+                if (faction == ShardsFaction.Undergrowth) undergrowthCards++;
             }
 
             foreach (var c in player.Deck) Count(c, true);
@@ -163,13 +165,13 @@ namespace Shards.Bots
                 if (kv.Value >= 4) s.FactionsAtAllegiance4++;
             }
 
-            // Unify needs ANOTHER Undergrowth ally in the same turn. With u such allies in a
+            // Unify needs ANOTHER Undergrowth card in the same turn. With u such cards in a
             // cycle of N and D cards seen, the chance at least one more shows up alongside a
             // given card is ~1-(1-u/N)^(D-1). Approximate, and deliberately so: the point is
             // that liveness RISES with Undergrowth share, which is what makes a Unify card
             // worth more in an Undergrowth deck.
-            double u = undergrowthAllies / (double)s.N;
-            s.UnifyLiveness = undergrowthAllies <= 1
+            double u = undergrowthCards / (double)s.N;
+            s.UnifyLiveness = undergrowthCards <= 1
                 ? 0
                 : 1.0 - System.Math.Pow(1.0 - u, System.Math.Max(0, s.D - 1));
             return s;

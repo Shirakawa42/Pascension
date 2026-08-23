@@ -237,6 +237,13 @@ namespace Shards.Engine
         public int PlayerIndex;
         public int InstanceId;
         public string DefId;
+        /// <summary>The card landed on TOP OF THE DECK, not in hand (Dash, Maglev Tunnels).
+        /// Presentation-only: the flight must end on the draw pile, or the player reads
+        /// "returned to hand" and the draw that follows looks like it did nothing.</summary>
+        public bool ToDeckTop;
+        /// <summary>The card came out of the DRAW PILE, not the discard (Grim Tutor,
+        /// the Duel World Piercer). Presentation-only, same reason.</summary>
+        public bool FromDeck;
     }
 
     /// <summary>Cards revealed from a hand or deck for a condition (Unify/Dominion

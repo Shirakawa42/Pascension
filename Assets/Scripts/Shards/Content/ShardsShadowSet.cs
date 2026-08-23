@@ -103,7 +103,7 @@ namespace Shards.Content
             player.Discard.Remove(chosen);
             chosen.Zone = ShardsZone.Deck;
             player.Deck.Add(chosen); // list end = top
-            ctx.Engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = chosen.InstanceId, DefId = chosen.DefId });
+            ctx.Engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = chosen.InstanceId, DefId = chosen.DefId, ToDeckTop = true });
         }
 
         private static IEnumerable<ShardsStep> ExtraTurn(ShardsContext ctx)

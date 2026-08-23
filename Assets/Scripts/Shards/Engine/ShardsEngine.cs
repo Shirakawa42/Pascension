@@ -610,7 +610,7 @@ namespace Shards.Engine
             if (!player.Discard.Remove(card)) yield break; // moved elsewhere meanwhile
             card.Zone = ShardsZone.Deck;
             player.Deck.Add(card); // list end = top
-            Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+            Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId, ToDeckTop = true });
         }
 
         private SubmitResult Focus(ShardsPlayer player)
@@ -653,18 +653,22 @@ namespace Shards.Engine
         {
             "decima" => new HeroAbilitySpec("Recruiting",
                 "M5 passive: the first card you buy each turn costs 1 less.", 5, 0, 0, active: false),
-            // Perception: 3 gems → 2 (2026-08-02, user decision) — at 3 the draw
-            // competed with a whole buy and was rarely worth it.
+            // Perception: 3 gems → 2 (2026-08-02), then 1 card → 2 (2026-08-23, user
+            // decision) — even at 2 gems a single draw lost to almost any buy, so the
+            // ability now replaces the hand slot AND digs.
             "tetra" => new HeroAbilitySpec("Perception",
-                "M5, once per turn: pay 2 gems, draw a card.", 5, 2, 0, active: true),
+                "M5, once per turn: pay 2 gems, draw 2 cards.", 5, 2, 0, active: true),
+            // First Aid: 1 gem → 0 and 3 → 4 health (2026-08-23, user decision). A gem is
+            // a third of a cheap card; paying it for 3 health was never the right line in a
+            // race, so the heal is now the free thing Volos always has.
             "volos" => new HeroAbilitySpec("First Aid",
-                "M5, once per turn: pay 1 gem, gain 3 health.", 5, 1, 0, active: true),
-            // Sacrifice: 3 gems → 2 (2026-07-27). The effect is strong, but it competes
-            // with simply buying, and the 3 health is a real cost in a damage race — so at
-            // 3 gems it was never worth paying. The health cost stays: it is what makes the
-            // ability a genuine decision rather than free thinning.
+                "M5, once per turn: gain 4 health.", 5, 0, 0, active: true),
+            // Sacrifice: 3 gems → 2 (2026-07-27) → 0 (2026-08-23, user decision). The
+            // 3 health IS the cost — a real one in a damage race, and enough to make the
+            // ability a genuine decision rather than free thinning. The gem side kept
+            // pushing it below "just buy something" instead.
             "kosynwu" => new HeroAbilitySpec("Sacrifice",
-                "M5, once per turn: pay 2 gems and 3 health, banish a card from your hand or discard pile.", 5, 2, 3, active: true),
+                "M5, once per turn: pay 3 health, banish a card from your hand or discard pile.", 5, 0, 3, active: true),
             // Futureproof: 1 gem → 0 (2026-07-27). Scry alone rarely justifies a gem; the
             // ability is designed to PAIR with the row reroll — bury a card that would help
             // an Undergrowth-heavy opponent, or set up a good card to reroll into — and that
@@ -680,8 +684,8 @@ namespace Shards.Engine
         /// carrying a second, hand-written table of what each hero is worth.</summary>
         public static IShardsEffect HeroAbilityEffect(string characterId) => characterId switch
         {
-            "tetra" => new Gain { Draw = 1 },
-            "volos" => new Gain { Health = 3 },
+            "tetra" => new Gain { Draw = 2 },
+            "volos" => new Gain { Health = 4 },
             "kosynwu" => new BanishUpTo(1),
             "rez" => new Scry(2),
             _ => null

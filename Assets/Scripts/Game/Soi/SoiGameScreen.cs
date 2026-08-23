@@ -2071,12 +2071,18 @@ namespace Pascension.Game.Soi
             _banishPile.Pulse();
         }
 
+        /// <summary>A return flies BETWEEN THE REAL ZONES. Dash and Maglev Tunnels put the
+        /// card on top of the DECK, and the old flight always ended on the hand — so Dash
+        /// showed "card → hand", then drew that very card, and the draw read as a no-op.
+        /// Grim Tutor / the Duel World Piercer pull out of the DRAW pile, not the discard.</summary>
         private IEnumerator PlayReturn(ShardsCardReturnedEvent returned)
         {
             _history.AttachAffected(returned.PlayerIndex, returned.DefId);
             if (returned.PlayerIndex != MyIndex) yield break;
-            yield return _flights.Fly(_queue, returned.DefId,
-                _flights.ToLocal(_discardPile.AnchorRect), _flights.ToLocal(_handRect), 0.42f, 0.6f, 0.38f);
+            Vector2 from = _flights.ToLocal(returned.FromDeck ? _drawPile.AnchorRect : _discardPile.AnchorRect);
+            Vector2 to = returned.ToDeckTop ? _flights.ToLocal(_drawPile.AnchorRect) : _flights.ToLocal(_handRect);
+            yield return _flights.Fly(_queue, returned.DefId, from, to, 0.42f, 0.6f, 0.38f);
+            if (returned.ToDeckTop) _drawPile.Pulse();
         }
 
         // ------------------------------------------------------------------ hover preview

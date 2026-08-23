@@ -150,7 +150,8 @@ Four base factions (a 5th, **Aion**, arrives with Shadow of Salvation/Into the H
 
 - **Unify** (Undergrowth): bonus applies if you have played another Undergrowth card this turn
   OR you reveal an Undergrowth card from your hand at resolution. Fast-played mercenaries count
-  as played. The card itself does not satisfy its own Unify.
+  as played, and so do CHAMPIONS (user decision 2026-08-23 — see the deviation list, item 3).
+  The card itself does not satisfy its own Unify.
 - **Dominion** (Order): bonus applies if you have played (or reveal from hand) at least one
   card of EACH of the other three base factions (Homodeus, Undergrowth, Wraethe) this turn.
 - Exact printed reminder text for both: see cards.json / keyword notes at the end — flagged
@@ -355,9 +356,12 @@ The engine follows the printed cards where this document's paraphrases disagreed
 2. **Warp is an effect line ("Warp N"), not a keyword carried by the row card** (§4.4's
    phrasing was ambiguous): the card you PLAY grants "fast-play one center-row ally
    costing ≤ N for free"; the warped card then follows fast-play rules.
-3. **Unify requires another Undergrowth ALLY** (played or revealed) — champions never
-   satisfy it (§1.9 said "card"; the printed reminder text on five photographed cards
-   says "Ally").
+3. **Unify counts any Undergrowth CARD** (played or revealed), champions included — a
+   DELIBERATE house deviation (user decision 2026-08-23). The printed reminder text on five
+   photographed cards says "Ally", and the engine followed that until 2026-08-23; it made an
+   Undergrowth champion in hand dead weight for every Unify card beside it, which played
+   badly. §1.9's original "card" wording is what ships. A champion already IN PLAY still
+   does nothing: Unify wants a card played this turn or revealed from hand.
 4. **Full power assignment is mandatory** at the attack phase (§1.2 was right; noted
    here because early engine drafts allowed wasting power).
 5. **Rez's relics ship in the Shadow of Salvation box** and work with SoS alone —

@@ -144,7 +144,8 @@ needed.
   `E.Seq`/`ShardsComposite` (sequential — own mastery gain precedes later thresholds),
   `E.At`/`AtMastery` (ADDITIVE delta: "3, M10: 6 instead" = base 3 + At(10,+3)),
   `BestByMastery` (true "instead" tiers), `If` (+`Inspire`/`Echo`/`Character`/`FullHealth`),
-  `Unify` (another ally of the faction played OR reveal from hand — decision),
+  `Unify` (another CARD of the faction played OR reveal from hand — decision;
+  champions count since 2026-08-23),
   `Dominion` (played/reveal one of EACH of H/U/W), `PerCount`, `OpponentLosesMastery`,
   `BanishUpTo`, `ReturnFromDiscard`, `DestroyEnemyChampions`, `WarpUpTo`, `RecruitFromRow`,
   `CopyPlayedEffect`, `AllPlayersLoseHealth/LoseMastery/Discard/DestroyBiggestChampion`,
@@ -184,11 +185,14 @@ needed.
   | Hero | Ability | Cost | Effect |
   |---|---|---|---|
   | decima | Recruiting | — | **passive**: first buy each turn costs 1 less (lives in `EffectiveCost`) |
-  | tetra | Perception | **2 gems** | draw 1 |
-  | volos | First Aid | 1 gem | gain 3 health |
-  | kosynwu | Sacrifice | **2 gems + 3 health** | banish 1 from hand/discard |
+  | tetra | Perception | **2 gems** | draw **2** |
+  | volos | First Aid | **free** | gain **4** health |
+  | kosynwu | Sacrifice | **3 health** | banish 1 from hand/discard |
   | rez | Futureproof | **free** | Scry 2 the center deck |
 
+  ⚠ **Rebalanced 2026-08-23 (user decision)**: Perception draws 2 instead of 1 (the gem
+  cost stays 2); First Aid 1 gem → 0 and 3 → 4 health; Sacrifice 2 gems → 0, the 3 health
+  is now the whole price. All three lost to "just buy a card" at their old prices.
   ⚠ **Perception 3 gems → 2 (2026-08-02, user decision)** — at 3 the draw competed with
   a whole buy and was rarely worth it.
   ⚠ **Rebalanced 2026-07-27** (was: Sacrifice 3 gems, Futureproof 1 gem). Both abilities
@@ -235,9 +239,12 @@ needed.
 - Li Hin can't be attacked with power but destroy-EFFECTS kill it (Thorn Zealot FAQ).
 - Fast-played mercenaries: effect now, play zone, BOTTOM of center deck at cleanup,
   count as played allies of their faction (feeds Unify etc.); Swyft (Rez) may keep them.
-- Unify needs ANOTHER ally of the faction (champions never satisfy it; self never
-  counts; hand-reveal alternative). Dominion needs one card of EACH of H/U/W
-  (played and/or revealed).
+- **Unify needs ANOTHER CARD of the faction — CHAMPIONS COUNT (user decision
+  2026-08-23)**, played this turn or revealed from hand; self never counts. A champion
+  already IN PLAY satisfies nothing (Unify wants a play or a hand reveal). This is a
+  deliberate deviation from the printed "Ally" reminder text, recorded in
+  `rules-notes.md`'s deviation list; `Unify` reads `FactionPlays`, not `FactionAllyPlays`.
+  Dominion needs one card of EACH of H/U/W (played and/or revealed).
 - "Lose health" is NOT damage: shields never apply; simultaneous drop below 1 = TIE
   (WinnerIndex −1); eliminations are checked after ALL simultaneous losses land.
 - Relics: set both aside; recruit exactly ONE free at M10 (the other stays set aside,

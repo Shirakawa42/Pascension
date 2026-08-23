@@ -269,14 +269,14 @@ namespace Pascension.Engine.Tests
             CompleteDraft(adapter);
             var engine = adapter.Inner;
             var p0 = engine.State.Players[0];
-            p0.CharacterId = "volos"; // pay 1 gem: gain 3 health
+            p0.CharacterId = "volos"; // free: gain 4 health
             p0.Mastery = 5;
             p0.Gems = 5;
             p0.Health = 40;
 
             Assert.IsTrue(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted, "ability usable");
-            Assert.AreEqual(43, p0.Health, "Volos gained 3 health");
-            Assert.AreEqual(4, p0.Gems, "paid 1 gem");
+            Assert.AreEqual(44, p0.Health, "Volos gained 4 health");
+            Assert.AreEqual(5, p0.Gems, "First Aid is free");
             Assert.IsTrue(p0.HeroAbilityUsedThisTurn);
 
             // Focus is still available in the SAME turn (ability is separate).
@@ -340,12 +340,13 @@ namespace Pascension.Engine.Tests
             CompleteDraft(adapter);
             var engine = adapter.Inner;
             var p0 = engine.State.Players[0];
-            p0.CharacterId = "tetra"; // pay 2 gems: draw 1
+            p0.CharacterId = "tetra"; // pay 2 gems: draw 2
             p0.Mastery = 5;
             p0.Gems = 5;
             int handBefore = p0.Hand.Count;
             Assert.IsTrue(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
-            Assert.AreEqual(handBefore + 1, p0.Hand.Count, "tetra drew a card");
+            Assert.AreEqual(handBefore + 2, p0.Hand.Count, "tetra drew 2 cards");
+            Assert.AreEqual(3, p0.Gems, "paid 2 gems");
             Assert.IsFalse(p0.CharacterExhausted, "the ability does NOT exhaust the character");
             Assert.IsTrue(engine.Submit(new ShardsFocusAction { PlayerIndex = 0 }).Accepted,
                 "Focus still available in the same turn");

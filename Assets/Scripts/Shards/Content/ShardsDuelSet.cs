@@ -714,7 +714,7 @@ namespace Shards.Content
             player.Discard.Remove(chosen);
             chosen.Zone = ShardsZone.Deck;
             player.Deck.Add(chosen);
-            ctx.Engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = chosen.InstanceId, DefId = chosen.DefId });
+            ctx.Engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = chosen.InstanceId, DefId = chosen.DefId, ToDeckTop = true });
         }
 
         private static IEnumerable<ShardsStep> WorldPiercerDuel(ShardsContext ctx)
@@ -756,11 +756,12 @@ namespace Shards.Content
             }
             foreach (var card in matches)
             {
-                var src = card.Zone == ShardsZone.Deck ? player.Deck : player.Discard;
+                bool fromDeck = card.Zone == ShardsZone.Deck;
+                var src = fromDeck ? player.Deck : player.Discard;
                 if (!src.Remove(card)) continue;
                 card.Zone = ShardsZone.Hand;
                 player.Hand.Add(card);
-                ctx.Engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+                ctx.Engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId, FromDeck = fromDeck });
             }
         }
 
@@ -853,7 +854,7 @@ namespace Shards.Content
                     player.Deck.Remove(chosen);
                     chosen.Zone = ShardsZone.Hand;
                     player.Hand.Add(chosen);
-                    engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = chosen.InstanceId, DefId = chosen.DefId });
+                    engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = chosen.InstanceId, DefId = chosen.DefId, FromDeck = true });
                 }
                 engine.State.Rng.Shuffle(player.Deck);
                 engine.Emit(new ShardsDeckShuffledEvent { PlayerIndex = player.Index });
