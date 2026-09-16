@@ -57,7 +57,7 @@ namespace Pascension.Game.Soi
                     "Tap this ready card to use its ability. It readies at your end phase."));
             if (Regex.IsMatch(text, @"\bUnify\b"))
                 entries.Add(new Entry("Unify",
-                    "Active if you played or reveal another {0} card as you play this card.", faction));
+                    "Active if you played another {0} card this turn. Otherwise, automatically reveal the first {0} card in your hand.", faction));
             if (Regex.IsMatch(text, @"\bDominion\b"))
                 entries.Add(new Entry("Dominion",
                     "Active if you played or revealed at least 3 other cards of 3 different factions this turn."));

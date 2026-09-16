@@ -35,6 +35,17 @@ namespace Pascension.Game.Soi
 
         public static CardView.ExternalFace? Resolve(string defId)
         {
+            if (defId.StartsWith(VolosAbilityChoice.FacePrefix) &&
+                int.TryParse(defId.Substring(VolosAbilityChoice.FacePrefix.Length), out int mode) &&
+                VolosAbilityChoice.Text(mode) != null)
+                return new CardView.ExternalFace
+                {
+                    Name = Shards.Content.ShardsContentRegistry.CharacterDisplayName("volos"),
+                    TypeLine = UI.Loc.T("Hero Ability"),
+                    RulesText = Iconize(UI.Loc.T(VolosAbilityChoice.Text(mode))),
+                    ArtId = "soiability_volos", FrameColor = FactionColor(ShardsFaction.Undergrowth),
+                    ShowCost = true, CostText = mode.ToString(), ShowBadge = false
+                };
             if (defId.StartsWith(CharacterPrefix))
                 return CharacterFace(defId.Substring(CharacterPrefix.Length));
             if (defId.StartsWith(AbilityPrefix))

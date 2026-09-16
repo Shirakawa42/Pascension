@@ -65,6 +65,7 @@ namespace Shards.Engine
         public bool GameOver;
         public int WinnerIndex;
 
+        public Dictionary<string, int> InitialCardCounts = new();
         public int CenterDeckCount;
         public List<ShardsCardSnap> CenterRow = new();
         /// <summary>Shared face-up destiny row (ItH) — public.</summary>
@@ -116,6 +117,7 @@ namespace Shards.Engine
                 Dlc = (int)state.Dlc,
                 GameOver = state.GameOver,
                 WinnerIndex = state.WinnerIndex,
+                InitialCardCounts = engine.InitialCardCounts(),
                 CenterDeckCount = state.CenterDeck.Count
             };
 

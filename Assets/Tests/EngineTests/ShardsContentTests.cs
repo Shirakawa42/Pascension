@@ -269,13 +269,18 @@ namespace Pascension.Engine.Tests
             CompleteDraft(adapter);
             var engine = adapter.Inner;
             var p0 = engine.State.Players[0];
-            p0.CharacterId = "volos"; // free: gain 4 health
+            p0.CharacterId = "volos"; // free activation, then choose one mode
             p0.Mastery = 5;
             p0.Gems = 5;
             p0.Health = 40;
 
             Assert.IsTrue(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted, "ability usable");
-            Assert.AreEqual(44, p0.Health, "Volos gained 4 health");
+            Assert.AreEqual(40, p0.Health, "opening the choice has no effect");
+            var choice = engine.PendingInput.Decision;
+            Assert.AreEqual(VolosAbilityChoice.Context, choice.Context);
+            Assert.IsTrue(engine.Submit(new SubmitDecisionAction
+            { PlayerIndex = 0, Answer = new DecisionAnswer { DecisionId = choice.Id, ChosenOptionIds = new List<int> { 0 } } }).Accepted);
+            Assert.AreEqual(43, p0.Health, "Volos gained 3 health");
             Assert.AreEqual(5, p0.Gems, "First Aid is free");
             Assert.IsTrue(p0.HeroAbilityUsedThisTurn);
 
@@ -285,6 +290,66 @@ namespace Pascension.Engine.Tests
 
             // Once per turn.
             Assert.IsFalse(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted, "ability is once per turn");
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        public void Duel_Volos_ChoicePaysOnlySelectedCost(int mode)
+        {
+            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 3);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            player.CharacterId = "volos";
+            player.Mastery = 5;
+            player.Gems = mode;
+            player.Health = 40;
+            int hand = player.Hand.Count;
+            Assert.IsTrue(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
+            Assert.AreEqual(mode, player.Gems, "opening is free");
+            var request = engine.PendingInput.Decision;
+            Assert.AreEqual(4, request.Options.Count);
+            Assert.AreEqual(1, request.Min);
+            foreach (var option in request.Options)
+            {
+                Assert.AreEqual(VolosAbilityChoice.FacePrefix + option.Id, option.DefId, "render a real card");
+                Assert.AreEqual(option.Id > mode, option.Disabled);
+            }
+            var candidates = Shards.Bots.ShardsDecisionCandidates.Generate(engine, request,
+                new Shards.Bots.ShardsValueModel(Shards.Bots.ShardsEvalWeights.Current));
+            Assert.AreEqual(mode + 1, candidates.Count, "search considers every affordable mode");
+            foreach (var candidate in candidates)
+                Assert.LessOrEqual(candidate[0], mode, "search never attempts a disabled card");
+            if (mode < 3)
+                Assert.IsFalse(engine.Submit(new SubmitDecisionAction { PlayerIndex = 0,
+                    Answer = new DecisionAnswer { DecisionId = request.Id, ChosenOptionIds = new List<int> { 3 } } }).Accepted);
+            Assert.IsTrue(engine.Submit(new SubmitDecisionAction { PlayerIndex = 0,
+                Answer = new DecisionAnswer { DecisionId = request.Id, ChosenOptionIds = new List<int> { mode } } }).Accepted);
+            Assert.AreEqual(0, player.Gems);
+            Assert.AreEqual(mode == 0 ? 43 : 40, player.Health);
+            Assert.AreEqual(hand + (mode == 1 ? 1 : 0), player.Hand.Count);
+            Assert.AreEqual(mode == 2 ? 3 : 0, player.Power);
+            Assert.AreEqual(mode == 3 ? 6 : 5, player.Mastery);
+            Assert.IsFalse(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
+        }
+
+        [Test]
+        public void InitialCopyCounts_RespectSetupAndIgnoreLaterCreatedCards()
+        {
+            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 3);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var before = engine.InitialCardCounts();
+            Assert.AreEqual(ShardsCardDatabase.Get("crystal").Quantity * 2, before["crystal"]);
+            Assert.IsFalse(before.ContainsKey("cloud_oracles"));
+            Assert.IsFalse(before.ContainsKey("spore_cleric"), "Duel replaces the original");
+            Assert.AreEqual(ShardsCardDatabase.Get("spore_cleric_duel").Quantity, before["spore_cleric_duel"]);
+            engine.ShuffleIngeminexIntoCenterDeck(30);
+            CollectionAssert.AreEquivalent(before, engine.InitialCardCounts());
+            CollectionAssert.AreEquivalent(before, ShardsSnapshotBuilder.Build(engine, 0).InitialCardCounts);
+            CollectionAssert.AreEquivalent(before, ShardsSnapshotBuilder.Build(engine, 1).InitialCardCounts);
         }
 
         [Test]

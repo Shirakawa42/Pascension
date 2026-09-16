@@ -128,6 +128,15 @@ namespace Pascension.Game.UI
             // Hero ability names + rules text (engine-sourced English keys).
             ["Recruiting"] = "Recrutement",
             ["Perception"] = "Perception",
+            ["Hero Ability"] = "Capacité de héros",
+            ["Free: gain 3 health."] = "Gratuit : gagnez 3 santé.",
+            ["Pay 1 gem: draw 1 card."] = "Payez 1 cristal : piochez 1 carte.",
+            ["Pay 2 gems: gain 3 power."] = "Payez 2 cristaux : gagnez 3 puissance.",
+            ["Pay 3 gems: gain 1 mastery."] = "Payez 3 cristaux : gagnez 1 maîtrise.",
+            ["Copies in this game"] = "Exemplaires dans cette partie",
+            ["1 copy at the start of this game."] = "1 exemplaire au début de cette partie.",
+            ["{0} copies at the start of this game."] = "{0} exemplaires au début de cette partie.",
+            ["M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: draw 1 card.\n— Pay 2 gems: gain 3 power.\n— Pay 3 gems: gain 1 mastery."] = "M5, une fois par tour : choisissez un effet :\n— Gratuit : gagnez 3 santé.\n— Payez 1 cristal : piochez 1 carte.\n— Payez 2 cristaux : gagnez 3 puissance.\n— Payez 3 cristaux : gagnez 1 maîtrise.",
             ["First Aid"] = "Premiers Soins",
             ["Sacrifice"] = "Sacrifice",
             ["Futureproof"] = "Pare-Avenir",
@@ -170,8 +179,8 @@ namespace Pascension.Game.UI
                 "Recrutez-le, ou enrôlez-le pour son coût : effet immédiat, puis sous la pioche commune.",
             ["Tap this ready card to use its ability. It readies at your end phase."] =
                 "Activez cette carte prête pour utiliser sa capacité. Elle se redresse en fin de tour.",
-            ["Active if you played or reveal another {0} card as you play this card."] =
-                "Actif si vous avez joué ou que vous révélez une autre carte {0} en jouant cette carte.",
+            ["Active if you played another {0} card this turn. Otherwise, automatically reveal the first {0} card in your hand."] =
+                "Actif si vous avez joué une autre carte {0} ce tour. Sinon, révélez automatiquement la première carte {0} de votre main.",
             ["Active if you played or revealed a Homodeus, an Undergrowth and a Wraethe card this turn."] =
                 "Actif si vous avez joué ou révélé une carte Homodeus, une Maquis et une Spectra ce tour-ci.",
             ["Active if you played or revealed at least 3 other cards of 3 different factions this turn."] =
@@ -482,6 +491,7 @@ namespace Pascension.Game.UI
         /// patterns ("Return a …") before the general ones ("Return …").</summary>
         public static readonly List<(Regex, string)> DecisionTitles = new()
         {
+            (new Regex(@"^Volos: choose an ability$"), "Volos : choisissez une capacité"),
             (new Regex(@"^Assign (\d+) damage between your opponents$"),
                 "Répartissez $1 dégâts entre vos adversaires"),
             (new Regex(@"^(.+) assigns (\d+) damage — reveal shields\?$"),

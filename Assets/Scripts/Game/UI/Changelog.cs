@@ -50,6 +50,15 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-09-16",
+                "· Unify automatically reveals the first matching card in your hand when needed.\n" +
+                "· Card hover tooltips show the number of copies at the start of the match.\n" +
+                "· Current health is green at 30+, yellow at 10–29, and red below 10.\n" +
+                "· Volos: at M5, once per turn, choose one of four cards — free: heal 3; 1 gem: draw 1; 2 gems: gain 3 power; 3 gems: gain 1 mastery.",
+                "· Unification révèle automatiquement la première carte correspondante de votre main si nécessaire.\n" +
+                "· Les infobulles des cartes indiquent le nombre d'exemplaires au début de la partie.\n" +
+                "· La santé actuelle est verte à 30+, jaune de 10 à 29, rouge en dessous de 10.\n" +
+                "· Volos : à M5, une fois par tour, choisissez une carte parmi quatre — gratuit : 3 santé ; 1 cristal : piochez 1 ; 2 cristaux : 3 puissance ; 3 cristaux : 1 maîtrise."),
             new Entry("2026-08-23",
                 "· Unify now counts CHAMPIONS. An Undergrowth champion satisfies Unify whether you played it this turn or reveal it from your hand — previously it was dead weight for every Unify card in the same hand.\n" +
                 "· Three hero abilities rebalanced. Tetra's Perception draws 2 cards instead of 1. Volos' First Aid is now FREE and heals 4 instead of 3. Ko Syn Wu's Sacrifice costs no gems at all — the 3 health is the whole price.\n" +

@@ -280,6 +280,22 @@ namespace Shards.Bots
                     }
                     break;
                 }
+                case VolosAbilityChoice.Context:
+                {
+                    int best = 0;
+                    double score = double.MinValue;
+                    foreach (var option in request.Options)
+                    {
+                        if (option.Disabled) continue;
+                        var gain = VolosAbilityChoice.Effect(option.Id);
+                        double value = gain.Draw * 1.6 + gain.Power +
+                            System.Math.Min(gain.Mastery, System.Math.Max(0, 30 - player.Mastery)) * 3.0 +
+                            System.Math.Min(gain.Health, System.Math.Max(0, _engine.State.Rules.MaxHealth - player.Health)) * 0.3 - option.Id;
+                        if (value > score) { score = value; best = option.Id; }
+                    }
+                    answer.ChosenOptionIds.Add(best);
+                    break;
+                }
                 case "soi.shields":
                     // Revealing is free (shields stay in hand) — reveal everything.
                     foreach (var option in request.Options)

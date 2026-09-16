@@ -53,7 +53,8 @@ namespace Shards.Bots
             foreach (var characterId in ShardsEngine.DraftableCharacters)
             {
                 var effect = ShardsEngine.HeroAbilityEffect(characterId);
-                if (effect == null) continue; // Decima's ability is a passive discount
+                // Decima is passive; Volos is priced per affordable mode in the current state.
+                if (effect == null || effect is VolosAbilityChoice) continue;
                 var atoms = ShardsCardStatics.StandaloneAtoms(effect, 0);
                 var (res, structural) = Collapse(atoms);
                 var spec = ShardsEngine.HeroAbilityInfo(characterId);
@@ -62,6 +63,23 @@ namespace Shards.Bots
                 if (atoms.BanishCapacity > 0)
                     _heroAbilityBanish[characterId] = atoms.BanishCapacity;
             }
+        }
+
+        private double VolosChoiceValue(ShardsEngine engine, ShardsPlayer player, int mode)
+        {
+            var gain = VolosAbilityChoice.Effect(mode);
+            double healing = Math.Min(gain.Health, Math.Max(0, engine.State.Rules.MaxHealth - player.Health));
+            double mastery = Math.Min(gain.Mastery, Math.Max(0, 30 - player.Mastery));
+            return gain.Draw * _w[W.Draw] + gain.Power * _w[W.Power] +
+                   mastery * _w[W.Mastery] + healing * _w[W.Health] - mode * _w[W.Gems];
+        }
+
+        private int BestVolosChoice(ShardsEngine engine, ShardsPlayer player)
+        {
+            int best = 0;
+            for (int mode = 1; mode <= 3 && mode <= player.Gems; mode++)
+                if (VolosChoiceValue(engine, player, mode) > VolosChoiceValue(engine, player, best)) best = mode;
+            return best;
         }
 
         private (double[], double)[] CollapseSlot(EffectAtoms[] perBucket)
@@ -367,6 +385,8 @@ namespace Shards.Bots
                 {
                     // Duel: spare-gem utility (draw / heal / banish / scry), priced from
                     // the ability's own effect atoms rather than a constant.
+                    if (player.CharacterId == "volos")
+                        return VolosChoiceValue(engine, player, BestVolosChoice(engine, player)) * _w[W.HeroAbilityValueScale];
                     if (player.CharacterId == null ||
                         !_heroAbilityValue.TryGetValue(player.CharacterId, out double net))
                         return double.MinValue; // passive or unknown hero: nothing to activate
@@ -625,6 +645,10 @@ namespace Shards.Bots
                     answer.ChosenOptionIds.Add(worth > _w[W.BuyThreshold] ? 1 : 2);
                     break;
                 }
+
+                case VolosAbilityChoice.Context:
+                    answer.ChosenOptionIds.Add(BestVolosChoice(engine, player));
+                    break;
 
                 case "soi.mode" when !_legacyDecisions:
                 {

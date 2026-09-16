@@ -128,7 +128,7 @@ namespace Pascension.Game.Soi
 
             _name.text = player.Name + (player.Eliminated ? Loc.T("  · eliminated") : "");
             _stats.text =
-                $"<color=#6FDF8F>{player.Health}/{maxHealth}</color><sprite name=\"soi_health\">   " +
+                $"<color=#{UiPalette.HealthHex(player.Health)}>{player.Health}</color>/{maxHealth}<sprite name=\"soi_health\">   " +
                 $"<color=#D4AF37>{player.Mastery}/30</color><sprite name=\"soi_mastery\">   " +
                 $"<color=#73AEF2>{player.Gems}</color><sprite name=\"soi_gem\">   " +
                 $"<color=#E06C55>{player.Power}</color><sprite name=\"soi_power\">";

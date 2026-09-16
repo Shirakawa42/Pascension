@@ -151,7 +151,8 @@ Four base factions (a 5th, **Aion**, arrives with Shadow of Salvation/Into the H
 - **Unify** (Undergrowth): bonus applies if you have played another Undergrowth card this turn
   OR you reveal an Undergrowth card from your hand at resolution. Fast-played mercenaries count
   as played, and so do CHAMPIONS (user decision 2026-08-23 — see the deviation list, item 3).
-  The card itself does not satisfy its own Unify.
+  The card itself does not satisfy its own Unify. If no other matching card was played,
+  automatically reveal the first matching card in hand; this reveal is mandatory and has no prompt.
 - **Dominion** (Order): bonus applies if you have played (or reveal from hand) at least one
   card of EACH of the other three base factions (Homodeus, Undergrowth, Wraethe) this turn.
 - Exact printed reminder text for both: see cards.json / keyword notes at the end — flagged
@@ -369,3 +370,10 @@ The engine follows the printed cards where this document's paraphrases disagreed
 6. Imperative effect texts ("Return a…", "Recruit a…", "banish a…" without "may") are
    MANDATORY; the sets print "you may" explicitly when a choice is optional.
 7. Printed name spelling: "Ru Bo Vai, The Transcendant" (-ant).
+
+### Volos hero ability — 2026-09-16 house rework
+
+At mastery 5, once per turn and separately from Focus, activate for free and choose
+one: gain 3 health for free; pay 1 gem to draw 1 card; pay 2 gems to gain 3 power;
+or pay 3 gems to gain 1 mastery. All four choices are cards; unaffordable choices
+are visible but disabled. Only the chosen cost is paid.

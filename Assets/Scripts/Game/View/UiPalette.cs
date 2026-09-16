@@ -54,6 +54,11 @@ namespace Pascension.Game.View
         public static Color PlayerColor(int index) =>
             PlayerColors[Mathf.Abs(index) % PlayerColors.Length];
 
+        public static Color HealthColor(int health) =>
+            health >= 30 ? HealthyGreen : health >= 10 ? Gold : WoundedRed;
+
+        public static string HealthHex(int health) => ColorUtility.ToHtmlStringRGB(HealthColor(health));
+
         public static Color WithAlpha(Color c, float a) => new Color(c.r, c.g, c.b, a);
 
         private static Color Rgb(int r, int g, int b) => new Color(r / 255f, g / 255f, b / 255f, 1f);

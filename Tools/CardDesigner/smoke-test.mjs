@@ -23,9 +23,22 @@ const baseKwMap = new Map(B.keywords.map(k => [k.id, k]));
 const freshState = () => ({ cards: B.cards.map(Core.clone), keywords: B.keywords.map(Core.clone), sessionName: 't', notes: 'n' });
 
 test('baseline shape', () => {
-  assert(B.cards.length === 194, 'expected 194 cards (189 defs + 5 characters), got ' + B.cards.length);
-  assert(B.keywords.length === 11, 'expected 11 keywords');
+  assert(B.cards.length === 198, 'expected 198 cards (188 defs + 5 characters + 5 abilities), got ' + B.cards.length);
+  assert(B.keywords.length === 12, 'expected 12 keywords');
   assert(B.cards.every(c => c.id && c.name && c.set && c.faction && Array.isArray(c.types) && c.types.length), 'every card has identity fields incl. a types array');
+});
+
+test('current registry, replacements, and hero abilities are represented', () => {
+  assert(!baseMap.has('whisper_extractor'), 'removed card is absent');
+  assert(B.sets.some(s => s.id === 'duel'), 'Duel set is selectable');
+  assert(B.cards.every(c => B.sets.some(s => s.id === c.set)), 'all registered sets are selectable');
+  eq(baseMap.get('spore_cleric_duel').art, 'spore_cleric.png', 'errata uses original artwork');
+  assert(baseMap.get('spore_cleric').notes.includes('spore_cleric_duel'), 'original identifies its replacement');
+  const volos = baseMap.get('soiability_volos');
+  for (const text of ['M5', 'Free: gain 3 health.', 'Pay 1 gem: draw 1 card.', 'Pay 2 gems: gain 3 power.', 'Pay 3 gems: gain 1 mastery.'])
+    assert(volos.text.includes(text), 'Volos has ' + text);
+  assert(baseMap.get('soiability_tetra').text.includes('draw 2 cards'), 'Tetra reflects current engine');
+  assert(baseKwMap.get('unify').meaning.includes('automatically'), 'Unify auto-reveal documented');
 });
 
 test('untouched state produces an empty session', () => {
@@ -93,7 +106,7 @@ test('status detection', () => {
 
 test('keyword detection matches the census', () => {
   const kws = Object.fromEntries(B.keywords.map(k => [k.id, k]));
-  const cards = B.cards.filter(c => !c.types.includes('Character')); // census ran on the 189 defs (incl. Duel of Doom)
+  const cards = B.cards.filter(c => !c.types.includes('Character') && !c.types.includes('Hero Ability')); // census ran on the 188 defs (incl. Duel of Doom)
   const live = cards.filter(c => c.id !== 'cloud_oracles');  // errata-superseded
   eq(Core.keywordUsage(kws['unify'], live), 12, 'Unify count');
   eq(Core.keywordUsage(kws['warp'], live), 6, 'Warp count');

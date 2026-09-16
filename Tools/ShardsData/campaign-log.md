@@ -1060,3 +1060,6 @@ vs bench:greedy-v5 SPRT is the next bookkeeping run when cores idle).
   value model prices through its own effect atoms (`_heroAbilityValue` is recomputed from
   `HeroAbilityInfo`/`HeroAbilityEffect`), so nothing was hardcoded around the old costs.
   The next tune's games will include the new rules; gate under basket-96 per protocol.
+- **2026-09-16 22:26** — CMA-ES tune: 300 generations, champion 80.0 % vs heuristic-v1
+
+2026-09-16 — Volos/Unify retune validation: V9 candidate passed the basic gates over 1,000 mirrored games per opponent (100% vs random; 78.8% vs heuristic). Against V8: 50.8%, reported 95% interval 47.7–53.9%; no demonstrated improvement and no planner promotion gate, so Current remains V8. V9 is retained only as a comparison vector.

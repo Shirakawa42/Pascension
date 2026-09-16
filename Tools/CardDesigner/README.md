@@ -7,9 +7,10 @@ the repo (moving it elsewhere shows black art boxes, everything else still works
 
 ## What it does
 
-- Shows the **full live pool** (all DLCs enabled, 130 entries incl. the 5 characters)
+- Shows the **full registered pool** (198 entries: 188 card definitions, 5 characters and 5 hero abilities)
   as fully rendered cards: art, faction frame, cost gem, shield / defense badges,
-  keyword-highlighted rules text with hover tooltips.
+  keyword-highlighted rules text with hover tooltips. Original printings remain available
+  for non-Duel balance work; their notes identify the DLC replacements.
 - **TappedOut-style browsing**: search, filters (status / set / faction / type /
   cost / keyword) and grouping (faction, type, set, cost, change status, keyword)
   with per-group card + copy counts.
@@ -39,6 +40,7 @@ the repo (moving it elsewhere shows black art boxes, everything else still works
 |---|---|
 | `index.html` | the tool (open this) |
 | `app.js` | logic — pure `Core` + browser UI |
+| `registry-metadata.json` | GENERATED engine export: errata/art links and current hero abilities |
 | `baseline.js` | GENERATED snapshot of the live pool — never hand-edit |
 | `generate-baseline.mjs` | regenerates `baseline.js` from `Tools/ShardsData/cards-table.md` |
 | `smoke-test.mjs` | `node Tools/CardDesigner/smoke-test.mjs` — core logic tests |
@@ -46,7 +48,7 @@ the repo (moving it elsewhere shows black art boxes, everything else still works
 ## After real card changes ship
 
 ```
-cd Tools/EngineVerify && dotnet test --filter ExportShardsCardTable
+dotnet test Tools/EngineVerify --filter ExportShardsCardTable
 node Tools/CardDesigner/generate-baseline.mjs
 ```
 

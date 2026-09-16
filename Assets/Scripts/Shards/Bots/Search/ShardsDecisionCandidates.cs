@@ -55,6 +55,7 @@ namespace Shards.Bots
                 // removal and Shard Defiant's keep-or-banish.
                 case "soi.herodraft":
                 case "soi.mode":
+                case VolosAbilityChoice.Context:
                 case "soi.removeshop":
                 case "soi.defiant":
                 case "soi.tutor":
@@ -65,7 +66,7 @@ namespace Shards.Bots
                     if (request.Max == 1)
                     {
                         foreach (var option in request.Options)
-                            Add(new List<int> { option.Id });
+                            if (!option.Disabled) Add(new List<int> { option.Id });
                         if (request.Min == 0)
                             Add(new List<int>());
                     }

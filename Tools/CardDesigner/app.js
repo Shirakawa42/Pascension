@@ -399,7 +399,7 @@ const Core = {
     L.push('4. Quantities or set membership changed → update `Counts_MatchPublishedComponentLists` in `ShardsContentTests.cs`; add ruling tests in `ShardsRulingsTests.cs` for tricky interactions.');
     L.push('5. New keywords → detection + tooltip in `Assets/Scripts/Game/Soi/SoiKeywordGlossary.cs` (+ French entries in LocFrench).');
     L.push('6. EVERY new or renamed card needs a French entry in `Assets/Scripts/Game/Soi/SoiFrenchCards.cs` (official IELLO terminology).');
-    L.push('7. Regenerate the table + this tool\'s baseline: `cd Tools/EngineVerify && dotnet test --filter ExportShardsCardTable`, then `node Tools/CardDesigner/generate-baseline.mjs`. Card-count changed → bump the expected count in `generate-baseline.mjs` (the `!== 125` assert) and in `smoke-test.mjs` (the `130 cards` assert + keyword-census expectations).');
+    L.push('7. Regenerate the table + this tool\'s baseline: `dotnet test Tools/EngineVerify --filter ExportShardsCardTable`, then `node Tools/CardDesigner/generate-baseline.mjs`. Card-count changed → update EXPECTED_DEFS in `generate-baseline.mjs` and the baseline/keyword census in `smoke-test.mjs`.');
     L.push('8. Art: generate via the art-pipeline skill (Anima/ComfyUI); per-card art prompts are included above where written.');
     L.push('9. Add a dated entry to the SoI list in `Assets/Scripts/Game/UI/Changelog.cs` (EN + FR).');
     L.push('10. Verify: `cd Tools/EngineVerify && dotnet test` — keep it green.');

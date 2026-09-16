@@ -891,7 +891,8 @@ namespace Pascension.Game.Soi
 
             _hand.Render(HandSnaps(me), PlayableIds(me), _pendingReveal.Count > 0 ? _pendingReveal : null);
 
-            _statHealth.text = me.Health + "/" + _maxHealth;
+            _statHealth.text = $"<color=#{UiPalette.HealthHex(me.Health)}>{me.Health}</color>/{_maxHealth}";
+            _statHealth.color = UiPalette.TextMain;
             _statMastery.text = me.Mastery + "/30";
             _statGems.text = me.Gems.ToString();
             _statPower.text = me.Power.ToString();
@@ -1118,7 +1119,7 @@ namespace Pascension.Game.Soi
         }
 
         private string OpponentStatsLine(ShardsPlayerSnap player) =>
-            $"<color=#6FDF8F>{player.Health}/{_maxHealth}</color><sprite name=\"soi_health\">  " +
+            $"<color=#{UiPalette.HealthHex(player.Health)}>{player.Health}</color>/{_maxHealth}<sprite name=\"soi_health\">  " +
             $"<color=#D4AF37>{player.Mastery}/30</color><sprite name=\"soi_mastery\">  " +
             $"<color=#73AEF2>{player.Gems}</color><sprite name=\"soi_gem\">  " +
             $"<color=#E06C55>{player.Power}</color><sprite name=\"soi_power\">\n" +
@@ -1127,7 +1128,7 @@ namespace Pascension.Game.Soi
         /// <summary>The duel panel's richer stat block: the big resource line plus the
         /// info row that previously lived only in the detail modal.</summary>
         private string DuelStatsLine(ShardsPlayerSnap player) =>
-            $"<color=#6FDF8F>{player.Health}/{_maxHealth}</color><sprite name=\"soi_health\">  " +
+            $"<color=#{UiPalette.HealthHex(player.Health)}>{player.Health}</color>/{_maxHealth}<sprite name=\"soi_health\">  " +
             $"<color=#D4AF37>{player.Mastery}/30</color><sprite name=\"soi_mastery\">  " +
             $"<color=#73AEF2>{player.Gems}</color><sprite name=\"soi_gem\">  " +
             $"<color=#E06C55>{player.Power}</color><sprite name=\"soi_power\">\n" +
@@ -2158,7 +2159,9 @@ namespace Pascension.Game.Soi
             if (source.InstanceId <= 0) return;
             if (!ShardsCardDatabase.TryGet(source.DefId, out var def)) return;
             var entries = SoiKeywordGlossary.For(def);
-            if (entries.Count == 0) return;
+            if (_snap != null && _snap.InitialCardCounts.TryGetValue(def.Id, out int copies))
+                entries.Insert(0, new SoiKeywordGlossary.Entry("Copies in this game",
+                    copies == 1 ? "1 copy at the start of this game." : "{0} copies at the start of this game.", copies.ToString()));
 
             if (_keywordTips == null)
             {
@@ -2182,10 +2185,8 @@ namespace Pascension.Game.Soi
 
             const float width = 250f, pad = 8f;
             float y = 0f;
-            int shown = 0;
             foreach (var entry in entries)
             {
-                if (shown++ >= 4) break; // a card never carries more in practice
                 string tip = entry.Arg == null
                     ? UI.Loc.T(entry.Text)
                     : string.Format(UI.Loc.T(entry.Text), UI.Loc.T(entry.Arg));

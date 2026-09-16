@@ -10,6 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const tablePath = join(here, '..', 'ShardsData', 'cards-table.md');
 const outPath = join(here, 'baseline.js');
 
+const metadata = JSON.parse(readFileSync(join(here, 'registry-metadata.json'), 'utf8'));
 const lines = readFileSync(tablePath, 'utf8').split(/\r?\n/);
 const cards = [];
 for (let i = 2; i < lines.length; i++) {
@@ -32,24 +33,28 @@ for (let i = 2; i < lines.length; i++) {
   });
 }
 // Tripwire against a silently-shifted table. If the real pool count legitimately changed,
-// bump this number AND the '194 cards' + keyword-census expectations in smoke-test.mjs.
-// 189 = the 125 pre-Duel defs + 64 Duel of Doom defs (20 new + 43 errata + Grim Tutor).
-const EXPECTED_DEFS = 189;
+// bump this number AND the '198 cards' + keyword-census expectations in smoke-test.mjs.
+// 188 = all registered defs after Whisper Extractor was removed.
+const EXPECTED_DEFS = 188;
 if (cards.length !== EXPECTED_DEFS)
   throw new Error(`expected ${EXPECTED_DEFS} card defs, parsed ${cards.length}. If the pool genuinely changed, ` +
-    `update EXPECTED_DEFS here and the '130 cards' + keyword-census asserts in Tools/CardDesigner/smoke-test.mjs.`);
+    `update EXPECTED_DEFS here and the '198 cards' + keyword-census asserts in Tools/CardDesigner/smoke-test.mjs.`);
 // Header sanity: guard against a reordered/renamed column silently corrupting positional parsing.
 const header = lines[0].split('|').map(s => s.trim());
 const EXPECTED_COLS = ['', 'Id', 'Name', 'Set', 'Faction', 'Type', 'Cost', 'Qty', 'Def', 'Shield', 'Rules (functional paraphrase)', ''];
 if (header.join('|') !== EXPECTED_COLS.join('|'))
   throw new Error('cards-table.md column layout changed — update the parser in generate-baseline.mjs. Got header: ' + lines[0]);
 
-// Cross-set errata pointer (engine behavior: RotF Cloud Oracles is skipped when SoS is on).
-const co = cards.find(k => k.id === 'cloud_oracles');
-co.notes = 'Errata: superseded by the Shadow of Salvation printing (cloud_oracles_sos) whenever SoS is enabled.';
+// Keep old printings available for non-Duel balance work, clearly mark their
+// replacements, and use the inherited art exactly as SoiCardFaces does.
+for (const card of cards) {
+  card.art = metadata.artIds[card.id] + '.png';
+  const replacements = Object.entries(metadata.replacements).filter(([, id]) => id === card.id).map(([id]) => id);
+  if (replacements.length) card.notes = 'Superseded when the corresponding DLC is enabled: ' + replacements.join(', ') + '.';
+}
 
 // The five playable characters (not in the table; portraits ship as soichar_*.png).
-const FOCUS = 'Focus — Exhaust: pay 1 gem, gain 1 mastery (once per turn).';
+const FOCUS = 'Focus — Exhaust: pay 1 gem, gain 1 mastery. Once per turn.';
 const characters = [
   ['soichar_decima', 'Decima', 'base', 'Homodeus'],
   ['soichar_tetra', 'Tetra', 'base', 'Order'],
@@ -61,6 +66,11 @@ const characters = [
   text: FOCUS, art: id + '.png', artPrompt: '', notes: ''
 }));
 cards.push(...characters);
+for (const ability of metadata.abilities) {
+  const hero = characters.find(c => c.id === ability.id.replace('soiability_', 'soichar_'));
+  cards.push({ ...ability, set: 'duel', faction: hero.faction, types: ['Hero Ability'],
+    cost: null, qty: 1, defense: null, shield: null, art: ability.id + '.png', artPrompt: '', notes: '' });
+}
 
 // Keyword glossary — meanings mirror SoiKeywordGlossary.cs (the in-game tooltips).
 // kind: 'text' keywords are detected by regex over rules text; 'type'/'stat' by card shape.
@@ -68,13 +78,15 @@ const keywords = [
   { id: 'exhaust', name: 'Exhaust', faction: '', kind: 'text', pattern: '\\bexhaust', flags: 'i',
     meaning: 'Tap this ready card to use its ability. It readies at your end phase.' },
   { id: 'unify', name: 'Unify', faction: 'Undergrowth', kind: 'text', pattern: '\\bUnify\\b', flags: '',
-    meaning: "Active if you played or reveal another ally of this card's faction as you play this card." },
+    meaning: "Active if you played another card of this faction this turn; otherwise automatically reveal the first matching card in your hand." },
   { id: 'dominion', name: 'Dominion', faction: 'Order', kind: 'text', pattern: '\\bDominion\\b', flags: '',
-    meaning: 'Active if you played or revealed a Homodeus, an Undergrowth and a Wraethe card this turn.' },
+    meaning: 'Base game: another Homodeus, Undergrowth and Wraethe card played or revealed. Duel: at least 3 other cards of 3 different factions played or revealed.' },
+  { id: 'allegiance', name: 'Allegiance', faction: '', kind: 'text', pattern: '\\bAllegiance\\b', flags: '',
+    meaning: 'Active if you own at least the shown number of cards of that faction in your deck, hand, discard and in play.' },
   { id: 'inspire', name: 'Inspire', faction: 'Homodeus', kind: 'text', pattern: '\\bInspire\\b', flags: '',
     meaning: 'Active while you control a champion.' },
   { id: 'echo', name: 'Echo', faction: 'Wraethe', kind: 'text', pattern: '\\bEcho\\b', flags: '',
-    meaning: "Grows with each card of this card's faction in your discard pile." },
+    meaning: "Active once if at least one card of this faction is in your discard pile. It only scales per card when explicitly stated." },
   { id: 'warp', name: 'Warp', faction: 'Aion', kind: 'text', pattern: '\\bWarp\\b', flags: '',
     meaning: 'Fast-play a row ally costing up to the shown number for free (no number: any ally). It goes under the center deck at end of turn.' },
   { id: 'mastery-threshold', name: 'Mastery threshold', faction: '', kind: 'text', pattern: '\\bM\\d+\\b', flags: '',
@@ -98,6 +110,7 @@ const baseline = {
     { id: 'relics_of_the_future', name: 'Relics of the Future' },
     { id: 'shadow_of_salvation', name: 'Shadow of Salvation' },
     { id: 'into_the_horizon', name: 'Into the Horizon' },
+    { id: 'duel', name: 'Duel of Doom' },
   ],
   factions: [
     { id: 'Homodeus', color: '#857542' },
@@ -108,11 +121,11 @@ const baseline = {
     { id: 'Monster', color: '#8F2E2E' },
     { id: 'None', color: '#52525C' },
   ],
-  types: ['Ally', 'Champion', 'Mercenary', 'Relic', 'Destiny', 'Starter', 'Monster', 'Character'],
+  types: ['Ally', 'Champion', 'Mercenary', 'Relic', 'Destiny', 'Starter', 'Monster', 'Character', 'Hero Ability'],
   keywords, cards,
 };
 
 writeFileSync(outPath,
   '// GENERATED by generate-baseline.mjs — do not hand-edit. Regenerate after real card changes.\n' +
   'window.SOI_BASELINE = ' + JSON.stringify(baseline, null, 1) + ';\n');
-console.log(`baseline.js written: ${cards.length} cards (${characters.length} characters), ${keywords.length} keywords`);
+console.log(`baseline.js written: ${cards.length} cards (${characters.length} characters + ${metadata.abilities.length} hero abilities), ${keywords.length} keywords`);

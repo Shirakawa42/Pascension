@@ -62,6 +62,33 @@ namespace Pascension.Engine.Tests
             prompts.AppendLine("]");
             File.WriteAllText(Path.Combine(root, "Tools", "ShardsData", "art-prompts.json"), prompts.ToString());
 
+            // Machine-readable metadata keeps the designer's art, errata and hero
+            // abilities tied to the same registry as the game.
+            var metadata = new Newtonsoft.Json.Linq.JObject();
+            var replacements = new Newtonsoft.Json.Linq.JObject();
+            var artIds = new Newtonsoft.Json.Linq.JObject();
+            foreach (var def in defs) artIds[def.Id] = string.IsNullOrEmpty(def.ReplacesId) ? def.Id : def.ReplacesId;
+            metadata["artIds"] = artIds;
+            foreach (var def in defs)
+                if (!string.IsNullOrEmpty(def.ReplacesId)) replacements[def.Id] = def.ReplacesId;
+            replacements["cloud_oracles_sos"] = "cloud_oracles";
+            metadata["replacements"] = replacements;
+            var abilities = new Newtonsoft.Json.Linq.JArray();
+            foreach (var id in ShardsEngine.DraftableCharacters)
+            {
+                var spec = ShardsEngine.HeroAbilityInfo(id);
+                abilities.Add(new Newtonsoft.Json.Linq.JObject
+                {
+                    ["id"] = "soiability_" + id,
+                    ["name"] = ShardsContentRegistry.CharacterDisplayName(id) + " — " + spec.Name,
+                    ["text"] = spec.Text
+                });
+            }
+            metadata["abilities"] = abilities;
+            string designerDir = Path.Combine(root, "Tools", "CardDesigner");
+            Directory.CreateDirectory(designerDir);
+            File.WriteAllText(Path.Combine(designerDir, "registry-metadata.json"), metadata.ToString() + "\n");
+
             Assert.Pass($"exported {defs.Count} defs");
         }
 

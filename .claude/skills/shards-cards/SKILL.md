@@ -90,6 +90,12 @@ live climbing price. **Ability ART** (2026-07-25) is its own piece per hero —
 not card defs and no test exports them. The card wears a pulsing gold outer halo exactly
 while the ability is usable.
 
+**Volos rework (2026-09-16)**: First Aid still requires M5 and is once per turn,
+separate from Focus. Activation is free and opens `soi.volos`: heal 3 for free,
+pay 1 gem to draw 1, pay 2 gems for 3 power, or pay 3 gems for 1 mastery.
+All four `soivolos:<mode>` cards are shown; unaffordable modes are disabled.
+`VolosAbilityChoice` owns mode costs/text/effects; `SoiCardFaces` renders the cards.
+
 **New defs (20)**: relics praetorian_03/multitask_brain/unknown_god/star_seeker/doom_gate
 (one per hero); cards testudo_vanguard, century_forge, riposte_doctrine, index_of_futures,
 bulwark_chanter, aegis_archivist, thornshell_warden, nectar_alchemist, lifebloom_ritual,
@@ -144,8 +150,8 @@ needed.
   `E.Seq`/`ShardsComposite` (sequential — own mastery gain precedes later thresholds),
   `E.At`/`AtMastery` (ADDITIVE delta: "3, M10: 6 instead" = base 3 + At(10,+3)),
   `BestByMastery` (true "instead" tiers), `If` (+`Inspire`/`Echo`/`Character`/`FullHealth`),
-  `Unify` (another CARD of the faction played OR reveal from hand — decision;
-  champions count since 2026-08-23),
+  `Unify` (another CARD of the faction played OR automatic first matching hand reveal;
+  champions count since 2026-08-23; reveal is automatic since 2026-09-16),
   `Dominion` (played/reveal one of EACH of H/U/W), `PerCount`, `OpponentLosesMastery`,
   `BanishUpTo`, `ReturnFromDiscard`, `DestroyEnemyChampions`, `WarpUpTo`, `RecruitFromRow`,
   `CopyPlayedEffect`, `AllPlayersLoseHealth/LoseMastery/Discard/DestroyBiggestChampion`,

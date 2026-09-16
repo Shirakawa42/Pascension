@@ -99,29 +99,7 @@ namespace Shards.Engine
             // Center deck from the enabled sets (relics and destinies are never in it).
             foreach (var def in ShardsCardDatabase.All)
             {
-                if (def.Type == ShardsCardType.Starter ||
-                    def.Type == ShardsCardType.Relic ||
-                    def.Type == ShardsCardType.Destiny)
-                    continue;
-                bool inSet = def.Set switch
-                {
-                    "base" => true,
-                    "relics_of_the_future" => (config.Dlc & ShardsDlc.RelicsOfTheFuture) != 0,
-                    "shadow_of_salvation" => (config.Dlc & ShardsDlc.ShadowOfSalvation) != 0,
-                    "into_the_horizon" => (config.Dlc & ShardsDlc.IntoTheHorizon) != 0,
-                    "duel" => (config.Dlc & ShardsDlc.Duel) != 0,
-                    _ => false
-                };
-                if (!inSet) continue;
-                if (replaced.Contains(def.Id)) continue; // errata'd out by a Duel replacement
-                // ItH rule: Corruption's reward needs relics — remove it without RotF.
-                if (def.IsMonster && def.Id == "ingeminex_corruption" &&
-                    (config.Dlc & ShardsDlc.RelicsOfTheFuture) == 0)
-                    continue;
-                // SoS ships errata replacements for RotF's Cloud Oracles: with both sets
-                // enabled only the replacement copies play (PvP-identical wording fix).
-                if (def.Id == "cloud_oracles" && (config.Dlc & ShardsDlc.ShadowOfSalvation) != 0)
-                    continue;
+                if (!InInitialCenterPool(def, config.Dlc, replaced)) continue;
                 for (int i = 0; i < def.Quantity; i++)
                     State.CenterDeck.Add(NewCard(def.Id, -1, ShardsZone.CenterDeck));
             }
@@ -221,6 +199,60 @@ namespace Shards.Engine
                 StartTurn(0, firstTurn: true);
                 RoutePriority();
             }
+        }
+
+        private static bool InInitialCenterPool(ShardsCardDef def, ShardsDlc dlc, HashSet<string> replaced)
+        {
+            if (def.Type == ShardsCardType.Starter ||
+                def.Type == ShardsCardType.Relic ||
+                def.Type == ShardsCardType.Destiny)
+                return false;
+            bool inSet = def.Set switch
+            {
+                "base" => true,
+                "relics_of_the_future" => (dlc & ShardsDlc.RelicsOfTheFuture) != 0,
+                "shadow_of_salvation" => (dlc & ShardsDlc.ShadowOfSalvation) != 0,
+                "into_the_horizon" => (dlc & ShardsDlc.IntoTheHorizon) != 0,
+                "duel" => (dlc & ShardsDlc.Duel) != 0,
+                _ => false
+            };
+            if (!inSet) return false;
+            if (replaced.Contains(def.Id)) return false; // errata'd out by a Duel replacement
+            // ItH rule: Corruption's reward needs relics — remove it without RotF.
+            if (def.IsMonster && def.Id == "ingeminex_corruption" &&
+                (dlc & ShardsDlc.RelicsOfTheFuture) == 0)
+                return false;
+            // SoS ships errata replacements for RotF's Cloud Oracles: with both sets
+            // enabled only the replacement copies play (PvP-identical wording fix).
+            if (def.Id == "cloud_oracles" && (dlc & ShardsDlc.ShadowOfSalvation) != 0)
+                return false;
+            return true;
+        }
+
+        /// <summary>Public setup quantities, independent of hidden zones or later card
+        /// creation. Starters count every seat; relics count the drafted heroes only.</summary>
+        public Dictionary<string, int> InitialCardCounts()
+        {
+            var counts = new Dictionary<string, int>();
+            var replaced = ReplacedIds(State.Dlc);
+            foreach (var def in ShardsCardDatabase.All)
+            {
+                int count = 0;
+                if (def.Type == ShardsCardType.Starter) count = def.Quantity * State.Players.Count;
+                else if (def.Type == ShardsCardType.Relic)
+                {
+                    foreach (var player in State.Players)
+                        if (player.CharacterId != null && RelicIdsFor(player.CharacterId, State.Dlc).Contains(def.Id)) count++;
+                }
+                else if (def.Type == ShardsCardType.Destiny)
+                {
+                    if ((State.Dlc & ShardsDlc.IntoTheHorizon) != 0 && !replaced.Contains(def.Id) &&
+                        (def.Set != "duel" || (State.Dlc & ShardsDlc.Duel) != 0)) count = def.Quantity;
+                }
+                else if (InInitialCenterPool(def, State.Dlc, replaced)) count = def.Quantity;
+                if (count > 0) counts.Add(def.Id, count);
+            }
+            return counts;
         }
 
         /// <summary>The relic def ids a character sets aside under the given DLC mask —
@@ -658,11 +690,8 @@ namespace Shards.Engine
             // ability now replaces the hand slot AND digs.
             "tetra" => new HeroAbilitySpec("Perception",
                 "M5, once per turn: pay 2 gems, draw 2 cards.", 5, 2, 0, active: true),
-            // First Aid: 1 gem → 0 and 3 → 4 health (2026-08-23, user decision). A gem is
-            // a third of a cheap card; paying it for 3 health was never the right line in a
-            // race, so the heal is now the free thing Volos always has.
             "volos" => new HeroAbilitySpec("First Aid",
-                "M5, once per turn: gain 4 health.", 5, 0, 0, active: true),
+                "M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: draw 1 card.\n— Pay 2 gems: gain 3 power.\n— Pay 3 gems: gain 1 mastery.", 5, 0, 0, active: true),
             // Sacrifice: 3 gems → 2 (2026-07-27) → 0 (2026-08-23, user decision). The
             // 3 health IS the cost — a real one in a damage race, and enough to make the
             // ability a genuine decision rather than free thinning. The gem side kept
@@ -685,7 +714,7 @@ namespace Shards.Engine
         public static IShardsEffect HeroAbilityEffect(string characterId) => characterId switch
         {
             "tetra" => new Gain { Draw = 2 },
-            "volos" => new Gain { Health = 4 },
+            "volos" => new VolosAbilityChoice(),
             "kosynwu" => new BanishUpTo(1),
             "rez" => new Scry(2),
             _ => null

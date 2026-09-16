@@ -42,6 +42,55 @@ namespace Shards.Engine
         }
     }
 
+    /// <summary>Volos pays only for the selected mode. All four cards remain visible,
+    /// including disabled modes; opening the choice itself costs nothing.</summary>
+    public sealed class VolosAbilityChoice : IShardsEffect
+    {
+        public const string Context = "soi.volos";
+        public const string FacePrefix = "soivolos:";
+        public static string Text(int mode) => mode switch
+        {
+            0 => "Free: gain 3 health.",
+            1 => "Pay 1 gem: draw 1 card.",
+            2 => "Pay 2 gems: gain 3 power.",
+            3 => "Pay 3 gems: gain 1 mastery.",
+            _ => null
+        };
+        public static Gain Effect(int mode) => mode switch
+        {
+            0 => new Gain { Health = 3 },
+            1 => new Gain { Draw = 1 },
+            2 => new Gain { Power = 3 },
+            3 => new Gain { Mastery = 1 },
+            _ => null
+        };
+
+        public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
+        {
+            var player = ctx.Controller;
+            var request = new DecisionRequest
+            {
+                PlayerIndex = player.Index, Kind = DecisionKind.ChooseCards,
+                Context = Context, Title = "Volos: choose an ability",
+                Min = 1, Max = 1, DefaultOptionIds = new List<int> { 0 }
+            };
+            for (int mode = 0; mode < 4; mode++)
+                request.Options.Add(new DecisionOption(mode, Text(mode))
+                {
+                    DefId = FacePrefix + mode, Disabled = player.Gems < mode
+                });
+            yield return ShardsStep.AwaitDecision(request);
+            int chosen = ctx.Answer.ChosenOptionIds[0];
+            if (chosen > 0)
+            {
+                player.Gems -= chosen;
+                ctx.Engine.Emit(new ShardsGemsChangedEvent
+                { PlayerIndex = player.Index, Delta = -chosen, NewValue = player.Gems });
+            }
+            foreach (var step in Effect(chosen).Resolve(ctx)) yield return step;
+        }
+    }
+
     /// <summary>"Allegiance &lt;Faction&gt; N": the inner effect fires only if the controller
     /// OWNS at least N cards of that faction — counting deck, hand, discard, play zone and
     /// champions (banished and set-aside cards don't count; the card itself is owned and

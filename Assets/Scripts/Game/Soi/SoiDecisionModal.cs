@@ -642,7 +642,7 @@ namespace Pascension.Game.Soi
             {
                 var info = playerInfo != null ? playerInfo(owner) : (Name: "P" + owner, Health: 0, MaxHealth: 0, PortraitDefId: null);
                 SectionHeader(content, info.MaxHealth > 0
-                    ? $"{info.Name}   <color=#6FDF8F>{info.Health}/{info.MaxHealth}</color>"
+                    ? $"{info.Name}   <color=#{UiPalette.HealthHex(info.Health)}>{info.Health}</color>/{info.MaxHealth}"
                     : info.Name);
 
                 bool testudo = OwnerHasTestudo(request, owner);

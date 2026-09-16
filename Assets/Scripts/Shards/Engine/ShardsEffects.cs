@@ -250,7 +250,7 @@ namespace Shards.Engine
     }
 
     /// <summary>Unify: fires if the controller played ANOTHER card of the faction this
-    /// turn, or reveals one from hand (a decision when it matters). CHAMPIONS COUNT
+    /// turn, or automatically reveals the first matching card from hand. CHAMPIONS COUNT
     /// (user decision 2026-08-23 — an Undergrowth champion in hand is an Undergrowth
     /// card and now satisfies it, played or revealed); fast-played mercenaries count
     /// too; the card never satisfies itself.</summary>
@@ -293,23 +293,8 @@ namespace Shards.Engine
 
             if (plays < 1)
             {
-                var candidates = player.Hand.FindAll(c =>
+                var chosen = player.Hand.Find(c =>
                     c != source && ShardsEngine.CountsAs(player, c.Def, _faction));
-                if (candidates.Count == 0) yield break;
-                var request = new DecisionRequest
-                {
-                    PlayerIndex = player.Index,
-                    Kind = DecisionKind.ChooseCards,
-                    Title = $"Reveal a {_faction} card from your hand to trigger Unify?",
-                    Context = "soi.reveal",
-                    Min = 0,
-                    Max = 1
-                };
-                foreach (var card in candidates)
-                    request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
-                yield return ShardsStep.AwaitDecision(request);
-                if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
-                var chosen = player.Hand.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
                 if (chosen == null) yield break;
                 ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { chosen.DefId } });
             }

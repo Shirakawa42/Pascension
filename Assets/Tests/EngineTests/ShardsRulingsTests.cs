@@ -107,13 +107,14 @@ namespace Pascension.Engine.Tests
             MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = aspirant.InstanceId });
             Assert.AreEqual(0, p0.Power, "Unify unsatisfied: the card never counts itself");
 
-            // Candidate in hand → reveal decision; revealing grants the bonus, card stays in hand.
+            // First matching card is revealed automatically and stays in hand.
             var spore = Give(engine, p0, "spore_cleric", ShardsZone.Hand);
+            Give(engine, p0, "additri_gaiamancer", ShardsZone.Hand);
             var second = Give(engine, p0, "undergrowth_aspirant", ShardsZone.Hand);
             p0.ResetTurn();
             MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = second.InstanceId });
-            Assert.AreEqual("soi.reveal", engine.PendingInput.Decision.Context);
-            Answer(engine, spore.InstanceId);
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind);
+            Assert.AreEqual(spore.DefId, ((ShardsCardsRevealedEvent)engine.Log.FilterFor(-1).FindLast(e => e is ShardsCardsRevealedEvent)).DefIds[0]);
             Assert.AreEqual(5, p0.Power, "Unify satisfied by hand reveal");
             Assert.Contains(spore, p0.Hand, "revealed card stays in hand");
         }
@@ -132,9 +133,8 @@ namespace Pascension.Engine.Tests
             var additri = Give(engine, p0, "additri_gaiamancer", ShardsZone.Hand);
             var aspirant = Give(engine, p0, "undergrowth_aspirant", ShardsZone.Hand);
             MustSubmit(engine, new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = aspirant.InstanceId });
-            Assert.AreEqual("soi.reveal", engine.PendingInput.Decision.Context,
-                "the champion in hand offers the reveal");
-            Answer(engine, additri.InstanceId);
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind,
+                "the champion in hand is revealed automatically");
             Assert.AreEqual(5, p0.Power, "Unify satisfied by revealing a champion");
             Assert.Contains(additri, p0.Hand, "a revealed champion stays in hand");
 
