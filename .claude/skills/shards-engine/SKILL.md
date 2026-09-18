@@ -75,3 +75,11 @@ Console: `bench | run | analyze | tune | evaluate | probe | smoke`. 30k greedy g
 - 4:3/21:9 screenshot pass for the SoI table (see ui-presentation).
 - Known simplifications to revisit: listed at the bottom of the shards-cards skill.
 - AI follow-ups (optional): search-in-loop weight retune (greedy-tuned weights transfer well but weren't retuned under search); full-size ISMCTS stats run (`soisim run --bots strong --budget 400 --games-per-matchup 400`, hours — the committed strong report used a smaller prefix); truncated-rollout evaluator if more strength per second is ever needed; in-game play-mode frame-freeze check for MASTER bots (SearchBotSeat is designed non-blocking but unverified in play mode).
+
+## September 2026 balance state
+
+`ShardsPlayer.NextRerollDiscount` is a one-use, turn-scoped discount granted by Rez's
+`DiscountNextReroll` effect after Scry. Only a successful reroll consumes it; cleanup
+clears it. Clone and full hash include it. UI reads `ShardsPlayerSnap.NextRerollCost`
+from `ShardsEngine.RerollCost`, never recomputes it. `soi.return` accepts zero through
+two cards for Duel World Piercer; both bot policies and search candidates support pairs.

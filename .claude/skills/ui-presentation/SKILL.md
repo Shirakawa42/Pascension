@@ -80,3 +80,11 @@ Everything renders `ClientGameView`/snapshots + filtered `GameEvent`s; every int
 - Monster HP shown is base HP (no `EffectiveHp` in CardSnap — backlog, see project-map). Marked damage IS shown.
 - Player name input: menu has no name field; `MatchSetup.PlayerName` defaults to "You".
 - 4:3/21:9 screenshot pass for the SoI table not yet done (Pascension table verified).
+
+## Changelog balance comparisons
+
+`Changelog.Entry.Cards` optionally carries immutable bilingual before/after faces.
+`SoiBalanceHistory` freezes each patch's printed rules, stats and art ids; never resolve
+historical faces from current definitions. `MainMenu.RenderBalanceChange` renders them
+through `CardView.BindFace` with BEFORE/AFTER labels and a geometry arrow. Keep future
+balance patches in the same per-game scroll view and translate both revisions.

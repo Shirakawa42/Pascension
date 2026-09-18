@@ -7,7 +7,7 @@ the repo (moving it elsewhere shows black art boxes, everything else still works
 
 ## What it does
 
-- Shows the **full registered pool** (198 entries: 188 card definitions, 5 characters and 5 hero abilities)
+- Shows the **full registered pool** (199 entries: 189 card definitions, 5 characters and 5 hero abilities)
   as fully rendered cards: art, faction frame, cost gem, shield / defense badges,
   keyword-highlighted rules text with hover tooltips. Original printings remain available
   for non-Duel balance work; their notes identify the DLC replacements.

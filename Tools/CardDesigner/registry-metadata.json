@@ -171,6 +171,7 @@
     "the_lost_duel": "the_lost",
     "praetorian_02_duel": "praetorian_02",
     "praetorian_03": "praetorian_03",
+    "panconscious_crown_duel": "panconscious_crown",
     "unknown_god": "unknown_god",
     "datic_robes_duel": "datic_robes",
     "multitask_brain": "multitask_brain",
@@ -220,6 +221,7 @@
     "nil_assassin_duel": "nil_assassin",
     "the_lost_duel": "the_lost",
     "praetorian_02_duel": "praetorian_02",
+    "panconscious_crown_duel": "panconscious_crown",
     "datic_robes_duel": "datic_robes",
     "terminal_crescents_duel": "terminal_crescents",
     "heart_of_nothing_duel": "heart_of_nothing",
@@ -249,7 +251,7 @@
     {
       "id": "soiability_volos",
       "name": "Volos — First Aid",
-      "text": "M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: draw 1 card.\n— Pay 2 gems: gain 3 power.\n— Pay 3 gems: gain 1 mastery."
+      "text": "M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw 1 card.\n— Pay 3 gems: gain 1 mastery."
     },
     {
       "id": "soiability_kosynwu",
@@ -259,7 +261,7 @@
     {
       "id": "soiability_rez",
       "name": "Rez — Futureproof",
-      "text": "M5, once per turn: Scry 2 the center deck."
+      "text": "M5, once per turn: Scry 2 the center deck. Your next reroll this turn costs 1 gem less."
     }
   ]
 }

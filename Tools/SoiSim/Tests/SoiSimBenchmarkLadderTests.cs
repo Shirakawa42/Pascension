@@ -118,17 +118,13 @@ namespace SoiSim.Tests
                 "weight, then re-mint deliberately and re-baseline anything that cited it.");
         }
 
-        /// <summary>Re-minted 2026-08-23 (400-move prefix, seed 20260727) after the
-        /// balance patch: Unify now accepts CHAMPIONS (played or revealed from hand),
-        /// Tetra's Perception draws 2, Volos' First Aid is free and heals 4, Ko Syn Wu's
-        /// Sacrifice costs health only. The yardstick moved DELIBERATELY with the rules —
-        /// bench:greedy-v5 numbers recorded before this line are not comparable to numbers
-        /// after it.
-        /// (Mint 2026-08-02: 2716434134284504216, after the whisper_extractor removal /
-        /// Perception 3 → 2 gems / Deadly Recruits keep-or-not patch.
-        /// Original mint 2026-07-27: 6677764281591325285, a 353-move game.)
+        /// <summary>Re-minted 2026-09-18 (325-move game, seed 20260727) after the
+        /// twelve Duel-only design-session edits, including Rez's reroll discount and
+        /// World Piercer's two-card return policy. The rules deliberately changed the
+        /// yardstick; campaign results before this patch are not comparable to new runs.
+        /// Previous mint 2026-08-23: 16209146448264227099 (400-move prefix).
         /// See FrozenBenchmark_PlaysAnIdenticalGame.</summary>
-        private const ulong FrozenPlayFingerprint = 16209146448264227099UL;
+        private const ulong FrozenPlayFingerprint = 7771441810880520515UL;
 
         [Test]
         public void V5_IsContentFrozen()

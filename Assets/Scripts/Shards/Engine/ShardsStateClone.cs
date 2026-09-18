@@ -147,6 +147,7 @@ namespace Shards.Engine
                     Mix((ulong)(p.DoomGateFloodUsed ? 109 : 113));
                     Mix((ulong)p.CardsBanishedThisTurn);
                     Mix((ulong)p.RerollsThisTurn);
+                    Mix((ulong)p.NextRerollDiscount);
                     Mix((ulong)(p.IgnoreShieldsThisTurn ? 41 : 43));
                     Mix((ulong)(p.HealthToPowerThisTurn ? 47 : 53));
                     Mix((ulong)(p.HealingDoubledThisTurn ? 67 : 71));
@@ -277,6 +278,7 @@ namespace Shards.Engine
             dup.MaxDamageDealtToOneOpponent = MaxDamageDealtToOneOpponent;
             dup.CardsBanishedThisTurn = CardsBanishedThisTurn;
             dup.RerollsThisTurn = RerollsThisTurn;
+            dup.NextRerollDiscount = NextRerollDiscount;
 
             void CopyList(List<ShardsCard> src, List<ShardsCard> dst)
             {

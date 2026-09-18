@@ -137,6 +137,12 @@ namespace Pascension.Game.UI
             ["1 copy at the start of this game."] = "1 exemplaire au début de cette partie.",
             ["{0} copies at the start of this game."] = "{0} exemplaires au début de cette partie.",
             ["M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: draw 1 card.\n— Pay 2 gems: gain 3 power.\n— Pay 3 gems: gain 1 mastery."] = "M5, une fois par tour : choisissez un effet :\n— Gratuit : gagnez 3 santé.\n— Payez 1 cristal : piochez 1 carte.\n— Payez 2 cristaux : gagnez 3 puissance.\n— Payez 3 cristaux : gagnez 1 maîtrise.",
+            ["BEFORE"] = "AVANT",
+            ["AFTER"] = "APRÈS",
+            ["Pay 1 gem: gain 2 power."] = "Payez 1 cristal : gagnez 2 puissance.",
+            ["Pay 2 gems: draw 1 card."] = "Payez 2 cristaux : piochez 1 carte.",
+            ["M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw 1 card.\n— Pay 3 gems: gain 1 mastery."] = "M5, une fois par tour : choisissez un effet :\n— Gratuit : gagnez 3 santé.\n— Payez 1 cristal : gagnez 2 puissance.\n— Payez 2 cristaux : piochez 1 carte.\n— Payez 3 cristaux : gagnez 1 maîtrise.",
+            ["M5, once per turn: Scry 2 the center deck. Your next reroll this turn costs 1 gem less."] = "M5, une fois par tour : Sondez 2 la pioche commune. Votre prochaine relance ce tour coûte 1 cristal de moins.",
             ["First Aid"] = "Premiers Soins",
             ["Sacrifice"] = "Sacrifice",
             ["Futureproof"] = "Pare-Avenir",
@@ -491,6 +497,8 @@ namespace Pascension.Game.UI
         /// patterns ("Return a …") before the general ones ("Return …").</summary>
         public static readonly List<(Regex, string)> DecisionTitles = new()
         {
+            (new Regex(@"^Return up to two mercenaries from your discard or draw pile to your hand$"),
+                "Renvoyez jusqu’à deux mercenaires de votre défausse ou de votre pioche dans votre main"),
             (new Regex(@"^Volos: choose an ability$"), "Volos : choisissez une capacité"),
             (new Regex(@"^Assign (\d+) damage between your opponents$"),
                 "Répartissez $1 dégâts entre vos adversaires"),

@@ -18,7 +18,7 @@ pump gotchas, glow hints): see the shards-engine skill.
 - **Definitions**: `Assets/Scripts/Shards/Content/` — one builder file per set:
   `ShardsBaseSet.cs` (10 starters + 88 center), `ShardsRelicsSet.cs` (24 center + 8 relics),
   `ShardsShadowSet.cs` (12 center + Rez's 2 relics), `ShardsHorizonSet.cs` (25 center +
-  5 Ingeminex + 30 destinies), `ShardsDuelSet.cs` (**Duel of Doom** — 21 new defs + ~43
+  5 Ingeminex + 30 destinies), `ShardsDuelSet.cs` (**Duel of Doom** — 21 new defs + ~44
   errata replacement defs). `ShardsContentRegistry.EnsureRegistered()` registers all.
 
 ## Reveal rule (engine-wide, 2026-07-26)
@@ -73,7 +73,7 @@ StartTurn), `HeroAbilityUsedThisTurn`, `FirstBuyUsedThisTurn`, `NextChampionsInt
 H/U/W) — flag-gated inside `Dominion`.
 
 **Row reroll** (repriced 2026-07-25): `ShardsRerollRowAction` — pay
-`ShardsEngine.RerollCost(player)` = **1 + RerollsThisTurn** (climbs per use, resets each
+`ShardsEngine.RerollCost(player)` = **max(0, 1 + RerollsThisTurn - NextRerollDiscount)** (climbs per use, resets each
 turn; counter on `ShardsPlayer`, cloned/hashed/snapshotted) → `BottomRowCardAndRefill`
 (also used free by Order Initiate errata). **Hero abilities**: `ShardsHeroAbilityAction` +
 `HeroAbilityFor(characterId)` (Tetra/Volos/KoSynWu/Rez active; Decima = passive first-buy
@@ -90,11 +90,20 @@ live climbing price. **Ability ART** (2026-07-25) is its own piece per hero —
 not card defs and no test exports them. The card wears a pulsing gold outer halo exactly
 while the ability is usable.
 
-**Volos rework (2026-09-16)**: First Aid still requires M5 and is once per turn,
+**Volos rework (updated 2026-09-18)**: First Aid still requires M5 and is once per turn,
 separate from Focus. Activation is free and opens `soi.volos`: heal 3 for free,
-pay 1 gem to draw 1, pay 2 gems for 3 power, or pay 3 gems for 1 mastery.
+pay 1 gem for 2 power, pay 2 gems to draw 1, or pay 3 gems for 1 mastery.
 All four `soivolos:<mode>` cards are shown; unaffordable modes are disabled.
 `VolosAbilityChoice` owns mode costs/text/effects; `SoiCardFaces` renders the cards.
+
+**2026-09-18 balance** (source: `Tools/CardDesigner/soi-design-session-2026-09-18.json`):
+Duel-only. `panconscious_crown_duel` replaces the original and heals 5 (original stays 2);
+Comet costs 13; Testudo defense 4; Praetorian-02 activation 2 gems; Praetorian-03 top tier M20;
+Unknown God defense 6; Multitask Brain loses Dominion; Doom Gate defense 5/flood 25;
+Heart of Nothing power 7/14; World Piercer optionally returns up to two mercenaries
+(M20 still returns all). Rez's Scry 2 also discounts the next successful reroll this turn
+by 1, then consumes the discount; unused discount expires at turn cleanup.
+CardDesigner export now has 189 definitions + 10 character/ability faces.
 
 **New defs (20)**: relics praetorian_03/multitask_brain/unknown_god/star_seeker/doom_gate
 (one per hero); cards testudo_vanguard, century_forge, riposte_doctrine, index_of_futures,
@@ -109,7 +118,7 @@ append-only); the art png/CardArtIndex entry remain on disk until the next
 **grim_tutor** (2026-07-25, Wraethe Mercenary, cost 3, qty 2): Custom flow — decision over
 the player's DECK sorted by DefId/InstanceId (never deck order — the World Piercer
 anti-leak rule), chosen card to hand, `Rng.Shuffle(deck)`, `LoseHealth(3)` (a loss, not
-damage; applies even with an empty deck). Context `"soi.tutor"`. **Errata (~43
+damage; applies even with an empty deck). Context `"soi.tutor"`. **Errata (~44
 `<id>_duel` defs)**: 4 Allegiance conversions (ferrata/mainframe/hounds/the_lost) + ~16
 stat tweaks + 5 hook + 12 bespoke + 7 destiny — all in `RegisterErrata` sub-methods.
 
@@ -126,7 +135,7 @@ Pinned by `Duel_Testudo_*` tests (over-assign kill, exact-lethal saved, taunt-he
 **Ingeminex rewards**: destroying one by CARD EFFECT is defeating it — `DestroyActiveMonster`
 takes the destroyer's seat index and queues `RewardEffect` just like the attack path does
 (Doom Gate paid nothing at all before 2026-07-27). Pass -1 only for a kill that belongs to
-nobody. Doom Gate floods **30** Ingeminex (was 20).
+nobody. Doom Gate floods **25** Ingeminex (2026-09-18; previously 30).
 
 **Testing**: `Duel_*` tests in `ShardsContentTests` (draft, errata swaps, reroll, hero
 ability, Decima discount, full-game random-bot termination). SoiSim gained a `--dlc duel`
@@ -136,7 +145,7 @@ needed.
 
 **Adversarial review pass (2026-07-24, 125-agent workflow, 37 confirmed findings — ALL fixed, 220 tests green):**
 - `CannotBeFastPlayed` def flag (Comet) enforced in WarpUpTo/WarpFromRow/FastPlayLoose/BuyCard — closes the free-instant-kill via unlimited Warp.
-- `DoomGateFloodUsed` per-player once-per-game guard; `CardsBanishedThisTurn` per-turn counter (Warpquartz pays on the TURN total); `ShardsCard.BanishAtCleanup` (Reactor Drone mode 2 banishes at END of turn, only when the source IS the drone — copies banish nothing). Sentinels: player 39, card 8.
+- `DoomGateFloodUsed` per-player once-per-game guard; `CardsBanishedThisTurn` per-turn counter (Warpquartz pays on the TURN total); `ShardsCard.BanishAtCleanup` (Reactor Drone mode 2 banishes at END of turn, only when the source IS the drone — copies banish nothing). Sentinels: player 41, card 8.
 - **Duel Dominion**: 3+ OTHER cards AND 3+ distinct factions, with the hand-REVEAL decision (reveals never feed PlayedThisTurn); Prism = all factions but ONE card; CountsAs/Yggdrasil honored everywhere (`ShardsDuel.DistinctFactionsPlayed` + `PlayedFactionCards` gates on the 3-faction destinies).
 - **Testudo now IS "shields protect champions"**: champion hits deferred via `_pendingChampionHits` into the owner's defense step (ShieldFlow applies prevention per champion; transient engine field like _pendingDefenses). **Datic Robes M20 discard-shield implemented** (`DiscardPassiveShield` hook read in NextDefense's passive). Spore Cleric uses real `Unify` (no self-trigger); Riposte = played-or-REVEAL flow; Index of Futures = `ReorderCenterTop` (true any-order, first pick = top); Prism Qty 2; World Piercer options sorted (no deck-order leak).
 - `ValidateAnswer` rejects duplicate option ids (except soi.split, whose duplicates are the mechanism).

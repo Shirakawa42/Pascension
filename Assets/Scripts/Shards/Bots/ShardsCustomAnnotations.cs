@@ -113,7 +113,7 @@ namespace Shards.Bots
             ["warpquartz_duel:play"] = (a, m, w) => { a.BanishCapacity += 1; Add(a, gems: 2, power: 2, w: w); },
             ["duplication_fabricator_duel:play"] = (a, m, w) => a.CopyEffects += 1,
             ["dash_duel:play"] = (a, m, w) => Add(a, draw: 0.4, w: w),
-            ["world_piercer_duel:play"] = (a, m, w) => { a.ReturnsFromDiscard = true; Add(a, draw: 0.5, w: w); },
+            ["world_piercer_duel:play"] = (a, m, w) => { a.ReturnsFromDiscard = true; Add(a, draw: 1, w: w); },
             ["legion_carrier_duel:play"] = (a, m, w) => Add(a, draw: 0.4, w: w),
             ["deadly_recruits_duel:exhaust"] = (a, m, w) => { a.Warps++; a.WarpMaxCost = Math.Max(a.WarpMaxCost, m >= 20 ? 4 : 2); },
             ["praetorian_02_duel:exhaust"] = (a, m, w) => Add(a, health: 1, w: w), // shields doubled — defensive

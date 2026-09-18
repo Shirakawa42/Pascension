@@ -377,3 +377,14 @@ At mastery 5, once per turn and separately from Focus, activate for free and cho
 one: gain 3 health for free; pay 1 gem to draw 1 card; pay 2 gems to gain 3 power;
 or pay 3 gems to gain 1 mastery. All four choices are cards; unaffordable choices
 are visible but disabled. Only the chosen cost is paid.
+
+## 2026-09-18 — Duel of Doom design session
+
+Applied all 12 edits from `Tools/CardDesigner/soi-design-session-2026-09-18.json`, only
+when Duel of Doom is enabled. Crown uses `panconscious_crown_duel` so its original
+printing remains unchanged. Volos keeps M5, once per turn and four card choices:
+free heal 3; 1 gem for 2 power; 2 gems to draw 1; 3 gems for 1 mastery.
+Rez's Scry 2 discounts the next successful reroll this turn by 1 (minimum cost 0),
+consumed on use and cleared at cleanup. World Piercer permits zero, one or two
+mercenaries below M20; at M20 it still returns every mercenary automatically.
+The in-game changelog archives all 12 old/new card pairs in English and French.

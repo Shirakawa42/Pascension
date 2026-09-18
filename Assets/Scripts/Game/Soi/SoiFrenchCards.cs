@@ -87,6 +87,7 @@ namespace Pascension.Game.Soi
             ["datic_robes"] = ("Sphère Réflectrice", "Bouclier égal à votre maîtrise.\nPiochez une carte. M20 : piochez-en deux à la place."),
             ["terminal_crescents"] = ("Croissants Terminaux", "Gagnez 1 maîtrise, puis de la puissance égale à la moitié de votre maîtrise, arrondie au supérieur. M20 : égale à votre maîtrise totale."),
             ["entropic_talons"] = ("Serres Entropiques", "Piochez deux cartes.\nCe tour-ci, gagnez 1 puissance par santé gagnée, même au maximum de 50. M20 : gagnez aussi 10 santé."),
+            ["panconscious_crown_duel"] = ("Couronne Panconsciente", "Gagnez 2 maîtrise et 5 santé.\nM20 Union : gagnez 50 santé."),
             ["panconscious_crown"] = ("Couronne Panconsciente", "Gagnez 2 maîtrise et 2 santé.\nM20 Union : gagnez 50 santé."),
             ["heart_of_nothing"] = ("Cœur du Néant", "Gagnez 5 puissance. M20 : gagnez 10 à la place.\nSi vous infligez 10 dégâts non prévenus ou plus à un même adversaire ce tour-ci, piochez 3 cartes supplémentaires à la fin du tour."),
             ["world_piercer"] = ("Perce-Mondes", "Gagnez 2 maîtrise.\nRenvoyez un mercenaire de votre défausse dans votre main. M20 : renvoyez-les TOUS."),
@@ -156,8 +157,8 @@ namespace Pascension.Game.Soi
             ["synthesis"] = ("Symbiose", "M15 — Activez : piochez une carte."),
 
             // ------------------------------------------------------------- Duel of Doom — nouvelles reliques
-            ["praetorian_03"] = ("Prétorien-03", "Gagnez 1 maîtrise et piochez une carte. M15 : 2 maîtrise et 2 cartes à la place. M25 : 3 maîtrise et 3 cartes à la place."),
-            ["multitask_brain"] = ("Cerveau Multitâche", "Pour chaque faction différente que vous avez jouée ce tour-ci, gagnez 2 puissance et piochez une carte. M20 : gagnez 4 puissance au lieu de 2.\nDomination : gagnez 3 maîtrise."),
+            ["praetorian_03"] = ("Prétorien-03", "Gagnez 1 maîtrise et piochez une carte. M15 : 2 maîtrise et 2 cartes à la place. M20 : 3 maîtrise et 3 cartes à la place."),
+            ["multitask_brain"] = ("Cerveau Multitâche", "Pour chaque faction différente que vous avez jouée ce tour-ci, gagnez 2 puissance et piochez une carte. M20 : gagnez 4 puissance au lieu de 2."),
             ["unknown_god"] = ("Dieu Inconnu", "Activez : gagnez 5 santé par champion que vous contrôlez. M20 : deux fois."),
             ["star_seeker"] = ("Chercheur d'Étoiles", "Activez : Distorsion ∞. M20 : Distorsion ∞ une seconde fois."),
 
@@ -184,7 +185,7 @@ namespace Pascension.Game.Soi
             ["the_lost_duel"] = ("Les Oubliés", "Gagnez 5 puissance.\nAllégeance Spectra 4 : vous pouvez bannir une carte de votre main ou de votre défausse."),
 
             // Duel of Doom — reliques Doom Gate / Longshot
-            ["doom_gate"] = ("Porte du Destin", "Vous êtes insensible aux attaques des Ingeminex.\nQuand vous jouez ce champion, mélangez 30 nouveaux Ingeminex dans la pioche commune. Une fois par partie.\nActivez : détruisez un Ingeminex."),
+            ["doom_gate"] = ("Porte du Destin", "Vous êtes insensible aux attaques des Ingeminex.\nQuand vous jouez ce champion, mélangez 25 nouveaux Ingeminex dans la pioche commune. Une fois par partie.\nActivez : détruisez un Ingeminex."),
             ["longshot"] = ("Coup de Maître", "Révélez les 2 cartes du dessus de la pioche commune.\nVous pouvez enrôler en distorsion celles qui sont des alliés de coût 3 ou moins ; placez les autres sous la pioche commune. M15 : coût 5 ou moins à la place."),
 
             // Duel of Doom — errata (defs de remplacement)
@@ -200,7 +201,7 @@ namespace Pascension.Game.Soi
             ["orm_madu_duel"] = ("Orm Madu", "Activez : gagnez 6 santé.\nPuis, si vous êtes à 50 PV, gagnez 1 maîtrise."),
             ["j_chord_duel"] = ("Riff Ralf", "Activez — Distorsion 3. M15 : Distorsion 6 à la place."),
             ["the_rotten_duel"] = ("Le Putride", "Gagnez 4 puissance et 1 maîtrise."),
-            ["heart_of_nothing_duel"] = ("Cœur du Néant", "Gagnez 6 puissance. M20 : gagnez 10 à la place.\nSi vous infligez 10 dégâts non prévenus ou plus à un même adversaire ce tour-ci, piochez 3 cartes supplémentaires en fin de tour."),
+            ["heart_of_nothing_duel"] = ("Cœur du Néant", "Gagnez 7 puissance. M20 : gagnez 14 à la place.\nSi vous infligez 10 dégâts non prévenus ou plus à un même adversaire ce tour-ci, piochez 3 cartes supplémentaires en fin de tour."),
             ["terminal_crescents_duel"] = ("Croissants Terminaux", "Gagnez 2 maîtrise, puis de la puissance égale à la moitié de votre maîtrise, arrondie au supérieur. M20 : égale à votre maîtrise totale."),
             ["slipstream_shard_duel"] = ("Éclat de Vivacité", "Gagnez 2 maîtrise et piochez deux cartes. M20 : jouez un tour supplémentaire. Une fois par partie."),
             ["evokatus_duel"] = ("Evokatus", "Quand vous jouez cette carte, piochez une carte.\nActivez : gagnez 1 puissance par champion que vous contrôlez."),
@@ -215,8 +216,8 @@ namespace Pascension.Game.Soi
             ["duplication_fabricator_duel"] = ("Duplicateur", "Gagnez 1 maîtrise.\nChaque joueur révèle la carte du dessus de sa pioche ; copiez l'effet d'un allié révélé. M20 : vous pouvez copier autant d'effets que vous voulez parmi les cartes révélées."),
             ["dash_duel"] = ("Flash", "Bouclier 2.\nVous pouvez placer une carte Aion de votre défausse au-dessus de votre deck. M10 : n'importe quelle carte à la place.\nPiochez une carte."),
             ["swyft_duel"] = ("Swyft", "Activez : gagnez 2 cristaux et 2 puissance. M10 : vous pouvez conserver les cartes que vous jouez en distorsion. Elles vont dans votre défausse."),
-            ["world_piercer_duel"] = ("Perce-Mondes", "Gagnez 2 maîtrise.\nRenvoyez un mercenaire de votre défausse ou de votre pioche dans votre main. M20 : renvoyez-les TOUS."),
-            ["praetorian_02_duel"] = ("Prétorien-02", "En jeu : bouclier 3. M20 : 6 à la place.\nActivez, payez 3 cristaux : jusqu'à votre prochain tour, vos boucliers sont doublés. Détruire ce champion ne retire pas cet effet."),
+            ["world_piercer_duel"] = ("Perce-Mondes", "Gagnez 2 maîtrise.\nRenvoyez jusqu’à deux mercenaires de votre défausse ou de votre pioche dans votre main. M20 : renvoyez-les TOUS."),
+            ["praetorian_02_duel"] = ("Prétorien-02", "En jeu : bouclier 3. M20 : 6 à la place.\nActivez, payez 2 cristaux : jusqu’à votre prochain tour, vos boucliers sont doublés. Détruire ce champion ne retire pas cet effet."),
             ["datic_robes_duel"] = ("Sphère Réflectrice", "Bouclier égal à votre maîtrise. Piochez deux cartes. M20 : tant que cette carte est dans votre défausse, vous avez un bouclier égal à la moitié de votre maîtrise, arrondie au supérieur."),
             ["cinder_scars_duel"] = ("Brûlure des Cendres", "Piochez une carte.\nSi vous avez joué une autre Brûlure des Cendres ce tour-ci, gagnez 3 puissance. M10 : vous pouvez bannir une carte de votre main ou de votre défausse."),
             ["legion_carrier_duel"] = ("Transporteur de la Légion", "Gagnez 2 cristaux.\nRévélez les 5 cartes du dessus de votre deck : jusqu'à un champion révélé dans votre main, le reste dans votre défausse."),

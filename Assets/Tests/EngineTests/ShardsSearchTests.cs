@@ -433,7 +433,7 @@ namespace Pascension.Engine.Tests
             // index trio is rebuilt lazily and deliberately NOT copied or hashed).
             Assert.AreEqual(21, InstanceFieldCount(typeof(ShardsState)),
                 "ShardsState fields changed → update DeepCopy + ComputeFullHash + this count");
-            Assert.AreEqual(40, InstanceFieldCount(typeof(ShardsPlayer)),
+            Assert.AreEqual(41, InstanceFieldCount(typeof(ShardsPlayer)),
                 "ShardsPlayer fields changed → update Clone + ComputeFullHash + this count");
             Assert.AreEqual(8, InstanceFieldCount(typeof(ShardsCard)),
                 "ShardsCard fields changed → update DeepCopy's card copy + hashes + this count");

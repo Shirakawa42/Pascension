@@ -38,11 +38,23 @@ namespace Shards.Bots
                 case "soi.shields":
                     break; // reveal-everything is strictly best — single candidate
 
+                case "soi.return":
+                    Add(new List<int>());
+                    for (int i = 0; i < request.Options.Count; i++)
+                    {
+                        if (request.Options[i].Disabled) continue;
+                        Add(new List<int> { request.Options[i].Id });
+                        if (request.Max < 2) continue;
+                        for (int j = i + 1; j < request.Options.Count; j++)
+                            if (!request.Options[j].Disabled)
+                                Add(new List<int> { request.Options[i].Id, request.Options[j].Id });
+                    }
+                    break;
+
                 case "soi.warp":
                 case "soi.recruit":
                 case "soi.copy":
                 case "soi.destroy":
-                case "soi.return":
                 case "soi.destiny":
                 case "soi.relic":
                 case "soi.target":

@@ -334,11 +334,31 @@ namespace Shards.Bots
                         answer.ChosenOptionIds.Add(request.Options[i].Id);
                     break;
                 }
+                case "soi.return":
+                {
+                    // World Piercer can now recover two mercenaries.
+                    var remaining = new List<DecisionOption>(request.Options);
+                    while (answer.ChosenOptionIds.Count < request.Max && remaining.Count > 0)
+                    {
+                        DecisionOption best = null;
+                        double bestValue = double.MinValue;
+                        foreach (var option in remaining)
+                        {
+                            if (option.Disabled) continue;
+                            double value = CostOf(option);
+                            if (value > bestValue) { bestValue = value; best = option; }
+                        }
+                        if (best == null) break;
+                        answer.ChosenOptionIds.Add(best.Id);
+                        remaining.Remove(best);
+                    }
+                    break;
+                }
+
                 case "soi.warp":
                 case "soi.recruit":
                 case "soi.copy":
                 case "soi.destroy":
-                case "soi.return":
                 case "soi.destiny":
                 case "soi.relic":
                 {

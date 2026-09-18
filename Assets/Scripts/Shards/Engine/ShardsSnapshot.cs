@@ -32,7 +32,8 @@ namespace Shards.Engine
         public bool FocusedThisTurn;
         public bool HeroAbilityUsedThisTurn; // Duel
         public bool FirstBuyUsedThisTurn;    // Duel — Decima's discount is spent for the turn
-        public int RerollsThisTurn;          // Duel — next reroll costs 1 + this
+        public int RerollsThisTurn;
+        public int NextRerollCost; // computed by the engine, including Rez's discount
         public bool Eliminated;
         public bool RelicRecruited;
         public bool DestinyTaken;
@@ -143,6 +144,7 @@ namespace Shards.Engine
                     HeroAbilityUsedThisTurn = player.HeroAbilityUsedThisTurn,
                     FirstBuyUsedThisTurn = player.FirstBuyUsedThisTurn,
                     RerollsThisTurn = player.RerollsThisTurn,
+                    NextRerollCost = ShardsEngine.RerollCost(player),
                     Eliminated = player.Eliminated,
                     RelicRecruited = player.RelicRecruited,
                     DestinyTaken = player.DestinyTaken,

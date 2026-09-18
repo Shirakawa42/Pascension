@@ -256,7 +256,7 @@ Allegiance Order 4: gain 1 mastery. |
 | order_initiate_duel | Order Initiate | duel | Order | Ally | 1 | 3 | – | – | You may remove a card from the shop. Gain 2 gems. Dominion: gain 2 mastery. |
 | wraethe_skirmisher_duel | Wraethe Skirmisher | duel | Wraethe | Ally | 1 | 3 | – | – | Gain 2 power.
 Echo: gain 5 instead. |
-| comet | Comet | duel | Aion | Ally | 14 | 1 | – | – | Destroy target opponent.
+| comet | Comet | duel | Aion | Ally | 13 | 1 | – | – | Destroy target opponent.
 Cannot be fast-played — it must be bought with gems.
 Cannot be removed from the shop. |
 | dash_duel | Dash | duel | Aion | Ally | 2 | 2 | – | 2 | Shield 2.
@@ -274,7 +274,7 @@ Exhaust: gain 1 power per champion you control. |
 | ferrata_guard_duel | Ferrata Guard | duel | Homodeus | Champion | 4 | 2 | 4 | – | Allegiance Homodeus 4: your champions get +2 defense.
 Exhaust: gain 1 gem per Homodeus champion you control. |
 | primus_pilus_duel | Primus Pilus | duel | Homodeus | Champion | 2 | 1 | 5 | – | Exhaust: if you control three or more champions, draw two cards. |
-| testudo_vanguard | Testudo Vanguard | duel | Homodeus | Champion | 4 | 2 | 6 | – | Your shields are also applied to each of your champions individually.
+| testudo_vanguard | Testudo Vanguard | duel | Homodeus | Champion | 4 | 2 | 4 | – | Your shields are also applied to each of your champions individually.
 Exhaust: gain 2 gems. |
 | orm_madu_duel | Orm Madu | duel | Undergrowth | Champion | 7 | 1 | 7 | – | Exhaust: gain 6 health.
 If you are then at 50 health, gain 1 mastery. |
@@ -317,25 +317,26 @@ You lose 3 health. |
 Allegiance Wraethe 4: you may banish a card from your hand or discard pile. |
 | praetorian_02_duel | Praetorian-02 | duel | Homodeus | Relic | 0 | 1 | 9 | 3 | While in play: shield 3.
 M20: shield 6 instead.
-Exhaust, pay 3 gems: until your next turn, your shields are doubled. Killing this champion does not remove this effect. |
-| praetorian_03 | Praetorian-03 | duel | Homodeus | Relic | 0 | 1 | – | 4 | Gain 1 mastery and draw a card. M15: 2 mastery and 2 cards instead. M25: 3 mastery and 3 cards instead. |
-| unknown_god | Unknown God | duel | Undergrowth | Relic | 0 | 1 | 5 | – | Exhaust: gain 5 health for each champion you control.
+Exhaust, pay 2 gems: until your next turn, your shields are doubled. Killing this champion does not remove this effect. |
+| praetorian_03 | Praetorian-03 | duel | Homodeus | Relic | 0 | 1 | – | 4 | Gain 1 mastery and draw a card. M15: 2 mastery and 2 cards instead. M20: 3 mastery and 3 cards instead. |
+| panconscious_crown_duel | Panconscious Crown | duel | Undergrowth | Relic | 0 | 1 | – | – | Gain 2 mastery and 5 health.
+M20 Unify: gain 50 health. |
+| unknown_god | Unknown God | duel | Undergrowth | Relic | 0 | 1 | 6 | – | Exhaust: gain 5 health for each champion you control.
 M20: your Exhaust effects apply twice. |
 | datic_robes_duel | Datic Robes | duel | Order | Relic | 0 | 1 | – | 1 | Shield equal to your mastery. Draw two cards.
 M20: while this card is in your discard pile, you have shield equal to half your mastery, rounded up. |
 | multitask_brain | Multitask Brain | duel | Order | Relic | 0 | 1 | – | – | For each different faction you played this turn, gain 2 power and draw a card.
-M20: gain 4 power instead of 2.
-Dominion: gain 3 mastery. |
+M20: gain 4 power instead of 2. |
 | terminal_crescents_duel | Terminal Crescents | duel | Order | Relic | 0 | 1 | – | – | Gain 2 mastery, then power equal to half your mastery, rounded up.
 M20: equal to your full mastery. |
-| doom_gate | Doom Gate | duel | Wraethe | Relic | 0 | 1 | 6 | – | You are unaffected by Ingeminex attacks.
-When you play this champion, shuffle 30 new Ingeminex into the center deck. Once per game.
+| doom_gate | Doom Gate | duel | Wraethe | Relic | 0 | 1 | 5 | – | You are unaffected by Ingeminex attacks.
+When you play this champion, shuffle 25 new Ingeminex into the center deck. Once per game.
 Exhaust: destroy an Ingeminex. |
-| heart_of_nothing_duel | The Heart of Nothing | duel | Wraethe | Relic | 0 | 1 | – | – | Gain 6 power.
-M20: gain 10 instead.
+| heart_of_nothing_duel | The Heart of Nothing | duel | Wraethe | Relic | 0 | 1 | – | – | Gain 7 power.
+M20: gain 14 instead.
 If you deal 10+ unprevented damage to one opponent this turn, draw 3 extra cards at end of turn. |
 | world_piercer_duel | The World Piercer | duel | Wraethe | Relic | 0 | 1 | – | – | Gain 2 mastery.
-Return a mercenary from your discard or draw pile to your hand.
+Return up to two mercenaries from your discard or draw pile to your hand.
 M20: return ALL of them. |
 | slipstream_shard_duel | Slipstream Shard | duel | Aion | Relic | 0 | 1 | – | – | Gain 2 mastery and draw two cards.
 M20: take an extra turn. Once per game. |

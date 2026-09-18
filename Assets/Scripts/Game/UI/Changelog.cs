@@ -15,13 +15,31 @@ namespace Pascension.Game.UI
             public readonly string Date; // yyyy-mm-dd
             public readonly string En;   // "· " bullet lines, \n separated
             public readonly string Fr;
+            public readonly IReadOnlyList<CardChange> Cards;
 
-            public Entry(string date, string en, string fr)
+            public Entry(string date, string en, string fr, IReadOnlyList<CardChange> cards = null)
             {
                 Date = date;
                 En = en;
                 Fr = fr;
+                Cards = cards;
             }
+        }
+
+        /// <summary>Archived faces, independent of the current gameplay definitions.</summary>
+        public readonly struct CardRevision
+        {
+            private readonly View.CardView.ExternalFace _en, _fr;
+            public CardRevision(View.CardView.ExternalFace en, View.CardView.ExternalFace fr)
+            { _en = en; _fr = fr; }
+            public View.CardView.ExternalFace Face => Loc.French ? _fr : _en;
+        }
+
+        public readonly struct CardChange
+        {
+            public readonly CardRevision Before, After;
+            public CardChange(CardRevision before, CardRevision after)
+            { Before = before; After = after; }
         }
 
         public static readonly IReadOnlyList<Entry> Pascension = new[]
@@ -50,6 +68,10 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-09-18",
+                "Duel of Doom balance update: 12 card and hero ability changes.",
+                "Équilibrage de Duel of Doom : 12 changements de cartes et de capacités de héros.",
+                Soi.SoiBalanceHistory.September2026),
             new Entry("2026-09-16",
                 "· Unify automatically reveals the first matching card in your hand when needed.\n" +
                 "· Card hover tooltips show the number of copies at the start of the match.\n" +

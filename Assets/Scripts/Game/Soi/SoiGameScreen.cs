@@ -1025,7 +1025,7 @@ namespace Pascension.Game.Soi
         }
 
         /// <summary>The NEXT reroll's gem price for the viewer (1, then 2, 3… this turn).</summary>
-        private int NextRerollCost(ShardsPlayerSnap me) => 1 + (me?.RerollsThisTurn ?? 0);
+        private int NextRerollCost(ShardsPlayerSnap me) => me?.NextRerollCost ?? 1;
 
         private void OnRerollClicked(int slot)
         {

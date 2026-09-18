@@ -97,6 +97,187 @@ namespace Pascension.Engine.Tests
                 adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void SeptemberBalance_CrownReplacementIsDuelOnly(bool duel)
+        {
+            var dlc = duel ? ShardsDlc.Duel : ShardsDlc.RelicsOfTheFuture;
+            var adapter = new ShardsEngineAdapter(ShardsContentRegistry.StandardConfig(17,
+                new List<PlayerSpec> { new() { Name = "P0", CharacterId = "volos" },
+                    new() { Name = "P1", CharacterId = "decima" } }, dlc));
+            if (duel) CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            string id = duel ? "panconscious_crown_duel" : "panconscious_crown";
+            Assert.IsTrue(player.SetAside.Exists(c => c.DefId == id));
+            Assert.IsFalse(player.SetAside.Exists(c => c.DefId == (duel ? "panconscious_crown" : "panconscious_crown_duel")));
+            player.Hand.Clear();
+            player.Health = 20;
+            var crown = Plant(engine, player, id, ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = crown.InstanceId }).Accepted);
+            Assert.AreEqual(duel ? 25 : 22, player.Health);
+            Assert.AreEqual(2, player.Mastery);
+            if (!duel)
+            {
+                Assert.IsFalse(engine.LegalActions(0).Exists(a => a is ShardsHeroAbilityAction));
+                Assert.IsFalse(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
+                foreach (var card in engine.State.CenterDeck) Assert.AreNotEqual("duel", card.Def.Set);
+            }
+        }
+
+        [TestCase(19, 2)]
+        [TestCase(20, 3)]
+        public void SeptemberBalance_Praetorian03_UsesNewMasteryThreshold(int mastery, int gain)
+        {
+            var adapter = NewGame(ShardsDlc.Duel);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            player.Mastery = mastery;
+            var card = Plant(engine, player, "praetorian_03", ShardsZone.Hand);
+            int hand = player.Hand.Count;
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = card.InstanceId }).Accepted);
+            Assert.AreEqual(mastery + gain, player.Mastery);
+            Assert.AreEqual(hand - 1 + gain, player.Hand.Count);
+        }
+
+        [TestCase(19, 7)]
+        [TestCase(20, 14)]
+        public void SeptemberBalance_HeartOfNothingPower(int mastery, int power)
+        {
+            var adapter = NewGame(ShardsDlc.Duel);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            player.Mastery = mastery;
+            var card = Plant(engine, player, "heart_of_nothing_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = card.InstanceId }).Accepted);
+            Assert.AreEqual(power, player.Power);
+            Assert.AreEqual(3, player.BonusDrawsOnBigHit);
+        }
+
+        [Test]
+        public void SeptemberBalance_MultitaskBrain_NoLongerGrantsDominionMastery()
+        {
+            var adapter = NewGame(ShardsDlc.Duel);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            foreach (var id in new[] { "kiln_drone", "spore_cleric_duel", "shadebound_sentry" })
+            {
+                var played = Plant(engine, player, id, ShardsZone.PlayZone);
+                player.PlayedThisTurn.Add(played);
+            }
+            var brain = Plant(engine, player, "multitask_brain", ShardsZone.Hand);
+            int hand = player.Hand.Count;
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = brain.InstanceId }).Accepted);
+            Assert.AreEqual(8, player.Power, "four factions including the Brain");
+            Assert.AreEqual(hand + 3, player.Hand.Count, "draw four after playing the Brain");
+            Assert.AreEqual(0, player.Mastery, "no Dominion mastery or reveal decision");
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind);
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void SeptemberBalance_WorldPiercer_ReturnsUpToTwoWithoutRevealingDeckOrder(int count)
+        {
+            var adapter = NewGame(ShardsDlc.Duel);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            player.Deck.Clear(); player.Discard.Clear();
+            var a = Plant(engine, player, "nil_assassin", ShardsZone.Deck);
+            var b = Plant(engine, player, "ghostwillow_avenger", ShardsZone.Discard);
+            var c = Plant(engine, player, "the_rotten_duel", ShardsZone.Deck);
+            var relic = Plant(engine, player, "world_piercer_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = relic.InstanceId }).Accepted);
+            var req = engine.PendingInput.Decision;
+            Assert.AreEqual(0, req.Min); Assert.AreEqual(2, req.Max);
+            Assert.AreEqual(b.DefId, req.Options[0].DefId, "options are def-id sorted, never deck order");
+            var model = new Shards.Bots.ShardsValueModel(Shards.Bots.ShardsEvalWeights.Current);
+            Assert.AreEqual(2, model.ChooseAnswer(engine, req).ChosenOptionIds.Count,
+                "bots use both available returns");
+            var candidates = Shards.Bots.ShardsDecisionCandidates.Generate(engine, req, model);
+            Assert.AreEqual(7, candidates.Count, "search considers decline, three singles and three pairs");
+            var picks = new List<int>();
+            if (count > 0) picks.Add(a.InstanceId);
+            if (count > 1) picks.Add(b.InstanceId);
+            AnswerPending(engine, picks);
+            Assert.AreEqual(count > 0, player.Hand.Contains(a));
+            Assert.AreEqual(count > 1, player.Hand.Contains(b));
+            Assert.Contains(c, player.Deck);
+        }
+
+        [Test]
+        public void SeptemberBalance_WorldPiercer_M20StillReturnsAll()
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var p = engine.State.Players[0];
+            p.Mastery = 18; // its own +2 reaches M20
+            p.Deck.Clear(); p.Discard.Clear();
+            var mercs = new[] { Plant(engine, p, "nil_assassin", ShardsZone.Deck),
+                Plant(engine, p, "ghostwillow_avenger", ShardsZone.Discard),
+                Plant(engine, p, "the_rotten_duel", ShardsZone.Deck) };
+            var relic = Plant(engine, p, "world_piercer_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = relic.InstanceId }).Accepted);
+            foreach (var merc in mercs) Assert.Contains(merc, p.Hand);
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind);
+        }
+
+        [Test]
+        public void SeptemberBalance_Praetorian02_ActivationCostsTwo()
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var p = engine.State.Players[0];
+            var relic = Plant(engine, p, "praetorian_02_duel", ShardsZone.Champions);
+            p.Gems = 1;
+            Assert.IsFalse(engine.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = relic.InstanceId }).Accepted);
+            Assert.IsFalse(relic.Exhausted);
+            p.Gems = 2;
+            Assert.IsTrue(engine.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = relic.InstanceId }).Accepted);
+            Assert.AreEqual(0, p.Gems); Assert.IsTrue(p.ShieldsDoubledUntilNextTurn);
+        }
+
+        [TestCase(0)]
+        [TestCase(2)]
+        public void SeptemberBalance_Rez_DiscountsOnlyNextSuccessfulReroll(int previousRerolls)
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var p = engine.State.Players[0];
+            p.CharacterId = "rez"; p.Mastery = 5; p.RerollsThisTurn = previousRerolls;
+            Assert.IsTrue(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
+            AnswerPending(engine, new int[0]); // leave both scry cards on top
+            Assert.AreEqual(previousRerolls, ShardsEngine.RerollCost(p));
+            Assert.AreEqual(previousRerolls, ShardsSnapshotBuilder.Build(engine, 0).Players[0].NextRerollCost);
+            var clone = engine.State.DeepCopy();
+            Assert.AreEqual(engine.State.ComputeFullHash(), clone.ComputeFullHash());
+            clone.Players[0].NextRerollDiscount = 0;
+            Assert.AreNotEqual(engine.State.ComputeFullHash(), clone.ComputeFullHash());
+            Assert.IsFalse(engine.Submit(new ShardsRerollRowAction { PlayerIndex = 0, SlotIndex = -1 }).Accepted);
+            Assert.AreEqual(1, p.NextRerollDiscount, "rejected actions don't consume it");
+            int slot = System.Array.FindIndex(engine.State.CenterRow, c => c != null && !c.Def.CannotBeRerolled);
+            p.Gems = previousRerolls;
+            Assert.IsTrue(engine.Submit(new ShardsRerollRowAction { PlayerIndex = 0, SlotIndex = slot }).Accepted);
+            Assert.AreEqual(0, p.Gems);
+            Assert.AreEqual(0, p.NextRerollDiscount);
+            Assert.AreEqual(previousRerolls + 2, ShardsEngine.RerollCost(p), "later rerolls retain their normal escalation");
+        }
+
+        [Test]
+        public void SeptemberBalance_RezUnusedDiscountExpiresEvenWithEmptyScryDeck()
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var p = engine.State.Players[0];
+            p.CharacterId = "rez"; p.Mastery = 5;
+            engine.State.CenterDeck.Clear(); engine.State.ActiveMonsters.Clear();
+            Assert.IsTrue(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
+            Assert.AreEqual(0, ShardsEngine.RerollCost(p));
+            Assert.IsTrue(engine.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
+            Assert.AreEqual(0, p.NextRerollDiscount);
+            Assert.AreEqual(1, ShardsEngine.RerollCost(p));
+        }
+
         [Test]
         public void Duel_HeroDraft_ReverseOrder_NoDuplicates()
         {
@@ -329,8 +510,8 @@ namespace Pascension.Engine.Tests
                 Answer = new DecisionAnswer { DecisionId = request.Id, ChosenOptionIds = new List<int> { mode } } }).Accepted);
             Assert.AreEqual(0, player.Gems);
             Assert.AreEqual(mode == 0 ? 43 : 40, player.Health);
-            Assert.AreEqual(hand + (mode == 1 ? 1 : 0), player.Hand.Count);
-            Assert.AreEqual(mode == 2 ? 3 : 0, player.Power);
+            Assert.AreEqual(hand + (mode == 2 ? 1 : 0), player.Hand.Count);
+            Assert.AreEqual(mode == 1 ? 2 : 0, player.Power);
             Assert.AreEqual(mode == 3 ? 6 : 5, player.Mastery);
             Assert.IsFalse(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
         }
@@ -466,7 +647,16 @@ namespace Pascension.Engine.Tests
                 Owner = owner.Index,
                 Zone = zone
             };
-            (zone == ShardsZone.Champions ? owner.Champions : owner.Hand).Add(card);
+            var cards = zone switch
+            {
+                ShardsZone.Hand => owner.Hand,
+                ShardsZone.Champions => owner.Champions,
+                ShardsZone.Deck => owner.Deck,
+                ShardsZone.Discard => owner.Discard,
+                ShardsZone.PlayZone => owner.PlayZone,
+                _ => throw new System.ArgumentOutOfRangeException(nameof(zone))
+            };
+            cards.Add(card);
             engine.State.InvalidateCardIndex();
             return card;
         }
@@ -479,24 +669,24 @@ namespace Pascension.Engine.Tests
             var engine = adapter.Inner;
             var p0 = engine.State.Players[0];
             var p1 = engine.State.Players[1];
-            var testudo = Plant(engine, p1, "testudo_vanguard", ShardsZone.Champions); // defense 6
+            var testudo = Plant(engine, p1, "testudo_vanguard", ShardsZone.Champions); // defense 4
             var prism = Plant(engine, p1, "prism", ShardsZone.Hand);                   // shield 2
-            p0.Power = 10;
+            p0.Power = 8;
             int healthBefore = p1.Health;
 
             Assert.IsTrue(engine.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
             Assert.AreEqual("soi.split", engine.PendingInput.Decision.Context);
-            // Over-assign: 8 points on the defense-6 champion (2 spare pay through the
+            // Over-assign: 6 points on the defense-4 champion (2 spare pay through the
             // shield), the mandatory remainder on the face.
             var split = new List<int>();
-            for (int i = 0; i < 8; i++) split.Add(ShardsEngine.ChampionSplitBase + testudo.InstanceId);
+            for (int i = 0; i < 6; i++) split.Add(ShardsEngine.ChampionSplitBase + testudo.InstanceId);
             for (int i = 0; i < 2; i++) split.Add(p1.Index);
             AnswerPending(engine, split);
 
             Assert.AreEqual("soi.shields", engine.PendingInput.Decision.Context);
             AnswerPending(engine, new[] { prism.InstanceId });
 
-            Assert.IsFalse(p1.Champions.Contains(testudo), "8 assigned - 2 shield = 6 kills through the shield");
+            Assert.IsFalse(p1.Champions.Contains(testudo), "6 assigned - 2 shield = 4 kills through the shield");
             Assert.AreEqual(healthBefore, p1.Health, "face damage 2 - 2 shield = 0");
         }
 
@@ -510,17 +700,17 @@ namespace Pascension.Engine.Tests
             var p1 = engine.State.Players[1];
             var testudo = Plant(engine, p1, "testudo_vanguard", ShardsZone.Champions);
             var prism = Plant(engine, p1, "prism", ShardsZone.Hand);
-            p0.Power = 10;
+            p0.Power = 8;
             int healthBefore = p1.Health;
 
             Assert.IsTrue(engine.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
             var split = new List<int>();
-            for (int i = 0; i < 6; i++) split.Add(ShardsEngine.ChampionSplitBase + testudo.InstanceId);
+            for (int i = 0; i < 4; i++) split.Add(ShardsEngine.ChampionSplitBase + testudo.InstanceId);
             for (int i = 0; i < 4; i++) split.Add(p1.Index);
             AnswerPending(engine, split);
             AnswerPending(engine, new[] { prism.InstanceId });
 
-            Assert.IsTrue(p1.Champions.Contains(testudo), "exact-lethal 6 - 2 shield = 4 < 6: saved");
+            Assert.IsTrue(p1.Champions.Contains(testudo), "exact-lethal 4 - 2 shield = 2 < 4: saved");
             Assert.AreEqual(healthBefore - 2, p1.Health, "face 4 - 2 shield = 2");
         }
 
@@ -767,7 +957,7 @@ namespace Pascension.Engine.Tests
                 p0.Champions.Remove(gate); // simulate destruction between plays
             }
             int added = engine.State.CenterDeck.Count + engine.State.ActiveMonsters.Count - before;
-            Assert.AreEqual(30, added, "exactly ONE 30-Ingeminex flood despite two plays");
+            Assert.AreEqual(25, added, "exactly ONE 25-Ingeminex flood despite two plays");
             Assert.IsTrue(p0.DoomGateFloodUsed);
         }
 

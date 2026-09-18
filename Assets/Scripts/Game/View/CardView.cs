@@ -185,6 +185,17 @@ namespace Pascension.Game.View
             SetMarkedDamage(0);
         }
 
+        /// <summary>Render an archived/display-only face without consulting live definitions.</summary>
+        public void BindFace(ExternalFace face)
+        {
+            DefId = null;
+            InstanceId = -1;
+            CaptureRulesDefaults();
+            ApplyExternalFace(face);
+            SetTapped(false);
+            SetMarkedDamage(0);
+        }
+
         private void ApplyDef(string defId)
         {
             DefId = defId;

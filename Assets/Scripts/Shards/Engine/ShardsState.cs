@@ -42,7 +42,7 @@ namespace Shards.Engine
         public bool DestinyTaken;
         /// <summary>Slipstream Shard's M20 extra turn is once per game.</summary>
         public bool ExtraTurnUsed;
-        /// <summary>Doom Gate's 20-Ingeminex flood is once per game — replaying the relic
+        /// <summary>Doom Gate's 25-Ingeminex flood is once per game — replaying the relic
         /// champion after it was destroyed must NOT flood again (Duel).</summary>
         public bool DoomGateFloodUsed;
         public bool Eliminated;
@@ -83,6 +83,7 @@ namespace Shards.Engine
         /// (1, 2, 3…) and resets each turn, so the first look is nearly free but digging
         /// the whole shop for one card is expensive.</summary>
         public int RerollsThisTurn;
+        public int NextRerollDiscount;
 
         public int FactionPlays(ShardsFaction faction) =>
             _factionPlays.TryGetValue(faction, out int n) ? n : 0;
@@ -119,6 +120,7 @@ namespace Shards.Engine
             MaxDamageDealtToOneOpponent = 0;
             CardsBanishedThisTurn = 0;
             RerollsThisTurn = 0;
+            NextRerollDiscount = 0;
         }
     }
 

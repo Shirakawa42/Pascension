@@ -33,12 +33,12 @@ for (let i = 2; i < lines.length; i++) {
   });
 }
 // Tripwire against a silently-shifted table. If the real pool count legitimately changed,
-// bump this number AND the '198 cards' + keyword-census expectations in smoke-test.mjs.
-// 188 = all registered defs after Whisper Extractor was removed.
-const EXPECTED_DEFS = 188;
+// bump this number AND the '199 cards' + keyword-census expectations in smoke-test.mjs.
+// 189 = all registered defs including the Duel-only Panconscious Crown replacement.
+const EXPECTED_DEFS = 189;
 if (cards.length !== EXPECTED_DEFS)
   throw new Error(`expected ${EXPECTED_DEFS} card defs, parsed ${cards.length}. If the pool genuinely changed, ` +
-    `update EXPECTED_DEFS here and the '198 cards' + keyword-census asserts in Tools/CardDesigner/smoke-test.mjs.`);
+    `update EXPECTED_DEFS here and the '199 cards' + keyword-census asserts in Tools/CardDesigner/smoke-test.mjs.`);
 // Header sanity: guard against a reordered/renamed column silently corrupting positional parsing.
 const header = lines[0].split('|').map(s => s.trim());
 const EXPECTED_COLS = ['', 'Id', 'Name', 'Set', 'Faction', 'Type', 'Cost', 'Qty', 'Def', 'Shield', 'Rules (functional paraphrase)', ''];

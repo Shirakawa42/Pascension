@@ -36,24 +36,22 @@ namespace Shards.Content
                 .Plays(new BestByMastery(
                     (0, E.Mix(mastery: 1, draw: 1)),
                     (15, E.Mix(mastery: 2, draw: 2)),
-                    (25, E.Mix(mastery: 3, draw: 3))))
-                .Text("Gain 1 mastery and draw a card. M15: 2 mastery and 2 cards instead. M25: 3 mastery and 3 cards instead.")
+                    (20, E.Mix(mastery: 3, draw: 3))))
+                .Text("Gain 1 mastery and draw a card. M15: 2 mastery and 2 cards instead. M20: 3 mastery and 3 cards instead.")
                 .Art("an ancient relic warframe helm crowned with a halo of data-glyphs, blue energy conduits, kneeling in a shrine of light").Register();
 
             // Tetra (Order) — faction-spread engine relic.
             SoiCard.New("multitask_brain", "Multitask Brain").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Relic).Character("tetra").Qty(1)
-                .Plays(E.Seq(
-                    new BestByMastery(
-                        (0, new PerCount(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 2, draw: 1)),
-                        (20, new PerCount(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 4, draw: 1))),
-                    new Dominion(E.Mastery(3))))
-                .Text("For each different faction you played this turn, gain 2 power and draw a card.\nM20: gain 4 power instead of 2.\nDominion: gain 3 mastery.")
+                .Plays(new BestByMastery(
+                    (0, new PerCount(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 2, draw: 1)),
+                    (20, new PerCount(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 4, draw: 1))))
+                .Text("For each different faction you played this turn, gain 2 power and draw a card.\nM20: gain 4 power instead of 2.")
                 .Art("a floating multi-lobed cybernetic brain wired into five glowing processor cores of different colors, streams of parallel thought").Register();
 
             // Volos (Undergrowth) — Bastion relic CHAMPION (Defense > 0).
             var unknownGod = SoiCard.New("unknown_god", "Unknown God").InSet(SET).Faction(U)
-                .Type(ShardsCardType.Relic).Character("volos").Qty(1).Defense(5)
+                .Type(ShardsCardType.Relic).Character("volos").Qty(1).Defense(6)
                 .Exhausts(new PerCount(ctx => ctx.Controller.Champions.Count, health: 5))
                 .Text("Exhaust: gain 5 health for each champion you control.\nM20: your Exhaust effects apply twice.")
                 .Art("a colossal faceless deity of living wood and crystal rising from an overgrown temple, countless roots and vines, radiant green life-energy");
@@ -69,10 +67,10 @@ namespace Shards.Content
 
             // Ko Syn Wu (Wraethe) — Bastion/monster relic CHAMPION.
             var doomGate = SoiCard.New("doom_gate", "Doom Gate").InSet(SET).Faction(W)
-                .Type(ShardsCardType.Relic).Character("kosynwu").Qty(1).Defense(6)
+                .Type(ShardsCardType.Relic).Character("kosynwu").Qty(1).Defense(5)
                 .Plays(new Custom(DoomGatePlay))
                 .Exhausts(new Custom(DoomGateDestroy))
-                .Text("You are unaffected by Ingeminex attacks.\nWhen you play this champion, shuffle 30 new Ingeminex into the center deck. Once per game.\nExhaust: destroy an Ingeminex.")
+                .Text("You are unaffected by Ingeminex attacks.\nWhen you play this champion, shuffle 25 new Ingeminex into the center deck. Once per game.\nExhaust: destroy an Ingeminex.")
                 .Art("a towering obsidian gateway wreathed in violet void-fire, monstrous silhouettes pressing against a rippling portal");
             doomGate.Def.ImmuneToIngeminex = true;
             doomGate.Register();
@@ -83,7 +81,7 @@ namespace Shards.Content
         {
             // ----- Homodeus -----
             var testudo = SoiCard.New("testudo_vanguard", "Testudo Vanguard").InSet(SET).Faction(H)
-                .Type(ShardsCardType.Champion).Cost(4).Qty(2).Defense(6)
+                .Type(ShardsCardType.Champion).Cost(4).Qty(2).Defense(4)
                 .Exhausts(E.Gems(2))
                 .Text("Your shields are also applied to each of your champions individually.\nExhaust: gain 2 gems.")
                 .Art("a legionnaire locking tower shields into a glowing testudo wall");
@@ -163,7 +161,7 @@ namespace Shards.Content
 
             // ----- Aion -----
             var comet = SoiCard.New("comet", "Comet").InSet(SET).Faction(A)
-                .Type(ShardsCardType.Ally).Cost(14).Qty(1)
+                .Type(ShardsCardType.Ally).Cost(13).Qty(1)
                 .Plays(new Custom(DestroyOpponent))
                 .Text("Destroy target opponent.\nCannot be fast-played — it must be bought with gems.\nCannot be removed from the shop.")
                 .Art("a crimson comet-rider streaking low over a row of market stalls");
@@ -303,10 +301,16 @@ namespace Shards.Content
                 .Text("Gain 4 power and 1 mastery.")
                 .Replaces("the_rotten").Register();
 
+            SoiCard.New("panconscious_crown_duel", "Panconscious Crown").InSet(SET).Faction(U)
+                .Type(ShardsCardType.Relic).Character("volos").Qty(1)
+                .Plays(E.Seq(E.Mix(mastery: 2, health: 5), E.At(20, new Unify(E.Health(50)))))
+                .Text("Gain 2 mastery and 5 health.\nM20 Unify: gain 50 health.")
+                .Replaces("panconscious_crown").Register();
+
             SoiCard.New("heart_of_nothing_duel", "The Heart of Nothing").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Relic).Character("kosynwu").Qty(1)
-                .Plays(E.Seq(E.Power(6), new Do(ctx => ctx.Controller.BonusDrawsOnBigHit = 3), E.At(20, E.Power(4))))
-                .Text("Gain 6 power.\nM20: gain 10 instead.\nIf you deal 10+ unprevented damage to one opponent this turn, draw 3 extra cards at end of turn.")
+                .Plays(E.Seq(E.Power(7), new Do(ctx => ctx.Controller.BonusDrawsOnBigHit = 3), E.At(20, E.Power(7))))
+                .Text("Gain 7 power.\nM20: gain 14 instead.\nIf you deal 10+ unprevented damage to one opponent this turn, draw 3 extra cards at end of turn.")
                 .Replaces("heart_of_nothing").Register();
 
             SoiCard.New("terminal_crescents_duel", "Terminal Crescents").InSet(SET).Faction(O)
@@ -420,14 +424,14 @@ namespace Shards.Content
             SoiCard.New("world_piercer_duel", "The World Piercer").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Relic).Character("kosynwu").Qty(1)
                 .Plays(E.Seq(E.Mastery(2), new Custom(WorldPiercerDuel)))
-                .Text("Gain 2 mastery.\nReturn a mercenary from your discard or draw pile to your hand.\nM20: return ALL of them.")
+                .Text("Gain 2 mastery.\nReturn up to two mercenaries from your discard or draw pile to your hand.\nM20: return ALL of them.")
                 .Replaces("world_piercer").Register();
 
             var prae02 = SoiCard.New("praetorian_02_duel", "Praetorian-02").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Relic).Character("decima").Qty(1).Defense(9).Shield(3)
                 .Exhausts(new Do(ctx => ctx.Controller.ShieldsDoubledUntilNextTurn = true))
-                .ExhaustCosts(3)
-                .Text("While in play: shield 3.\nM20: shield 6 instead.\nExhaust, pay 3 gems: until your next turn, your shields are doubled. Killing this champion does not remove this effect.")
+                .ExhaustCosts(2)
+                .Text("While in play: shield 3.\nM20: shield 6 instead.\nExhaust, pay 2 gems: until your next turn, your shields are doubled. Killing this champion does not remove this effect.")
                 .Replaces("praetorian_02");
             prae02.Def.ShieldInPlay = true;
             prae02.Def.DynamicShield = owner => owner.Mastery >= 20 ? 6 : 3;
@@ -733,26 +737,21 @@ namespace Shards.Content
                 return byDef != 0 ? byDef : a.InstanceId.CompareTo(b.InstanceId);
             });
 
-            if (!all && matches.Count > 1)
+            if (!all)
             {
                 var req = new DecisionRequest
                 {
                     PlayerIndex = player.Index,
                     Kind = DecisionKind.ChooseCards,
-                    Title = "Return a mercenary from your discard or draw pile to your hand",
+                    Title = "Return up to two mercenaries from your discard or draw pile to your hand",
                     Context = "soi.return",
-                    Min = 1,
-                    Max = 1
+                    Min = 0,
+                    Max = System.Math.Min(2, matches.Count)
                 };
                 foreach (var card in matches)
                     req.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
                 yield return ShardsStep.AwaitDecision(req);
-                var picked = matches.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
-                matches = picked != null ? new List<ShardsCard> { picked } : new List<ShardsCard>();
-            }
-            else if (!all)
-            {
-                matches = new List<ShardsCard> { matches[0] };
+                matches = matches.FindAll(c => ctx.Answer.ChosenOptionIds.Contains(c.InstanceId));
             }
             foreach (var card in matches)
             {
@@ -868,7 +867,7 @@ namespace Shards.Content
             // REPLAYED from the discard, which must not flood again.
             if (ctx.Controller.DoomGateFloodUsed) yield break;
             ctx.Controller.DoomGateFloodUsed = true;
-            ctx.Engine.ShuffleIngeminexIntoCenterDeck(30);
+            ctx.Engine.ShuffleIngeminexIntoCenterDeck(25);
         }
 
         private static IEnumerable<ShardsStep> DoomGateDestroy(ShardsContext ctx)

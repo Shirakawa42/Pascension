@@ -124,6 +124,10 @@ namespace Shards.Bots
             {
                 case null:
                     return;
+                case DiscountNextReroll:
+                    // One gem saved on a future reroll, not added to the current pool.
+                    atoms.AddGain(conditionClass, 1, 0, 0, 0, 0, mult);
+                    return;
                 case Gain gain:
                     atoms.AddGain(conditionClass, gain.Gems, gain.Power, gain.Mastery, gain.Health, gain.Draw, mult);
                     return;

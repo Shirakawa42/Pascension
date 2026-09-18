@@ -691,7 +691,7 @@ namespace Shards.Engine
             "tetra" => new HeroAbilitySpec("Perception",
                 "M5, once per turn: pay 2 gems, draw 2 cards.", 5, 2, 0, active: true),
             "volos" => new HeroAbilitySpec("First Aid",
-                "M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: draw 1 card.\n— Pay 2 gems: gain 3 power.\n— Pay 3 gems: gain 1 mastery.", 5, 0, 0, active: true),
+                "M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw 1 card.\n— Pay 3 gems: gain 1 mastery.", 5, 0, 0, active: true),
             // Sacrifice: 3 gems → 2 (2026-07-27) → 0 (2026-08-23, user decision). The
             // 3 health IS the cost — a real one in a damage race, and enough to make the
             // ability a genuine decision rather than free thinning. The gem side kept
@@ -703,7 +703,7 @@ namespace Shards.Engine
             // an Undergrowth-heavy opponent, or set up a good card to reroll into — and that
             // combination cannot be afforded if the Scry itself costs the reroll's gem.
             "rez" => new HeroAbilitySpec("Futureproof",
-                "M5, once per turn: Scry 2 the center deck.", 5, 0, 0, active: true),
+                "M5, once per turn: Scry 2 the center deck. Your next reroll this turn costs 1 gem less.", 5, 0, 0, active: true),
             _ => new HeroAbilitySpec(null, null, 0, 0, 0, active: false)
         };
 
@@ -716,7 +716,7 @@ namespace Shards.Engine
             "tetra" => new Gain { Draw = 2 },
             "volos" => new VolosAbilityChoice(),
             "kosynwu" => new BanishUpTo(1),
-            "rez" => new Scry(2),
+            "rez" => new ShardsComposite(new Scry(2), new DiscountNextReroll()),
             _ => null
         };
 
@@ -875,8 +875,10 @@ namespace Shards.Engine
         /// <summary>Duel of Doom row reroll price: 1 gem for the first reroll of the turn,
         /// +1 per subsequent reroll (1, 2, 3…), resetting each turn — the first look is
         /// nearly free, but digging the whole shop for one card gets expensive fast.
+        /// Rez discounts the next successful reroll this turn by one.
         /// A def may opt out entirely (Comet).</summary>
-        public static int RerollCost(ShardsPlayer player) => 1 + player.RerollsThisTurn;
+        public static int RerollCost(ShardsPlayer player) =>
+            System.Math.Max(0, 1 + player.RerollsThisTurn - player.NextRerollDiscount);
 
         private SubmitResult RerollRow(ShardsPlayer player, int slotIndex)
         {
@@ -890,6 +892,7 @@ namespace Shards.Engine
 
             player.Gems -= cost;
             player.RerollsThisTurn++;
+            player.NextRerollDiscount = 0;
             Emit(new ShardsGemsChangedEvent { PlayerIndex = player.Index, Delta = -cost, NewValue = player.Gems });
             Emit(new ShardsRowRerolledEvent { PlayerIndex = player.Index, SlotIndex = slotIndex, DefId = card.DefId });
             BottomRowCardAndRefill(slotIndex);

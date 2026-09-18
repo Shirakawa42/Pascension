@@ -42,6 +42,16 @@ namespace Shards.Engine
         }
     }
 
+    /// <summary>Rez's Futureproof discount is consumed only by a successful reroll.</summary>
+    public sealed class DiscountNextReroll : IShardsEffect
+    {
+        public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
+        {
+            ctx.Controller.NextRerollDiscount = 1;
+            yield break;
+        }
+    }
+
     /// <summary>Volos pays only for the selected mode. All four cards remain visible,
     /// including disabled modes; opening the choice itself costs nothing.</summary>
     public sealed class VolosAbilityChoice : IShardsEffect
@@ -51,16 +61,16 @@ namespace Shards.Engine
         public static string Text(int mode) => mode switch
         {
             0 => "Free: gain 3 health.",
-            1 => "Pay 1 gem: draw 1 card.",
-            2 => "Pay 2 gems: gain 3 power.",
+            1 => "Pay 1 gem: gain 2 power.",
+            2 => "Pay 2 gems: draw 1 card.",
             3 => "Pay 3 gems: gain 1 mastery.",
             _ => null
         };
         public static Gain Effect(int mode) => mode switch
         {
             0 => new Gain { Health = 3 },
-            1 => new Gain { Draw = 1 },
-            2 => new Gain { Power = 3 },
+            1 => new Gain { Power = 2 },
+            2 => new Gain { Draw = 1 },
             3 => new Gain { Mastery = 1 },
             _ => null
         };

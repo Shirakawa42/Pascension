@@ -874,8 +874,48 @@ namespace Pascension.Game.UI
                 float bodyH = body.preferredHeight + 6f;
                 body.rectTransform.sizeDelta = new Vector2(width - 16f, bodyH);
                 y -= bodyH + 22f;
+                if (entry.Cards != null)
+                    foreach (var change in entry.Cards)
+                        y = RenderBalanceChange(change, y, width);
             }
             _changelogContent.sizeDelta = new Vector2(0f, -y + 10f);
+            _changelogContent.GetComponentInParent<ScrollRect>().StopMovement();
+            _changelogContent.anchoredPosition = Vector2.zero;
+        }
+        private float RenderBalanceChange(Changelog.CardChange change, float y, float width)
+        {
+            const float scale = 1.15f;
+            float cardWidth = CardView.Width * scale;
+            float cardHeight = CardView.Height * scale;
+            var row = UiFactory.CreateRect("CardChange", _changelogContent);
+            UiFactory.Place(row, new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(width, cardHeight + 74f));
+            var title = UiFactory.CreateText(Theme, "CardName", row, change.After.Face.Name, 20f,
+                UiPalette.TextMain, TextAlignmentOptions.Center, FontStyles.Bold);
+            UiFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -2f), new Vector2(width, 28f));
+            for (int side = 0; side < 2; side++)
+            {
+                float x = (side == 0 ? -1 : 1) * (cardWidth / 2f + 54f);
+                var label = UiFactory.CreateText(Theme, side == 0 ? "Before" : "After", row,
+                    Loc.T(side == 0 ? "BEFORE" : "AFTER"), 14f,
+                    side == 0 ? UiPalette.TextDim : UiPalette.Gold, TextAlignmentOptions.Center, FontStyles.Bold);
+                UiFactory.Place(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(x, -34f), new Vector2(cardWidth, 24f));
+                var card = CardViewFactory.Create(row, Theme, scale);
+                card.Rect.anchorMin = card.Rect.anchorMax = new Vector2(0.5f, 1f);
+                card.Rect.pivot = new Vector2(0.5f, 1f);
+                card.Rect.anchoredPosition = new Vector2(x, -64f);
+                card.BindFace(side == 0 ? change.Before.Face : change.After.Face);
+            }
+            var arrow = UiFactory.CreateRect("Arrow", row);
+            UiFactory.Place(arrow, new Vector2(0.5f, 1f), new Vector2(0f, -64f - cardHeight / 2f), new Vector2(60f, 36f));
+            var shaft = UiFactory.CreateImage("Shaft", arrow, null, UiPalette.Gold, raycast: false);
+            UiFactory.Place(shaft.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(46f, 4f));
+            for (int side = -1; side <= 1; side += 2)
+            {
+                var head = UiFactory.CreateImage("Head", arrow, null, UiPalette.Gold, raycast: false);
+                UiFactory.Place(head.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(16f, side * 7f), new Vector2(22f, 4f));
+                head.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -side * 40f);
+            }
+            return y - cardHeight - 100f;
         }
     }
 }
