@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Headless mirror of the Unity asmdefs: compiles Engine+Content+Bots sources and runs
-       the same NUnit tests without the Unity editor. See the pascension-balance skill. -->
+  <!-- Headless engine and rules tests, also run by the Unity Test Runner. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>9.0</LangVersion>
@@ -16,17 +15,8 @@
     <Compile Include="..\..\Assets\Scripts\Shards\**\*.cs" LinkBase="Shards" />
     <Compile Include="..\..\Assets\Scripts\Engine\**\*.cs" LinkBase="Engine" />
     <Compile Include="..\..\Assets\Scripts\Content\**\*.cs" LinkBase="Content" />
-    <Compile Include="..\..\Assets\Scripts\Bots\**\*.cs" LinkBase="Bots" />
     <Compile Include="..\..\Assets\Scripts\Net\Host\**\*.cs" LinkBase="NetHost" />
     <Compile Include="..\..\Assets\Tests\EngineTests\**\*.cs" LinkBase="Tests" />
-    <!-- SoiSim library + smoke tests (NOT Program.cs — no second Main). The console
-         exe itself is never built by CI; these links keep its logic under test.
-         Tune/ added 2026-07-27: the CMA-ES tuner, the tournament harness and the
-         weights emitter were the ONLY sim code CI never compiled, let alone tested —
-         and they are what produces every shipped weight vector. -->
-    <Compile Include="..\SoiSim\Sim\**\*.cs" LinkBase="SoiSim" />
-    <Compile Include="..\SoiSim\Tune\**\*.cs" LinkBase="SoiSimTune" />
-    <Compile Include="..\SoiSim\Tests\**\*.cs" LinkBase="SoiSimTests" />
   </ItemGroup>
 
   <ItemGroup>

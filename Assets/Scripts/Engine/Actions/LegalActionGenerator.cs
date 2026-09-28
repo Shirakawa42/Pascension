@@ -7,7 +7,7 @@ namespace Pascension.Engine.Actions
 {
     /// <summary>
     /// Enumerates every action a player may legally take while holding priority.
-    /// Drives bot choices, the LLM action menu, UI affordances, and auto-pass
+    /// Drives UI affordances and auto-pass
     /// (a player whose only option is Pass can be fast-passed by the host).
     /// </summary>
     public static class LegalActionGenerator

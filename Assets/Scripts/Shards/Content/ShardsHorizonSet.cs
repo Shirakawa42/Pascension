@@ -47,8 +47,8 @@ namespace Shards.Content
 
             SoiCard.New("torian_commandos", "Torian Commandos").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Ally).Cost(3).Qty(3).Shield(4)
-                .Plays(E.Mix(gems: 2, power: 2))
-                .Text("Shield 4.\nGain 2 gems and 2 power.")
+                .Plays(E.Mix(gems: 3, power: 2))
+                .Text("Shield 4.\nGain 3 gems and 2 power.")
                 .Art("a strike team rappelling through smoke with riot shields").Register();
 
             SoiCard.New("anomaly_cleric", "Anomaly Cleric").InSet(SET).Faction(O)
@@ -73,7 +73,7 @@ namespace Shards.Content
             SoiCard.New("carnivorous_vine", "Carnivorous Vine").InSet(SET).Faction(U)
                 .Type(ShardsCardType.Mercenary).Cost(4).Qty(2)
                 .Plays(E.Seq(E.Mix(health: 3, power: 3),
-                    new PerCount(ctx => System.Math.Max(0, ctx.Controller.FactionAllyPlays(U) - 1),
+                    PerCount.Visible(ctx => System.Math.Max(0, ctx.Controller.FactionAllyPlays(U) - 1),
                         health: 2, power: 2)))
                 .Text("Gain 3 health and 3 power.\nGain 2 more health and 2 more power per OTHER Undergrowth ally you played this turn.")
                 .Art("a flowering vine with a fanged bloom swallowing sunlight").Register();
@@ -93,7 +93,7 @@ namespace Shards.Content
             SoiCard.New("cinder_scars", "Cinder Scars").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Mercenary).Cost(2).Qty(3)
                 .Plays(E.Seq(E.Draw(1),
-                    new If(ctx => ctx.Controller.PlayedThisTurn.Exists(c =>
+                    If.Visible(ctx => ctx.Controller.PlayedThisTurn.Exists(c =>
                         c.DefId == "cinder_scars" && c != ctx.Source), E.Power(3)),
                     E.At(10, new BanishUpTo(1))))
                 .Text("Draw a card.\nIf you played another Cinder Scars this turn, gain 3 power.\nM10: you may banish a card from your hand or discard pile.")
@@ -192,6 +192,7 @@ namespace Shards.Content
                 {
                     card.Zone = ShardsZone.Hand;
                     player.Hand.Add(card);
+                    engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId, FromDeck = true });
                 }
                 else
                 {
@@ -273,6 +274,7 @@ namespace Shards.Content
             player.Deck.Remove(top);
             top.Zone = ShardsZone.Hand;
             player.Hand.Add(top);
+            engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = top.InstanceId, DefId = top.DefId, FromDeck = true });
             if (cost <= 0) yield break;
             if (player.Mastery >= 20)
             {
@@ -357,6 +359,7 @@ namespace Shards.Content
             chosen.Zone = ShardsZone.Hand;
             player.Hand.Add(chosen);
             ctx.Engine.Emit(new ShardsRelicRecruitedEvent { PlayerIndex = player.Index, DefId = chosen.DefId });
+            ctx.Engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = chosen.InstanceId, DefId = chosen.DefId });
         }
 
         private static IEnumerable<ShardsStep> BonusDestiny(ShardsContext ctx)
@@ -408,12 +411,12 @@ namespace Shards.Content
             Destiny("datic_secrets", "Datic Secrets",
                 "Exhaust: if you played 2+ Order allies this turn, gain 2 gems.",
                 "an unlocked archive spilling ribbons of glowing script",
-                new If(ctx => ctx.Controller.FactionAllyPlays(O) >= 2, E.Gems(2)));
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.FactionAllyPlays(O) >= 2, E.Gems(2)));
 
             Destiny("price_of_power", "The Price of Power",
                 "Exhaust: gain 1 power per Wraethe card in your discard pile.",
                 "a hand signing a contract written in living shadow",
-                new PerCount(ctx => ShardsBaseSet.CountDiscard(ctx, W), power: 1));
+                PerCount.Visible(ctx => ShardsBaseSet.CountDiscard(ctx, W), power: 1));
 
             Destiny("one_mind_one_army", "One Mind One Army",
                 "Your champions get +2 defense.",
@@ -444,24 +447,24 @@ namespace Shards.Content
             Destiny("nature_dominance", "Nature Dominance",
                 "Exhaust: gain 1 health and 1 power per Undergrowth card you played this turn.",
                 "vines overrunning a plaza, statues wearing crowns of moss",
-                new PerCount(ctx => ctx.Controller.FactionPlays(U), health: 1, power: 1));
+                PerCount.Visible(ctx => ctx.Controller.FactionPlays(U), health: 1, power: 1));
 
             Destiny("crystal_gate", "The Crystal Gate",
                 "Exhaust: if you played an Order card and an Undergrowth card this turn, recruit a card costing 3 or less for free.",
                 "a gate of crystal grown through with flowering vines",
-                new If(ctx => ctx.Controller.FactionPlays(O) > 0 && ctx.Controller.FactionPlays(U) > 0,
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.FactionPlays(O) > 0 && ctx.Controller.FactionPlays(U) > 0,
                     new RecruitFromRow(3)));
 
             Destiny("forged_in_flame", "Forged in Flame",
                 "Exhaust: if you played a Wraethe card and a Homodeus card this turn, banish a card from your hand or discard pile.",
                 "a shadowed forge where machine parts are quenched in darkness",
-                new If(ctx => ctx.Controller.FactionPlays(W) > 0 && ctx.Controller.FactionPlays(H) > 0,
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.FactionPlays(W) > 0 && ctx.Controller.FactionPlays(H) > 0,
                     new BanishUpTo(1, optional: false)));
 
             Destiny("paradigm_shift", "Paradigm Shift",
                 "Exhaust: if you played an Order card and a Wraethe card this turn, gain 1 mastery.",
                 "a chessboard mid-game where the pieces have swapped colors",
-                new If(ctx => ctx.Controller.FactionPlays(O) > 0 && ctx.Controller.FactionPlays(W) > 0,
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.FactionPlays(O) > 0 && ctx.Controller.FactionPlays(W) > 0,
                     E.Mastery(1)));
 
             Destiny("deadly_recruits", "Deadly Recruits",
@@ -473,13 +476,13 @@ namespace Shards.Content
             Destiny("biotech_enhancements", "Biotech Enhancements",
                 "Exhaust: if you played a Homodeus card and an Undergrowth card this turn, draw a card.",
                 "chrome limbs grafted with living green circuitry",
-                new If(ctx => ctx.Controller.FactionPlays(H) > 0 && ctx.Controller.FactionPlays(U) > 0,
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.FactionPlays(H) > 0 && ctx.Controller.FactionPlays(U) > 0,
                     E.Draw(1)));
 
             Destiny("absorption_grid", "Absorption Grid",
                 "Exhaust: gain 2 power per shield ally you played this turn.",
                 "a grid of humming panels drinking incoming fire",
-                new PerCount(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
+                PerCount.Visible(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
                     c.Def.Shield > 0 && !c.Def.IsChampion).Count, power: 2));
 
             Destiny("maglev_tunnels", "Maglev Tunnels",
@@ -490,15 +493,15 @@ namespace Shards.Content
             Destiny("soul_syphon", "Soul Syphon",
                 "Exhaust: if you played cards of 3+ different factions this turn, gain 5 health.",
                 "streams of many-colored light drawn into one vessel",
-                new If(ctx => DistinctFactions(ctx) >= 3, E.Health(5)));
+                If.VisibleStableOnExhaust(ctx => DistinctFactions(ctx) >= 3, E.Health(5)));
 
             Destiny("agony_of_choice", "The Agony of Choice",
                 "Exhaust: if you played cards of 3+ different factions this turn, gain 4 power.",
                 "a figure at a crossroads of burning signposts",
-                new If(ctx => DistinctFactions(ctx) >= 3, E.Power(4)));
+                If.VisibleStableOnExhaust(ctx => DistinctFactions(ctx) >= 3, E.Power(4)));
 
             Destiny("shard_defiant", "The Shard Defiant",
-                "Pay 2 gems, Exhaust: reveal the center deck's top card; recruit or banish it.\nIf you played an Aion card this turn, you may repeat this once.",
+                "Pay 2 gems, Exhaust: reveal the center deck's top card; recruit it if allowed, or banish it.\nIf you played an Aion card this turn, you may repeat this once.",
                 "a lone shard hovering against a tide of grasping hands",
                 new Custom(ShardDefiantFlow),
                 def => def.ExhaustGemCost = 2);
@@ -512,19 +515,19 @@ namespace Shards.Content
             Destiny("the_last_city", "The Last City",
                 "Exhaust: if you played 2+ mercenaries this turn, gain 2 gems.",
                 "a walled city glowing alone on a darkened plain",
-                new If(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
                     c.Def.Type == ShardsCardType.Mercenary).Count >= 2, E.Gems(2)));
 
             Destiny("power_struggle", "Power Struggle",
-                "Exhaust: destroy a champion you control to gain 5 power.",
+                "Exhaust: destroy a champion you control to gain 6 power.",
                 "two hands wrestling over a crown that cuts them both",
                 // If wrapper = same gate the flow checks, exposed for the condition glow.
-                new If(ctx => ctx.Controller.Champions.Count > 0, new Custom(PowerStruggleFlow)));
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.Champions.Count > 0, new Custom(PowerStruggleFlow)));
 
             Destiny("unconditional_conscription", "Unconditional Conscription",
                 "Exhaust: if you played 2+ non-starter allies costing 2 or less this turn, gain 4 power.",
                 "a draft notice nailed to every door of a narrow street",
-                new If(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
                     !c.Def.IsChampion && c.Def.Type != ShardsCardType.Starter && c.Def.Cost <= 2).Count >= 2,
                     E.Power(4)));
 
@@ -536,34 +539,34 @@ namespace Shards.Content
             Destiny("strategic_mastermind", "Strategic Mastermind",
                 "Exhaust: if you have 40 or more health, draw a card.",
                 "a general rearranging a battle map with surgical calm",
-                new If(ctx => ctx.Controller.Health >= 40, E.Draw(1)));
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.Health >= 40, E.Draw(1)));
 
             Destiny("advanced_weapons", "Advanced Weapons",
                 "Exhaust: if you played 2+ odd-cost cards this turn, gain 3 power.\nCost-less cards are neither even nor odd.",
                 "a rack of impossible weapons still warm from the forge",
-                new If(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
                     c.Def.Cost > 0 && c.Def.Cost % 2 == 1).Count >= 2, E.Power(3)));
 
             Destiny("advanced_medicine", "Advanced Medicine",
-                "Exhaust: if you played 2+ even-cost cards this turn, gain 4 health.\nCost-less cards are neither even nor odd.",
+                "Exhaust: if you played 2+ even-cost cards this turn, gain 6 health.\nCost-less cards are neither even nor odd.",
                 "a suture of light closing a wound in mid-air",
-                new If(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
-                    c.Def.Cost > 0 && c.Def.Cost % 2 == 0).Count >= 2, E.Health(4)));
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
+                    c.Def.Cost > 0 && c.Def.Cost % 2 == 0).Count >= 2, E.Health(6)));
 
             Destiny("healing_hands", "Healing Hands",
                 "Exhaust: if you played a champion this turn, gain 4 health.",
                 "radiant palms hovering over a kneeling warrior",
-                new If(ctx => ctx.Controller.PlayedThisTurn.Exists(c => c.Def.IsChampion), E.Health(4)));
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.PlayedThisTurn.Exists(c => c.Def.IsChampion), E.Health(4)));
 
             Destiny("war_bound", "War Bound",
                 "Exhaust: if you control 2+ champions, gain 4 power.",
                 "banners of many houses tied to a single war-horn",
-                new If(ctx => ctx.Controller.Champions.Count >= 2, E.Power(4)));
+                If.VisibleStableOnExhaust(ctx => ctx.Controller.Champions.Count >= 2, E.Power(4)));
 
             Destiny("true_leader", "True Leader",
                 "Exhaust: if you played 3 cards of the same faction this turn, gain 2 mastery.",
                 "a commander walking first into the breach, army at their back",
-                new If(ctx =>
+                If.VisibleStableOnExhaust(ctx =>
                 {
                     foreach (var f in new[] { H, O, U, W, A })
                         if (ctx.Controller.FactionPlays(f) >= 3)
@@ -638,7 +641,7 @@ namespace Shards.Content
             {
                 PlayerIndex = player.Index,
                 Kind = DecisionKind.ChooseCards,
-                Title = "Destroy a champion you control to gain 5 power?",
+                Title = "Destroy a champion you control to gain 6 power?",
                 Context = "soi.destroy",
                 Min = 0,
                 Max = 1
@@ -650,7 +653,7 @@ namespace Shards.Content
             var chosen = player.Champions.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
             if (chosen == null) yield break;
             ctx.Engine.DestroyChampion(player, chosen, player.Index);
-            ctx.Engine.GainPower(player.Index, 5);
+            ctx.Engine.GainPower(player.Index, 6);
         }
 
         private static IEnumerable<ShardsStep> ShardDefiantFlow(ShardsContext ctx)
@@ -663,7 +666,7 @@ namespace Shards.Content
             {
                 var card = engine.DrawFromCenterDeck();
                 if (card == null) yield break;
-                engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { card.DefId } });
+                engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { card.DefId }, TakenFromCenterTop = true });
 
                 // Mandatory keep-or-banish (user decision 2026-07-19). Both options
                 // carry the revealed card so the UI renders the CARD, never just a name.
@@ -676,8 +679,12 @@ namespace Shards.Content
                     Min = 1,
                     Max = 1
                 };
-                choice.Options.Add(new DecisionOption(1, "Keep") { CardInstanceId = card.InstanceId, DefId = card.DefId });
+                choice.Options.Add(new DecisionOption(1, "Keep") { CardInstanceId = card.InstanceId,
+                    DefId = card.DefId, Disabled = card.Def.CannotBeFastPlayed });
                 choice.Options.Add(new DecisionOption(2, "Banish") { CardInstanceId = card.InstanceId, DefId = card.DefId });
+                // The revealed card stays visible even when it must be bought normally.
+                // A timeout must choose Banish instead of the disabled Keep option.
+                if (card.Def.CannotBeFastPlayed) choice.DefaultOptionIds.Add(2);
                 yield return ShardsStep.AwaitDecision(choice);
                 if (ctx.Answer.ChosenOptionIds[0] == 1)
                 {

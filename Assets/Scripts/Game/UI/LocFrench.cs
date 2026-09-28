@@ -13,6 +13,9 @@ namespace Pascension.Game.UI
     {
         public static readonly Dictionary<string, string> Ui = new()
         {
+            ["PLAY SHARDS VS AI"] = "JOUER À SHARDS CONTRE L'IA",
+            ["Trained AI"] = "IA entraînée",
+            ["You"] = "Vous",
             // ---------------------------------------------------------- main menu
             ["race the board · build the deck · burst the boss"] =
                 "courez le plateau · bâtissez le deck · terrassez le boss",
@@ -27,18 +30,6 @@ namespace Pascension.Game.UI
             ["YOUR CHARACTER"] = "VOTRE HÉROS",
             ["EXPANSIONS"] = "EXTENSIONS",
             ["OPPONENTS"] = "ADVERSAIRES",
-            ["BOT RANK"] = "RANG DES BOTS",
-            // The SoI bot ladder (ranks minted over time by the training campaign).
-            ["IRON"] = "FER",
-            ["BRONZE"] = "BRONZE",
-            ["SILVER"] = "ARGENT",
-            ["GOLD"] = "OR",
-            ["PLATINUM"] = "PLATINE",
-            ["EMERALD"] = "ÉMERAUDE",
-            ["DIAMOND"] = "DIAMANT",
-            ["MASTER"] = "MAÎTRE",
-            ["GRANDMASTER"] = "GRAND MAÎTRE",
-            ["CHALLENGER"] = "CHALLENGER",
             ["START GAME"] = "LANCER LA PARTIE",
             ["SOLO GAME"] = "PARTIE SOLO",
             ["CHOOSE YOUR HERO"] = "CHOISISSEZ VOTRE HÉROS",
@@ -88,13 +79,11 @@ namespace Pascension.Game.UI
             ["NOT READY"] = "PAS PRÊT",
             ["UNREADY"] = "ANNULER PRÊT",
             ["LEAVE"] = "PARTIR",
-            ["ADD BOT"] = "AJOUTER UNE IA",
             ["Open seat"] = "Place libre",
             ["REMOVE"] = "RETIRER",
             ["KICK"] = "EXCLURE",
             ["HOST"] = "HÔTE",
             ["YOU"] = "VOUS",
-            ["BOT"] = "IA",
             ["Waiting for the host to start…"] = "En attente du lancement par l'hôte…",
             ["Connecting…"] = "Connexion…",
             ["Waiting for the lobby…"] = "En attente du salon…",
@@ -145,9 +134,14 @@ namespace Pascension.Game.UI
             ["M5, once per turn: Scry 2 the center deck. Your next reroll this turn costs 1 gem less."] = "M5, une fois par tour : Sondez 2 la pioche commune. Votre prochaine relance ce tour coûte 1 cristal de moins.",
             ["First Aid"] = "Premiers Soins",
             ["Sacrifice"] = "Sacrifice",
+            ["M5 passive: all your rerolls cost 1 gem less.\nM5, once per turn: Scry 3 the center deck."] = "M5 passif : toutes vos relances coûtent 1 cristal de moins.\nM5, une fois par tour : Sondez 3 la pioche commune.",
+            ["M5, once per turn: pay 3 gems, draw 2 cards."] = "M5, une fois par tour : payez 3 cristaux, piochez 2 cartes.",
+            ["M5, once per turn: pay 1 health, banish a card from your hand or discard pile."] = "M5, une fois par tour : payez 1 santé, bannissez une carte de votre main ou de votre défausse.",
             ["Futureproof"] = "Pare-Avenir",
             ["M5 passive: the first card you buy each turn costs 1 less."] =
                 "M5 passif : la première carte que vous achetez chaque tour coûte 1 de moins.",
+            ["M5 passive: the first card you buy each turn costs 2 less."] =
+                "M5 passif : la première carte que vous achetez chaque tour coûte 2 de moins.",
             ["M5, once per turn: pay 2 gems, draw 2 cards."] =
                 "M5, une fois par tour : payez 2 cristaux, piochez 2 cartes.",
             ["M5, once per turn: gain 4 health."] =
@@ -326,9 +320,6 @@ namespace Pascension.Game.UI
             ["REJOIN"] = "REPRENDRE",
             ["The game resumes when everyone is back."] =
                 "La partie reprend quand tout le monde est de retour.",
-            ["\nOr replace a missing player with a bot."] =
-                "\nOu remplacez un joueur absent par une IA.",
-            ["REPLACE WITH BOT"] = "REMPLACER PAR UNE IA",
             ["CONNECTION LOST"] = "CONNEXION PERDUE",
             ["The connection to the host was lost."] = "La connexion à l'hôte a été perdue.",
             ["REJOINING…"] = "RECONNEXION…",
@@ -485,8 +476,8 @@ namespace Pascension.Game.UI
             (new Regex(@"^(.+) and (.+) have the same hero$"), "$1 et $2 ont le même héros"),
             (new Regex(@"^(.+) is not ready$"), "$1 n'est pas prêt"),
             (new Regex(@"^(.+) has no hero$"), "$1 n'a pas de héros"),
-            (new Regex(@"^Need at least 2 players \(add a bot\?\)$"),
-                "Il faut au moins 2 joueurs (ajoutez une IA ?)"),
+            (new Regex(@"^Need at least 2 players$"),
+                "Il faut au moins 2 joueurs"),
             (new Regex(@"^(.+) needs at least (\d+) players$"), "$1 nécessite au moins $2 joueurs"),
             (new Regex(@"^(.+) supports at most (\d+) players$"), "$1 accepte au plus $2 joueurs"),
             (new Regex(@"^Only the host can start the game$"), "Seul l'hôte peut lancer la partie"),
@@ -564,6 +555,8 @@ namespace Pascension.Game.UI
                 "Reprenez un mercenaire de votre défausse ou de votre pioche en main"),
             (new Regex(@"^Reveal a shield card to gain (\d+) power instead\?$"),
                 "Révéler une carte bouclier pour gagner $1 puissance à la place ?"),
+            (new Regex(@"^Banish up to (\d+) card\(s\) from your hand/discard to gain their effects twice$"),
+                "Bannissez jusqu'à $1 carte(s) de votre main/défausse pour gagner deux fois leurs effets"),
             (new Regex(@"^Banish up to (\d+) card\(s\) from your hand/discard to gain their effects$"),
                 "Bannissez jusqu'à $1 carte(s) de votre main/défausse pour gagner leurs effets"),
             (new Regex(@"^Fast-play revealed allies costing (\d+) or less \(free\)$"),

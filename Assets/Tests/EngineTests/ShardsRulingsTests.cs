@@ -4,7 +4,6 @@ using Pascension.Core;
 using Pascension.Engine.Actions;
 using Pascension.Engine.Core;
 using Pascension.Engine.Decisions;
-using Shards.Bots;
 using Shards.Content;
 using Shards.Engine;
 
@@ -903,44 +902,6 @@ namespace Pascension.Engine.Tests
         }
 
         // ------------------------------------------------------------- bot sims
-
-        [Test]
-        public void HeuristicBots_FullGame_TerminatesWithAWinner()
-        {
-            for (ulong seed = 1; seed <= 3; seed++)
-            {
-                ShardsCardDatabase.Clear();
-                ShardsContentRegistry.EnsureRegistered();
-                var specs = new List<PlayerSpec>();
-                var characters = new[] { "decima", "tetra", "volos" };
-                for (int i = 0; i < 3; i++)
-                    specs.Add(new PlayerSpec { Name = "Bot" + i, CharacterId = characters[i] });
-                var adapter = new ShardsEngineAdapter(ShardsContentRegistry.StandardConfig(
-                    seed, specs, ShardsDlc.RelicsOfTheFuture | ShardsDlc.ShadowOfSalvation | ShardsDlc.IntoTheHorizon));
-                var bots = new IBotAgent[3];
-                for (int i = 0; i < 3; i++)
-                    bots[i] = new ShardsHeuristicBot(seed * 100 + (ulong)i, adapter.Inner);
-
-                int guard = 0;
-                while (!adapter.GameOver && guard++ < 30000)
-                {
-                    var pending = adapter.PendingInput;
-                    Assert.IsNotNull(pending, $"seed {seed}: stall at step {guard}");
-                    var action = bots[pending.PlayerIndex].Choose(pending, null)
-                                 ?? adapter.DefaultActionFor(pending);
-                    var result = adapter.Submit(action);
-                    if (!result.Accepted)
-                    {
-                        // A heuristic misfire must never stall the game — fall back.
-                        var fallback = adapter.DefaultActionFor(adapter.PendingInput);
-                        Assert.IsTrue(adapter.Submit(fallback).Accepted,
-                            $"seed {seed}: bot AND default rejected: {result.Error}");
-                    }
-                }
-                Assert.IsTrue(adapter.GameOver, $"seed {seed}: no result in 30000 submits (round {adapter.Inner.State.Round})");
-                Assert.GreaterOrEqual(adapter.WinnerIndex, -1);
-            }
-        }
 
         [Test]
         public void ShardDefiant_GemPaymentIsAnActivationCost_AndKeepOrBanishIsMandatory()

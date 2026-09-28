@@ -5,8 +5,6 @@
         "Pascension.Core",
         "Pascension.Engine",
         "Pascension.Content",
-        "Pascension.Bots",
-        "Shards.Bots",
         "Shards.Content",
         "Shards.Engine",
         "Unity.Netcode.Runtime",

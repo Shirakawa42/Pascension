@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Text;
-using Pascension.Bots;
 using Pascension.Content;
 using Pascension.Core;
 using Pascension.Engine.Actions;
@@ -77,14 +76,6 @@ namespace Pascension.Net
             {
                 return characterId;
             }
-        }
-
-        public IBotAgent CreateBot(string botKind, ulong seed, IEngineAdapter engine)
-        {
-            var inner = botKind == "random"
-                ? (ISyncAgent)new RandomBot(seed)
-                : new HeuristicBot(seed);
-            return new SyncAgentBot(inner, ((PascensionEngineAdapter)engine).Inner);
         }
 
         public CardFace CardDisplay(string defId)

@@ -104,7 +104,9 @@ namespace Shards.Engine
     /// <summary>"Allegiance &lt;Faction&gt; N": the inner effect fires only if the controller
     /// OWNS at least N cards of that faction — counting deck, hand, discard, play zone and
     /// champions (banished and set-aside cards don't count; the card itself is owned and
-    /// counts). Honors Project Yggdrasil / Prism via <see cref="ShardsEngine.CountsAs"/>.</summary>
+    /// counts). Temporary fast-plays in the play zone also count, even though they are
+    /// excluded from the permanent collection (user ruling 2026-09-25).
+    /// Honors Project Yggdrasil / Prism via <see cref="ShardsEngine.CountsAs"/>.</summary>
     public sealed class AllegianceEffect : IShardsEffect, IShardsConditionalEffect
     {
         private readonly ShardsFaction _faction;

@@ -26,7 +26,7 @@ namespace Pascension.Engine.Tests
                 Players = new List<SoiSeatRecord>
                 {
                     new() { Identity = "me", Name = "Me", CharacterId = "decima" },
-                    new() { Identity = "bot:greedy", Name = "Bot", IsBot = true, BotKind = "greedy", CharacterId = "volos" }
+                    new() { Identity = "bot:archived", Name = "Bot", IsBot = true, BotKind = "archived", CharacterId = "volos" }
                 }
             };
         }

@@ -12,8 +12,8 @@ using UnityEngine.SceneManagement;
 namespace Pascension.Net
 {
     /// <summary>
-    /// Replicated lobby: up to 4 slots (human / bot / empty), hero pick + ready flag per
-    /// slot, host-only add-bot/remove/start controls. The server mutates plain C# state
+    /// Replicated lobby: up to 4 slots (human / empty), hero pick + ready flag per
+    /// slot, host-only remove/start controls. The server mutates plain C# state
     /// and rebroadcasts the full state as JSON after every change; clients pull it once
     /// on spawn. Lives in the Lobby scene as an in-scene placed NetworkObject (authored
     /// by NetSceneBuilder). On start the host snapshots slot→client mapping into
@@ -22,7 +22,6 @@ namespace Pascension.Net
     public sealed class LobbyNetBehaviour : NetworkBehaviour
     {
         public const int MaxSlots = 4;
-        public const string DefaultBotKind = "heuristic";
 
         public static LobbyNetBehaviour Instance { get; private set; }
 
@@ -230,23 +229,7 @@ namespace Pascension.Net
 
         // ---------------- host-only controls (called directly by the host's UI) ----------------
 
-        public bool HostAddBot(int slotIndex)
-        {
-            if (!IsServer || slotIndex is < 0 or >= MaxSlots) return false;
-            if (State.Slots[slotIndex].Kind != LobbySlotKind.Empty) return false;
-            State.Slots[slotIndex] = new LobbySlot
-            {
-                Kind = LobbySlotKind.Bot,
-                Name = "Bot " + (slotIndex + 1),
-                HeroId = DefaultHeroFor(slotIndex),
-                Ready = true,
-                BotKind = DefaultBotKind
-            };
-            BroadcastState();
-            return true;
-        }
-
-        /// <summary>Remove a bot or kick a remote human. The host's own slot is untouchable.</summary>
+        /// <summary>Kick a remote human. The host's own slot is untouchable.</summary>
         public bool HostRemoveSlot(int slotIndex)
         {
             if (!IsServer || slotIndex is < 0 or >= MaxSlots) return false;
@@ -254,26 +237,9 @@ namespace Pascension.Net
             if (slot.Kind == LobbySlotKind.Empty) return false;
             if (slot.Kind == LobbySlotKind.Human && slot.ClientId == State.HostClientId) return false;
 
-            if (slot.Kind == LobbySlotKind.Human)
-            {
-                // The disconnect callback frees the slot and rebroadcasts.
-                NetworkManager.DisconnectClient(slot.ClientId, "Removed by the host");
-            }
-            else
-            {
-                State.Slots[slotIndex] = new LobbySlot();
-                BroadcastState();
-            }
+            // The disconnect callback frees the slot and rebroadcasts.
+            NetworkManager.DisconnectClient(slot.ClientId, "Removed by the host");
             return true;
-        }
-
-        public void HostSetBotHero(int slotIndex, string heroId)
-        {
-            if (!IsServer || slotIndex is < 0 or >= MaxSlots) return;
-            if (State.Slots[slotIndex].Kind != LobbySlotKind.Bot ||
-                !IsValidPick(heroId) || HeroTakenByOther(slotIndex, heroId)) return;
-            State.Slots[slotIndex].HeroId = heroId;
-            BroadcastState();
         }
 
         /// <summary>Host: validate and launch the match. Returns null on success, else a reason.</summary>
@@ -286,7 +252,7 @@ namespace Pascension.Net
                 if (slot.Kind != LobbySlotKind.Empty)
                     picked.Add(slot);
 
-            if (picked.Count < 2) return "Need at least 2 players (add a bot?)";
+            if (picked.Count < 2) return "Need at least 2 players";
             for (int i = 0; i < picked.Count; i++)
             {
                 var slot = picked[i];
@@ -333,8 +299,6 @@ namespace Pascension.Net
                 {
                     Name = slot.Name,
                     CharacterId = heroIds[i],
-                    IsBot = slot.Kind == LobbySlotKind.Bot,
-                    BotKind = slot.BotKind
                 });
                 seats.Add(new SeatAssignment
                 {
@@ -344,7 +308,6 @@ namespace Pascension.Net
                     ClientGuid = slot.ClientGuid,
                     PlayerName = slot.Name,
                     HeroId = heroIds[i],
-                    BotKind = slot.BotKind,
                     IsHostHuman = slot.Kind == LobbySlotKind.Human && slot.ClientId == State.HostClientId
                 });
             }

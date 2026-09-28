@@ -140,7 +140,6 @@ namespace Pascension.Net
         {
             var info = NetWire.Decode<PauseInfo>(pauseJson);
             if (info == null) return;
-            info.CanKick = false; // only the host may kick, whatever the wire says
             if (string.IsNullOrEmpty(info.JoinCode))
                 info.JoinCode = NetLauncher.LastJoinCode;
             CurrentPause = info;

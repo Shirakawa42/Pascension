@@ -18,14 +18,6 @@ namespace Shards.Engine
         public readonly ShardsState State;
         public readonly EventLog Log = new();
 
-        /// <summary>Every ACCEPTED action in submission order — the replay backbone for
-        /// search bots (suffix replay from a forked quiescent state).</summary>
-        public readonly List<PlayerAction> Journal = new();
-
-        /// <summary>Quiet engines (search clones) skip event logging entirely — nothing
-        /// rules-side ever reads the log back.</summary>
-        private readonly bool _quiet;
-
         public PendingInput PendingInput { get; private set; }
 
         // Active effect resolution (paused on a decision) + the follow-up queue.
@@ -35,6 +27,8 @@ namespace Shards.Engine
 
         // End-turn flow state (damage split → per-defender shield reveals → cleanup).
         private bool _endTurnInProgress;
+        // Public flow phase only; exposes no card identities or hidden choices.
+        public bool IsResolvingEndTurn => _endTurnInProgress;
         private Queue<(int defender, int amount)> _pendingDefenses;
         /// <summary>Testudo Vanguard (Duel): champion hits deferred into their owner's
         /// defense step so revealed shields reduce them individually. Transient within one
@@ -50,34 +44,6 @@ namespace Shards.Engine
         {
             State = new ShardsState();
             Setup(config);
-        }
-
-        /// <summary>Re-attach ctor for Fork: adopts an existing (deep-copied) state and
-        /// routes priority instead of running Setup.</summary>
-        private ShardsEngine(ShardsState state, bool quiet)
-        {
-            State = state;
-            _quiet = quiet;
-            RoutePriority();
-        }
-
-        /// <summary>Clones this engine at a quiescent point. Only legal while a PRIORITY
-        /// input is pending: decision points hold parked effect iterators that cannot be
-        /// copied (search bots reconstruct those via suffix replay instead). The fork is
-        /// quiet by default (no event log). rngReseed replaces the RNG stream — pass a
-        /// fresh seed when determinizing so the clone can't predict live shuffles.</summary>
-        public ShardsEngine Fork(ulong rngReseed = 0, bool quiet = true, ShardsCloneArena arena = null)
-        {
-            if (PendingInput == null || PendingInput.Kind != PendingInputKind.Priority)
-                throw new System.InvalidOperationException("Fork is only valid at a priority point");
-            if (_activeEffect != null || _effectQueue.Count > 0 || _endTurnInProgress ||
-                _pendingDefenses != null || _splitTargets != null || _splitAmounts != null)
-                throw new System.InvalidOperationException("Fork: engine is not quiescent");
-
-            var state = State.DeepCopy(arena);
-            if (rngReseed != 0)
-                state.Rng = new DeterministicRng(rngReseed);
-            return new ShardsEngine(state, quiet);
         }
 
         // ------------------------------------------------------------------ setup
@@ -145,7 +111,8 @@ namespace Shards.Engine
                     CharacterId = duel ? null : spec.CharacterId, // draft assigns it
                     FullControl = spec.FullControl,
                     Health = config.Rules.StartingHealth,
-                    Mastery = i // staggered start: 0/1/2/3 by turn order
+                    Mastery = i, // staggered start: 0/1/2/3 by turn order
+                    Gems = config.Players.Count == 2 && i == 1 ? 1 : 0
                 };
                 foreach (var def in ShardsCardDatabase.All)
                 {
@@ -290,7 +257,7 @@ namespace Shards.Engine
         }
 
         // Duel of Doom hero draft: reverse seat order, no duplicates, on the built board.
-        // Public so bots can enumerate the hero pool (e.g. to precompute ability values)
+        // Available characters for the hero pool
         // without duplicating the list.
         public static readonly string[] DraftableCharacters = { "decima", "tetra", "volos", "kosynwu", "rez" };
         private List<string> _draftDefaults;
@@ -384,8 +351,6 @@ namespace Shards.Engine
                     if (action is not ConcedeAction concede)
                         return SubmitResult.Rejected("A decision is pending");
                     var conceded = Concede(concede.PlayerIndex);
-                    if (conceded.Accepted)
-                        Journal.Add(action);
                     return conceded;
                 }
                 if (decision.Answer == null || decision.Answer.DecisionId != PendingInput.Decision.Id)
@@ -411,7 +376,6 @@ namespace Shards.Engine
                             });
                             break;
                         }
-                Journal.Add(action);
                 _activeContext.Answer = decision.Answer;
                 PumpEffects();
                 return SubmitResult.Ok();
@@ -420,7 +384,6 @@ namespace Shards.Engine
             var result = ExecuteTurnAction(action);
             if (result.Accepted)
             {
-                Journal.Add(action);
                 Pump();
             }
             return result;
@@ -681,29 +644,23 @@ namespace Shards.Engine
 
         /// <summary>Single source of truth for every hero's Duel ability metadata (costs,
         /// names, rules text). The engine's activation path and every UI read this.</summary>
+        public const int DecimaFirstBuyDiscount = 2;
+
         public static HeroAbilitySpec HeroAbilityInfo(string characterId) => characterId switch
         {
             "decima" => new HeroAbilitySpec("Recruiting",
-                "M5 passive: the first card you buy each turn costs 1 less.", 5, 0, 0, active: false),
-            // Perception: 3 gems → 2 (2026-08-02), then 1 card → 2 (2026-08-23, user
-            // decision) — even at 2 gems a single draw lost to almost any buy, so the
-            // ability now replaces the hand slot AND digs.
+                $"M5 passive: the first card you buy each turn costs {DecimaFirstBuyDiscount} less.", 5, 0, 0, active: false),
+            // September 27 balance: two draws now cost three gems.
             "tetra" => new HeroAbilitySpec("Perception",
-                "M5, once per turn: pay 2 gems, draw 2 cards.", 5, 2, 0, active: true),
+                "M5, once per turn: pay 3 gems, draw 2 cards.", 5, 3, 0, active: true),
             "volos" => new HeroAbilitySpec("First Aid",
                 "M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw 1 card.\n— Pay 3 gems: gain 1 mastery.", 5, 0, 0, active: true),
-            // Sacrifice: 3 gems → 2 (2026-07-27) → 0 (2026-08-23, user decision). The
-            // 3 health IS the cost — a real one in a damage race, and enough to make the
-            // ability a genuine decision rather than free thinning. The gem side kept
-            // pushing it below "just buy something" instead.
+            // September 27 balance: thinning costs one health.
             "kosynwu" => new HeroAbilitySpec("Sacrifice",
-                "M5, once per turn: pay 3 health, banish a card from your hand or discard pile.", 5, 0, 3, active: true),
-            // Futureproof: 1 gem → 0 (2026-07-27). Scry alone rarely justifies a gem; the
-            // ability is designed to PAIR with the row reroll — bury a card that would help
-            // an Undergrowth-heavy opponent, or set up a good card to reroll into — and that
-            // combination cannot be afforded if the Scry itself costs the reroll's gem.
+                "M5, once per turn: pay 1 health, banish a card from your hand or discard pile.", 5, 0, 1, active: true),
+            // The passive reroll discount does not require exhausting the ability.
             "rez" => new HeroAbilitySpec("Futureproof",
-                "M5, once per turn: Scry 2 the center deck. Your next reroll this turn costs 1 gem less.", 5, 0, 0, active: true),
+                "M5 passive: all your rerolls cost 1 gem less.\nM5, once per turn: Scry 3 the center deck.", 5, 0, 0, active: true),
             _ => new HeroAbilitySpec(null, null, 0, 0, 0, active: false)
         };
 
@@ -716,7 +673,7 @@ namespace Shards.Engine
             "tetra" => new Gain { Draw = 2 },
             "volos" => new VolosAbilityChoice(),
             "kosynwu" => new BanishUpTo(1),
-            "rez" => new ShardsComposite(new Scry(2), new DiscountNextReroll()),
+            "rez" => new Scry(3),
             _ => null
         };
 
@@ -875,10 +832,13 @@ namespace Shards.Engine
         /// <summary>Duel of Doom row reroll price: 1 gem for the first reroll of the turn,
         /// +1 per subsequent reroll (1, 2, 3…), resetting each turn — the first look is
         /// nearly free, but digging the whole shop for one card gets expensive fast.
-        /// Rez discounts the next successful reroll this turn by one.
+        /// Rez at mastery 5 discounts EVERY reroll by one, independently of activation.
         /// A def may opt out entirely (Comet).</summary>
+        public static int RerollDiscount(ShardsPlayer player) => player.NextRerollDiscount
+            + (player.CharacterId == "rez" && player.Mastery >= 5 ? 1 : 0);
+
         public static int RerollCost(ShardsPlayer player) =>
-            System.Math.Max(0, 1 + player.RerollsThisTurn - player.NextRerollDiscount);
+            System.Math.Max(0, 1 + player.RerollsThisTurn - RerollDiscount(player));
 
         private SubmitResult RerollRow(ShardsPlayer player, int slotIndex)
         {
@@ -1010,10 +970,10 @@ namespace Shards.Engine
             int cost = def.Cost;
             if (def.CostModifier != null)
                 cost += def.CostModifier(buyer);
-            // Decima (Duel) M5 passive: the first card you buy each turn costs 1 less.
+            // Decima (Duel) M5 passive: the first card you buy each turn costs 2 less.
             if ((State.Dlc & ShardsDlc.Duel) != 0 && buyer.CharacterId == "decima" &&
                 buyer.Mastery >= 5 && !buyer.FirstBuyUsedThisTurn)
-                cost -= 1;
+                cost -= DecimaFirstBuyDiscount;
             return System.Math.Max(0, cost);
         }
 
@@ -1161,7 +1121,7 @@ namespace Shards.Engine
                     });
                 // Defaults pad with DISTINCT options only — pre-fill a full assignment
                 // (everything on the first ASSIGNABLE opponent) so timeouts and
-                // bot-takeovers stay legal. With everyone taunt-protected the default
+                // timeout defaults stay legal. With everyone taunt-protected the default
                 // is deliberately EMPTY (waste): a timed-out player should not be
                 // volunteered into killing champions.
                 if (assignable.Count > 0)
@@ -1515,26 +1475,29 @@ namespace Shards.Engine
             _splitAmounts = null;
 
             // End phase, in rules order:
-            // 1. fast-played/warped cards → BOTTOM of the center deck
+            // 1. explicit banishes, otherwise temporary returns, resolve for played cards
             // 2. remaining play-zone cards → discard
             foreach (var card in player.PlayZone)
             {
-                if (card.FastPlayed)
+                if (card.BanishAtCleanup)
+                {
+                    // Reactor Drone (Duel) mode 2: "banish this card at the end of your turn".
+                    // The explicit banish also applies to a temporary fast-play;
+                    // it must not return with a stale flag to another player.
+                    card.BanishAtCleanup = false;
+                    card.FastPlayed = false;
+                    card.Zone = ShardsZone.Banished;
+                    State.Banished.Add(card);
+                    player.CardsBanishedThisTurn++; // still this player's turn
+                    Emit(new ShardsCardBanishedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
+                }
+                else if (card.FastPlayed)
                 {
                     card.FastPlayed = false;
                     card.Owner = -1;
                     card.Zone = ShardsZone.CenterDeck;
                     State.CenterDeck.Insert(0, card); // list end = top; index 0 = bottom
                     Emit(new ShardsMercenaryReturnedEvent { PlayerIndex = player.Index, DefId = card.DefId });
-                }
-                else if (card.BanishAtCleanup)
-                {
-                    // Reactor Drone (Duel) mode 2: "banish this card at the end of your turn".
-                    card.BanishAtCleanup = false;
-                    card.Zone = ShardsZone.Banished;
-                    State.Banished.Add(card);
-                    player.CardsBanishedThisTurn++; // still this player's turn
-                    Emit(new ShardsCardBanishedEvent { PlayerIndex = player.Index, InstanceId = card.InstanceId, DefId = card.DefId });
                 }
                 else
                 {
@@ -1572,7 +1535,7 @@ namespace Shards.Engine
                 DrawOne(player);
 
             player.ResetTurn();
-            Emit(new ShardsCleanupEvent { PlayerIndex = player.Index });
+            Emit(new ShardsCleanupEvent { PlayerIndex = player.Index, RedrawCount = player.Hand.Count });
 
             // 6. Ingeminex revealed this turn attack — AFTER the redraw (locked
             //    2026-07-21: Agony's discard hits the active player's fresh hand).
@@ -1894,8 +1857,7 @@ namespace Shards.Engine
 
         public void Emit(GameEvent e)
         {
-            if (!_quiet)
-                Log.Append(e);
+            Log.Append(e);
         }
 
         public void GainGems(int playerIndex, int amount)
@@ -2038,6 +2000,7 @@ namespace Shards.Engine
         /// <summary>Recruit a card taken off the center deck (Shard Defiant "recruit it").</summary>
         public void RecruitLoose(ShardsPlayer player, ShardsCard card)
         {
+            if (card.Def.CannotBeFastPlayed) return; // Comet requires a normal purchase.
             card.Owner = player.Index;
             card.FastPlayed = false;
             Emit(new ShardsCardBoughtEvent { PlayerIndex = player.Index, SlotIndex = -1, DefId = card.DefId, CostPaid = 0, FastPlay = false });
@@ -2118,6 +2081,7 @@ namespace Shards.Engine
             if (slotIndex < 0 || slotIndex >= State.CenterRow.Length) return false;
             var card = State.CenterRow[slotIndex];
             if (card == null) return false;
+            if (card.Def.CannotBeFastPlayed) return false; // Comet requires a normal purchase.
             var player = State.Players[playerIndex];
 
             State.CenterRow[slotIndex] = null;
@@ -2150,13 +2114,14 @@ namespace Shards.Engine
         public void Banish(ShardsCard card, List<ShardsCard> fromZone)
         {
             if (!fromZone.Remove(card)) return;
+            bool fromHand = card.Zone == ShardsZone.Hand;
             card.Zone = ShardsZone.Banished;
             State.Banished.Add(card);
             // "Cards you banished this turn" (Warpquartz Duel) — banishes are always an
             // active-player effect, so they attribute to the turn player.
             if (!State.GameOver)
                 State.TurnPlayer.CardsBanishedThisTurn++;
-            Emit(new ShardsCardBanishedEvent { PlayerIndex = card.Owner, InstanceId = card.InstanceId, DefId = card.DefId });
+            Emit(new ShardsCardBanishedEvent { PlayerIndex = card.Owner, InstanceId = card.InstanceId, DefId = card.DefId, FromHand = fromHand });
         }
 
         public void DrawCards(int playerIndex, int count)

@@ -3,7 +3,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace Shards.Stats
 {
-    /// <summary>Shared JSON settings for SoI stats records (mirrors SoiSim's SimJson):
+    /// <summary>Shared JSON settings for SoI stats records:
     /// camelCase, nulls omitted, single line.</summary>
     public static class SoiStatsJson
     {

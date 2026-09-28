@@ -160,7 +160,8 @@ namespace Shards.Engine
         /// <summary>Comet: cannot be removed from the center row by the Duel row reroll.</summary>
         public bool CannotBeRerolled;
         /// <summary>Comet: "must be bought using gems" — excluded from every free/fast-play
-        /// path (Warp, Longshot, fast-play purchase).</summary>
+        /// acquisition path (Warp, Longshot, free recruitment, fast-play purchase).
+        /// Normal purchases and moving already-owned cards remain legal.</summary>
         public bool CannotBeFastPlayed;
         /// <summary>Testudo Vanguard (Duel): while in play, the owner's revealed/passive
         /// shields also reduce the damage assigned to EACH of their champions individually

@@ -6,7 +6,7 @@ namespace Shards.Stats
 {
     /// <summary>Client-side game recorder: consumes the REDACTED per-viewer stream
     /// (events + snapshots — never engine/state peeks) and produces a SoiGameRecord
-    /// at game end. Port of SoiSim's omniscient GameRecorder minus the state peeks;
+    /// at game end;
     /// every metric here survives redaction (draw events keep their count, shield
     /// reveals are public by rule).</summary>
     public sealed class SoiGameRecorder
@@ -110,11 +110,7 @@ namespace Shards.Stats
                 else
                 {
                     seat.Name = player.Name;
-                    seat.IsBot = player.IsBot;
-                    seat.BotKind = player.BotKind;
-                    seat.Identity = player.IsBot && player.BotKind != null
-                        ? "bot:" + player.BotKind
-                        : (player.Name ?? "").ToLowerInvariant();
+                    seat.Identity = player.Name?.Trim().ToLowerInvariant();
                 }
                 record.Players.Add(seat);
             }

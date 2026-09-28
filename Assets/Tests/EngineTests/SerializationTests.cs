@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using Pascension.Bots;
 using Pascension.Engine.Actions;
 using Pascension.Engine.Core;
 using Pascension.Engine.Serialization;
@@ -60,57 +59,33 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void GameHost_RunsASoloGameWithSeats()
+        public void GameHost_RoutesHumanInputsAndSnapshots()
         {
-            var config = TestGames.StandardConfig(players: 3, seed: 11);
-            var adapter = new PascensionEngineAdapter(config);
-            var host = new GameHost(adapter, 3, config.Rules.ResponseTimerSeconds);
-
-            // Seat 0 is a "human" driven through LocalSession; seats 1-2 are instant bots.
-            var session = new LocalSession(host, 0);
-            host.AttachSeat(session, isHuman: true);
-            var bot1 = new BotSeat(1, new SyncAgentBot(new HeuristicBot(101), adapter.Inner), thinkDelaySeconds: 0f);
-            var bot2 = new BotSeat(2, new SyncAgentBot(new HeuristicBot(102), adapter.Inner), thinkDelaySeconds: 0f);
-            bot1.Bind(host);
-            bot2.Bind(host);
-            host.AttachSeat(bot1, isHuman: false);
-            host.AttachSeat(bot2, isHuman: false);
-
-            int snapshots = 0, inputRequests = 0;
-            var humanAgent = new HeuristicBot(100);
-            session.SnapshotReceived += _ => snapshots++;
-            session.InputRequested += pending =>
+            var adapter = new PascensionEngineAdapter(TestGames.StandardConfig(players: 3, seed: 11));
+            var host = new GameHost(adapter, 3, 0f);
+            var sessions = new LocalSession[3];
+            var snapshots = new int[3];
+            var requests = new int[3];
+            for (int i = 0; i < sessions.Length; i++)
             {
-                inputRequests++;
-                // Answer immediately, exactly as the UI would.
-                if (pending.Kind == PendingInputKind.Decision)
-                    session.SubmitAction(new SubmitDecisionAction
-                    {
-                        PlayerIndex = 0,
-                        Answer = humanAgent.ChooseDecision(adapter.Inner, pending.Decision)
-                    });
-                else
-                    session.SubmitAction(humanAgent.ChooseAction(adapter.Inner, new PendingInput
-                    {
-                        Kind = pending.Kind,
-                        PlayerIndex = 0,
-                        LegalActions = pending.LegalActions
-                    }));
-            };
-
-            host.Start();
-            // Bots act on ticks; the human acts via the event handler above.
-            for (int i = 0; i < 200000 && !adapter.Inner.State.GameOver && adapter.Inner.State.Round <= 40; i++)
-            {
-                host.Tick(0.1f);
-                bot1.Tick(0.1f);
-                bot2.Tick(0.1f);
+                int index = i;
+                sessions[i] = new LocalSession(host, i);
+                sessions[i].SnapshotReceived += _ => snapshots[index]++;
+                sessions[i].InputRequested += _ => requests[index]++;
+                host.AttachSeat(sessions[i], isHuman: true);
             }
-
-            Assert.Greater(snapshots, 10, "Session received snapshots");
-            Assert.Greater(inputRequests, 10, "Session received input requests");
-            Assert.IsTrue(adapter.Inner.State.GameOver || adapter.Inner.State.Round > 40,
-                "Game progressed to completion or the cap");
+            host.Start();
+            for (int step = 0; step < 300 && !adapter.GameOver; step++)
+            {
+                var pending = adapter.PendingInput;
+                Assert.IsNotNull(pending);
+                sessions[pending.PlayerIndex].SubmitAction(adapter.DefaultActionFor(pending));
+            }
+            for (int i = 0; i < sessions.Length; i++)
+            {
+                Assert.Greater(snapshots[i], 10, "Every human receives snapshots");
+                Assert.Greater(requests[i], 1, "Input reaches every human seat");
+            }
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Pascension.Game.View
     /// <summary>
     /// Full-screen overlay for online interruptions. Two modes:
     /// · WAITING — the match is paused for disconnected player(s); shows who, the game
-    ///   ID to re-share, and (host only) a "replace with bot" kick per player.
+    ///   ID to re-share.
     /// · CONNECTION LOST — we lost the host; offers REJOIN (same game ID) or LEAVE.
     /// The dimmer swallows all game input; the host-side submit gate is the backstop.
     /// </summary>
@@ -96,10 +96,9 @@ namespace Pascension.Game.View
             transform.SetAsLastSibling();
 
             _title.text = Loc.T("GAME PAUSED");
-            _subtitle.text = Loc.T("The game resumes when everyone is back.") +
-                             (info.CanKick ? Loc.T("\nOr replace a missing player with a bot.") : "");
+            _subtitle.text = Loc.T("The game resumes when everyone is back.");
             _rejoinButton.gameObject.SetActive(false);
-            _leaveButton.gameObject.SetActive(false);
+            _leaveButton.gameObject.SetActive(true);
 
             bool hasCode = !string.IsNullOrEmpty(info.JoinCode);
             _footer.gameObject.SetActive(hasCode);
@@ -118,13 +117,6 @@ namespace Pascension.Game.View
                     UiPalette.TextMain, TextAlignmentOptions.MidlineLeft);
                 UiFactory.Place(label.rectTransform, new Vector2(0f, 1f), new Vector2(30f, -8f - i * 56f), new Vector2(360f, 44f));
 
-                if (info.CanKick)
-                {
-                    int playerIndex = seat.PlayerIndex;
-                    var kick = UiFactory.CreateButton(_theme, "Kick" + i, _rows, Loc.T("REPLACE WITH BOT"), 14f);
-                    UiFactory.Place((RectTransform)kick.transform, new Vector2(1f, 1f), new Vector2(-10f, -8f - i * 56f), new Vector2(190f, 44f));
-                    kick.onClick.AddListener(() => ReconnectService.KickToBot(playerIndex));
-                }
             }
         }
 

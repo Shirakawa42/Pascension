@@ -383,7 +383,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Pascension.Game::Pascension.Game.Soi.SoiBootstrap
   Screen: {fileID: 323837029}
-  BotThinkDelay: 0.6
 --- !u!4 &622855807
 Transform:
   m_ObjectHideFlags: 0

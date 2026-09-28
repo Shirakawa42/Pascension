@@ -76,7 +76,7 @@ namespace Shards.Engine
 
     /// <summary>A "Choose one" card resolved a branch (Reactor Drone…). Public — the
     /// effect is visible anyway — so the log can say WHICH mode was taken, including for
-    /// bots and opponents. Label is the option's ENGLISH label; the UI localizes it.</summary>
+    /// other players. Label is the option's ENGLISH label; the UI localizes it.</summary>
     public sealed class ShardsModeChosenEvent : GameEvent
     {
         public int PlayerIndex;
@@ -228,6 +228,9 @@ namespace Shards.Engine
         public int PlayerIndex;
         public int InstanceId;
         public string DefId;
+        /// <summary>Public origin zone; distinguishes a lost known hand card
+        /// from an identically named card banished from another zone.</summary>
+        public bool FromHand;
     }
 
     /// <summary>A card returned to its owner's hand / deck top (public — the card was
@@ -252,6 +255,12 @@ namespace Shards.Engine
     {
         public int PlayerIndex;
         public List<string> DefIds = new();
+        /// <summary>These public cards were removed from the center top, in reveal order.
+        /// Hand/personal-deck reveals leave this false and do not alter center knowledge.</summary>
+        public bool TakenFromCenterTop;
+        /// <summary>These cards are still in the player's hand after reveal.
+        /// Personal-deck and center reveals leave this false.</summary>
+        public bool FromHand;
     }
 
     public sealed class ShardsMercenaryReturnedEvent : GameEvent
@@ -263,6 +272,9 @@ namespace Shards.Engine
     public sealed class ShardsCleanupEvent : GameEvent
     {
         public int PlayerIndex;
+        /// <summary>Public size of the freshly drawn hand, before subsequent
+        /// monster effects. -1 supports older logs lacking this metadata.</summary>
+        public int RedrawCount = -1;
     }
 
     public sealed class ShardsGameEndedEvent : GameEvent

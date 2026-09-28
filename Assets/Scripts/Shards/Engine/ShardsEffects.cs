@@ -86,7 +86,7 @@ namespace Shards.Engine
     {
         private readonly IShardsEffect[] _parts;
         public ShardsComposite(params IShardsEffect[] parts) => _parts = parts;
-        /// <summary>Read-only view for bot heuristics.</summary>
+        /// <summary>Read-only effect structure.</summary>
         public IReadOnlyList<IShardsEffect> Parts => _parts;
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
@@ -130,7 +130,7 @@ namespace Shards.Engine
         private readonly ShardsFaction _faction;
         private readonly int _required; // cards of the faction played this turn (excluding this one)
         private readonly IShardsEffect _inner;
-        /// <summary>Read-only views for bot statics/heuristics.</summary>
+        /// <summary>Read-only effect structure.</summary>
         public IShardsEffect Inner => _inner;
         public ShardsFaction Faction => _faction;
         public int Required => _required;
@@ -187,6 +187,12 @@ namespace Shards.Engine
     {
         private readonly System.Action<ShardsContext> _body;
         public Do(System.Action<ShardsContext> body) => _body = body;
+        /// <summary>Reviewed metadata: only increments the controller's recruit
+        /// destination counters, which reset at cleanup. No costs, draws, events,
+        /// hidden reads, or other mutations. Does not execute the callback.</summary>
+        public bool OnlySetsRecruitRouting { get; private set; }
+        public static Do RecruitRouting(System.Action<ShardsContext> body) =>
+            new Do(body) { OnlySetsRecruitRouting = true };
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx) { _body(ctx); yield break; }
     }
 
@@ -222,6 +228,20 @@ namespace Shards.Engine
         private readonly System.Func<ShardsContext, bool> _condition;
         private readonly IShardsEffect _inner;
         public IShardsEffect Inner => _inner;
+        /// <summary>Author-reviewed predicate using only controller-visible state.
+        /// Never mark a predicate inspecting hidden draw order or enemy hands.
+        /// Unknown predicates remain opaque to AI effect previews.</summary>
+        public bool ControllerVisible { get; private set; }
+        /// <summary>The reviewed, side-effect-free predicate is unchanged by
+        /// marking the source exhausted. This permits a zero-cost exhaust
+        /// preview on the current state. It must not inspect exhausted flags
+        /// or any value derived from them. Ordinary Visible predicates do not
+        /// promise this and remain unsuitable for this preview.</summary>
+        public bool StableOnExhaust { get; private set; }
+        public static If Visible(System.Func<ShardsContext, bool> condition, IShardsEffect inner) =>
+            new If(condition, inner) { ControllerVisible = true };
+        public static If VisibleStableOnExhaust(System.Func<ShardsContext, bool> condition, IShardsEffect inner) =>
+            new If(condition, inner) { ControllerVisible = true, StableOnExhaust = true };
         public If(System.Func<ShardsContext, bool> condition, IShardsEffect inner)
         {
             _condition = condition;
@@ -239,14 +259,14 @@ namespace Shards.Engine
 
         // Common conditions, named for content readability.
         public static If Inspire(IShardsEffect inner) =>
-            new(ctx => ctx.Controller.Champions.Count > 0, inner);
+            Visible(ctx => ctx.Controller.Champions.Count > 0, inner);
         public static If Echo(IShardsEffect inner) =>
-            new(ctx => ctx.Controller.Discard.Exists(c =>
+            Visible(ctx => ctx.Controller.Discard.Exists(c =>
                 ShardsEngine.CountsAs(ctx.Controller, c.Def, ShardsFaction.Wraethe)), inner);
         public static If Character(string characterId, IShardsEffect inner) =>
-            new(ctx => ctx.Controller.CharacterId == characterId, inner);
+            Visible(ctx => ctx.Controller.CharacterId == characterId, inner);
         public static If FullHealth(IShardsEffect inner) =>
-            new(ctx => ctx.Controller.Health >= ctx.Engine.State.Rules.MaxHealth, inner);
+            Visible(ctx => ctx.Controller.Health >= ctx.Engine.State.Rules.MaxHealth, inner);
     }
 
     /// <summary>Unify: fires if the controller played ANOTHER card of the faction this
@@ -296,7 +316,7 @@ namespace Shards.Engine
                 var chosen = player.Hand.Find(c =>
                     c != source && ShardsEngine.CountsAs(player, c.Def, _faction));
                 if (chosen == null) yield break;
-                ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { chosen.DefId } });
+                ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { chosen.DefId }, FromHand = true });
             }
 
             foreach (var step in _inner.Resolve(ctx))
@@ -424,7 +444,7 @@ namespace Shards.Engine
                         revealedIds.Add(card.DefId);
                     }
                     if (revealedIds.Count > 0)
-                        ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds });
+                        ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds, FromHand = true });
                     if (cards < DuelDistinctFactions || factions.Count < DuelDistinctFactions)
                         yield break;
                 }
@@ -469,7 +489,7 @@ namespace Shards.Engine
                     revealedIds.Add(card.DefId);
                 }
                 if (revealedIds.Count > 0)
-                    ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds });
+                    ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds, FromHand = true });
                 foreach (var faction in missing)
                     if (!revealedFactions.Contains(faction))
                         yield break;
@@ -489,9 +509,21 @@ namespace Shards.Engine
 
         /// <summary>Lit when the count is non-zero (the card actually does something).</summary>
         public bool ConditionMet(ShardsContext ctx) => _counter(ctx) > 0;
-        /// <summary>Per-unit amounts (bot heuristics assume ~2 units).</summary>
+        /// <summary>Per-unit resource amounts.</summary>
         public (int gems, int power, int mastery, int health, int draw) PerUnit =>
             (_gems, _power, _mastery, _health, _draw);
+        /// <summary>Same visibility contract as If.ControllerVisible.</summary>
+        public bool ControllerVisible { get; private set; }
+        public static PerCount Visible(System.Func<ShardsContext, int> counter,
+            int gems = 0, int power = 0, int mastery = 0, int health = 0, int draw = 0) =>
+            new PerCount(counter, gems, power, mastery, health, draw) { ControllerVisible = true };
+        /// <summary>Exact count for an explicitly reviewed controller-visible counter.
+        /// Opaque callbacks cannot be queried through this interface.</summary>
+        public int VisibleCount(ShardsContext context)
+        {
+            if (!ControllerVisible) throw new System.InvalidOperationException("Opaque effect counter");
+            return System.Math.Max(0, _counter(context));
+        }
         public PerCount(System.Func<ShardsContext, int> counter,
             int gems = 0, int power = 0, int mastery = 0, int health = 0, int draw = 0)
         {
@@ -755,7 +787,7 @@ namespace Shards.Engine
             for (int s = 0; s < engine.State.CenterRow.Length; s++)
             {
                 var card = engine.State.CenterRow[s];
-                if (card != null && card.Def.Cost <= _maxCost)
+                if (card != null && !card.Def.CannotBeFastPlayed && card.Def.Cost <= _maxCost)
                     slots.Add(s);
             }
             if (slots.Count == 0) yield break;

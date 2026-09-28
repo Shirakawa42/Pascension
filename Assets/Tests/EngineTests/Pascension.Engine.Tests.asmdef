@@ -7,11 +7,9 @@
         "Pascension.Core",
         "Pascension.Engine",
         "Pascension.Content",
-        "Pascension.Bots",
         "Pascension.Net",
         "Shards.Engine",
         "Shards.Content",
-        "Shards.Bots",
         "Shards.Stats"
     ],
     "includePlatforms": [

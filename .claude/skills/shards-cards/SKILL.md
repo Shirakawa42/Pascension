@@ -21,6 +21,25 @@ pump gotchas, glow hints): see the shards-engine skill.
   5 Ingeminex + 30 destinies), `ShardsDuelSet.cs` (**Duel of Doom** — 21 new defs + ~44
   errata replacement defs). `ShardsContentRegistry.EnsureRegistered()` registers all.
 
+### Controller-visible effect predicates
+
+`If.Visible` and `PerCount.Visible` preserve the existing rule effect and expose
+an author-reviewed visibility contract for AI gain previews. The 46 direct
+predicates/counters in the five sets, plus Inspire/Echo/Character/FullHealth,
+read only the acting controller's visible state: health/mastery, public
+champions/discard/played cards, faction counts, opponent mastery, or visible
+Ingeminex. No rules text, costs, or effect amounts change. Unknown `new If` and
+`new PerCount` delegates remain opaque. Never mark a callback that reads enemy
+hands, private deck order, or unrevealed center/destiny cards as visible.
+
+`PerCount.VisibleCount` exposes an exact count only for the same reviewed visible
+callbacks and rejects opaque ones. `Do.RecruitRouting` annotates Numeri Drones'
+existing increment of `NextHomodeusChampionsIntoPlay`: it has no immediate cost or
+hidden read and expires at cleanup. This lets the AI recognize its free gem before
+ending a turn without executing an unknown callback. The effect, rules text and
+amounts are unchanged. Never use this annotation for health costs, draws, events,
+or mutations beyond the controller's turn-local recruit routing counters.
+
 ## Reveal rule (engine-wide, 2026-07-26)
 
 Any effect that REVEALS from a player's deck pulls through `ShardsEngine.PeekTopOfDeck`,
@@ -62,7 +81,8 @@ a def with `ShardsCardDef.ReplacesId` skips that base def when Duel is on (gener
 the destiny deal AND relic set-aside.
 
 **New rules-side vocabulary** — `ShardsDuelEffects.cs`: `AllegianceEffect` (own ≥N of a
-faction — deck+hand+discard+play+champions, counts itself), `Scry`,
+faction — deck+hand+discard+play+champions, counts itself and temporary fast-plays in
+the play zone, confirmed 2026-09-25; collection `FullDeck` still excludes loans), `Scry`,
 `OpponentDrawsThenDiscards`, `ShardsDuel.DistinctFactionsPlayed`. Engine hooks on
 `ShardsCardDef`: `CountsAsEveryFaction` (Prism), `CannotBeRerolled` (Comet),
 `KeepFastPlaysAtMastery` (Swyft M10), `ImmuneToIngeminex` (Doom Gate),
@@ -74,7 +94,7 @@ H/U/W) — flag-gated inside `Dominion`.
 
 **Row reroll** (repriced 2026-07-25): `ShardsRerollRowAction` — pay
 `ShardsEngine.RerollCost(player)` = **max(0, 1 + RerollsThisTurn - NextRerollDiscount)** (climbs per use, resets each
-turn; counter on `ShardsPlayer`, cloned/hashed/snapshotted) → `BottomRowCardAndRefill`
+turn; counter on `ShardsPlayer`, snapshotted) → `BottomRowCardAndRefill`
 (also used free by Order Initiate errata). **Hero abilities**: `ShardsHeroAbilityAction` +
 `HeroAbilityFor(characterId)` (Tetra/Volos/KoSynWu/Rez active; Decima = passive first-buy
 discount in `EffectiveCost`); separate from Focus, once/turn.
@@ -96,6 +116,29 @@ pay 1 gem for 2 power, pay 2 gems to draw 1, or pay 3 gems for 1 mastery.
 All four `soivolos:<mode>` cards are shown; unaffordable modes are disabled.
 `VolosAbilityChoice` owns mode costs/text/effects; `SoiCardFaces` renders the cards.
 
+**2026-09-28 balance** (supersedes earlier values): 1v1 seat 1 opens with
+5 cards, 1 mastery and 1 crystal for its first turn only; normal cleanup removes
+unused crystals. Decima's M5 first-buy discount is 2. Terminal Crescents (Duel)
+gains 1 mastery, then power equal to half mastery rounded up below M20, or mastery
+minus 5 at M20. Deadly Recruits (Duel) chooses free fast-play OR free recruit,
+not both (ally cost up to 2, or 4 at M20). Swyft (Duel) defense 5. Ferrata Guard
+(Duel) exhaust gains 1 base crystal plus 1 per Homodeus champion controlled.
+Torian Commandos gives 3 crystals + 2 power. Le'shai Knight gives 4 power, 6 total
+with Unify. Advanced Medicine heals 6 under its unchanged condition. Power Struggle
+gives 6 power. Doom Gate floods 35 Ingeminex, still once per player per game and
+still defense 7. Warpquartz (Duel) draws 1 BEFORE choosing banishes; copied effects
+still resolve twice. Datic Robes (Duel) discard shield starts at M15.
+Entropic Talons, Praetorian-01 and Nil Assassin remain unchanged.
+
+**2026-09-27 balance** (supersedes the September 18 values below): in 1v1 seat 1
+opens with 6 cards and 1 mastery; later hands still draw 5. Tetra's M5 activation
+costs 3 gems; Ko Syn Wu's costs 1 health. Rez's M5 activation is Scry 3, with a
+separate M5 passive reducing EVERY reroll by 1 (prices 0, 1, 2, ... without activation).
+Duel Warpquartz resolves each of its banished cards' play effects twice, sequentially;
+its 3-gem/3-power bonus per card banished this turn is unchanged and awarded once.
+Doom Gate defense 7. Praetorian-02 in-play shields 4 / 8 at M20. Duel Cinder Scars
+quantity 4 instead of 5. Non-Duel card definitions are unchanged.
+
 **2026-09-18 balance** (source: `Tools/CardDesigner/soi-design-session-2026-09-18.json`):
 Duel-only. `panconscious_crown_duel` replaces the original and heals 5 (original stays 2);
 Comet costs 13; Testudo defense 4; Praetorian-02 activation 2 gems; Praetorian-03 top tier M20;
@@ -111,9 +154,8 @@ bulwark_chanter, aegis_archivist, thornshell_warden, nectar_alchemist, lifebloom
 doomstalker, bleak_communion, grim_tutor, comet, prism, longshot.
 **whisper_extractor REMOVED 2026-08-02** (user decision: too strong even after the
 2026-07-25 redraw nerf). Gone with it: the `OpponentDrawsThenDiscards` effect class, the
-`soi.handpick` context (bot handlers, search candidates, SoiSim coverage expectation) and
-the two FR decision-title patterns. The `OppHandStrips` atom + weight STAY (W layout is
-append-only); the art png/CardArtIndex entry remain on disk until the next
+`soi.handpick` context and the two FR decision-title patterns. The art png/CardArtIndex
+entry remain on disk until the next
 `Rebuild Card Art Index` (editor-only).
 **grim_tutor** (2026-07-25, Wraethe Mercenary, cost 3, qty 2): Custom flow — decision over
 the player's DECK sorted by DefId/InstanceId (never deck order — the World Piercer
@@ -135,21 +177,21 @@ Pinned by `Duel_Testudo_*` tests (over-assign kill, exact-lethal saved, taunt-he
 **Ingeminex rewards**: destroying one by CARD EFFECT is defeating it — `DestroyActiveMonster`
 takes the destroyer's seat index and queues `RewardEffect` just like the attack path does
 (Doom Gate paid nothing at all before 2026-07-27). Pass -1 only for a kill that belongs to
-nobody. Doom Gate floods **25** Ingeminex (2026-09-18; previously 30).
+nobody. Doom Gate floods **35** Ingeminex (2026-09-28; previously 25).
 
-**Testing**: `Duel_*` tests in `ShardsContentTests` (draft, errata swaps, reroll, hero
-ability, Decima discount, full-game random-bot termination). SoiSim gained a `--dlc duel`
-flag (`SimConfig.AllDlc` now settable); the value model gates green on the duel pool with
-existing weights + `ShardsCustomAnnotations` entries for every new Custom/Do — no retune
-needed.
+**Testing**: `Duel_*` tests in `ShardsContentTests` cover draft, errata swaps, reroll, hero
+abilities and Decima discount.
 
 **Adversarial review pass (2026-07-24, 125-agent workflow, 37 confirmed findings — ALL fixed, 220 tests green):**
-- `CannotBeFastPlayed` def flag (Comet) enforced in WarpUpTo/WarpFromRow/FastPlayLoose/BuyCard — closes the free-instant-kill via unlimited Warp.
+- `CannotBeFastPlayed` def flag (Comet) enforces normal-purchase-only acquisition in
+  WarpUpTo/WarpFromRow/FastPlayLoose/BuyCard and free recruitment
+  (`RecruitFromRow` options, `RecruitFromRowFree`, `RecruitLoose`). Shard Defiant shows
+  Comet with Keep disabled and Banish as the legal timeout default. Normal purchase
+  discounts/redirects and moving an already-owned Comet remain legal (2026-09-25 ruling).
 - `DoomGateFloodUsed` per-player once-per-game guard; `CardsBanishedThisTurn` per-turn counter (Warpquartz pays on the TURN total); `ShardsCard.BanishAtCleanup` (Reactor Drone mode 2 banishes at END of turn, only when the source IS the drone — copies banish nothing). Sentinels: player 41, card 8.
 - **Duel Dominion**: 3+ OTHER cards AND 3+ distinct factions, with the hand-REVEAL decision (reveals never feed PlayedThisTurn); Prism = all factions but ONE card; CountsAs/Yggdrasil honored everywhere (`ShardsDuel.DistinctFactionsPlayed` + `PlayedFactionCards` gates on the 3-faction destinies).
-- **Testudo now IS "shields protect champions"**: champion hits deferred via `_pendingChampionHits` into the owner's defense step (ShieldFlow applies prevention per champion; transient engine field like _pendingDefenses). **Datic Robes M20 discard-shield implemented** (`DiscardPassiveShield` hook read in NextDefense's passive). Spore Cleric uses real `Unify` (no self-trigger); Riposte = played-or-REVEAL flow; Index of Futures = `ReorderCenterTop` (true any-order, first pick = top); Prism Qty 2; World Piercer options sorted (no deck-order leak).
+- **Testudo now IS "shields protect champions"**: champion hits deferred via `_pendingChampionHits` into the owner's defense step (ShieldFlow applies prevention per champion; transient engine field like _pendingDefenses). **Datic Robes M15 discard-shield implemented** (`DiscardPassiveShield` hook read in NextDefense's passive). Spore Cleric uses real `Unify` (no self-trigger); Riposte = played-or-REVEAL flow; Index of Futures = `ReorderCenterTop` (true any-order, first pick = top); Prism Qty 2; World Piercer options sorted (no deck-order leak).
 - `ValidateAnswer` rejects duplicate option ids (except soi.split, whose duplicates are the mechanism).
-- Bots: herodraft honors DefaultOptionIds (heuristic + value model); ScoreAction ranks hero ability just above / reroll just below END TURN; ShardsDecisionCandidates covers herodraft/mode/handpick/removeshop/defiant/scry; ISMCTS KeyOf distinguishes reroll slots + hero ability. SoiSim records DRAFTED characters, not scheduler defaults.
 - UI: draft/reroll/ability events narrated (history + toasts); opponent portraits guarded during the draft; errata ArtId inherits ReplacesId (art regression fix) + CardArtIndex rebuilt. (The former `SoiCardFaces.DuelEnabled` character-face ability block was replaced 2026-07-25 by the `soiability:` card face.)
 - **Full card table** (id / name / set / faction / type / cost / qty / def / shield / text):
   `Tools/ShardsData/cards-table.md` — REGENERATE, never hand-edit:
@@ -210,14 +252,6 @@ needed.
   is now the whole price. All three lost to "just buy a card" at their old prices.
   ⚠ **Perception 3 gems → 2 (2026-08-02, user decision)** — at 3 the draw competed with
   a whole buy and was rarely worth it.
-  ⚠ **Rebalanced 2026-07-27** (was: Sacrifice 3 gems, Futureproof 1 gem). Both abilities
-  were measurably unusable — `soisim coverage` recorded **0 activations across 1,622 and
-  1,583 drafted games**. Futureproof is designed to PAIR with the row reroll (bury a card
-  that would help an Undergrowth-heavy opponent, or set up a reroll target), which is
-  unaffordable if the Scry itself costs the reroll's gem. Sacrifice is a strong effect whose
-  3-health cost genuinely is not worth it in a damage race, so the gem side gave way instead.
-  Any further cost change must be re-checked with `soisim coverage` — an ability nobody can
-  afford is invisible to win-rate testing, because both seats share the blind spot.
 - **Tests**: `ShardsContentTests.cs` (counts, setup, termination, conservation),
   `ShardsRulingsTests.cs` (one test per FAQ ruling), `ShardsEngineTests.cs` (structural,
   stub set). Keep `Tools/EngineVerify` green.
@@ -274,7 +308,7 @@ needed.
 - Warp N (an EFFECT, not a card property): fast-play a row ally costing ≤ N for free;
   Deadly Recruits' fast-play is NOT warp — base destiny: the card is always kept
   (discard at cleanup); **duel errata "you may keep it" is a real keep-or-not decision**
-  (2026-08-02 fix — `soi.keepfast`, default/bots = keep; declined, the card follows
+  (2026-08-02 fix — `soi.keepfast`, default = keep; declined, the card follows
   fast-play rules to the bottom of the center deck).
 - End phase order: fast-plays → center-deck bottom, play zone → discard, discard hand,
   ready champions/destinies/character (readying happens at END phase, not turn start),
@@ -287,12 +321,12 @@ needed.
 - A card can be COPIED only once per resolution chain (`ShardsContext` copy-chain,
   locked 2026-07-21): a played Fabricator copying the revealed second Fabricator
   re-reveals the same unchanged deck tops → without the guard this recursed forever
-  (stack overflow, found by a 3000-game bench sweep). Both copy sites filter on
+  (stack overflow). Both copy sites filter on
   `ctx.InCopyChain` and call `ctx.MarkCopied`. Pinned by
   `DuplicationFabricator_CopyingTheRevealedSecondFabricator_CannotRecurse`.
 - Slipstream Shard M20: extra turn, once per game per player.
 - Full power assignment at the attack phase is MANDATORY (Min=Power on the split
-  decision; DefaultOptionIds pre-fill a legal full assignment for timeouts/bots).
+  decision; DefaultOptionIds pre-fill a legal full assignment for timeouts).
 - Imperative texts without "may" are mandatory (Korvus/Shadebound/Zen Chi Set returns,
   Portal Monk/Crystal Gate recruits, Forged in Flame banish); "may" wordings use the
   optional effect variants (Malice's champion return, Shadow Apostle banishes…).

@@ -178,9 +178,7 @@ namespace Shards.Engine
         /// <summary>Instance-id → card index. Cards are only ever CREATED (NewCard bumps
         /// NextInstanceId) and move between zones — never destroyed — so the index stays
         /// valid until a new card appears; NextInstanceId is the staleness signal.
-        /// The lock exists for the search bot: its worker thread reads the live state
-        /// while the main thread may look cards up — an unguarded lazy Dictionary
-        /// rebuild can corrupt and HANG. Uncontended cost is nanoseconds.</summary>
+        /// The lock protects lazy rebuilding during concurrent reads.</summary>
         private Dictionary<int, ShardsCard> _cardIndex;
         private int _cardIndexBuiltAt = -1;
         private readonly object _cardIndexLock = new();
@@ -226,6 +224,10 @@ namespace Shards.Engine
                 IndexList(p.SetAside);
                 IndexList(p.Destinies);
             }
+            // Stolen Futures moves existing cards from this deck into public
+            // zones without changing NextInstanceId. Index them from the start,
+            // just as center-deck cards, so the cached references stay valid.
+            IndexList(DestinyDeck);
             IndexList(DestinyRow);
             IndexList(ActiveMonsters);
             IndexList(Banished);

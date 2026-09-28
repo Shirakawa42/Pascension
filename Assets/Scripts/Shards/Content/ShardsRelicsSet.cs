@@ -45,7 +45,7 @@ namespace Shards.Content
 
             var ferrata = SoiCard.New("ferrata_guard", "Ferrata Guard").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Champion).Cost(4).Qty(2).Defense(4)
-                .Exhausts(new PerCount(ctx => ShardsBaseSet.CountChampions(ctx, H), gems: 1))
+                .Exhausts(PerCount.Visible(ctx => ShardsBaseSet.CountChampions(ctx, H), gems: 1))
                 .Text("If your character is Decima, your champions get +2 defense.\nExhaust: gain 1 gem per Homodeus champion you control.")
                 .Art("an iron-clad praetorian guard with an energized bulwark");
             ferrata.Def.DefenseAura = (owner, source, champion) =>
@@ -55,7 +55,7 @@ namespace Shards.Content
             // ---- Order (6) ----
             SoiCard.New("cloud_oracles", "Cloud Oracles").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
-                .Plays(E.Seq(E.Draw(1), new If(HighestMastery, E.Gems(2))))
+                .Plays(E.Seq(E.Draw(1), If.Visible(HighestMastery, E.Gems(2))))
                 .Text("Draw a card.\nIf your mastery is higher than every other player's, gain 2 gems.")
                 .Art("floating oracles conferring inside a storm cloud of data").Register();
 
@@ -156,8 +156,8 @@ namespace Shards.Content
             SoiCard.New("terminal_crescents", "Terminal Crescents").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Relic).Character("tetra").Qty(1)
                 .Plays(E.Seq(E.Mastery(1), new BestByMastery(
-                    (0, new PerCount(ctx => (ctx.Controller.Mastery + 1) / 2, power: 1)),
-                    (20, new PerCount(ctx => ctx.Controller.Mastery, power: 1)))))
+                    (0, PerCount.Visible(ctx => (ctx.Controller.Mastery + 1) / 2, power: 1)),
+                    (20, PerCount.Visible(ctx => ctx.Controller.Mastery, power: 1)))))
                 .Text("Gain 1 mastery, then power equal to half your mastery, rounded up.\nM20: equal to your full mastery.")
                 .Art("twin crescent blades orbiting each other like binary moons").Register();
 

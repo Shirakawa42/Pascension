@@ -911,7 +911,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Pascension.Game::Pascension.Game.GameBootstrap
   Screen: {fileID: 218549856}
-  BotThinkDelay: 0.7
 --- !u!4 &622855807
 Transform:
   m_ObjectHideFlags: 0

@@ -195,11 +195,6 @@ namespace Pascension.Engine.Tests
             var req = engine.PendingInput.Decision;
             Assert.AreEqual(0, req.Min); Assert.AreEqual(2, req.Max);
             Assert.AreEqual(b.DefId, req.Options[0].DefId, "options are def-id sorted, never deck order");
-            var model = new Shards.Bots.ShardsValueModel(Shards.Bots.ShardsEvalWeights.Current);
-            Assert.AreEqual(2, model.ChooseAnswer(engine, req).ChosenOptionIds.Count,
-                "bots use both available returns");
-            var candidates = Shards.Bots.ShardsDecisionCandidates.Generate(engine, req, model);
-            Assert.AreEqual(7, candidates.Count, "search considers decline, three singles and three pairs");
             var picks = new List<int>();
             if (count > 0) picks.Add(a.InstanceId);
             if (count > 1) picks.Add(b.InstanceId);
@@ -241,31 +236,27 @@ namespace Pascension.Engine.Tests
 
         [TestCase(0)]
         [TestCase(2)]
-        public void SeptemberBalance_Rez_DiscountsOnlyNextSuccessfulReroll(int previousRerolls)
+        public void SeptemberBalance_Rez_DiscountsEverySuccessfulReroll(int previousRerolls)
         {
             var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
             var engine = adapter.Inner; var p = engine.State.Players[0];
             p.CharacterId = "rez"; p.Mastery = 5; p.RerollsThisTurn = previousRerolls;
             Assert.IsTrue(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
-            AnswerPending(engine, new int[0]); // leave both scry cards on top
+            AnswerPending(engine, new int[0]); // leave all three scry cards on top
             Assert.AreEqual(previousRerolls, ShardsEngine.RerollCost(p));
             Assert.AreEqual(previousRerolls, ShardsSnapshotBuilder.Build(engine, 0).Players[0].NextRerollCost);
-            var clone = engine.State.DeepCopy();
-            Assert.AreEqual(engine.State.ComputeFullHash(), clone.ComputeFullHash());
-            clone.Players[0].NextRerollDiscount = 0;
-            Assert.AreNotEqual(engine.State.ComputeFullHash(), clone.ComputeFullHash());
             Assert.IsFalse(engine.Submit(new ShardsRerollRowAction { PlayerIndex = 0, SlotIndex = -1 }).Accepted);
-            Assert.AreEqual(1, p.NextRerollDiscount, "rejected actions don't consume it");
+            Assert.AreEqual(previousRerolls, ShardsEngine.RerollCost(p), "rejected actions preserve the passive price");
             int slot = System.Array.FindIndex(engine.State.CenterRow, c => c != null && !c.Def.CannotBeRerolled);
             p.Gems = previousRerolls;
             Assert.IsTrue(engine.Submit(new ShardsRerollRowAction { PlayerIndex = 0, SlotIndex = slot }).Accepted);
             Assert.AreEqual(0, p.Gems);
             Assert.AreEqual(0, p.NextRerollDiscount);
-            Assert.AreEqual(previousRerolls + 2, ShardsEngine.RerollCost(p), "later rerolls retain their normal escalation");
+            Assert.AreEqual(previousRerolls + 1, ShardsEngine.RerollCost(p), "every later reroll retains the passive discount");
         }
 
         [Test]
-        public void SeptemberBalance_RezUnusedDiscountExpiresEvenWithEmptyScryDeck()
+        public void SeptemberBalance_RezPassivePersistsEvenWithEmptyScryDeck()
         {
             var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
             var engine = adapter.Inner; var p = engine.State.Players[0];
@@ -275,7 +266,7 @@ namespace Pascension.Engine.Tests
             Assert.AreEqual(0, ShardsEngine.RerollCost(p));
             Assert.IsTrue(engine.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
             Assert.AreEqual(0, p.NextRerollDiscount);
-            Assert.AreEqual(1, ShardsEngine.RerollCost(p));
+            Assert.AreEqual(0, ShardsEngine.RerollCost(p));
         }
 
         [Test]
@@ -498,11 +489,6 @@ namespace Pascension.Engine.Tests
                 Assert.AreEqual(VolosAbilityChoice.FacePrefix + option.Id, option.DefId, "render a real card");
                 Assert.AreEqual(option.Id > mode, option.Disabled);
             }
-            var candidates = Shards.Bots.ShardsDecisionCandidates.Generate(engine, request,
-                new Shards.Bots.ShardsValueModel(Shards.Bots.ShardsEvalWeights.Current));
-            Assert.AreEqual(mode + 1, candidates.Count, "search considers every affordable mode");
-            foreach (var candidate in candidates)
-                Assert.LessOrEqual(candidate[0], mode, "search never attempts a disabled card");
             if (mode < 3)
                 Assert.IsFalse(engine.Submit(new SubmitDecisionAction { PlayerIndex = 0,
                     Answer = new DecisionAnswer { DecisionId = request.Id, ChosenOptionIds = new List<int> { 3 } } }).Accepted);
@@ -534,7 +520,7 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void Duel_Decima_FirstBuyCostsOneLess_AtMastery5()
+        public void Duel_Decima_FirstBuyCostsTwoLess_AtMastery5()
         {
             var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 3);
             CompleteDraft(adapter);
@@ -542,7 +528,7 @@ namespace Pascension.Engine.Tests
             var p0 = engine.State.Players[0]; // decima
             p0.Mastery = 5;
             var def = ShardsCardDatabase.Get("nil_assassin_duel"); // cost 2
-            Assert.AreEqual(1, engine.EffectiveCost(p0, def), "first buy costs 1 less");
+            Assert.AreEqual(0, engine.EffectiveCost(p0, def), "first buy costs 2 less");
             p0.FirstBuyUsedThisTurn = true;
             Assert.AreEqual(2, engine.EffectiveCost(p0, def), "subsequent buys are full price");
         }
@@ -586,13 +572,13 @@ namespace Pascension.Engine.Tests
             CompleteDraft(adapter);
             var engine = adapter.Inner;
             var p0 = engine.State.Players[0];
-            p0.CharacterId = "tetra"; // pay 2 gems: draw 2
+            p0.CharacterId = "tetra"; // pay 3 gems: draw 2
             p0.Mastery = 5;
             p0.Gems = 5;
             int handBefore = p0.Hand.Count;
             Assert.IsTrue(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
             Assert.AreEqual(handBefore + 2, p0.Hand.Count, "tetra drew 2 cards");
-            Assert.AreEqual(3, p0.Gems, "paid 2 gems");
+            Assert.AreEqual(2, p0.Gems, "paid 3 gems");
             Assert.IsFalse(p0.CharacterExhausted, "the ability does NOT exhaust the character");
             Assert.IsTrue(engine.Submit(new ShardsFocusAction { PlayerIndex = 0 }).Accepted,
                 "Focus still available in the same turn");
@@ -883,7 +869,7 @@ namespace Pascension.Engine.Tests
                 var tutor = Plant(engine, p0, "grim_tutor", ShardsZone.Hand);
                 Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = tutor.InstanceId }).Accepted);
                 AnswerPending(engine, new[] { engine.PendingInput.Decision.Options[0].Id });
-                return engine.State.ComputeFullHash();
+                return engine.State.ComputeHash();
             }
             Assert.AreEqual(Run(), Run(), "identical seed + submits reproduce the post-shuffle state hash");
         }
@@ -935,8 +921,182 @@ namespace Pascension.Engine.Tests
             // Fast-play purchase path refuses too (it is not a mercenary anyway).
             engine.State.Players[0].Gems = 20;
             Assert.IsFalse(engine.Submit(new ShardsBuyCardAction { PlayerIndex = 0, SlotIndex = 0, FastPlay = true }).Accepted);
-            // A normal 14-gem BUY is the only way.
+            // A normal BUY is the only acquisition path.
             Assert.IsTrue(engine.EffectiveCost(engine.State.Players[0], comet.Def) >= 13, "no free comet");
+        }
+
+        [Test]
+        public void Duel_Comet_ShardDefiantRejectsKeep_AndDefaultsToBanish()
+        {
+            var adapter = NewGame(ShardsDlc.Duel, seed: 13);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            var comet = engine.State.CenterDeck.Find(c => c.DefId == "comet");
+            engine.State.CenterDeck.Remove(comet);
+            engine.State.CenterDeck.Add(comet);
+            var defiant = new ShardsCard { InstanceId = engine.State.NextInstanceId++,
+                DefId = "shard_defiant", Owner = 0, Zone = ShardsZone.DestinyRow };
+            player.Destinies.Add(defiant);
+            player.Gems = 2;
+
+            Assert.IsTrue(engine.Submit(new ShardsExhaustAction
+                { PlayerIndex = 0, CardInstanceId = defiant.InstanceId }).Accepted);
+            var request = engine.PendingInput.Decision;
+            Assert.AreEqual("soi.defiant", request.Context);
+            Assert.IsTrue(request.Options.Find(o => o.Id == 1).Disabled, "Comet cannot be kept");
+            Assert.IsFalse(request.Options.Find(o => o.Id == 2).Disabled, "banish remains available");
+            Assert.IsFalse(engine.Submit(new SubmitDecisionAction { PlayerIndex = 0,
+                Answer = new DecisionAnswer { DecisionId = request.Id,
+                    ChosenOptionIds = new List<int> { 1 } } }).Accepted, "forged Keep is rejected");
+            Assert.AreSame(request, engine.PendingInput.Decision);
+            var fallback = (SubmitDecisionAction)adapter.DefaultActionFor(adapter.PendingInput);
+            CollectionAssert.AreEqual(new[] { 2 }, fallback.Answer.ChosenOptionIds);
+            Assert.IsTrue(adapter.Submit(fallback).Accepted);
+            Assert.Contains(comet, engine.State.Banished);
+            Assert.AreEqual(-1, comet.Owner);
+            Assert.IsFalse(player.Discard.Contains(comet));
+            Assert.AreEqual(0, player.Gems, "only the activation cost was paid");
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind, "the effect finishes");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Duel_Comet_FreeRowRecruitLeavesMarketUnchanged(bool toHand)
+        {
+            var adapter = NewGame(ShardsDlc.Duel, seed: 13);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var comet = PutCometInRow(engine);
+            int events = engine.Log.Count;
+            var deck = engine.State.CenterDeck.ToArray();
+            Assert.IsFalse(engine.RecruitFromRowFree(0, 0, toHand));
+            Assert.AreSame(comet, engine.State.CenterRow[0]);
+            Assert.AreEqual(-1, comet.Owner);
+            Assert.AreEqual(ShardsZone.CenterRow, comet.Zone);
+            Assert.AreEqual(events, engine.Log.Count, "no acquisition or refill events");
+            CollectionAssert.AreEqual(deck, engine.State.CenterDeck);
+        }
+
+        [Test]
+        public void Duel_Comet_LooseRecruitCannotAssignOwnership()
+        {
+            var adapter = NewGame(ShardsDlc.Duel, seed: 13);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            var comet = engine.State.CenterDeck.Find(c => c.DefId == "comet");
+            engine.State.CenterDeck.Remove(comet);
+            engine.State.CenterDeck.Add(comet);
+            Assert.AreSame(comet, engine.DrawFromCenterDeck());
+            int events = engine.Log.Count;
+            engine.RecruitLoose(player, comet);
+            Assert.AreEqual(-1, comet.Owner);
+            Assert.IsFalse(player.Hand.Contains(comet));
+            Assert.IsFalse(player.Discard.Contains(comet));
+            Assert.AreEqual(events, engine.Log.Count, "no acquisition events");
+        }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void Duel_Comet_FreeRecruitEffectExcludesItEvenWithoutCostLimit(int alternatives)
+        {
+            var adapter = NewGame(ShardsDlc.Duel, seed: 13);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            var comet = PutCometInRow(engine);
+            for (int slot = 1; slot < engine.State.CenterRow.Length; slot++)
+                engine.State.CenterRow[slot] = null;
+            for (int slot = 1; slot <= alternatives; slot++)
+                engine.State.CenterRow[slot] = new ShardsCard { InstanceId = engine.State.NextInstanceId++,
+                    DefId = "nil_assassin_duel", Zone = ShardsZone.CenterRow };
+            // Exercise the generic effect above every printed cost, including its
+            // zero-choice, automatic single-choice and explicit-choice branches.
+            SoiCard.New("test_free_recruit", "Free recruit test").Type(ShardsCardType.Ally)
+                .Plays(new RecruitFromRow(int.MaxValue, toHand: true)).Register();
+            var source = Plant(engine, player, "test_free_recruit", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction
+                { PlayerIndex = 0, CardInstanceId = source.InstanceId }).Accepted);
+            if (alternatives == 2)
+            {
+                Assert.AreEqual("soi.recruit", engine.PendingInput.Decision.Context);
+                Assert.IsFalse(engine.PendingInput.Decision.Options.Exists(o => o.DefId == "comet"));
+                AnswerPending(engine, new[] { 1 });
+            }
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind);
+            Assert.AreSame(comet, engine.State.CenterRow[0]);
+            Assert.AreEqual(alternatives > 0, player.Hand.Exists(c => c.DefId == "nil_assassin_duel"));
+            Assert.IsFalse(player.Hand.Contains(comet));
+        }
+
+        [TestCase(0, 13)]
+        [TestCase(5, 11)]
+        public void Duel_Comet_NormalPurchasePaysEffectivePrice_AndCanBePlayed(int mastery, int price)
+        {
+            var adapter = NewGame(ShardsDlc.Duel, seed: 13);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            var comet = PutCometInRow(engine);
+            player.CharacterId = "decima";
+            player.Mastery = mastery;
+            player.NextRecruitsToHand = 1;
+            player.Gems = price - 1;
+            Assert.IsFalse(engine.Submit(new ShardsBuyCardAction { PlayerIndex = 0, SlotIndex = 0 }).Accepted);
+            Assert.AreSame(comet, engine.State.CenterRow[0]);
+            player.Gems = price;
+            Assert.IsTrue(engine.Submit(new ShardsBuyCardAction { PlayerIndex = 0, SlotIndex = 0 }).Accepted);
+            Assert.AreEqual(0, player.Gems);
+            Assert.AreEqual(0, player.NextRecruitsToHand, "normal purchase redirects still apply");
+            Assert.Contains(comet, player.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0,
+                CardInstanceId = comet.InstanceId }).Accepted);
+            Assert.IsTrue(engine.State.GameOver);
+            Assert.AreEqual(0, engine.State.WinnerIndex);
+        }
+
+        [Test]
+        public void Duel_Allegiance_CountsTemporaryFastPlaysUntilTheyLeavePlay()
+        {
+            var adapter = NewGame(ShardsDlc.Duel, seed: 13);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var player = engine.State.Players[0];
+            player.Health = 30;
+            for (int i = 0; i < 3; i++) Plant(engine, player, "spore_cleric_duel", ShardsZone.Discard);
+            var hounds = new ShardsCard { InstanceId = engine.State.NextInstanceId++,
+                DefId = "hounds_of_volos_duel", Zone = ShardsZone.CenterRow };
+            engine.State.CenterRow[0] = hounds;
+            player.Gems = hounds.Def.Cost;
+            Assert.IsTrue(engine.Submit(new ShardsBuyCardAction
+                { PlayerIndex = 0, SlotIndex = 0, FastPlay = true }).Accepted);
+            Assert.IsTrue(hounds.FastPlayed);
+            Assert.AreEqual(4, AllegianceEffect.OwnedCount(player, ShardsFaction.Undergrowth));
+            Assert.AreEqual(5, player.Power, "the fast-played card satisfies its own Allegiance threshold");
+            Assert.IsFalse(ShardsSnapshotBuilder.Build(engine, 0).Players[0].FullDeck
+                .Exists(c => c.InstanceId == hounds.InstanceId), "collection still excludes temporary loans");
+            Assert.IsTrue(engine.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
+            while (engine.PendingInput.Kind == PendingInputKind.Decision)
+                Assert.IsTrue(adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput)).Accepted);
+            Assert.AreEqual(3, AllegianceEffect.OwnedCount(player, ShardsFaction.Undergrowth));
+        }
+
+        private static ShardsCard PutCometInRow(ShardsEngine engine)
+        {
+            var comet = engine.State.CenterDeck.Find(c => c.DefId == "comet");
+            Assert.IsNotNull(comet);
+            engine.State.CenterDeck.Remove(comet);
+            var displaced = engine.State.CenterRow[0];
+            if (displaced != null)
+            {
+                displaced.Zone = ShardsZone.CenterDeck;
+                engine.State.CenterDeck.Add(displaced);
+            }
+            comet.Zone = ShardsZone.CenterRow;
+            engine.State.CenterRow[0] = comet;
+            return comet;
         }
 
         [Test]
@@ -957,7 +1117,7 @@ namespace Pascension.Engine.Tests
                 p0.Champions.Remove(gate); // simulate destruction between plays
             }
             int added = engine.State.CenterDeck.Count + engine.State.ActiveMonsters.Count - before;
-            Assert.AreEqual(25, added, "exactly ONE 25-Ingeminex flood despite two plays");
+            Assert.AreEqual(35, added, "exactly ONE 35-Ingeminex flood despite two plays");
             Assert.IsTrue(p0.DoomGateFloodUsed);
         }
 
@@ -1055,7 +1215,7 @@ namespace Pascension.Engine.Tests
 
         /// <summary>Force Mining Drones (plain effect, no errata, cost 2) into row slot 0,
         /// give P0 the Duel Deadly Recruits destiny and exhaust it, answering the pick
-        /// with slot 0. Leaves the keep-or-not decision pending; returns the row ally.</summary>
+        /// with slot 0. Leaves the fast-play-or-recruit mode pending; returns the row ally.</summary>
         private static ShardsCard ExhaustDeadlyRecruitsOnRowAlly(ShardsEngineAdapter adapter)
         {
             var engine = adapter.Inner;
@@ -1091,37 +1251,41 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void Duel_DeadlyRecruitsErrata_KeepIsARealChoice_KeptCardJoinsTheDeck()
+        public void Duel_DeadlyRecruitsErrata_RecruitDoesNotAlsoPlayTheCard()
         {
             var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 17);
             CompleteDraft(adapter);
             var engine = adapter.Inner;
             var picked = ExhaustDeadlyRecruitsOnRowAlly(adapter);
 
-            var keep = engine.PendingInput.Decision;
-            Assert.AreEqual("soi.keepfast", keep.Context, "'you may keep it' is a real decision");
-            Assert.AreEqual(0, keep.Min, "declining must be legal");
-            Assert.AreEqual(picked.InstanceId, keep.Options[0].CardInstanceId, "the decision shows the picked card");
-            CollectionAssert.AreEqual(new[] { picked.InstanceId }, keep.DefaultOptionIds,
-                "timeout/bot default = keep, the pre-fix behavior");
-
-            AnswerPending(engine, new[] { picked.InstanceId });
-            Assert.AreEqual(ShardsZone.PlayZone, picked.Zone);
-            Assert.IsFalse(picked.FastPlayed, "kept: cleanup files it into the discard like a buy");
+            var mode = engine.PendingInput.Decision;
+            Assert.AreEqual("soi.mode", mode.Context);
+            Assert.AreEqual(1, mode.Min);
+            Assert.AreEqual(picked.InstanceId, mode.Options[0].CardInstanceId);
+            Assert.AreEqual(picked.InstanceId, mode.Options[1].CardInstanceId);
+            int gems = engine.State.Players[0].Gems, hand = engine.State.Players[0].Hand.Count;
+            AnswerPending(engine, new[] { 2 });
+            Assert.AreEqual(ShardsZone.Discard, picked.Zone);
+            Assert.IsFalse(picked.FastPlayed);
+            Assert.AreEqual(gems, engine.State.Players[0].Gems, "Free recruit neither pays nor produces gems");
+            Assert.AreEqual(hand, engine.State.Players[0].Hand.Count, "Mining Drones draw must not resolve");
         }
 
         [Test]
-        public void Duel_DeadlyRecruitsErrata_DeclinedKeep_FollowsFastPlayRules()
+        public void Duel_DeadlyRecruitsErrata_FastPlayDoesNotAlsoRecruit()
         {
             var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 17);
             CompleteDraft(adapter);
             var engine = adapter.Inner;
             var picked = ExhaustDeadlyRecruitsOnRowAlly(adapter);
 
-            Assert.AreEqual("soi.keepfast", engine.PendingInput.Decision.Context);
-            AnswerPending(engine, new int[0]);
-            Assert.AreEqual(ShardsZone.PlayZone, picked.Zone, "the ally still fast-plays");
-            Assert.IsTrue(picked.FastPlayed, "declined: it returns to the bottom of the center deck at cleanup");
+            Assert.AreEqual("soi.mode", engine.PendingInput.Decision.Context);
+            int gems = engine.State.Players[0].Gems, hand = engine.State.Players[0].Hand.Count;
+            AnswerPending(engine, new[] { 1 });
+            Assert.AreEqual(ShardsZone.PlayZone, picked.Zone);
+            Assert.IsTrue(picked.FastPlayed, "Temporary fast-play follows the normal return-to-center cleanup");
+            Assert.AreEqual(gems + 1, engine.State.Players[0].Gems);
+            Assert.AreEqual(hand + 1, engine.State.Players[0].Hand.Count);
         }
 
         [Test]
@@ -1141,8 +1305,8 @@ namespace Pascension.Engine.Tests
             {
                 var card = engine.State.CenterRow[s];
                 if (card == null) continue;
-                Assert.AreEqual(System.Math.Max(0, card.Def.Cost - 1), snap.RowEffectiveCosts[s],
-                    "M5 Decima sees every slot 1 cheaper before her first buy");
+                Assert.AreEqual(System.Math.Max(0, card.Def.Cost - 2), snap.RowEffectiveCosts[s],
+                    "M5 Decima sees every slot 2 cheaper before her first buy");
             }
 
             // The opponent has no modifier (post-draft mastery is always < 5): printed prices.
@@ -1207,7 +1371,7 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void FullGame_HeuristiclessBots_AlwaysTerminates()
+        public void FullGame_RandomLegalActions_AlwaysTerminates()
         {
             // Random-legal-action players must finish a real-cards game (the Infinity
             // Shard guarantees lethal at M30; last survivor or tie ends it).
@@ -1248,7 +1412,7 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void Duel_FullGame_RandomBots_ResolvesNewMechanicsAndTerminates()
+        public void Duel_FullGame_RandomLegalActions_ResolvesNewMechanicsAndTerminates()
         {
             // Duel-on random-legal-action games must finish, exercising the row reroll,
             // hero abilities, and every new decision (scry, hand-pick, mode, target).

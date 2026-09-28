@@ -1,0 +1,10 @@
+{
+  "name": "Shards.AI",
+  "rootNamespace": "Shards.AI",
+  "references": [
+    "Pascension.Core",
+    "Shards.Engine",
+    "Shards.Content"
+  ],
+  "noEngineReferences": true
+}

@@ -15,7 +15,7 @@ namespace Pascension.Game
     /// GPU at 100%.
     ///
     /// A single foreground cap is not enough: runInBackground is on (so an online host /
-    /// solo bot turns keep resolving while the window is unfocused), and with vSync off a
+    /// player actions keep resolving while the window is unfocused), and with vSync off a
     /// backgrounded window still rendering at 60 FPS keeps the GPU boosted at full power —
     /// there are no vSync sync points to let it idle. So a <see cref="FrameRateGovernor"/>
     /// re-applies the cap on every focus change and throttles HARD in the background (a

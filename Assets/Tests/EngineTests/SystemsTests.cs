@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using Pascension.Bots;
 using Pascension.Engine.Actions;
 using Pascension.Engine.Board;
 using Pascension.Engine.Cards;
@@ -151,11 +150,9 @@ namespace Pascension.Engine.Tests
             ulong ReplayHash(out int events)
             {
                 var engine = new GameEngine(TestGames.StandardConfig(players: 4, seed: 42));
-                var agents = new ISyncAgent[]
-                {
-                    new HeuristicBot(1), new HeuristicBot(2), new HeuristicBot(3), new HeuristicBot(4)
-                };
-                GameDriver.Run(engine, agents, maxRounds: 30);
+                var adapter = new Pascension.Engine.Serialization.PascensionEngineAdapter(engine);
+                for (int step = 0; step < 1000 && !adapter.GameOver; step++)
+                    Assert.IsTrue(adapter.Submit(adapter.DefaultActionFor(adapter.PendingInput)).Accepted);
                 events = engine.Log.Count;
                 return engine.State.ComputeHash();
             }

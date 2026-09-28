@@ -44,6 +44,9 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Pascension = new[]
         {
+            new Entry("2026-09-25",
+                "· Matches now use human multiplayer. Solo play and computer opponents have been removed.",
+                "· Les parties se jouent désormais en multijoueur humain. Le mode solo et les adversaires informatiques ont été retirés."),
             new Entry("2026-07-23",
                 "· Player accounts: create a username + password account or play as a guest — accounts unlock online multiplayer, sign you in automatically at launch, and can be switched from the main menu.",
                 "· Comptes joueur : créez un compte nom d'utilisateur + mot de passe ou jouez en invité — le compte débloque le multijoueur en ligne, vous connecte automatiquement au lancement et se change depuis le menu principal."),
@@ -68,6 +71,52 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-09-28",
+                "· 1v1: the second player now starts with 5 cards, 1 mastery and 1 crystal for the first turn. Decima's mastery-5 first-purchase discount is 2 crystals.\n" +
+                "· Terminal Crescents: gain 1 mastery; at mastery 20, gain power equal to mastery minus 5. Deadly Recruits: freely fast-play OR recruit an ally, without doing both.\n" +
+                "· Swyft: 5 defense. Ferrata Guard: 1 extra base crystal. Torian Commandos: 3 crystals. Le'shai Knight: 4 power, still 6 with Unify. Advanced Medicine: heal 6. Power Struggle: 6 power.\n" +
+                "· Doom Gate shuffles 35 Ingeminex. Warpquartz draws a card before banishing. Datic Robes' discard shield starts at mastery 15.\n" +
+                "· Solo play includes the latest validated AI model and hybrid search settings, with hero choices refreshed for this balance patch.",
+                "· En duel : le second joueur commence désormais avec 5 cartes, 1 maîtrise et 1 cristal pour son premier tour. À 5 maîtrise, Decima réduit le premier achat de 2 cristaux.\n" +
+                "· Croissants Terminaux : gagnez 1 maîtrise ; à 20 maîtrise, gagnez une puissance égale à la maîtrise moins 5. Dangereuses Recrues : jouez rapidement OU recrutez gratuitement un allié, sans cumuler les deux.\n" +
+                "· Swyft : 5 défense. Garde Ferrata : 1 cristal de base supplémentaire. Commandos Torians : 3 cristaux. Chevalier Le'shai : 4 puissance, toujours 6 avec Unification. Médecine avancée : soigne 6. Lutte de pouvoir : 6 puissance.\n" +
+                "· La Porte du Destin mélange 35 Ingeminex. Le Quartz de Distorsion pioche une carte avant de bannir. Le bouclier de défausse des Robes Datiques commence à 15 maîtrise.\n" +
+                "· Le mode solo intègre le dernier modèle d'IA validé et ses réglages de recherche hybride, avec des choix de héros actualisés pour cet équilibrage."),
+            new Entry("2026-09-28",
+                "· Fixed card lookup for newly revealed destinies, including those obtained through Stolen Futures.",
+                "· Correction de l'identification des destinées nouvellement révélées, notamment celles obtenues grâce à Futurs volés."),
+            new Entry("2026-09-28",
+                "· The solo AI now uses hybrid turn planning: it groups equivalent resource plays and compares longer action sequences before deciding what to do.",
+                "· L'IA solo utilise désormais une planification hybride : elle regroupe les actions de ressources équivalentes et compare des séquences plus longues avant de choisir quoi faire."),
+            new Entry("2026-09-27",
+                "· The AI now compares simulated continuations from the opening turn, including choices that do not immediately win. It retains its winning-sequence checks and thinks in the background.",
+                "· L'IA compare désormais des suites d'actions simulées dès le premier tour, même sans victoire immédiate. Elle conserve ses vérifications des séquences gagnantes et réfléchit en arrière-plan."),
+            new Entry("2026-09-27",
+                "· The AI now looks ahead for winning sequences, including hero powers, mastery thresholds and card ordering. It thinks in the background and keeps the one-second pause between actions.",
+                "· L'IA anticipe désormais les séquences gagnantes, y compris les pouvoirs des héros, les seuils de maîtrise et l'ordre des cartes. Elle réfléchit en arrière-plan et conserve la pause d'une seconde entre ses actions."),
+            new Entry("2026-09-27",
+                "· The AI now retains revealed center cards through unrelated reveals and Longshot, and represents their effects in order.",
+                "· L'IA mémorise désormais les cartes révélées de la pioche commune après les autres révélations et Longshot, et représente leurs effets dans l'ordre."),
+            new Entry("2026-09-27",
+                "· 1v1: the second player opens with 6 cards and keeps 1 starting mastery. Later hands still draw 5.\n· Ko Syn Wu's ability costs 1 health; Tetra's costs 3 gems.\n· Rez scries 3; at mastery 5 every reroll costs 1 gem less, without activation.\n· Warpquartz resolves each banished card's effect twice. Doom Gate has 7 defense. Praetorian-02 shields for 4, or 8 at mastery 20.\n· Cinder Scars: 4 copies in the Duel center deck, down from 5.",
+                "· En duel : le second joueur commence avec 6 cartes et conserve 1 maîtrise initiale. Les mains suivantes restent à 5 cartes.\n· La capacité de Ko Syn Wu coûte 1 santé ; celle de Tetra coûte 3 cristaux.\n· Rez Sonde 3 ; à 5 maîtrise, toutes ses relances coûtent 1 cristal de moins, sans activation.\n· Le Quartz de Distorsion résout deux fois l'effet de chaque carte bannie. La Porte du Destin a 7 défense. Le Prétorien-02 offre 4 bouclier, ou 8 à 20 maîtrise.\n· Cicatrices de braise : 4 exemplaires dans la pioche commune de Duel, au lieu de 5."),
+            new Entry("2026-09-27",
+                "· The AI now pauses one second between its decisions, making its turns easier to follow.",
+                "· L'IA marque désormais une pause d'une seconde entre ses décisions pour rendre ses tours plus faciles à suivre."),
+            new Entry("2026-09-27",
+                "· The AI now chooses heroes using their matchup and turn order. Removing a hero from the draft no longer makes it confuse the remaining choices.",
+                "· L'IA choisit désormais ses héros selon les confrontations et l'ordre de jeu. Retirer un héros du choix ne lui fait plus confondre les options restantes."),
+            new Entry("2026-09-27",
+                "· Play against the trained AI from the main menu: local 1v1, all expansions including Duel of Doom, with hero draft.\n· Reactor Drone now correctly banishes itself after a temporary play when its banish mode was chosen.",
+                "· Affrontez l'IA entraînée depuis le menu principal : duel local avec toutes les extensions, y compris Duel of Doom, et choix des héros.\n· Le Drone réacteur est désormais correctement banni après un jeu temporaire lorsque son mode de bannissement a été choisi."),
+            new Entry("2026-09-25",
+                "· Opponent condition glows no longer reveal information about hidden cards. Your own hints remain available.\n" +
+                "· Comet can only be acquired through a normal gem purchase. The Shard Defiant must banish it; free recruitment cannot take it.",
+                "· Les indicateurs de condition adverses ne révèlent plus d'informations sur les cartes cachées. Vos propres indications restent disponibles.\n" +
+                "· Comète ne peut être acquise que par un achat normal avec des cristaux. L'Éclat Rebelle doit la bannir ; le recrutement gratuit ne peut pas la prendre."),
+            new Entry("2026-09-25",
+                "· Matches now use human multiplayer. Solo play and computer opponents have been removed.",
+                "· Les parties se jouent désormais en multijoueur humain. Le mode solo et les adversaires informatiques ont été retirés."),
             new Entry("2026-09-18",
                 "Duel of Doom balance update: 12 card and hero ability changes.",
                 "Équilibrage de Duel of Doom : 12 changements de cartes et de capacités de héros.",
@@ -101,19 +150,9 @@ namespace Pascension.Game.UI
                 "· La boutique affiche désormais le prix que VOUS paieriez : les réductions comme la remise premier-achat de Decima ou l'aura d'Axia apparaissent directement sur la carte, en vert."),
             new Entry("2026-07-29",
                 "· Two hero abilities rebalanced. Rez's Futureproof is now FREE (was 1 gem) and Ko Syn Wu's Sacrifice costs 2 gems instead of 3 — the 3 health is unchanged.\n" +
-                "· Why: both were priced out of their own game plan. Futureproof is meant to pair with a shop reroll — bury a card that would feed your opponent's faction, or set up something better to reroll into — and you could not afford both in the same turn. Sacrifice was strong but rarely worth 3 gems AND 3 health while an opponent was simply racing damage.\n" +
-                "· The AI now uses both. It also judges banishing by WHAT it would remove instead of by a flat 'banishing is worth X': dropping a Blaster from a developed deck is excellent, dropping a good card is not, and it no longer treats those as the same move.",
+                "· Why: both were priced out of their own game plan. Futureproof is meant to pair with a shop reroll — bury a card that would feed your opponent's faction, or set up something better to reroll into — and you could not afford both in the same turn. Sacrifice was strong but rarely worth 3 gems AND 3 health while an opponent was simply racing damage.",
                 "· Deux capacités de héros rééquilibrées. Le Pare-Avenir de Rez est désormais GRATUIT (au lieu d'1 cristal) et le Sacrifice de Ko Syn Wu coûte 2 cristaux au lieu de 3 — les 3 points de vie ne changent pas.\n" +
-                "· Pourquoi : les deux étaient trop chères pour leur propre plan de jeu. Le Pare-Avenir est conçu pour se combiner avec une relance en boutique — enterrer une carte qui nourrirait la faction de l'adversaire, ou préparer mieux à relancer — et les deux étaient inabordables dans le même tour. Le Sacrifice était fort mais rarement digne de 3 cristaux ET 3 points de vie face à un adversaire qui course simplement les dégâts.\n" +
-                "· L'IA utilise enfin les deux. Elle juge aussi le bannissement selon CE QU'ELLE retire plutôt que par un « bannir vaut X » figé : se défausser d'un Blaster dans un deck développé est excellent, se défausser d'une bonne carte ne l'est pas, et elle ne confond plus les deux."),
-
-            new Entry("2026-07-28",
-                "· The AI now actually plays Duel of Doom. Every difficulty was trained and tuned before the expansion existed, so the bots ignored two of its mechanics entirely: they never rerolled a shop card, and they fired their hero ability every single turn whether or not it was worth the cost.\n" +
-                "· Bots now reroll dead shop slots — and only dead ones, respecting the climbing price — and use their hero ability when its effect beats what it costs, so Ko Syn Wu no longer pays 3 health for a banish it doesn't want.\n" +
-                "· Scrying, reordering the shop deck and stripping an opponent's hand are now worth something to the AI; before this they were valued at exactly zero, which made Rez's entire hero ability invisible to it.",
-                "· L'IA joue enfin vraiment à Duel of Doom. Toutes les difficultés avaient été entraînées et réglées avant l'extension : les bots ignoraient purement et simplement deux de ses mécaniques — jamais de relance en boutique, et une capacité de héros déclenchée à chaque tour, qu'elle en vaille la peine ou non.\n" +
-                "· Les bots relancent désormais les emplacements sans intérêt — et seulement ceux-là, en tenant compte du prix croissant — et n'utilisent leur capacité de héros que si son effet dépasse son coût : Ko Syn Wu ne paie plus 3 points de vie pour un bannissement dont il ne veut pas.\n" +
-                "· Le Sondage, la réorganisation de la pioche centrale et le pillage de la main adverse ont enfin une valeur pour l'IA ; ils valaient exactement zéro, ce qui rendait toute la capacité de Rez invisible à ses yeux."),
+                "· Pourquoi : les deux étaient trop chères pour leur propre plan de jeu. Le Pare-Avenir est conçu pour se combiner avec une relance en boutique — enterrer une carte qui nourrirait la faction de l'adversaire, ou préparer mieux à relancer — et les deux étaient inabordables dans le même tour. Le Sacrifice était fort mais rarement digne de 3 cristaux ET 3 points de vie face à un adversaire qui course simplement les dégâts."),
 
             new Entry("2026-07-27",
                 "· New DLC — Duel of Doom (requires all other expansions), built for two-player skill:\n" +
@@ -153,12 +192,10 @@ namespace Pascension.Game.UI
                 "· Mercenaries are now flagged with a red triangle bearing a black \"M\" on the card's right edge, replacing the old red border.\n" +
                 "· Ingeminex now use two icons — crossed swords for their Attack, a treasure chest for the Reward, one line each — with the timing and defeat rules explained in the hover tooltips.\n" +
                 "· Card and destiny text no longer repeats what a keyword does (Warp, Inspire, Dominion, Echo) — hover the card to see each keyword explained.\n" +
-                "· Seven bot difficulties now available — IRON, BRONZE, SILVER, GOLD, PLATINUM, EMERALD and DIAMOND, each a clear step tougher than the last.\n" +
                 "· Frame rate is now capped — 60 FPS in focus, a trickle in the background — so the game no longer drives the GPU and fans at full power while idle or minimized.",
                 "· Les mercenaires sont désormais signalés par un triangle rouge marqué d'un « M » noir sur le bord droit de la carte, à la place de l'ancienne bordure rouge.\n" +
                 "· Les Ingeminex utilisent désormais deux icônes — des épées croisées pour leur Attaque, un coffre au trésor pour la Récompense, une ligne chacune — la synchro et les règles de défaite étant expliquées dans les infobulles au survol.\n" +
                 "· Le texte des cartes et destinées ne répète plus ce que fait un mot-clé (Distorsion, Inspiration, Domination, Écho) — survolez la carte pour voir chaque mot-clé expliqué.\n" +
-                "· Sept niveaux de bot désormais disponibles — FER, BRONZE, ARGENT, OR, PLATINE, ÉMERAUDE et DIAMANT, chacun nettement plus coriace que le précédent.\n" +
                 "· La fréquence d'images est désormais limitée — 60 FPS au premier plan, au ralenti en arrière-plan — le jeu ne pousse plus le GPU ni les ventilateurs à fond au repos ou minimisé."),
             new Entry("2026-07-21",
                 "· Ingeminex attack after you draw your new hand — their discards now hit the hand you keep.\n" +
@@ -169,7 +206,6 @@ namespace Pascension.Game.UI
                 "· Health, portraits and opponent stats now update live during animations.\n" +
                 "· Each hit floats a single damage number (the duplicate smaller one is gone).\n" +
                 "· Fixed a crash when Duplication Fabricator copied a revealed Duplication Fabricator (infinite copy loop).\n" +
-                "· Ranked bot opponents arrive, each playing without seeing your hand; the status line shows when one is thinking, and a bug that could freeze the game during a bot's turn was fixed.\n" +
                 "· Returning after a long alt-tab now fast-forwards the replay instead of animating every missed move.",
                 "· Les Ingeminex attaquent après la pioche de votre nouvelle main — leurs défausses touchent la main que vous gardez.\n" +
                 "· Les destinées se choisissent sur le plateau : la rangée s'illumine et vos piles restent consultables pendant la décision.\n" +
@@ -179,7 +215,6 @@ namespace Pascension.Game.UI
                 "· Santé, portraits et statistiques adverses se mettent à jour en direct pendant les animations.\n" +
                 "· Chaque coup n'affiche plus qu'un seul nombre de dégâts (le doublon plus petit a disparu).\n" +
                 "· Correction d'un plantage quand le Duplicateur copiait un Duplicateur révélé (boucle de copie infinie).\n" +
-                "· Des bots classés font leur entrée, chacun jouant sans voir votre main ; la ligne d'état indique quand l'un d'eux réfléchit, et un bug pouvant geler la partie pendant le tour d'un bot a été corrigé.\n" +
                 "· Revenir après un long alt-tab avance rapidement le replay au lieu d'animer chaque coup manqué."),
             new Entry("2026-07-20",
                 "· RANDOM character option; no duplicate characters; random first player.",

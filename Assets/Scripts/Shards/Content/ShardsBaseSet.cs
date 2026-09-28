@@ -64,7 +64,7 @@ namespace Shards.Content
             SoiCard.New("evokatus", "Evokatus").Faction(H)
                 .Type(ShardsCardType.Champion).Cost(4).Qty(2).Defense(2)
                 .Plays(E.Draw(1))
-                .Exhausts(new PerCount(ctx => CountChampions(ctx, H), power: 1))
+                .Exhausts(PerCount.Visible(ctx => CountChampions(ctx, H), power: 1))
                 .Text("When played, draw a card.\nExhaust: gain 1 power per Homodeus champion you control.")
                 .Art("a veteran cyborg soldier saluting, banner of a machine legion").Register();
 
@@ -94,7 +94,7 @@ namespace Shards.Content
 
             SoiCard.New("numeri_drones", "Numeri Drones").Faction(H)
                 .Type(ShardsCardType.Champion).Cost(3).Qty(2).Defense(5)
-                .Exhausts(E.Seq(E.Gems(1), new Do(ctx => ctx.Controller.NextHomodeusChampionsIntoPlay++)))
+                .Exhausts(E.Seq(E.Gems(1), Do.RecruitRouting(ctx => ctx.Controller.NextHomodeusChampionsIntoPlay++)))
                 .Text("Exhaust: gain 1 gem; the next Homodeus champion you recruit this turn enters play directly.")
                 .Art("a cluster of logistics drones assembling a soldier from parts").Register();
 
@@ -106,7 +106,7 @@ namespace Shards.Content
 
             SoiCard.New("primus_pilus", "Primus Pilus").Faction(H)
                 .Type(ShardsCardType.Champion).Cost(2).Qty(1).Defense(6)
-                .Exhausts(new If(ctx => CountChampions(ctx, H) >= 3, E.Draw(2)))
+                .Exhausts(If.Visible(ctx => CountChampions(ctx, H) >= 3, E.Draw(2)))
                 .Text("Exhaust: if you control three or more Homodeus champions, draw two cards.")
                 .Art("a scarred first-rank centurion raising a signal standard").Register();
 
@@ -220,8 +220,8 @@ namespace Shards.Content
         {
             SoiCard.New("leshai_knight", "Le'shai Knight").Faction(U)
                 .Type(ShardsCardType.Mercenary).Cost(3).Qty(3)
-                .Plays(E.Seq(E.Power(3), new Unify(E.Power(3))))
-                .Text("Gain 3 power.\nUnify: gain 6 instead.")
+                .Plays(E.Seq(E.Power(4), new Unify(E.Power(2))))
+                .Text("Gain 4 power.\nUnify: gain 6 instead.")
                 .Art("a bark-armored knight on a stag mount, spear of living wood").Register();
 
             SoiCard.New("ghostwillow_avenger", "Ghostwillow Avenger").Faction(U)
@@ -283,7 +283,7 @@ namespace Shards.Content
             SoiCard.New("additri_gaiamancer", "Additri, Gaiamancer").Faction(U)
                 .Type(ShardsCardType.Champion).Cost(5).Qty(1).Defense(5)
                 .Exhausts(E.Seq(E.Power(2),
-                    new PerCount(ctx => ctx.Controller.FactionAllyPlays(U), power: 2)))
+                    PerCount.Visible(ctx => ctx.Controller.FactionAllyPlays(U), power: 2)))
                 .Text("Exhaust: gain 2 power, plus 2 more for each Undergrowth ally you played this turn.")
                 .Art("a geomancer conducting roots and stone like an orchestra").Register();
         }
@@ -322,7 +322,7 @@ namespace Shards.Content
             SoiCard.New("scion_of_nothingness", "Scion of Nothingness").Faction(W)
                 .Type(ShardsCardType.Mercenary).Cost(5).Qty(2)
                 .Plays(E.Seq(E.Power(3),
-                    new PerCount(ctx => CountDiscard(ctx, W), power: 2)))
+                    PerCount.Visible(ctx => CountDiscard(ctx, W), power: 2)))
                 .Text("Gain 3 power.\nEcho: gain 2 more per Wraethe card.")
                 .Art("an heir of the void crowned with an inverted halo of darkness").Register();
 

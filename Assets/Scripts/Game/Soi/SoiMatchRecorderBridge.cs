@@ -93,11 +93,7 @@ namespace Pascension.Game.Soi
         /// the multiplayer host also sits on a LocalSession.</summary>
         private static string DeriveMode(ShardsSnapshot snap)
         {
-            bool allOpponentsBots = true;
-            for (int i = 0; i < snap.Players.Count; i++)
-                if (snap.Players[i].Index != snap.ViewerIndex && !snap.Players[i].IsBot)
-                    allOpponentsBots = false;
-            if (allOpponentsBots) return "ai";
+            if (SoiSoloMatch.Current != null) return "ai";
             return snap.Players.Count == 2 ? "mp2" : "mp3plus";
         }
 
@@ -105,14 +101,16 @@ namespace Pascension.Game.Soi
         {
             var seat = new SoiSeatIdentity
             {
-                Name = player.Name,
-                IsBot = player.IsBot,
-                BotKind = player.BotKind
+                Name = player.Name
             };
-            if (player.IsBot)
-                // Old hosts may not stamp BotKind into the snapshot.
-                seat.Identity = "bot:" + (player.BotKind ?? "unknown");
-            else if (player.Index == viewerIndex)
+            if (SoiSoloMatch.Current != null && player.Index != SoiSoloMatch.Current.HumanSeat)
+            {
+                seat.IsBot = true;
+                seat.BotKind = "hybrid-balance-20260928-2e9d7dc1";
+                seat.Identity = "shards-ai:hybrid-balance-20260928-2e9d7dc1";
+                return seat;
+            }
+            if (player.Index == viewerIndex)
                 seat.Identity = _localIdentity != null ? _localIdentity() : "guest";
             else
                 seat.Identity = player.Name?.Trim().ToLowerInvariant();

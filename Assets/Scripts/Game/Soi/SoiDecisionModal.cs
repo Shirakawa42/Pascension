@@ -415,11 +415,13 @@ namespace Pascension.Game.Soi
                     UI.Loc.OptionLabel(option.Label).ToUpperInvariant(), ButtonFontSize,
                     primary ? UiPalette.Gold : UiPalette.Danger,
                     primary ? UiPalette.Background : UiPalette.TextMain);
+                button.interactable = !option.Disabled;
                 UiFactory.Place((RectTransform)button.transform, new Vector2(0.5f, 0f),
                     new Vector2(x0 + i * (buttonWidth + gap), 20f), new Vector2(buttonWidth, 76f));
                 int id = option.Id;
                 button.onClick.AddListener(() =>
                 {
+                    if (option.Disabled) return;
                     _picked.Clear();
                     _picked.Add(id);
                     Confirm();

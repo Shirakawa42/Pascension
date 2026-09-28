@@ -897,7 +897,7 @@ namespace Pascension.Game.Soi
             _statGems.text = me.Gems.ToString();
             _statPower.text = me.Power.ToString();
 
-            // Portrait + opponent strip render LIVE too: a bot streaming plays keeps
+            // Portrait + opponent strip render LIVE too: a player submitting plays keeps
             // the animation queue busy for whole turns, and the drain-gated path left
             // the hero art unloaded and opponent health frozen until our turn.
             // During the Duel hero draft CharacterId is still null — no portrait yet.
@@ -1560,12 +1560,6 @@ namespace Pascension.Game.Soi
             RefreshStatusLine(over);
         }
 
-        /// <summary>Set by SoiBootstrap for solo games with search-rank bots: returns
-        /// true while the given seat's search worker is deliberating. Lets the status
-        /// line show "thinking…" instead of a generic wait (the search runs behind the
-        /// animation queue, so without this the deliberation is invisible).</summary>
-        public Func<int, bool> IsBotThinking;
-
         /// <summary>The Duel hero-ability CARD beside the portrait: bound once per hero,
         /// tapped once used this turn, greyed while unusable. Shown for EVERY hero —
         /// passive abilities (Decima) render permanently untapped and only toast when
@@ -1638,15 +1632,9 @@ namespace Pascension.Game.Soi
                 return;
             }
             int pendingPlayer = _snap.Pending.PlayerIndex;
-            bool thinking = IsBotThinking?.Invoke(pendingPlayer) == true;
-            if (thinking)
-                _statusLine.text = UI.Loc.French
-                    ? NameOf(pendingPlayer) + " réfléchit…"
-                    : NameOf(pendingPlayer) + " is thinking…";
-            else
-                _statusLine.text = UI.Loc.French
-                    ? "En attente " + UI.Loc.De(NameOf(pendingPlayer)) + "…"
-                    : "Waiting for " + NameOf(pendingPlayer) + "…";
+            _statusLine.text = UI.Loc.French
+                ? "En attente " + UI.Loc.De(NameOf(pendingPlayer)) + "…"
+                : "Waiting for " + NameOf(pendingPlayer) + "…";
         }
 
         private void RenderGameOver()
@@ -2253,10 +2241,6 @@ namespace Pascension.Game.Soi
         /// condition/affordable rings — see CardView.ApplyGlowLayout).</summary>
         private void LateUpdate()
         {
-            // Thinking state changes between snapshots — keep the status line live.
-            if (_snap != null && IsBotThinking != null)
-                RefreshStatusLine(_snap.GameOver);
-
             // Sticky hover: a view teardown opened a re-acquire window. A card that still
             // exists re-enters on its rebuilt view within a frame or two and cancels this;
             // if the window lapses, nothing came back — the card really left the table.

@@ -365,8 +365,7 @@ namespace Pascension.Engine.Tests
         {
             // Safe-default seats only end turns (nobody ever deals damage), so the game
             // cannot END — this proves the pump cycles turns indefinitely without stalls,
-            // rejected actions, or exceptions. Real termination is covered by the
-            // heuristic-bot sims once the full card set lands (M4/M5 data).
+            // rejected actions, or exceptions.
             var adapter = new ShardsEngineAdapter(NewConfig(seed: 41));
 
             for (int i = 0; i < 400; i++)

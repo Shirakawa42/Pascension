@@ -12,7 +12,7 @@ namespace Pascension.Engine.Core
 
     /// <summary>
     /// The single input the engine is waiting for. Priority inputs carry the legal
-    /// actions (drives UI affordances, bots, and the LLM prompt); decision inputs
+    /// actions (drives UI affordances); decision inputs
     /// carry the pending DecisionRequest.
     /// </summary>
     public sealed class PendingInput

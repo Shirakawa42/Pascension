@@ -44,15 +44,15 @@ namespace Shards.Content
             SoiCard.New("multitask_brain", "Multitask Brain").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Relic).Character("tetra").Qty(1)
                 .Plays(new BestByMastery(
-                    (0, new PerCount(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 2, draw: 1)),
-                    (20, new PerCount(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 4, draw: 1))))
+                    (0, PerCount.Visible(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 2, draw: 1)),
+                    (20, PerCount.Visible(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 4, draw: 1))))
                 .Text("For each different faction you played this turn, gain 2 power and draw a card.\nM20: gain 4 power instead of 2.")
                 .Art("a floating multi-lobed cybernetic brain wired into five glowing processor cores of different colors, streams of parallel thought").Register();
 
             // Volos (Undergrowth) — Bastion relic CHAMPION (Defense > 0).
             var unknownGod = SoiCard.New("unknown_god", "Unknown God").InSet(SET).Faction(U)
                 .Type(ShardsCardType.Relic).Character("volos").Qty(1).Defense(6)
-                .Exhausts(new PerCount(ctx => ctx.Controller.Champions.Count, health: 5))
+                .Exhausts(PerCount.Visible(ctx => ctx.Controller.Champions.Count, health: 5))
                 .Text("Exhaust: gain 5 health for each champion you control.\nM20: your Exhaust effects apply twice.")
                 .Art("a colossal faceless deity of living wood and crystal rising from an overgrown temple, countless roots and vines, radiant green life-energy");
             unknownGod.Def.DoublesExhaustsAtMastery = 20;
@@ -67,10 +67,10 @@ namespace Shards.Content
 
             // Ko Syn Wu (Wraethe) — Bastion/monster relic CHAMPION.
             var doomGate = SoiCard.New("doom_gate", "Doom Gate").InSet(SET).Faction(W)
-                .Type(ShardsCardType.Relic).Character("kosynwu").Qty(1).Defense(5)
+                .Type(ShardsCardType.Relic).Character("kosynwu").Qty(1).Defense(7)
                 .Plays(new Custom(DoomGatePlay))
                 .Exhausts(new Custom(DoomGateDestroy))
-                .Text("You are unaffected by Ingeminex attacks.\nWhen you play this champion, shuffle 25 new Ingeminex into the center deck. Once per game.\nExhaust: destroy an Ingeminex.")
+                .Text("You are unaffected by Ingeminex attacks.\nWhen you play this champion, shuffle 35 new Ingeminex into the center deck. Once per game.\nExhaust: destroy an Ingeminex.")
                 .Art("a towering obsidian gateway wreathed in violet void-fire, monstrous silhouettes pressing against a rippling portal");
             doomGate.Def.ImmuneToIngeminex = true;
             doomGate.Register();
@@ -143,7 +143,7 @@ namespace Shards.Content
             // 2026-08-02, user decision: too strong even after the redraw nerf.
             SoiCard.New("doomstalker", "Doomstalker").InSet(SET).Faction(W)
                 .Type(ShardsCardType.Mercenary).Cost(5).Qty(2)
-                .Plays(E.Seq(E.Power(5), new If(ctx => ctx.Engine.State.ActiveMonsters.Count > 0, E.Power(3))))
+                .Plays(E.Seq(E.Power(5), If.Visible(ctx => ctx.Engine.State.ActiveMonsters.Count > 0, E.Power(3))))
                 .Text("Gain 5 power.\nIf an Ingeminex is in play, gain 8 instead.")
                 .Art("a void hunter stalking a titanic silhouette across a broken plain").Register();
 
@@ -163,7 +163,7 @@ namespace Shards.Content
             var comet = SoiCard.New("comet", "Comet").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Ally).Cost(13).Qty(1)
                 .Plays(new Custom(DestroyOpponent))
-                .Text("Destroy target opponent.\nCannot be fast-played — it must be bought with gems.\nCannot be removed from the shop.")
+                .Text("Destroy target opponent.\nCan only be acquired through a normal gem purchase.\nCannot be fast-played or removed from the shop.")
                 .Art("a crimson comet-rider streaking low over a row of market stalls");
             comet.Def.CannotBeRerolled = true;
             comet.Def.CannotBeFastPlayed = true; // no Warp/Longshot/free-play path may take it
@@ -200,8 +200,8 @@ namespace Shards.Content
         {
             var ferrata = SoiCard.New("ferrata_guard_duel", "Ferrata Guard").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Champion).Cost(4).Qty(2).Defense(4)
-                .Exhausts(new PerCount(ctx => ShardsBaseSet.CountChampions(ctx, H), gems: 1))
-                .Text("Allegiance Homodeus 4: your champions get +2 defense.\nExhaust: gain 1 gem per Homodeus champion you control.");
+                .Exhausts(E.Seq(E.Gems(1), PerCount.Visible(ctx => ShardsBaseSet.CountChampions(ctx, H), gems: 1)))
+                .Text("Allegiance Homodeus 4: your champions get +2 defense.\nExhaust: gain 1 gem, plus 1 gem per Homodeus champion you control.");
             ferrata.Def.ReplacesId = "ferrata_guard";
             ferrata.Def.DefenseAura = (owner, source, champion) =>
                 AllegianceEffect.OwnedCount(owner, H) >= 4 ? 2 : 0;
@@ -315,10 +315,10 @@ namespace Shards.Content
 
             SoiCard.New("terminal_crescents_duel", "Terminal Crescents").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Relic).Character("tetra").Qty(1)
-                .Plays(E.Seq(E.Mastery(2), new BestByMastery(
-                    (0, new PerCount(ctx => (ctx.Controller.Mastery + 1) / 2, power: 1)),
-                    (20, new PerCount(ctx => ctx.Controller.Mastery, power: 1)))))
-                .Text("Gain 2 mastery, then power equal to half your mastery, rounded up.\nM20: equal to your full mastery.")
+                .Plays(E.Seq(E.Mastery(1), new BestByMastery(
+                    (0, PerCount.Visible(ctx => (ctx.Controller.Mastery + 1) / 2, power: 1)),
+                    (20, PerCount.Visible(ctx => ctx.Controller.Mastery - 5, power: 1)))))
+                .Text("Gain 1 mastery, then power equal to half your mastery, rounded up.\nM20: equal to your mastery minus 5.")
                 .Replaces("terminal_crescents").Register();
 
             SoiCard.New("slipstream_shard_duel", "Slipstream Shard").InSet(SET).Faction(A)
@@ -334,13 +334,13 @@ namespace Shards.Content
             SoiCard.New("evokatus_duel", "Evokatus").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Champion).Cost(4).Qty(2).Defense(2)
                 .Plays(E.Draw(1))
-                .Exhausts(new PerCount(ctx => ctx.Controller.Champions.Count, power: 1))
+                .Exhausts(PerCount.Visible(ctx => ctx.Controller.Champions.Count, power: 1))
                 .Text("When played, draw a card.\nExhaust: gain 1 power per champion you control.")
                 .Replaces("evokatus").Register();
 
             SoiCard.New("primus_pilus_duel", "Primus Pilus").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Champion).Cost(2).Qty(1).Defense(5)
-                .Exhausts(new If(ctx => ctx.Controller.Champions.Count >= 3, E.Draw(2)))
+                .Exhausts(If.Visible(ctx => ctx.Controller.Champions.Count >= 3, E.Draw(2)))
                 .Text("Exhaust: if you control three or more champions, draw two cards.")
                 .Replaces("primus_pilus").Register();
 
@@ -397,8 +397,8 @@ namespace Shards.Content
 
             SoiCard.New("warpquartz_duel", "Warpquartz").InSet(SET).Faction(A)
                 .Type(ShardsCardType.Relic).Character("rez").Qty(1)
-                .Plays(new Custom(WarpquartzDuel))
-                .Text("You may banish a card from your hand or discard pile to gain its effect.\nM20: up to 3 cards instead.\nGain 3 gems and 3 power for each card you banished this turn.")
+                .Plays(E.Seq(E.Draw(1), new Custom(WarpquartzDuel)))
+                .Text("Draw a card.\nYou may banish a card from your hand or discard pile to gain its effect twice.\nM20: up to 3 cards instead.\nGain 3 gems and 3 power for each card you banished this turn.")
                 .Replaces("warpquartz").Register();
 
             SoiCard.New("duplication_fabricator_duel", "Duplication Fabricator").InSet(SET).Faction(O)
@@ -414,7 +414,7 @@ namespace Shards.Content
                 .Replaces("dash").Register();
 
             var swyft = SoiCard.New("swyft_duel", "Swyft").InSet(SET).Faction(A)
-                .Type(ShardsCardType.Champion).Cost(5).Qty(2).Defense(3)
+                .Type(ShardsCardType.Champion).Cost(5).Qty(2).Defense(5)
                 .Exhausts(E.Mix(gems: 2, power: 2))
                 .Text("Exhaust: gain 2 gems and 2 power.\nM10: you may keep cards you fast-play — they join your discard.")
                 .Replaces("swyft");
@@ -428,28 +428,28 @@ namespace Shards.Content
                 .Replaces("world_piercer").Register();
 
             var prae02 = SoiCard.New("praetorian_02_duel", "Praetorian-02").InSet(SET).Faction(H)
-                .Type(ShardsCardType.Relic).Character("decima").Qty(1).Defense(9).Shield(3)
+                .Type(ShardsCardType.Relic).Character("decima").Qty(1).Defense(9).Shield(4)
                 .Exhausts(new Do(ctx => ctx.Controller.ShieldsDoubledUntilNextTurn = true))
                 .ExhaustCosts(2)
-                .Text("While in play: shield 3.\nM20: shield 6 instead.\nExhaust, pay 2 gems: until your next turn, your shields are doubled. Killing this champion does not remove this effect.")
+                .Text("While in play: shield 4.\nM20: shield 8 instead.\nExhaust, pay 2 gems: until your next turn, your shields are doubled. Killing this champion does not remove this effect.")
                 .Replaces("praetorian_02");
             prae02.Def.ShieldInPlay = true;
-            prae02.Def.DynamicShield = owner => owner.Mastery >= 20 ? 6 : 3;
+            prae02.Def.DynamicShield = owner => owner.Mastery >= 20 ? 8 : 4;
             prae02.Register();
 
             var robes = SoiCard.New("datic_robes_duel", "Datic Robes").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Relic).Character("tetra").Qty(1).Shield(1)
                 .Plays(E.Draw(2))
-                .Text("Shield equal to your mastery. Draw two cards.\nM20: while this card is in your discard pile, you have shield equal to half your mastery, rounded up.")
+                .Text("Shield equal to your mastery. Draw two cards.\nM15: while this card is in your discard pile, you have shield equal to half your mastery, rounded up.")
                 .Replaces("datic_robes");
             robes.Def.DynamicShield = owner => owner.Mastery;
-            robes.Def.DiscardPassiveShield = owner => owner.Mastery >= 20 ? (owner.Mastery + 1) / 2 : 0;
+            robes.Def.DiscardPassiveShield = owner => owner.Mastery >= 15 ? (owner.Mastery + 1) / 2 : 0;
             robes.Register();
 
             SoiCard.New("cinder_scars_duel", "Cinder Scars").InSet(SET).Faction(W)
-                .Type(ShardsCardType.Mercenary).Cost(2).Qty(5)
+                .Type(ShardsCardType.Mercenary).Cost(2).Qty(4)
                 .Plays(E.Seq(E.Draw(1),
-                    new If(ctx => ctx.Controller.PlayedThisTurn.Exists(c =>
+                    If.Visible(ctx => ctx.Controller.PlayedThisTurn.Exists(c =>
                         c.DefId == "cinder_scars_duel" && c != ctx.Source), E.Power(3)),
                     E.At(10, new BanishUpTo(1))))
                 .Text("Draw a card.\nIf you played another Cinder Scars this turn, gain 3 power.\nM10: you may banish a card from your hand or discard pile.")
@@ -466,35 +466,35 @@ namespace Shards.Content
         private static void RegisterDestinyErrata()
         {
             SoiCard.New("agony_of_choice_duel", "The Agony of Choice").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
-                .Exhausts(new If(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller) >= 3 &&
+                .Exhausts(If.VisibleStableOnExhaust(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller) >= 3 &&
                                         ShardsDuel.PlayedFactionCards(ctx.Controller) >= 3, E.Power(5)))
                 .Text("Exhaust: if you played cards of 3+ different factions this turn, gain 5 power.")
                 .Replaces("agony_of_choice").Register();
 
             SoiCard.New("datic_secrets_duel", "Datic Secrets").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
-                .Exhausts(new If(ctx => ctx.Controller.FactionAllyPlays(O) >= 2, E.Mix(gems: 1, mastery: 1)))
+                .Exhausts(If.VisibleStableOnExhaust(ctx => ctx.Controller.FactionAllyPlays(O) >= 2, E.Mix(gems: 1, mastery: 1)))
                 .Text("Exhaust: if you played 2+ Order allies this turn, gain 1 gem and 1 mastery.")
                 .Replaces("datic_secrets").Register();
 
             SoiCard.New("healing_hands_duel", "Healing Hands").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
-                .Exhausts(new If(ctx => ctx.Controller.PlayedThisTurn.Exists(c => c.Def.IsChampion), E.Health(5)))
+                .Exhausts(If.VisibleStableOnExhaust(ctx => ctx.Controller.PlayedThisTurn.Exists(c => c.Def.IsChampion), E.Health(5)))
                 .Text("Exhaust: if you played a champion this turn, gain 5 health.")
                 .Replaces("healing_hands").Register();
 
             SoiCard.New("paradigm_shift_duel", "Paradigm Shift").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
-                .Exhausts(new If(ctx => ctx.Controller.FactionPlays(O) > 0 && ctx.Controller.FactionPlays(W) > 0,
+                .Exhausts(If.VisibleStableOnExhaust(ctx => ctx.Controller.FactionPlays(O) > 0 && ctx.Controller.FactionPlays(W) > 0,
                     E.Mix(gems: 1, mastery: 1)))
                 .Text("Exhaust: if you played an Order card and a Wraethe card this turn, gain 1 gem and 1 mastery.")
                 .Replaces("paradigm_shift").Register();
 
             SoiCard.New("soul_syphon_duel", "Soul Syphon").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
-                .Exhausts(new If(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller) >= 3 &&
+                .Exhausts(If.VisibleStableOnExhaust(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller) >= 3 &&
                                         ShardsDuel.PlayedFactionCards(ctx.Controller) >= 3, E.Health(7)))
                 .Text("Exhaust: if you played cards of 3+ different factions this turn, gain 7 health.")
                 .Replaces("soul_syphon").Register();
 
             SoiCard.New("the_last_city_duel", "The Last City").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
-                .Exhausts(new If(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
+                .Exhausts(If.VisibleStableOnExhaust(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
                     c.Def.Type == ShardsCardType.Mercenary).Count >= 2, E.Gems(3)))
                 .Text("Exhaust: if you played 2+ mercenaries this turn, gain 3 gems.")
                 .Replaces("the_last_city").Register();
@@ -503,7 +503,7 @@ namespace Shards.Content
                 .Exhausts(new BestByMastery(
                     (0, new Custom(ctx => DeadlyRecruitsDuel(ctx, 2))),
                     (20, new Custom(ctx => DeadlyRecruitsDuel(ctx, 4)))))
-                .Text("Exhaust: fast-play a cost-2 or less ally from the row for free. You may keep it.\nM20: cost 4 or less.")
+                .Text("Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it for free.\nM20: cost 4 or less.")
                 .Replaces("deadly_recruits").Register();
         }
 
@@ -620,7 +620,7 @@ namespace Shards.Content
                 {
                     PlayerIndex = player.Index,
                     Kind = DecisionKind.ChooseCards,
-                    Title = $"Banish up to {max} card(s) from your hand/discard to gain their effects",
+                    Title = $"Banish up to {max} card(s) from your hand/discard to gain their effects twice",
                     Context = "soi.banish",
                     Min = 0,
                     Max = max
@@ -646,8 +646,9 @@ namespace Shards.Content
             ctx.Engine.GainPower(player.Index, 3 * banishedThisTurn);
             foreach (var card in chosen)
                 if (card.Def.PlayEffect != null)
-                    foreach (var step in card.Def.PlayEffect.Resolve(ctx))
-                        yield return step;
+                    for (int repeat = 0; repeat < 2; repeat++)
+                        foreach (var step in card.Def.PlayEffect.Resolve(ctx))
+                            yield return step;
         }
 
         private static IEnumerable<ShardsStep> FabricatorDuel(ShardsContext ctx)
@@ -776,7 +777,7 @@ namespace Shards.Content
             for (int s = 0; s < engine.State.CenterRow.Length; s++)
             {
                 var card = engine.State.CenterRow[s];
-                if (card != null && !card.Def.IsChampion && card.Def.Cost <= maxCost)
+                if (card != null && !card.Def.IsChampion && !card.Def.CannotBeFastPlayed && card.Def.Cost <= maxCost)
                     slots.Add(s);
             }
             if (slots.Count == 0) yield break;
@@ -784,7 +785,7 @@ namespace Shards.Content
             {
                 PlayerIndex = ctx.ControllerIndex,
                 Kind = DecisionKind.ChooseCards,
-                Title = $"Fast-play an ally costing {maxCost} or less for free (you may keep it)?",
+                Title = $"Choose an ally costing {maxCost} or less to fast-play or recruit for free",
                 Context = "soi.warp",
                 Min = 0,
                 Max = 1
@@ -800,23 +801,25 @@ namespace Shards.Content
             var picked = engine.State.CenterRow[slot];
             if (picked == null) yield break;
 
-            // "You may keep it" is a real choice (fixed 2026-08-02 — the first build
-            // always kept): kept, the card joins the discard at cleanup like a buy;
-            // declined, it follows fast-play rules to the bottom of the center deck.
-            // Timeout/bot default = keep, the stronger play and the pre-fix behavior.
-            var keep = new DecisionRequest
+            // The two benefits are exclusive: immediate effect as a temporary
+            // fast-play, or a normal free acquisition without resolving its play effect.
+            var mode = new DecisionRequest
             {
                 PlayerIndex = ctx.ControllerIndex,
-                Kind = DecisionKind.ChooseCards,
-                Title = "Keep the fast-played card? (it joins your discard pile)",
-                Context = "soi.keepfast",
-                Min = 0,
+                Kind = DecisionKind.ChooseMode,
+                Title = "Deadly Recruits: fast-play or recruit?",
+                Context = "soi.mode",
+                Min = 1,
                 Max = 1
             };
-            keep.Options.Add(new DecisionOption(picked.InstanceId, picked.Def.Name) { CardInstanceId = picked.InstanceId, DefId = picked.DefId });
-            keep.DefaultOptionIds.Add(picked.InstanceId);
-            yield return ShardsStep.AwaitDecision(keep);
-            engine.WarpFromRow(ctx.ControllerIndex, slot, keep: ctx.Answer.ChosenOptionIds.Count > 0);
+            mode.Options.Add(new DecisionOption(1, "Fast-play " + picked.Def.Name) { CardInstanceId = picked.InstanceId, DefId = picked.DefId });
+            mode.Options.Add(new DecisionOption(2, "Recruit " + picked.Def.Name + " for free") { CardInstanceId = picked.InstanceId, DefId = picked.DefId });
+            mode.DefaultOptionIds.Add(2);
+            yield return ShardsStep.AwaitDecision(mode);
+            if (ctx.Answer.ChosenOptionIds[0] == 1)
+                engine.WarpFromRow(ctx.ControllerIndex, slot, keep: false);
+            else
+                engine.RecruitFromRowFree(ctx.ControllerIndex, slot, toHand: false);
         }
 
         /// <summary>Grim Tutor: search the draw pile for any card → hand, shuffle, lose 3
@@ -867,7 +870,7 @@ namespace Shards.Content
             // REPLAYED from the discard, which must not flood again.
             if (ctx.Controller.DoomGateFloodUsed) yield break;
             ctx.Controller.DoomGateFloodUsed = true;
-            ctx.Engine.ShuffleIngeminexIntoCenterDeck(25);
+            ctx.Engine.ShuffleIngeminexIntoCenterDeck(35);
         }
 
         private static IEnumerable<ShardsStep> DoomGateDestroy(ShardsContext ctx)
@@ -916,7 +919,7 @@ namespace Shards.Content
             if (revealed.Count == 0) yield break;
             var defIds = new List<string>();
             foreach (var c in revealed) defIds.Add(c.DefId);
-            engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds });
+            engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds, TakenFromCenterTop = true });
 
             var playable = revealed.FindAll(c => !c.Def.IsChampion && !c.Def.IsMonster &&
                 !c.Def.CannotBeFastPlayed && c.Def.Cost <= maxCost);

@@ -42,7 +42,7 @@ namespace Pascension.Game.Soi
             ["zetta_encryptor"] = ("Zetta, l'Encodeuse", "Bouclier 5.\nVous et vos autres champions ne pouvez pas être attaqués tant que Zetta est en jeu."),
 
             // ------------------------------------------------------------- base — Maquis
-            ["leshai_knight"] = ("Chevalier Le'shai", "Gagnez 3 puissance.\nUnion : gagnez-en 6 à la place."),
+            ["leshai_knight"] = ("Chevalier Le'shai", "Gagnez 4 puissance.\nUnion : gagnez-en 6 à la place."),
             ["ghostwillow_avenger"] = ("Saule Vengeur", "Gagnez 4 puissance. M15 : détruisez tous les champions ennemis."),
             ["thorn_zealot"] = ("Zélote des Épines", "Bouclier 3.\nPiochez une carte.\nUnion : détruisez un champion ennemi."),
             ["root_of_the_forest"] = ("Racine de la Forêt", "Gagnez 10 santé.\nUnion : gagnez 10 puissance."),
@@ -106,7 +106,7 @@ namespace Pascension.Game.Soi
             ["j_chord"] = ("Riff Ralf", "Activez — Distorsion 3. M15 : Distorsion 5 à la place."),
             ["g_48"] = ("G-48", "Activez : redressez un autre champion que vous contrôlez. Il peut à nouveau s'activer ce tour-ci."),
             ["legion_carrier"] = ("Transporteur de la Légion", "Gagnez 2 cristaux.\nRévélez les 3 cartes du dessus de votre deck : jusqu'à un champion révélé dans votre main, le reste dans votre défausse."),
-            ["torian_commandos"] = ("Commando Torian", "Bouclier 4.\nGagnez 2 cristaux et 2 puissance."),
+            ["torian_commandos"] = ("Commando Torian", "Bouclier 4.\nGagnez 3 cristaux et 2 puissance."),
             ["anomaly_cleric"] = ("Clerc de l'Anomalie", "Gagnez 3 cristaux et 1 maîtrise. M10 : la prochaine carte que vous recrutez ce tour-ci va dans votre main."),
             ["duplication_fabricator"] = ("Duplicateur", "Gagnez 1 maîtrise.\nChaque joueur révèle la carte du dessus de son deck ; copiez l'effet d'un allié révélé."),
             ["shard_seer"] = ("Voyant de l'Éclat", "Piochez une carte.\nVous pouvez révéler un Éclat de l'Infini de votre main pour gagner 2 maîtrise."),
@@ -142,15 +142,15 @@ namespace Pascension.Game.Soi
             ["maglev_tunnels"] = ("Tunnels Maglev", "Quand vous recrutez un champion Homodeus, vous pouvez le placer au-dessus de votre deck."),
             ["soul_syphon"] = ("Siphon des Âmes", "Activez : si vous avez joué des cartes de 3 factions différentes ou plus ce tour-ci, gagnez 5 santé."),
             ["agony_of_choice"] = ("Un Choix Douloureux", "Activez : si vous avez joué des cartes de 3 factions différentes ou plus ce tour-ci, gagnez 4 puissance."),
-            ["shard_defiant"] = ("Éclat Rebelle", "Payez 2 cristaux, Activez : révélez la carte du dessus de la pioche commune ; recrutez-la ou bannissez-la.\nSi vous avez joué une carte Aion ce tour-ci, vous pouvez répéter cet effet une fois."),
+            ["shard_defiant"] = ("Éclat Rebelle", "Payez 2 cristaux, Activez : révélez la carte du dessus de la pioche commune ; recrutez-la si elle le permet, ou bannissez-la.\nSi vous avez joué une carte Aion ce tour-ci, vous pouvez répéter cet effet une fois."),
             ["whatever_it_takes"] = ("Quoi qu'il en coûte", "Payez 6 cristaux, Activez : gagnez 9 puissance."),
             ["the_last_city"] = ("La Dernière Ville", "Activez : si vous avez joué 2 mercenaires ou plus ce tour-ci, gagnez 2 cristaux."),
-            ["power_struggle"] = ("Lutte pour le Pouvoir", "Activez : détruisez un champion que vous contrôlez pour gagner 5 puissance."),
+            ["power_struggle"] = ("Lutte pour le Pouvoir", "Activez : détruisez un champion que vous contrôlez pour gagner 6 puissance."),
             ["unconditional_conscription"] = ("Conscription Obligatoire", "Activez : si vous avez joué ce tour-ci 2 alliés ou plus de coût 2 ou moins, hors cartes de départ, gagnez 4 puissance."),
             ["stolen_futures"] = ("Futurs Volés", "M10 — Activez : bannissez cette Destinée ; ajoutez 2 Destinées du deck à la rangée, puis prenez 2 Destinées."),
             ["strategic_mastermind"] = ("Fin Stratège", "Activez : si vous avez 40 PV ou plus, piochez une carte."),
             ["advanced_weapons"] = ("Armes Avancées", "Activez : si vous avez joué 2 cartes ou plus de coût impair ce tour-ci, gagnez 3 puissance.\nLes cartes sans coût ne sont ni paires ni impaires."),
-            ["advanced_medicine"] = ("Médecine Avancée", "Activez : si vous avez joué 2 cartes ou plus de coût pair ce tour-ci, gagnez 4 santé.\nLes cartes sans coût ne sont ni paires ni impaires."),
+            ["advanced_medicine"] = ("Médecine Avancée", "Activez : si vous avez joué 2 cartes ou plus de coût pair ce tour-ci, gagnez 6 santé.\nLes cartes sans coût ne sont ni paires ni impaires."),
             ["healing_hands"] = ("Mains Curatives", "Activez : si vous avez joué un champion ce tour-ci, gagnez 4 santé."),
             ["war_bound"] = ("Frères d'Armes", "Activez : si vous contrôlez 2 champions ou plus, gagnez 4 puissance."),
             ["true_leader"] = ("Chef Incontesté", "Activez : si vous avez joué 3 cartes de la même faction ce tour-ci, gagnez 2 maîtrise."),
@@ -175,17 +175,17 @@ namespace Pascension.Game.Soi
             ["doomstalker"] = ("Traqueur du Destin", "Gagnez 5 puissance.\nSi un Ingeminex est en jeu, gagnez-en 8 à la place."),
             ["grim_tutor"] = ("Tuteur Sinistre", "Cherchez une carte dans votre pioche et mettez-la dans votre main, puis mélangez.\nVous perdez 3 santé."),
             ["bleak_communion"] = ("Communion Lugubre", "Perdez 4 santé — ce ne sont pas des dégâts.\nPiochez deux cartes.\nÉcho : un adversaire perd cette santé à votre place."),
-            ["comet"] = ("Comète", "Détruisez un adversaire ciblé.\nCette carte ne peut pas être jouée en distorsion et doit être achetée avec des cristaux.\nCette carte ne peut pas être retirée de la boutique."),
+            ["comet"] = ("Comète", "Détruisez un adversaire ciblé.\nCette carte ne peut être acquise que par un achat normal avec des cristaux.\nElle ne peut pas être enrôlée, jouée en distorsion ni retirée de la rivière."),
             ["prism"] = ("Prisme", "Bouclier 2. Piochez une carte. Cette carte est considérée comme une carte de chaque faction."),
 
             // ------------------------------------------------------------- Duel of Doom — errata (Allégeance)
-            ["ferrata_guard_duel"] = ("Garde Ferrata", "Allégeance Homodeus 4 : vos champions gagnent +2 défense.\nActivez : gagnez 1 cristal par champion Homodeus que vous contrôlez."),
+            ["ferrata_guard_duel"] = ("Garde Ferrata", "Allégeance Homodeus 4 : vos champions gagnent +2 défense.\nActivez : gagnez 1 cristal, plus 1 cristal par champion Homodeus que vous contrôlez."),
             ["mainframe_abbot_duel"] = ("Abbé Central", "Bouclier 3. Piochez une carte.\nAllégeance Ordre 4 : gagnez 1 maîtrise."),
             ["hounds_of_volos_duel"] = ("Molosses de Volos", "Gagnez 5 santé.\nAllégeance Maquis 4 : gagnez aussi 5 puissance."),
             ["the_lost_duel"] = ("Les Oubliés", "Gagnez 5 puissance.\nAllégeance Spectra 4 : vous pouvez bannir une carte de votre main ou de votre défausse."),
 
             // Duel of Doom — reliques Doom Gate / Longshot
-            ["doom_gate"] = ("Porte du Destin", "Vous êtes insensible aux attaques des Ingeminex.\nQuand vous jouez ce champion, mélangez 25 nouveaux Ingeminex dans la pioche commune. Une fois par partie.\nActivez : détruisez un Ingeminex."),
+            ["doom_gate"] = ("Porte du Destin", "Vous êtes insensible aux attaques des Ingeminex.\nQuand vous jouez ce champion, mélangez 35 nouveaux Ingeminex dans la pioche commune. Une fois par partie.\nActivez : détruisez un Ingeminex."),
             ["longshot"] = ("Coup de Maître", "Révélez les 2 cartes du dessus de la pioche commune.\nVous pouvez enrôler en distorsion celles qui sont des alliés de coût 3 ou moins ; placez les autres sous la pioche commune. M15 : coût 5 ou moins à la place."),
 
             // Duel of Doom — errata (defs de remplacement)
@@ -202,7 +202,7 @@ namespace Pascension.Game.Soi
             ["j_chord_duel"] = ("Riff Ralf", "Activez — Distorsion 3. M15 : Distorsion 6 à la place."),
             ["the_rotten_duel"] = ("Le Putride", "Gagnez 4 puissance et 1 maîtrise."),
             ["heart_of_nothing_duel"] = ("Cœur du Néant", "Gagnez 7 puissance. M20 : gagnez 14 à la place.\nSi vous infligez 10 dégâts non prévenus ou plus à un même adversaire ce tour-ci, piochez 3 cartes supplémentaires en fin de tour."),
-            ["terminal_crescents_duel"] = ("Croissants Terminaux", "Gagnez 2 maîtrise, puis de la puissance égale à la moitié de votre maîtrise, arrondie au supérieur. M20 : égale à votre maîtrise totale."),
+            ["terminal_crescents_duel"] = ("Croissants Terminaux", "Gagnez 1 maîtrise, puis de la puissance égale à la moitié de votre maîtrise, arrondie au supérieur. M20 : égale à votre maîtrise moins 5."),
             ["slipstream_shard_duel"] = ("Éclat de Vivacité", "Gagnez 2 maîtrise et piochez deux cartes. M20 : jouez un tour supplémentaire. Une fois par partie."),
             ["evokatus_duel"] = ("Evokatus", "Quand vous jouez cette carte, piochez une carte.\nActivez : gagnez 1 puissance par champion que vous contrôlez."),
             ["primus_pilus_duel"] = ("Primus Pilus", "Activez : si vous contrôlez trois champions ou plus, piochez deux cartes."),
@@ -212,13 +212,13 @@ namespace Pascension.Game.Soi
             ["reactor_drone_duel"] = ("Drone Réacteur", "Choisissez l'un :\n— Gagnez 2 cristaux.\n— Gagnez 3 cristaux et bannissez cette carte à la fin de votre tour."),
             ["order_initiate_duel"] = ("Initié de l'Ordre", "Vous pouvez retirer une carte de la boutique. Gagnez 2 cristaux.\nDomination : gagnez 2 maîtrise."),
             ["spore_cleric_duel"] = ("Clerc aux Spores", "Gagnez 3 santé.\nUnion : gagnez 6 santé à la place."),
-            ["warpquartz_duel"] = ("Quartz de Distorsion", "Vous pouvez bannir une carte de votre main ou de votre défausse pour gagner son effet. M20 : jusqu'à 3 cartes à la place.\nGagnez 3 cristaux et 3 puissance par carte bannie ce tour-ci."),
+            ["warpquartz_duel"] = ("Quartz de Distorsion", "Piochez une carte.\nVous pouvez bannir une carte de votre main ou de votre défausse pour gagner deux fois son effet. M20 : jusqu'à 3 cartes à la place.\nGagnez 3 cristaux et 3 puissance par carte bannie ce tour-ci."),
             ["duplication_fabricator_duel"] = ("Duplicateur", "Gagnez 1 maîtrise.\nChaque joueur révèle la carte du dessus de sa pioche ; copiez l'effet d'un allié révélé. M20 : vous pouvez copier autant d'effets que vous voulez parmi les cartes révélées."),
             ["dash_duel"] = ("Flash", "Bouclier 2.\nVous pouvez placer une carte Aion de votre défausse au-dessus de votre deck. M10 : n'importe quelle carte à la place.\nPiochez une carte."),
             ["swyft_duel"] = ("Swyft", "Activez : gagnez 2 cristaux et 2 puissance. M10 : vous pouvez conserver les cartes que vous jouez en distorsion. Elles vont dans votre défausse."),
             ["world_piercer_duel"] = ("Perce-Mondes", "Gagnez 2 maîtrise.\nRenvoyez jusqu’à deux mercenaires de votre défausse ou de votre pioche dans votre main. M20 : renvoyez-les TOUS."),
-            ["praetorian_02_duel"] = ("Prétorien-02", "En jeu : bouclier 3. M20 : 6 à la place.\nActivez, payez 2 cristaux : jusqu’à votre prochain tour, vos boucliers sont doublés. Détruire ce champion ne retire pas cet effet."),
-            ["datic_robes_duel"] = ("Sphère Réflectrice", "Bouclier égal à votre maîtrise. Piochez deux cartes. M20 : tant que cette carte est dans votre défausse, vous avez un bouclier égal à la moitié de votre maîtrise, arrondie au supérieur."),
+            ["praetorian_02_duel"] = ("Prétorien-02", "En jeu : bouclier 4. M20 : 8 à la place.\nActivez, payez 2 cristaux : jusqu’à votre prochain tour, vos boucliers sont doublés. Détruire ce champion ne retire pas cet effet."),
+            ["datic_robes_duel"] = ("Sphère Réflectrice", "Bouclier égal à votre maîtrise. Piochez deux cartes. M15 : tant que cette carte est dans votre défausse, vous avez un bouclier égal à la moitié de votre maîtrise, arrondie au supérieur."),
             ["cinder_scars_duel"] = ("Brûlure des Cendres", "Piochez une carte.\nSi vous avez joué une autre Brûlure des Cendres ce tour-ci, gagnez 3 puissance. M10 : vous pouvez bannir une carte de votre main ou de votre défausse."),
             ["legion_carrier_duel"] = ("Transporteur de la Légion", "Gagnez 2 cristaux.\nRévélez les 5 cartes du dessus de votre deck : jusqu'à un champion révélé dans votre main, le reste dans votre défausse."),
             ["agony_of_choice_duel"] = ("Un Choix Douloureux", "Activez : si vous avez joué des cartes de 3 factions différentes ou plus ce tour-ci, gagnez 5 puissance."),
@@ -227,7 +227,7 @@ namespace Pascension.Game.Soi
             ["paradigm_shift_duel"] = ("Changement de Paradigme", "Activez : si vous avez joué une carte Ordre et une carte Spectra ce tour-ci, gagnez 1 cristal et 1 maîtrise."),
             ["soul_syphon_duel"] = ("Siphon des Âmes", "Activez : si vous avez joué des cartes de 3 factions différentes ou plus ce tour-ci, gagnez 7 santé."),
             ["the_last_city_duel"] = ("La Dernière Ville", "Activez : si vous avez joué 2 mercenaires ou plus ce tour-ci, gagnez 3 cristaux."),
-            ["deadly_recruits_duel"] = ("Dangereuses Recrues", "Activez : enrôlez en distorsion un allié de coût 2 ou moins de la rivière gratuitement. Vous pouvez le conserver. M20 : coût 4 ou moins."),
+            ["deadly_recruits_duel"] = ("Dangereuses Recrues", "Activez : choisissez un allié de coût 2 ou moins de la rivière. Jouez-le en distorsion gratuitement OU recrutez-le gratuitement, sans le jouer. M20 : coût 4 ou moins."),
         };
     }
 }

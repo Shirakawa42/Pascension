@@ -155,8 +155,7 @@ namespace Pascension.Game.UI
                 {
                     row.Label.text = "<color=#8A8377>" + Loc.T("Open seat") + "</color>";
                     row.HeroButton.gameObject.SetActive(false);
-                    row.ActionButton.gameObject.SetActive(isHost);
-                    row.ActionLabel.text = Loc.T("ADD BOT");
+                    row.ActionButton.gameObject.SetActive(false);
                     continue;
                 }
 
@@ -164,19 +163,18 @@ namespace Pascension.Game.UI
                 string tags = "";
                 if (isHostSlot) tags += "  <size=15><color=#E8C15A>" + Loc.T("HOST") + "</color></size>";
                 if (i == mySlot) tags += "  <size=15><color=#8A8377>" + Loc.T("YOU") + "</color></size>";
-                if (slot.Kind == LobbySlotKind.Bot) tags += "  <size=15><color=#8A8377>" + Loc.T("BOT") + "</color></size>";
-                bool ready = slot.Kind == LobbySlotKind.Bot || isHostSlot || slot.Ready;
+                bool ready = isHostSlot || slot.Ready;
                 row.Label.text = slot.Name + tags +
                     (ready ? "  <size=15><color=#71B356>" + Loc.T("READY") + "</color></size>"
                            : "  <size=15><color=#C24B3A>" + Loc.T("NOT READY") + "</color></size>");
 
                 row.HeroButton.gameObject.SetActive(!duelDraft);
                 row.HeroLabel.text = HeroDisplayName(slot.HeroId);
-                row.HeroButton.interactable = i == mySlot || (isHost && slot.Kind == LobbySlotKind.Bot);
+                row.HeroButton.interactable = i == mySlot;
 
                 bool showAction = isHost && !isHostSlot;
                 row.ActionButton.gameObject.SetActive(showAction);
-                row.ActionLabel.text = slot.Kind == LobbySlotKind.Bot ? Loc.T("REMOVE") : Loc.T("KICK");
+                row.ActionLabel.text = Loc.T("KICK");
             }
 
             bool canToggleReady = mySlot >= 0 && !isHost;
@@ -314,9 +312,7 @@ namespace Pascension.Game.UI
 
             var slot = lobby.State.Slots[slotIndex];
             string next = NextHero(slotIndex, slot.HeroId);
-            if (slot.Kind == LobbySlotKind.Bot)
-                lobby.HostSetBotHero(slotIndex, next);
-            else if (slot.Kind == LobbySlotKind.Human && slot.ClientId == manager.LocalClientId)
+            if (slot.Kind == LobbySlotKind.Human && slot.ClientId == manager.LocalClientId)
                 lobby.SetHeroRpc(next); // runs locally on the host, over the wire on clients
         }
 
@@ -326,10 +322,7 @@ namespace Pascension.Game.UI
             var manager = NetworkManager.Singleton;
             if (lobby == null || !lobby.IsSpawned || manager == null || !manager.IsHost) return;
 
-            if (lobby.State.Slots[slotIndex].Kind == LobbySlotKind.Empty)
-                lobby.HostAddBot(slotIndex);
-            else
-                lobby.HostRemoveSlot(slotIndex);
+            lobby.HostRemoveSlot(slotIndex);
         }
 
         private void OnReadyClicked()

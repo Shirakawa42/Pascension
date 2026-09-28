@@ -1,20 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using NUnit.Framework;
 using Pascension.Core;
+using Pascension.Engine.Core;
 using Pascension.Engine.Serialization;
-using Pascension.Net;
-using Shards.Bots;
 using Shards.Content;
 using Shards.Engine;
 
 namespace Pascension.Engine.Tests
 {
-    /// <summary>The MASTER-freeze regression suite: a faulting search seat must never
-    /// hang the game, the card index must survive concurrent access, and every minted
-    /// ladder rank must resolve to a working bot.</summary>
+    /// <summary>Snapshot privacy and safe concurrent card lookup.</summary>
     public sealed class ShardsSeatSafetyTests
     {
         private const ShardsDlc AllDlc =
@@ -25,55 +21,6 @@ namespace Pascension.Engine.Tests
         {
             ShardsCardDatabase.Clear();
             ShardsContentRegistry.EnsureRegistered();
-        }
-
-        private sealed class ThrowingAgent : IBotAgent
-        {
-            public int Calls;
-            public Pascension.Engine.Actions.PlayerAction Choose(PendingSnap pending, SnapshotBase view)
-            {
-                Calls++;
-                throw new InvalidOperationException("deliberate test fault");
-            }
-        }
-
-        [Test]
-        public void FaultingSearchSeat_NeverHangsTheGame()
-        {
-            // Pre-fix, a single throw inside the seat's fire-and-forget task froze the
-            // game forever (no bot response timeout exists). Now every fault must fall
-            // back to the engine's safe default and the game must still END.
-            var specs = new List<PlayerSpec>
-            {
-                new() { Name = "Faulty", CharacterId = "decima", IsBot = true },
-                new() { Name = "Heuristic", CharacterId = "tetra", IsBot = true }
-            };
-            var adapter = new ShardsEngineAdapter(ShardsContentRegistry.StandardConfig(91, specs, AllDlc));
-            var host = new GameHost(adapter, 2, 0f);
-
-            var throwing = new ThrowingAgent();
-            var faultySeat = new SearchBotSeat(0, throwing, host);
-            int faults = 0;
-            faultySeat.SeatFaulted += (_, _) => Interlocked.Increment(ref faults);
-            host.AttachSeat(faultySeat, isHuman: false);
-
-            var normalSeat = new BotSeat(1, new ShardsHeuristicBot(9100, adapter.Inner), thinkDelaySeconds: 0f);
-            normalSeat.Bind(host);
-            host.AttachSeat(normalSeat, isHuman: false);
-
-            host.Start();
-            var sw = Stopwatch.StartNew();
-            while (!adapter.GameOver && sw.Elapsed.TotalSeconds < 30)
-            {
-                host.Tick(0.02f);
-                normalSeat.Tick(0.02f);
-                Thread.Sleep(1); // let the faulty seat's worker task run
-            }
-
-            Assert.IsTrue(adapter.GameOver,
-                $"game did not finish within 30s — the faulting seat hung it (faults so far: {faults})");
-            Assert.Greater(faults, 0, "the throwing agent should have faulted at least once");
-            Assert.Greater(throwing.Calls, 0);
         }
 
         [Test]
@@ -119,31 +66,126 @@ namespace Pascension.Engine.Tests
             Assert.IsNull(failure, failure?.ToString());
         }
 
-        [Test]
-        public void RankRegistry_EveryMintedRankResolvesToAWorkingBot()
+        [TestCase(0, false)]
+        [TestCase(1, false)]
+        [TestCase(0, true)]
+        [TestCase(1, true)]
+        public void Snapshot_ConditionGlowsDoNotRevealOpponentHiddenZones(int viewerIndex, bool destiny)
         {
-            var specs = new List<PlayerSpec>
+            var engine = SnapshotEngine();
+            string defId = "aegis_archivist";
+            if (destiny)
             {
-                new() { Name = "A", CharacterId = "decima" },
-                new() { Name = "B", CharacterId = "kosynwu" }
-            };
-            var adapter = new ShardsEngineAdapter(ShardsContentRegistry.StandardConfig(93, specs, AllDlc));
-
-            var seenKinds = new HashSet<string>();
-            var seenNames = new HashSet<string>();
-            foreach (var rank in ShardsBotRanks.Minted)
-            {
-                Assert.IsTrue(seenKinds.Add(rank.KindString), $"duplicate kind {rank.KindString}");
-                Assert.IsTrue(seenNames.Add(rank.DisplayName), $"duplicate display {rank.DisplayName}");
-                var bot = ShardsBotRanks.Create(rank.KindString, 5, adapter.Inner);
-                Assert.IsNotNull(bot, rank.Id);
-                Assert.AreEqual(rank.IsSearch, ShardsBotRanks.IsSearchKind(rank.KindString), rank.Id);
-                var action = bot.Choose(adapter.PendingInput, null);
-                Assert.IsNotNull(action, $"{rank.Id} produced no opening action");
+                // The same private condition must be safe on either public zone,
+                // including future destinies that inspect their owner's hand.
+                defId = "test_private_condition_destiny";
+                ShardsCardDatabase.Register(new ShardsCardDef
+                {
+                    Id = defId,
+                    Type = ShardsCardType.Destiny,
+                    ExhaustEffect = new Dominion(E.Gems(1))
+                });
             }
-            // Ladder floor today: iron, bronze, silver (higher ranks minted by training).
-            Assert.GreaterOrEqual(ShardsBotRanks.Minted.Count, 3);
-            Assert.AreEqual("rank:iron", ShardsBotRanks.Minted[0].KindString);
+            var opponent = engine.State.Players[1 - viewerIndex];
+            var permanent = AddCard(engine, opponent, defId,
+                destiny ? ShardsZone.DestinyRow : ShardsZone.Champions);
+            for (int i = 0; i < 3; i++) AddCard(engine, opponent, "crystal", ShardsZone.Hand);
+            foreach (string id in new[] { "reactor_drone", "spore_cleric", "nil_assassin" })
+                AddCard(engine, opponent, id, ShardsZone.Deck);
+
+            var before = ShardsSnapshotBuilder.Build(engine, viewerIndex);
+            Assert.IsFalse(ShardsSnapshotBuilder.Build(engine, opponent.Index)
+                .ConditionGlowIds.Contains(permanent.InstanceId), "owner's condition starts unmet");
+
+            (opponent.Hand, opponent.Deck) = (opponent.Deck, opponent.Hand);
+            foreach (var card in opponent.Hand) card.Zone = ShardsZone.Hand;
+            foreach (var card in opponent.Deck) card.Zone = ShardsZone.Deck;
+
+            Assert.Contains(permanent.InstanceId,
+                ShardsSnapshotBuilder.Build(engine, opponent.Index).ConditionGlowIds,
+                "the hidden swap must change the owner's condition to expose the original leak");
+            var after = ShardsSnapshotBuilder.Build(engine, viewerIndex);
+            Assert.IsNull(after.Players[opponent.Index].Hand);
+            Assert.IsNull(after.Players[opponent.Index].FullDeck);
+            Assert.AreEqual(ShardsJson.Wire.Serialize(before), ShardsJson.Wire.Serialize(after),
+                "changing only an opponent's private hand/deck allocation must not change the viewer's snapshot");
         }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        public void Snapshot_ConditionGlowsPreserveViewerHintsOnly(int viewerIndex)
+        {
+            var engine = SnapshotEngine();
+            var viewer = engine.State.Players[viewerIndex];
+            var opponent = engine.State.Players[1 - viewerIndex];
+            foreach (string id in new[] { "reactor_drone", "spore_cleric", "nil_assassin" })
+            {
+                AddCard(engine, viewer, id, ShardsZone.Hand);
+                AddCard(engine, opponent, id, ShardsZone.Hand);
+            }
+            var ownChampion = AddCard(engine, viewer, "aegis_archivist", ShardsZone.Champions);
+            var ownDestiny = AddCard(engine, viewer, "power_struggle", ShardsZone.DestinyRow);
+            var ownHand = AddCard(engine, viewer, "bulwark_chanter", ShardsZone.Hand);
+            AddCard(engine, opponent, "aegis_archivist", ShardsZone.Champions);
+            AddCard(engine, opponent, "power_struggle", ShardsZone.DestinyRow);
+            var row = new ShardsCard
+            {
+                InstanceId = engine.State.NextInstanceId++, DefId = "bulwark_chanter",
+                Owner = -1, Zone = ShardsZone.CenterRow
+            };
+            engine.State.CenterRow[0] = row;
+
+            CollectionAssert.AreEquivalent(new[]
+                { ownChampion.InstanceId, ownDestiny.InstanceId, ownHand.InstanceId, row.InstanceId },
+                ShardsSnapshotBuilder.Build(engine, viewerIndex).ConditionGlowIds,
+                "own hand, market, champion and destiny hints remain available; opponent hints stay private");
+
+            ownChampion.Exhausted = true;
+            ownDestiny.Exhausted = true;
+            CollectionAssert.AreEquivalent(new[] { ownHand.InstanceId, row.InstanceId },
+                ShardsSnapshotBuilder.Build(engine, viewerIndex).ConditionGlowIds,
+                "exhausted permanents must not show ready-condition hints");
+        }
+
+        private static ShardsEngine SnapshotEngine()
+        {
+            var engine = new ShardsEngine(ShardsContentRegistry.StandardConfig(42,
+                new List<PlayerSpec>
+                {
+                    new() { Name = "A", CharacterId = "decima" },
+                    new() { Name = "B", CharacterId = "tetra" }
+                }, AllDlc | ShardsDlc.Duel));
+            while (engine.PendingInput.Kind == PendingInputKind.Decision)
+            {
+                var pending = engine.PendingInput;
+                var action = DefaultActions.For(new PendingSnap
+                    { Kind = pending.Kind, PlayerIndex = pending.PlayerIndex, Decision = pending.Decision });
+                Assert.IsTrue(engine.Submit(action).Accepted);
+            }
+            Array.Clear(engine.State.CenterRow, 0, engine.State.CenterRow.Length);
+            foreach (var player in engine.State.Players)
+            {
+                player.Hand.Clear();
+                player.Deck.Clear();
+                player.Discard.Clear();
+                player.PlayZone.Clear();
+                player.Champions.Clear();
+                player.Destinies.Clear();
+                player.PlayedThisTurn.Clear();
+            }
+            return engine;
+        }
+
+        private static ShardsCard AddCard(ShardsEngine engine, ShardsPlayer player, string id, ShardsZone zone)
+        {
+            var card = new ShardsCard
+                { InstanceId = engine.State.NextInstanceId++, DefId = id, Owner = player.Index, Zone = zone };
+            if (zone == ShardsZone.Hand) player.Hand.Add(card);
+            else if (zone == ShardsZone.Deck) player.Deck.Add(card);
+            else if (zone == ShardsZone.Champions) player.Champions.Add(card);
+            else player.Destinies.Add(card);
+            return card;
+        }
+
     }
 }

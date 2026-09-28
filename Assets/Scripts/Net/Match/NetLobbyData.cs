@@ -33,7 +33,7 @@ namespace Pascension.Net
             Seats.Clear();
         }
 
-        /// <summary>Player index for a persistent identity, or -1. Bots/host never match.</summary>
+        /// <summary>Player index for a persistent identity, or -1. The host never matches.</summary>
         public static int FindSeatByGuid(string clientGuid)
         {
             if (string.IsNullOrEmpty(clientGuid)) return -1;

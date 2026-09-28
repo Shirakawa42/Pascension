@@ -14,7 +14,6 @@ namespace Pascension.Net
 
         public string PlayerName;
         public string HeroId;
-        public string BotKind;
 
         /// <summary>True for the host's own human (LocalSession instead of RemoteSeat).</summary>
         public bool IsHostHuman;

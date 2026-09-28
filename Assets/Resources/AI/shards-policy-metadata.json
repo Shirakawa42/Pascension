@@ -1,0 +1,14 @@
+{
+  "schema": "shards-release-policy-v1",
+  "snapshot": "approved-relic-pass-snapshot-1500",
+  "date": "2026-09-28",
+  "policy_sha256": "2e9d7dc1b3c65d9ac57629abfdbd7e7d0c9cd34467dddfb4e4e0fca795ff286d",
+  "validation_games": 1500,
+  "training_updates_for_balance_patch": 0,
+  "learned_arrays_unchanged": true,
+  "card_effects_refreshed_for_approved_balance": true,
+  "search_settings_resource": "AI/shards-search-settings",
+  "hero_draft": "seat-aware matchup scores from the same 1500-game snapshot; 75 games per ordered pair; estimates are noisy",
+  "runtime": "in-process C# CPU inference with background public-information hybrid search",
+  "note": "Same accepted policy weights and search profile as the GPU statistics run; CPU/GPU arithmetic is not bit-identical."
+}

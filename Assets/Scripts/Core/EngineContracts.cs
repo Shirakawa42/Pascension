@@ -36,15 +36,6 @@ namespace Pascension.Core
         PlayerAction DefaultActionFor(PendingSnap pending);
     }
 
-    /// <summary>
-    /// Game-agnostic bot contract: choose from the pending surface only. Snapshot is
-    /// the bot's masked view (downcast per game for smarter play).
-    /// </summary>
-    public interface IBotAgent
-    {
-        PlayerAction Choose(PendingSnap pending, SnapshotBase view);
-    }
-
     /// <summary>Display-ready card face for UI layers that must not reference a game's
     /// content assembly directly.</summary>
     public sealed class CardFace
@@ -62,8 +53,6 @@ namespace Pascension.Core
     {
         public string Name;
         public string CharacterId;
-        public bool IsBot;
-        public string BotKind;
         public bool FullControl;
     }
 

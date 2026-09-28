@@ -12,7 +12,7 @@ namespace Pascension.Engine.Tests
     {
         /// <summary>2-player record: me (seat 0, "decima") vs one opponent.</summary>
         private static SoiGameRecord G(string guid, string endedAt, int winner,
-            string mode = "ai", string myChar = "decima", string oppIdentity = "bot:greedy",
+            string mode = "ai", string myChar = "decima", string oppIdentity = "bot:archived",
             string oppName = "Bot", string oppChar = "volos", bool complete = true)
         {
             var r = new SoiGameRecord
@@ -89,7 +89,7 @@ namespace Pascension.Engine.Tests
             {
                 G("g1", "t1", 0, oppIdentity: "alice", oppName: "Alice"),
                 G("g2", "t2", 1, oppIdentity: "alice", oppName: "Alice"),
-                G("g3", "t3", 0, oppIdentity: "bot:greedy")
+                G("g3", "t3", 0, oppIdentity: "bot:archived")
             };
             var agg = Compute(records, new SoiStatsFilter { OpponentKey = "alice" });
             Assert.AreEqual(2, agg.Games);
@@ -104,7 +104,7 @@ namespace Pascension.Engine.Tests
             {
                 G("g1", "t1", 0, oppIdentity: "alice", oppName: "Alice"),
                 G("g2", "t3", 1, oppIdentity: "alice", oppName: "AliceRenamed"),
-                G("g3", "t2", -1, oppIdentity: "bot:greedy")
+                G("g3", "t2", -1, oppIdentity: "bot:archived")
             };
             var agg = Compute(records, new SoiStatsFilter { OpponentKey = "alice" });
 
@@ -116,7 +116,7 @@ namespace Pascension.Engine.Tests
             Assert.AreEqual(1, alice.MyLosses);
             Assert.AreEqual("AliceRenamed", alice.DisplayName, "display name from the latest game");
             Assert.AreEqual("t3", alice.LastPlayedUtc);
-            var bot = agg.Opponents.Find(o => o.IdentityKey == "bot:greedy");
+            var bot = agg.Opponents.Find(o => o.IdentityKey == "bot:archived");
             Assert.IsNotNull(bot);
             Assert.AreEqual(1, bot.Ties);
             Assert.IsTrue(bot.IsBot);
@@ -257,7 +257,7 @@ namespace Pascension.Engine.Tests
                 new()
                 {
                     Guid = "s1", EndedAtUtc = "t0", Mode = "ai", Won = true,
-                    Opponents = { new SoiStubOpponent { Identity = "bot:greedy", CharacterId = "volos" } }
+                    Opponents = { new SoiStubOpponent { Identity = "bot:archived", CharacterId = "volos" } }
                 },
                 new()
                 {
@@ -316,7 +316,7 @@ namespace Pascension.Engine.Tests
             win.Players[1].MaxSingleHit = 9;
             var loss = G("g2", "t2", 1, oppIdentity: "alice", oppName: "Alice");
             loss.Players[1].Buys["x"] = 2;
-            var other = G("g3", "t3", 0, oppIdentity: "bot:greedy");
+            var other = G("g3", "t3", 0, oppIdentity: "bot:archived");
 
             var records = new List<SoiGameRecord> { win, loss, other };
             var agg = Compute(records, new SoiStatsFilter { OpponentKey = "alice" });

@@ -20,7 +20,7 @@ namespace Pascension.Net
 
     /// <summary>
     /// Everything the app/net layer needs to run one game: config building, engine +
-    /// codec creation, character catalog, DLC options, bots, display helpers.
+    /// codec creation, character catalog, DLC options and display helpers.
     /// </summary>
     public interface IGameModule
     {
@@ -45,9 +45,6 @@ namespace Pascension.Net
         IReadOnlyList<CharacterInfo> CharactersFor(int dlcFlags);
         string DefaultCharacterFor(int slotIndex, int dlcFlags);
         string CharacterDisplayName(string characterId);
-
-        /// <summary>Host-side bot creation (may capture the in-process engine).</summary>
-        IBotAgent CreateBot(string botKind, ulong seed, IEngineAdapter engine);
 
         CardFace CardDisplay(string defId);
     }

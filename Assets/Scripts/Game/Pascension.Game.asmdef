@@ -6,10 +6,8 @@
         "UnityEngine.UI",
         "Pascension.Engine",
         "Pascension.Content",
-        "Pascension.Bots",
         "Shards.Content",
         "Shards.Engine",
-        "Shards.Bots",
         "Shards.Stats",
         "Pascension.Net",
         "Unity.Netcode.Runtime",
@@ -18,7 +16,8 @@
         "Unity.TextMeshPro",
         "Unity.InputSystem",
         "LitMotion",
-        "LitMotion.Animation"
+        "LitMotion.Animation",
+        "Shards.AI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

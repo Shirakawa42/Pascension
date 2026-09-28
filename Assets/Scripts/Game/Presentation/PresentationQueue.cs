@@ -27,7 +27,7 @@ namespace Pascension.Game.Presentation
         private bool _fastForward;
 
         /// <summary>When more than this many events are waiting (alt-tab catch-up:
-        /// runInBackground keeps the host resolving bot turns while unfocused), the
+        /// runInBackground keeps the host resolving player actions while unfocused), the
         /// queue fast-forwards continuously until the backlog is back under control —
         /// seconds of snap-through instead of minutes of animated replay.</summary>
         private const int BacklogFastForwardThreshold = 20;

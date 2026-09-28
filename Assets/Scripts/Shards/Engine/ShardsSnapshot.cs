@@ -21,9 +21,6 @@ namespace Shards.Engine
         public int Index;
         public string Name;
         public string CharacterId;
-        public bool IsBot;
-        /// <summary>Bot difficulty kind — null for humans.</summary>
-        public string BotKind;
         public int Health;
         public int Mastery;
         public int Gems;
@@ -80,9 +77,9 @@ namespace Shards.Engine
 
         /// <summary>Instance ids whose conditional effect (Unify/Dominion/If/per-count…;
         /// mastery thresholds deliberately excluded — they'd glow forever) is satisfied
-        /// RIGHT NOW: the viewer's hand + center row probed for the viewer, every
-        /// player's ready champions/destinies probed for their owner. Drives the
-        /// faction-color condition glow.</summary>
+        /// RIGHT NOW: the viewer's hand, center row, and viewer's ready champions/
+        /// destinies, all probed for the viewer. Opponent conditions are private:
+        /// they may depend on hidden cards. Drives the faction-color condition glow.</summary>
         public List<int> ConditionGlowIds = new();
         /// <summary>Champions/Ingeminex the VIEWER could destroy with their current
         /// power (attack rules + effective defense applied) — red glow.</summary>
@@ -105,8 +102,7 @@ namespace Shards.Engine
 
     public static class ShardsSnapshotBuilder
     {
-        public static ShardsSnapshot Build(ShardsEngine engine, int viewerIndex,
-            IReadOnlyList<PlayerSpec> specs = null)
+        public static ShardsSnapshot Build(ShardsEngine engine, int viewerIndex)
         {
             var state = engine.State;
             var snapshot = new ShardsSnapshot
@@ -151,13 +147,6 @@ namespace Shards.Engine
                     DeckCount = player.Deck.Count,
                     HandCount = player.Hand.Count
                 };
-                // Seat specs (spec order == seat order) let stats/UI tell bots from
-                // humans; older call sites without specs keep the defaults.
-                if (specs != null && player.Index < specs.Count && specs[player.Index] != null)
-                {
-                    snap.IsBot = specs[player.Index].IsBot;
-                    snap.BotKind = specs[player.Index].IsBot ? specs[player.Index].BotKind : null;
-                }
                 foreach (var card in player.Discard) snap.Discard.Add(Snap(card));
                 foreach (var card in player.PlayZone) snap.PlayZone.Add(Snap(card));
                 foreach (var card in player.Champions) snap.Champions.Add(Snap(card));
@@ -236,17 +225,16 @@ namespace Shards.Engine
                 if (Lit(card.Def.PlayEffect, viewerIndex, card))
                     snapshot.ConditionGlowIds.Add(card.InstanceId);
 
-            foreach (var player in state.Players)
-            {
-                foreach (var card in player.Champions)
-                    if (!card.Exhausted && player.Gems >= card.Def.ExhaustGemCost &&
-                        Lit(card.Def.ExhaustEffect, player.Index, card))
-                        snapshot.ConditionGlowIds.Add(card.InstanceId);
-                foreach (var card in player.Destinies)
-                    if (!card.Exhausted && player.Gems >= card.Def.ExhaustGemCost &&
-                        Lit(card.Def.ExhaustEffect, player.Index, card))
-                        snapshot.ConditionGlowIds.Add(card.InstanceId);
-            }
+            // Conditions can inspect their controller's private hand/deck. Public
+            // permanents do not make those results public: only probe the viewer's.
+            foreach (var card in viewer.Champions)
+                if (!card.Exhausted && viewer.Gems >= card.Def.ExhaustGemCost &&
+                    Lit(card.Def.ExhaustEffect, viewerIndex, card))
+                    snapshot.ConditionGlowIds.Add(card.InstanceId);
+            foreach (var card in viewer.Destinies)
+                if (!card.Exhausted && viewer.Gems >= card.Def.ExhaustGemCost &&
+                    Lit(card.Def.ExhaustEffect, viewerIndex, card))
+                    snapshot.ConditionGlowIds.Add(card.InstanceId);
 
             if (viewer.Eliminated) return;
             foreach (var opponent in state.LivingOpponentsOf(viewerIndex))

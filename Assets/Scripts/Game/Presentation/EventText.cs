@@ -117,7 +117,7 @@ namespace Pascension.Game.Presentation
             return $"Player {playerIndex}";
         }
 
-        /// <summary>"You draw" vs "Bot draws" — naive s-appending is enough for our verbs.</summary>
+        /// <summary>"You draw" vs "Player draws" — naive s-appending is enough for our verbs.</summary>
         private static string Verb(int viewerIndex, int playerIndex, string baseVerb) =>
             playerIndex == viewerIndex ? baseVerb : baseVerb + "s";
 

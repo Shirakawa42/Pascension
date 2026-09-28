@@ -5,7 +5,7 @@ namespace Pascension.Net
     {
         public LobbySlotKind Kind = LobbySlotKind.Empty;
 
-        /// <summary>NGO clientId for humans; ulong.MaxValue for bots/empty.</summary>
+        /// <summary>NGO clientId for humans; ulong.MaxValue for empty seats.</summary>
         public ulong ClientId = ulong.MaxValue;
 
         /// <summary>Persistent identity GUID for humans (reconnect key).</summary>
@@ -15,7 +15,5 @@ namespace Pascension.Net
         public string HeroId;
         public bool Ready;
 
-        /// <summary>Bot implementation tag; "heuristic" is the only kind for now.</summary>
-        public string BotKind;
     }
 }

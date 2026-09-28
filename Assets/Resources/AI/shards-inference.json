@@ -1,0 +1,9 @@
+{
+  "schema": "shards-inference-release-v1",
+  "policy_resource": "AI/shards-policy",
+  "settings_resource": "AI/shards-search-settings",
+  "action_delay_seconds": 1,
+  "search_from_opening": true,
+  "external_process": false,
+  "settings_sha256": "a2173df8998bbf9b2a720bad783567440826dfc9306d91d355f188a0a2352b76"
+}

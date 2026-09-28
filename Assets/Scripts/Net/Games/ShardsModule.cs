@@ -7,7 +7,6 @@ using Pascension.Core;
 using Pascension.Engine.Actions;
 using Pascension.Engine.Events;
 using Pascension.Engine.Serialization;
-using Shards.Bots;
 using Shards.Content;
 using Shards.Engine;
 
@@ -64,22 +63,6 @@ namespace Pascension.Net
 
         public string CharacterDisplayName(string characterId) =>
             ShardsContentRegistry.CharacterDisplayName(characterId);
-
-        /// <summary>The minted difficulty ladder for menus: (kind string for CreateBot,
-        /// display name = Loc key, needs the worker SearchBotSeat).</summary>
-        public static IReadOnlyList<(string Kind, string Display, bool IsSearch)> RankOptions
-        {
-            get
-            {
-                var options = new List<(string, string, bool)>();
-                foreach (var rank in ShardsBotRanks.Minted)
-                    options.Add((rank.KindString, rank.DisplayName, rank.IsSearch));
-                return options;
-            }
-        }
-
-        public IBotAgent CreateBot(string botKind, ulong seed, IEngineAdapter engine) =>
-            ShardsBotRanks.Create(botKind, seed, ((ShardsEngineAdapter)engine).Inner);
 
         public CardFace CardDisplay(string defId)
         {

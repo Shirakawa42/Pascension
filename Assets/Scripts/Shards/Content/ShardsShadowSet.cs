@@ -18,7 +18,7 @@ namespace Shards.Content
             // in PvP). When this set is enabled the engine skips the RotF copies.
             SoiCard.New("cloud_oracles_sos", "Cloud Oracles").InSet(SET).Faction(ShardsFaction.Order)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
-                .Plays(E.Seq(E.Draw(1), new If(HighestMastery, E.Gems(2))))
+                .Plays(E.Seq(E.Draw(1), If.Visible(HighestMastery, E.Gems(2))))
                 .Text("Draw a card.\nIf your mastery is higher than every enemy player's, gain 2 gems.")
                 .Art("floating oracles conferring inside a storm cloud of data").Register();
 

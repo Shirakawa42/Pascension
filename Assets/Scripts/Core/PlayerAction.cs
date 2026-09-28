@@ -2,7 +2,7 @@ using Pascension.Engine.Decisions;
 
 namespace Pascension.Engine.Actions
 {
-    /// <summary>An intent submitted by a player (human UI, bot, or network client).</summary>
+    /// <summary>An intent submitted by a player (human UI or network client).</summary>
     public abstract class PlayerAction
     {
         public int PlayerIndex;

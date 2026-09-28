@@ -43,7 +43,7 @@ namespace Shards.Engine
         public int EventCount => Inner.Log.Count;
 
         public SnapshotBase BuildSnapshot(int playerIndex) =>
-            ShardsSnapshotBuilder.Build(Inner, playerIndex, Config.Players);
+            ShardsSnapshotBuilder.Build(Inner, playerIndex);
 
         public bool GameOver => Inner.State.GameOver;
 
