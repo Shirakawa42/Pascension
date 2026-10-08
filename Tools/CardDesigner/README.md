@@ -7,7 +7,7 @@ the repo (moving it elsewhere shows black art boxes, everything else still works
 
 ## What it does
 
-- Shows the **full registered pool** (199 entries: 189 card definitions, 5 characters and 5 hero abilities)
+- Shows the **full registered pool** (212 entries: 202 card definitions, 5 characters and 5 hero abilities)
   as fully rendered cards: art, faction frame, cost gem, shield / defense badges,
   keyword-highlighted rules text with hover tooltips. Original printings remain available
   for non-Duel balance work; their notes identify the DLC replacements.
@@ -50,6 +50,7 @@ the repo (moving it elsewhere shows black art boxes, everything else still works
 ```
 dotnet test Tools/EngineVerify --filter ExportShardsCardTable
 node Tools/CardDesigner/generate-baseline.mjs
+node Tools/CardDesigner/smoke-test.mjs
 ```
 
 Old session files still open — the tool warns if the pool drifted under a saved

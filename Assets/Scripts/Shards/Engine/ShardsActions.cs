@@ -32,14 +32,14 @@ namespace Shards.Engine
         public override string Describe() => $"Exhaust #{CardInstanceId}";
     }
 
-    /// <summary>Spend power on an enemy champion. Damage accumulates WITHIN the turn;
-    /// the champion is destroyed once its marks reach full defense (marks clear at end
-    /// of turn — champion damage never persists between turns).</summary>
+    /// <summary>Duel: spend the full remaining effective defense to destroy an enemy
+    /// champion immediately, between other turn actions.</summary>
     public sealed class ShardsAttackChampionAction : PlayerAction
     {
         public int TargetPlayerIndex;
         public int CardInstanceId;
-        /// <summary>Power to spend; 0 = as much as needed/possible.</summary>
+        /// <summary>Power to spend; 0 = exact remaining effective defense. Other positive
+        /// amounts must equal that value; partial and excess attacks are rejected.</summary>
         public int Amount;
         public override string Describe() => $"Attack champion #{CardInstanceId} of P{TargetPlayerIndex} for {Amount}";
     }

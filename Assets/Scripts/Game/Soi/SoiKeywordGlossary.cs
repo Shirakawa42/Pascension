@@ -50,7 +50,7 @@ namespace Pascension.Game.Soi
                 entries.Add(new Entry("Attack",
                     "Strikes every player at the end of the turn it appeared, unless it is defeated first. These effects aren't damage — shields don't prevent them."));
                 entries.Add(new Entry("Reward",
-                    "Deal it 10 total power to defeat it; only the player who defeats it claims the reward."));
+                    "Deal power equal to its defense to defeat it; only the player who defeats it claims the reward."));
             }
             if (Regex.IsMatch(text, @"\bexhaust", RegexOptions.IgnoreCase)) // "Exhaust:", "exhausts"
                 entries.Add(new Entry("Exhaust",

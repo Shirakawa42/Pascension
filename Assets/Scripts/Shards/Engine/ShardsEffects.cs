@@ -19,6 +19,22 @@ namespace Shards.Engine
         public static ShardsStep AwaitDecision(DecisionRequest request) => new() { Decision = request };
     }
 
+    /// <summary>Only choices of public card effects/modes are recorded here; private
+    /// hand choices are never added to this public resolution provenance.</summary>
+    public sealed class ShardsPublicSelection
+    {
+        public string Context, DefId, Label;
+        public int InstanceId, Ordinal;
+    }
+
+    /// <summary>Public effect identities selected for an in-progress replay/copy.
+    /// The current index and remaining repetitions identify the parked child.</summary>
+    public sealed class ShardsPublicCopyScope
+    {
+        public IReadOnlyList<ShardsCard> Cards;
+        public int CurrentIndex, RemainingCopies;
+    }
+
     /// <summary>Per-resolution context: the engine API, controller, and the answer to the
     /// most recent AwaitDecision.</summary>
     public sealed class ShardsContext
@@ -36,10 +52,41 @@ namespace Shards.Engine
         /// Duplication Fabricator copying the revealed second Fabricator re-reveals
         /// the same unchanged deck tops. One copy per card per chain is the ruling.</summary>
         private HashSet<int> _copyChain;
+        public readonly List<ShardsCard> PublicCopiedCards = new();
+        public readonly List<ShardsPublicSelection> PublicSelections = new();
+        public readonly List<ShardsPublicCopyScope> PublicCopyScopes = new();
 
         public bool InCopyChain(ShardsCard card) => _copyChain != null && _copyChain.Contains(card.InstanceId);
 
-        public void MarkCopied(ShardsCard card) => (_copyChain ??= new HashSet<int>()).Add(card.InstanceId);
+        public void MarkCopied(ShardsCard card)
+        {
+            if ((_copyChain ??= new HashSet<int>()).Add(card.InstanceId)) PublicCopiedCards.Add(card);
+        }
+
+        /// <summary>Resolve already-public play effects with explicit provenance.
+        /// markCopied retains the existing recursion guard for actual copy effects;
+        /// replay effects use false and retain their original rules.</summary>
+        public IEnumerable<ShardsStep> ResolvePublicPlayEffects(IReadOnlyList<ShardsCard> cards, int copies = 1, bool markCopied = false)
+        {
+            var scope = new ShardsPublicCopyScope { Cards = cards, RemainingCopies = copies };
+            PublicCopyScopes.Add(scope);
+            try
+            {
+                for (int c = 0; c < cards.Count; c++)
+                {
+                    var card = cards[c];
+                    if (card.Def.PlayEffect == null || markCopied && InCopyChain(card)) continue;
+                    if (markCopied) MarkCopied(card);
+                    scope.CurrentIndex = c;
+                    for (int repeat = 0; repeat < copies; repeat++)
+                    {
+                        scope.RemainingCopies = copies - repeat;
+                        foreach (var step in card.Def.PlayEffect.Resolve(this)) yield return step;
+                    }
+                }
+            }
+            finally { PublicCopyScopes.Remove(scope); }
+        }
     }
 
     public sealed class ShardsNullEffect : IShardsEffect
@@ -316,7 +363,7 @@ namespace Shards.Engine
                 var chosen = player.Hand.Find(c =>
                     c != source && ShardsEngine.CountsAs(player, c.Def, _faction));
                 if (chosen == null) yield break;
-                ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { chosen.DefId }, FromHand = true });
+                ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { chosen.DefId }, FromHand = true, HandInstanceIds = new List<int> { chosen.InstanceId } });
             }
 
             foreach (var step in _inner.Resolve(ctx))
@@ -433,6 +480,7 @@ namespace Shards.Engine
                     yield return ShardsStep.AwaitDecision(reveal);
 
                     var revealedIds = new List<string>();
+                    var revealedHandIds = new List<int>();
                     foreach (int id in ctx.Answer.ChosenOptionIds)
                     {
                         var card = player.Hand.Find(c => c.InstanceId == id);
@@ -442,9 +490,10 @@ namespace Shards.Engine
                             if (ShardsEngine.CountsAs(player, card.Def, f))
                                 factions.Add(f);
                         revealedIds.Add(card.DefId);
+                        revealedHandIds.Add(card.InstanceId);
                     }
                     if (revealedIds.Count > 0)
-                        ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds, FromHand = true });
+                        ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds, FromHand = true, HandInstanceIds = revealedHandIds });
                     if (cards < DuelDistinctFactions || factions.Count < DuelDistinctFactions)
                         yield break;
                 }
@@ -481,15 +530,17 @@ namespace Shards.Engine
 
                 var revealedFactions = new HashSet<ShardsFaction>();
                 var revealedIds = new List<string>();
+                var revealedHandIds = new List<int>();
                 foreach (int id in ctx.Answer.ChosenOptionIds)
                 {
                     var card = player.Hand.Find(c => c.InstanceId == id);
                     if (card == null) continue;
                     revealedFactions.Add(card.Def.Faction);
                     revealedIds.Add(card.DefId);
+                    revealedHandIds.Add(card.InstanceId);
                 }
                 if (revealedIds.Count > 0)
-                    ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds, FromHand = true });
+                    ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = revealedIds, FromHand = true, HandInstanceIds = revealedHandIds });
                 foreach (var faction in missing)
                     if (!revealedFactions.Contains(faction))
                         yield break;
@@ -863,10 +914,8 @@ namespace Shards.Engine
                 if (chosen == null) yield break;
             }
 
-            ctx.MarkCopied(chosen);
-            for (int i = 0; i < _copies; i++)
-                foreach (var step in chosen.Def.PlayEffect.Resolve(ctx))
-                    yield return step;
+            foreach (var step in ctx.ResolvePublicPlayEffects(new[] { chosen }, _copies, markCopied: true))
+                yield return step;
         }
     }
 

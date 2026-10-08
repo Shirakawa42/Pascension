@@ -130,9 +130,8 @@ namespace Shards.Content
             ctx.Controller.CopyHomodeusAlliesThisTurn = true;
             var played = ctx.Controller.PlayedThisTurn.FindAll(c =>
                 c.Def.Faction == H && !c.Def.IsChampion && c.Def.PlayEffect != null);
-            foreach (var card in played)
-                foreach (var step in card.Def.PlayEffect.Resolve(ctx))
-                    yield return step;
+            foreach (var step in ctx.ResolvePublicPlayEffects(played))
+                yield return step;
         }
 
         // ------------------------------------------------------------- Order (22)

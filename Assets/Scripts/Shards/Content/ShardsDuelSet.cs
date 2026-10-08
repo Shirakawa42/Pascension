@@ -24,6 +24,7 @@ namespace Shards.Content
         {
             RegisterRelics();
             RegisterCards();
+            RegisterOctoberCards();
             RegisterErrata();
         }
 
@@ -44,9 +45,9 @@ namespace Shards.Content
             SoiCard.New("multitask_brain", "Multitask Brain").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Relic).Character("tetra").Qty(1)
                 .Plays(new BestByMastery(
-                    (0, PerCount.Visible(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 2, draw: 1)),
+                    (0, PerCount.Visible(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 1, draw: 1)),
                     (20, PerCount.Visible(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller), power: 4, draw: 1))))
-                .Text("For each different faction you played this turn, gain 2 power and draw a card.\nM20: gain 4 power instead of 2.")
+                .Text("For each different faction you played this turn, gain 1 power and draw a card.\nM20: gain 4 power instead of 1.")
                 .Art("a floating multi-lobed cybernetic brain wired into five glowing processor cores of different colors, streams of parallel thought").Register();
 
             // Volos (Undergrowth) — Bastion relic CHAMPION (Defense > 0).
@@ -83,9 +84,9 @@ namespace Shards.Content
             var testudo = SoiCard.New("testudo_vanguard", "Testudo Vanguard").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Champion).Cost(4).Qty(2).Defense(4)
                 .Exhausts(E.Gems(2))
-                .Text("Your shields are also applied to each of your champions individually.\nExhaust: gain 2 gems.")
+                .Text("Whenever you play a card with Shield, each champion you currently control gets +1 defense until the start of your next turn.\nExhaust: gain 2 gems.")
                 .Art("a legionnaire locking tower shields into a glowing testudo wall");
-            testudo.Def.ShieldsProtectChampions = true; // engine: deferred champion hits resolve after the shield reveal
+            testudo.Def.ChampionDefensePerShieldPlay = 1;
             testudo.Register();
 
             SoiCard.New("century_forge", "Century Forge").InSet(SET).Faction(H)
@@ -184,10 +185,109 @@ namespace Shards.Content
                 .Art("a red-cloaked gambler flipping the top card of an endless deck").Register();
         }
 
+        // October 2026: only the three approved catch-up cards, plus the user's destiny.
+        private static void RegisterOctoberCards()
+        {
+            SoiCard.New("horizon_seeker", "Horizon Seeker").InSet(SET).Faction(O)
+                .Type(ShardsCardType.Ally).Cost(2).Qty(2)
+                .Plays(E.Seq(E.Draw(1), If.Visible(BehindInMastery, E.Mastery(1))))
+                .Text("Draw a card.\nIf you have less mastery than your opponent, gain 1 mastery.")
+                .Art("a lone mystic pilgrim in white and gold ceremonial armor standing on a high ruined observatory, blue cloak flowing in the wind, gazing toward a luminous golden horizon over an otherworldly city, a small radiant crystal hovering above an open palm, hopeful expansive composition").Register();
+
+            SoiCard.New("riftbreaker", "Riftbreaker").InSet(SET).Faction(W)
+                .Type(ShardsCardType.Mercenary).Cost(3).Qty(2)
+                .Plays(E.Seq(E.Power(5), If.Visible(BehindInMastery, new BanishUpTo(1))))
+                .Text("Gain 5 power.\nIf you have less mastery than your opponent, you may banish a card from your hand or discard pile.")
+                .Art("a spectral mercenary in jagged black armor smashing a dimensional barrier with a heavy violet energy blade, luminous purple cracks and glasslike reality fragments bursting outward, smoky wraith tendrils, aggressive dynamic pose, ruined science fantasy battlefield").Register();
+
+            SoiCard.New("rift_scout", "Rift Scout").InSet(SET).Faction(A)
+                .Type(ShardsCardType.Mercenary).Cost(2).Qty(2)
+                .Plays(E.Seq(E.Power(3), If.Visible(BehindInMastery, new WarpUpTo(2))))
+                .Text("Gain 3 power.\nIf you have less mastery than your opponent, Warp 2.")
+                .Art("an agile masked scout in sleek silver and turquoise armor leaping through a curling temporal fissure, cyan clockwork energy arcs and translucent afterimages trailing behind, short curved blade in hand, floating ancient ruins, dynamic diagonal composition").Register();
+
+            SoiCard.New("dna", "DNA").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
+                .ExhaustCosts(4)
+                .Exhausts(new Do(ctx => ctx.Engine.ArmRecruitCopy(ctx.ControllerIndex)))
+                .Text("Pay 4 gems, Exhaust: get an additional copy of the next card you recruit this turn. Put the copy into your discard pile.")
+                .Art("a luminous iridescent double helix suspended inside an ancient futuristic crystal chamber, the spiral branching into two identical floating crystalline relics, flowing cyan violet and gold energy, intricate organic geometry, mysterious destiny and magical duplication, centered vertical composition").Register();
+        }
+
+        private static bool BehindInMastery(ShardsContext ctx)
+        {
+            foreach (var opponent in ctx.Engine.State.LivingOpponentsOf(ctx.ControllerIndex))
+                if (ctx.Controller.Mastery < opponent.Mastery) return true;
+            return false;
+        }
+
+        // Full replacements keep every non-Duel printing and its behavior unchanged.
+        private static void RegisterOctoberErrata()
+        {
+            SoiCard.New("giga_source_adept_duel", "Giga, Source Adept").InSet(SET).Faction(O)
+                .Type(ShardsCardType.Champion).Cost(2).Qty(1).Defense(4)
+                .Plays(E.Draw(1)).Exhausts(new Dominion(E.Mastery(2)))
+                .Text("When played, draw a card.\nExhaust — Dominion: gain 2 mastery.")
+                .Replaces("giga_source_adept").Register();
+
+            SoiCard.New("shard_abstractor_duel", "Shard Abstractor").InSet(SET).Faction(O)
+                .Type(ShardsCardType.Mercenary).Cost(2).Qty(3)
+                .Plays(new BestByMastery((0, E.Mastery(1)), (10, E.Mastery(2))))
+                .Text("Gain 1 mastery.\nM10: gain 2 instead.")
+                .Replaces("shard_abstractor").Register();
+
+            SoiCard.New("shard_seer_duel", "Shard Seer").InSet(SET).Faction(O)
+                .Type(ShardsCardType.Ally).Cost(2).Qty(3)
+                .Plays(E.Seq(E.Draw(1), new Custom(ctx => ShardsHorizonSet.ShardSeerFlow(ctx, 1))))
+                .Text("Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 1 mastery.")
+                .Replaces("shard_seer").Register();
+
+            var breaker = SoiCard.New("breaker_duel", "Breaker").InSet(SET).Faction(A)
+                .Type(ShardsCardType.Ally).Cost(6).Qty(1).Shield(4)
+                .Plays(new WarpUpTo(6))
+                .Text("Shield 4.\nWhen you recruit this, it goes to your hand instead of your discard pile.\nWarp 6.")
+                .Replaces("breaker");
+            breaker.Def.RecruitsToHand = true;
+            breaker.Register();
+
+            SoiCard.New("fungal_hermit_duel", "Fungal Hermit").InSet(SET).Faction(U)
+                .Type(ShardsCardType.Mercenary).Cost(3).Qty(2).Shield(2)
+                .Plays(E.Seq(E.Mastery(1), E.At(10, E.Health(5))))
+                .Text("Shield 2.\nGain 1 mastery.\nM10: gain 5 health. Its own mastery gain counts.")
+                .Replaces("fungal_hermit").Register();
+
+            SoiCard.New("ingeminex_corruption_duel", "Ingeminex: Corruption").InSet(SET)
+                .Faction(ShardsFaction.Monster).Type(ShardsCardType.Monster).Qty(1).Defense(15)
+                .MonsterAttack(E.Seq(new AllPlayersLoseHealth(3), new AllPlayersLoseMastery(1)))
+                .Reward(new Custom(ShardsHorizonSet.CorruptionReward))
+                .Text("Attack: every player loses 3 health and 1 mastery.\nReward: recruit an additional relic to your hand.")
+                .Replaces("ingeminex_corruption").Register();
+
+            SoiCard.New("omnius_duel", "Omnius, The All-Knowing").InSet(SET).Faction(O)
+                .Type(ShardsCardType.Mercenary).Cost(6).Qty(1)
+                .Plays(E.Seq(E.Draw(2), new Dominion(E.Mastery(3))))
+                .Text("Draw two cards.\nDominion: gain 3 mastery.")
+                .Replaces("omnius").Register();
+
+            SoiCard.New("systema_ai_duel", "Systema A.I.").InSet(SET).Faction(O)
+                .Type(ShardsCardType.Champion).Cost(4).Qty(1).Defense(4)
+                .Exhausts(E.Seq(E.Mastery(1), E.At(20, E.Draw(2))))
+                .Text("Exhaust: gain 1 mastery.\nM20: also draw two cards.")
+                .Replaces("systema_ai").Register();
+
+            SoiCard.New("unconditional_conscription_duel", "Unconditional Conscription").InSet(SET)
+                .Type(ShardsCardType.Destiny).Qty(1)
+                .Exhausts(If.VisibleStableOnExhaust(ctx => ctx.Controller.PlayedThisTurn.FindAll(c =>
+                    !c.Def.IsChampion && c.Def.Type != ShardsCardType.Starter && c.Def.Cost <= 2).Count >= 2,
+                    E.Power(5)))
+                .Text("Exhaust: if you played 2+ non-starter allies costing 2 or less this turn, gain 5 power.")
+                .Replaces("unconditional_conscription").Register();
+        }
+
         // ---- Errata: full replacement defs (ReplacesId swaps out the base card when Duel
         // is on). Faithful re-authoring of each base effect with the change applied. ----
         private static void RegisterErrata()
         {
+            RegisterOctoberErrata();
             RegisterAllegianceErrata();
             RegisterStatErrata();
             RegisterHookErrata();
@@ -236,7 +336,7 @@ namespace Shards.Content
                 .Replaces("korvus_legionnaire").Register();
 
             SoiCard.New("furrowing_elemental_duel", "Furrowing Elemental").InSet(SET).Faction(U)
-                .Type(ShardsCardType.Ally).Cost(5).Qty(2)
+                .Type(ShardsCardType.Ally).Cost(4).Qty(2)
                 .Plays(E.Seq(E.Mix(health: 4, draw: 1), If.FullHealth(E.Power(4))))
                 .Text("Gain 4 health and draw a card.\nIf you are at 50 health, gain 4 power.")
                 .Replaces("furrowing_elemental").Register();
@@ -290,7 +390,7 @@ namespace Shards.Content
                 .Replaces("orm_madu").Register();
 
             SoiCard.New("j_chord_duel", "J-Chord").InSet(SET).Faction(A)
-                .Type(ShardsCardType.Champion).Cost(3).Qty(1).Defense(3)
+                .Type(ShardsCardType.Champion).Cost(4).Qty(1).Defense(3)
                 .Exhausts(new BestByMastery((0, new WarpUpTo(3)), (15, new WarpUpTo(6))))
                 .Text("Exhaust — Warp 3.\nM15: Warp 6 instead.")
                 .Replaces("j_chord").Register();
@@ -303,8 +403,8 @@ namespace Shards.Content
 
             SoiCard.New("panconscious_crown_duel", "Panconscious Crown").InSet(SET).Faction(U)
                 .Type(ShardsCardType.Relic).Character("volos").Qty(1)
-                .Plays(E.Seq(E.Mix(mastery: 2, health: 5), E.At(20, new Unify(E.Health(50)))))
-                .Text("Gain 2 mastery and 5 health.\nM20 Unify: gain 50 health.")
+                .Plays(E.Seq(E.Mastery(2), E.Health(5), E.Draw(1), E.At(20, new Unify(E.Health(50)))))
+                .Text("Gain 2 mastery, 5 health and draw a card.\nM20 Unify: gain 50 health.")
                 .Replaces("panconscious_crown").Register();
 
             SoiCard.New("heart_of_nothing_duel", "The Heart of Nothing").InSet(SET).Faction(W)
@@ -383,8 +483,8 @@ namespace Shards.Content
 
             SoiCard.New("order_initiate_duel", "Order Initiate").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Ally).Cost(1).Qty(3)
-                .Plays(E.Seq(new Custom(RemoveFromShop), E.Gems(2), new Dominion(E.Mastery(2))))
-                .Text("You may remove a card from the shop. Gain 2 gems. Dominion: gain 2 mastery.")
+                .Plays(E.Seq(new Custom(RemoveFromShop), E.Gems(2), new Dominion(E.Mastery(1))))
+                .Text("You may remove a card from the shop.\nGain 2 gems.\nDominion: gain 1 mastery.")
                 .Replaces("order_initiate").Register();
 
             // "3, Unify: 6 instead" = base 3 + Unify(+3) — reuses the standard Unify
@@ -402,7 +502,7 @@ namespace Shards.Content
                 .Replaces("warpquartz").Register();
 
             SoiCard.New("duplication_fabricator_duel", "Duplication Fabricator").InSet(SET).Faction(O)
-                .Type(ShardsCardType.Ally).Cost(3).Qty(2)
+                .Type(ShardsCardType.Ally).Cost(4).Qty(2)
                 .Plays(E.Seq(E.Mastery(1), new Custom(FabricatorDuel)))
                 .Text("Gain 1 mastery.\nEvery player reveals their deck's top card; copy the effect of one revealed ally.\nM20: you may copy any number of effects from the revealed cards instead.")
                 .Replaces("duplication_fabricator").Register();
@@ -488,9 +588,9 @@ namespace Shards.Content
                 .Replaces("paradigm_shift").Register();
 
             SoiCard.New("soul_syphon_duel", "Soul Syphon").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
-                .Exhausts(If.VisibleStableOnExhaust(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller) >= 3 &&
-                                        ShardsDuel.PlayedFactionCards(ctx.Controller) >= 3, E.Health(7)))
-                .Text("Exhaust: if you played cards of 3+ different factions this turn, gain 7 health.")
+                .Exhausts(If.VisibleStableOnExhaust(ctx => ShardsDuel.DistinctFactionsPlayed(ctx.Controller) >= 2 &&
+                                        ShardsDuel.PlayedFactionCards(ctx.Controller) >= 2, E.Health(5)))
+                .Text("Exhaust: if you played cards of 2+ different factions this turn, gain 5 health.")
                 .Replaces("soul_syphon").Register();
 
             SoiCard.New("the_last_city_duel", "The Last City").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
@@ -500,10 +600,11 @@ namespace Shards.Content
                 .Replaces("the_last_city").Register();
 
             SoiCard.New("deadly_recruits_duel", "Deadly Recruits").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
+                .ExhaustCosts(1)
                 .Exhausts(new BestByMastery(
                     (0, new Custom(ctx => DeadlyRecruitsDuel(ctx, 2))),
                     (20, new Custom(ctx => DeadlyRecruitsDuel(ctx, 4)))))
-                .Text("Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it for free.\nM20: cost 4 or less.")
+                .Text("Pay 1 gem, Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it.\nM20: cost 4 or less.")
                 .Replaces("deadly_recruits").Register();
         }
 
@@ -602,7 +703,7 @@ namespace Shards.Content
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
             var chosen = player.Hand.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
             if (chosen == null) yield break;
-            ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { chosen.DefId } });
+            ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { chosen.DefId }, FromHand = true, HandInstanceIds = new List<int> { chosen.InstanceId } });
             ctx.Engine.GainPower(player.Index, 3);
         }
 
@@ -644,11 +745,8 @@ namespace Shards.Content
             int banishedThisTurn = player.CardsBanishedThisTurn;
             ctx.Engine.GainGems(player.Index, 3 * banishedThisTurn);
             ctx.Engine.GainPower(player.Index, 3 * banishedThisTurn);
-            foreach (var card in chosen)
-                if (card.Def.PlayEffect != null)
-                    for (int repeat = 0; repeat < 2; repeat++)
-                        foreach (var step in card.Def.PlayEffect.Resolve(ctx))
-                            yield return step;
+            foreach (var step in ctx.ResolvePublicPlayEffects(chosen, copies: 2))
+                yield return step;
         }
 
         private static IEnumerable<ShardsStep> FabricatorDuel(ShardsContext ctx)
@@ -667,7 +765,9 @@ namespace Shards.Content
                 defIds.Add(top.DefId);
             }
             if (defIds.Count > 0)
-                engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds });
+                engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds,
+                    PersonalTopPlayers = revealed.ConvertAll(c => c.Owner),
+                    PersonalTopInstanceIds = revealed.ConvertAll(c => c.InstanceId) });
             var copyable = revealed.FindAll(c => !c.Def.IsChampion && c.Def.PlayEffect != null && !ctx.InCopyChain(c));
             if (copyable.Count == 0) yield break;
 
@@ -684,14 +784,11 @@ namespace Shards.Content
             foreach (var card in copyable)
                 req.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(req);
+            var selected = new List<ShardsCard>();
             foreach (int id in ctx.Answer.ChosenOptionIds)
-            {
-                var chosen = copyable.Find(c => c.InstanceId == id);
-                if (chosen == null || ctx.InCopyChain(chosen)) continue;
-                ctx.MarkCopied(chosen);
-                foreach (var stp in chosen.Def.PlayEffect.Resolve(ctx))
-                    yield return stp;
-            }
+            { var chosen = copyable.Find(c => c.InstanceId == id); if (chosen != null) selected.Add(chosen); }
+            foreach (var stp in ctx.ResolvePublicPlayEffects(selected, markCopied: true))
+                yield return stp;
         }
 
         private static IEnumerable<ShardsStep> DashDuel(ShardsContext ctx)
@@ -919,7 +1016,7 @@ namespace Shards.Content
             if (revealed.Count == 0) yield break;
             var defIds = new List<string>();
             foreach (var c in revealed) defIds.Add(c.DefId);
-            engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds, TakenFromCenterTop = true });
+            engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds, TakenFromCenterTop = true, CenterInstanceIds = revealed.ConvertAll(c => c.InstanceId) });
 
             var playable = revealed.FindAll(c => !c.Def.IsChampion && !c.Def.IsMonster &&
                 !c.Def.CannotBeFastPlayed && c.Def.Cost <= maxCost);
@@ -955,7 +1052,7 @@ namespace Shards.Content
                 {
                     c.Zone = ShardsZone.CenterDeck;
                     deck.Insert(0, c);
-                    engine.Emit(new ShardsMercenaryReturnedEvent { PlayerIndex = ctx.ControllerIndex, DefId = c.DefId });
+                    engine.Emit(new ShardsMercenaryReturnedEvent { PlayerIndex = ctx.ControllerIndex, InstanceId = c.InstanceId, DefId = c.DefId });
                 }
             }
         }

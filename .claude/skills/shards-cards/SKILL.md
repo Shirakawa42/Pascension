@@ -40,6 +40,67 @@ ending a turn without executing an unknown callback. The effect, rules text and
 amounts are unchanged. Never use this annotation for health costs, draws, events,
 or mutations beyond the controller's turn-local recruit routing counters.
 
+## Current Duel balance — 2026-10-08
+
+This section supersedes older Duel values and Testudo/combat rulings below.
+The reviewed source is `Tools/BalanceReview/balance_proposals.json`, version
+`2026-10-08-v5`. Existing base/expansion definitions keep their non-Duel behavior;
+nine new `_duel` replacements carry changes that previously had no Duel printing.
+
+| Card / ability | Current Duel change |
+|---|---|
+| Giga, Source Adept | Dominion exhaust gains 2 mastery; still cost 2, defense 4, draw on play. |
+| Deadly Recruits | Pay 1 gem as activation cost, then choose fast-play OR recruit. Target cost 2, M20 cost 4. No additional purchase payment. |
+| Multitask Brain | 1 power and 1 draw per distinct faction; M20 remains 4 power and 1 draw per faction. |
+| Panconscious Crown | Resolve 2 mastery, 5 health, draw 1, **then** M20 Unify for 50 health. The drawn card can satisfy Unify. |
+| Unconditional Conscription | 5 power; preserve the existing count of 2+ non-starter non-champions costing at most 2, including eligible relics. |
+| Soul Syphon | 2+ actual faction-bearing played cards spanning 2+ factions give 5 health. One Prism alone fails. |
+| Furrowing Elemental | Cost 4; effects unchanged. |
+| J-Chord | Cost 4; Warp 3 / M15 Warp 6 unchanged. |
+| Shard Abstractor | Cost 2; gain 1 mastery, or 2 if already M10 before the gain. Starting at 9 reaches 10. |
+| Volos | One-gem mode grants 3 power; the other modes are unchanged. |
+| Order Initiate | Dominion gains 1 mastery; optional market removal and 2 gems unchanged. |
+| Shard Seer | Infinity Shard reveal grants 1 mastery; draw happens first. |
+| Duplication Fabricator | Cost 4; copied effects and reveal provenance unchanged. |
+| Breaker | Warp 6; shield 4 and recruit-to-hand retained. |
+| Fungal Hermit | Add hand Shield 2; its own mastery gain still counts for M10 healing. |
+| Ingeminex: Corruption | Defense 15, including Doom Gate-created copies. |
+| Omnius | Dominion gains 3 mastery; draw 2 unchanged. |
+| Systema A.I. | Cost 4; exhaust unchanged. |
+| Testudo Vanguard | Each actual shield-card play grants +1 temporary defense to every current controlled champion, until the start of its owner's next turn; exhaust still gives 2 gems. |
+
+Three new market definitions, **two copies each**:
+- `horizon_seeker`: Order ally, cost 2; draw 1, then if strictly behind an opponent
+  in mastery gain 1. Each play reevaluates the condition; ties fail.
+- `riftbreaker`: Wraethe mercenary, cost 3; 5 power and, while strictly behind,
+  optional banish 1 from hand/discard.
+- `rift_scout`: Aion **mercenary**, cost 2; 3 power and conditional Warp 2 while
+  strictly behind. Its own acquisition/fast-play removes it from the row first.
+
+`dna`: neutral destiny, quantity 1, **ExhaustGemCost = 4**. Activating arms a copy of
+this turn's next recruitment. Fresh extra instances enter discard, bypass routing
+and play effects, and do not recursively recruit. Real free recruits and relic
+recruits qualify; fast-play, Warp and returning owned cards do not. Multiple pending
+DNA effects copy the same next recruit; unused effects expire during cleanup.
+`ShardsHorizonSet.CorruptionReward` calls `NotifyRecruit` after granting the relic.
+The rejected Relief Courier and Aegis Surveyor are absent; no replacements added.
+
+**Testudo timing:** `ChampionDefensePerShieldPlay = 1`; live positive shield value
+qualifies, including dynamic/granted shields. Actual hand play, fast-play and Warp
+trigger; revealing or copying effects does not. Each Testudo stacks independently.
+The grant persists if Testudo leaves; a receiving champion loses its grant on leaving
+play. Later champions receive no earlier grant. This is defense, unaffected by shield
+bypass and irrelevant to direct destruction.
+
+**Duel combat and opening shop:** initial six slots allow printed cost at most 5
+plus Comet; later refills are unrestricted. Spend full remaining effective defense
+to attack champions between actions, resolving destruction immediately. Zetta guards
+remain attackable; each protects its owner and non-guard champions. End-turn power
+attacks players only. Ordinary hand shield reveals protect players only. Non-Duel
+keeps its previous end-turn champion split. Mastery-30 Infinity Shard bypasses Zetta
+and automatically damages every opponent at end turn. Comet also bypasses Zetta:
+it directly destroys one opponent, with a target choice only when several remain.
+
 ## Reveal rule (engine-wide, 2026-07-26)
 
 Any effect that REVEALS from a player's deck pulls through `ShardsEngine.PeekTopOfDeck`,
@@ -49,6 +110,35 @@ window ALWAYS opens listing EVERY revealed card — the ones that don't qualify 
 `DecisionOption.Disabled` (shown, greyed, and rejected by `ValidateAnswer`), so the player
 sees the whole reveal and passes deliberately. `ShardsHorizonSet.RevealTopForChampion` is
 the shared implementation (Legion Carrier 3 / errata 5).
+
+### Reveal provenance for current-state policies
+
+`ShardsCardsRevealedEvent.PersonalTopPlayers` and `PersonalTopInstanceIds` are
+parallel to the publicly shown `DefIds` for Fabricator and Gatekeeper.
+`RemovedFromPersonalTop` distinguishes Legion Carrier's temporary reveal window.
+Center-top takes carry parallel `CenterInstanceIds`; personal and center provenance
+is emitted only for cards the effect has already publicly shown. Hand reveals,
+including Shard Seer and Riposte Doctrine, set `FromHand`.
+Hand reveals and selected hand shields carry parallel `HandInstanceIds` for only
+the publicly shown cards. Preserve these IDs in Unify, both Dominion paths,
+Shard Seer, Riposte and shield resolution so a different same-definition copy's
+later movement does not erase knowledge of the card still held.
+Maintain these annotations when changing a reveal flow so AI memory can retain
+known deck positions and cards temporarily held outside the state's zone lists.
+Rules effects, draw order and RNG calls are unchanged by these metadata fields.
+`ShardsCenterCardBottomedEvent` covers paid and free market removal before refill;
+`ShardsCenterDeckShuffledEvent` invalidates remembered order before later reveals.
+Longshot's publicly revealed bottom returns carry `ShardsMercenaryReturnedEvent.InstanceId`;
+preserve each physical identity so several returned cards retain their known order.
+Legion Carrier's resolved nonselected cards emit parallel public IDs/definitions in
+`ShardsRevealedCardsDiscardedEvent` before any subsequent effect can reshuffle them.
+This retires iterator-held reveal records chronologically, including partial
+repeated reveals; the selected champion's existing hand-return event stays separate.
+Copied/replayed public effects use `ShardsContext.ResolvePublicPlayEffects` so
+selected targets, recursion guards and remaining repetitions survive child menus.
+Use `markCopied: true` only where the existing copy recursion guard applies;
+Warpquartz and Decurion replays keep `false`. Preserve these public annotations
+when changing the corresponding flow; see the focused ZeroDepth host selftests.
 
 ## Card-text house style (2026-07-25 sweep — EN defs AND SoiFrenchCards)
 
@@ -148,7 +238,7 @@ Heart of Nothing power 7/14; World Piercer optionally returns up to two mercenar
 by 1, then consumes the discount; unused discount expires at turn cleanup.
 CardDesigner export now has 189 definitions + 10 character/ability faces.
 
-**New defs (20)**: relics praetorian_03/multitask_brain/unknown_god/star_seeker/doom_gate
+**Original new defs (20, plus the four October additions above)**: relics praetorian_03/multitask_brain/unknown_god/star_seeker/doom_gate
 (one per hero); cards testudo_vanguard, century_forge, riposte_doctrine, index_of_futures,
 bulwark_chanter, aegis_archivist, thornshell_warden, nectar_alchemist, lifebloom_ritual,
 doomstalker, bleak_communion, grim_tutor, comet, prism, longshot.
@@ -164,15 +254,8 @@ damage; applies even with an empty deck). Context `"soi.tutor"`. **Errata (~44
 `<id>_duel` defs)**: 4 Allegiance conversions (ferrata/mainframe/hounds/the_lost) + ~16
 stat tweaks + 5 hook + 12 bespoke + 7 destiny — all in `RegisterErrata` sub-methods.
 
-**Testudo Vanguard rework (2026-07-25, user decision)**: while its owner defends,
-champion split options may be OVER-assigned (0..Power like faces) — deferred hits then
-subtract the shield prevention per champion, so overkill "pays through". Taunt (Zetta) ×
-Testudo: the taunt's deferred hit resolves FIRST; if it SURVIVES post-shields, the wall
-held — every other deferred champion hit AND the face damage resolve as ZERO
-(`ResolveDefenderDamage`). The UI (`SoiDecisionModal`) renders that defender's champions
-with the hero-style 0/−/+/MAX strip (detected via the `ShieldsProtectChampions` def flag —
-no wire change; `option.Amount` stays the live-HP display + taunt-unlock threshold).
-Pinned by `Duel_Testudo_*` tests (over-assign kill, exact-lethal saved, taunt-held zero).
+**Historical Testudo rule:** the July shield-copying rework was replaced by the
+October 8 temporary-defense trigger documented above.
 
 **Ingeminex rewards**: destroying one by CARD EFFECT is defeating it — `DestroyActiveMonster`
 takes the destroyer's seat index and queues `RewardEffect` just like the attack path does
@@ -190,7 +273,7 @@ abilities and Decima discount.
   discounts/redirects and moving an already-owned Comet remain legal (2026-09-25 ruling).
 - `DoomGateFloodUsed` per-player once-per-game guard; `CardsBanishedThisTurn` per-turn counter (Warpquartz pays on the TURN total); `ShardsCard.BanishAtCleanup` (Reactor Drone mode 2 banishes at END of turn, only when the source IS the drone — copies banish nothing). Sentinels: player 41, card 8.
 - **Duel Dominion**: 3+ OTHER cards AND 3+ distinct factions, with the hand-REVEAL decision (reveals never feed PlayedThisTurn); Prism = all factions but ONE card; CountsAs/Yggdrasil honored everywhere (`ShardsDuel.DistinctFactionsPlayed` + `PlayedFactionCards` gates on the 3-faction destinies).
-- **Testudo now IS "shields protect champions"**: champion hits deferred via `_pendingChampionHits` into the owner's defense step (ShieldFlow applies prevention per champion; transient engine field like _pendingDefenses). **Datic Robes M15 discard-shield implemented** (`DiscardPassiveShield` hook read in NextDefense's passive). Spore Cleric uses real `Unify` (no self-trigger); Riposte = played-or-REVEAL flow; Index of Futures = `ReorderCenterTop` (true any-order, first pick = top); Prism Qty 2; World Piercer options sorted (no deck-order leak).
+- **Historical July Testudo shield copying is superseded by the October rule above.** **Datic Robes M15 discard-shield implemented** (`DiscardPassiveShield` hook read in NextDefense's passive). Spore Cleric uses real `Unify` (no self-trigger); Riposte = played-or-REVEAL flow; Index of Futures = `ReorderCenterTop` (true any-order, first pick = top); Prism Qty 2; World Piercer options sorted (no deck-order leak).
 - `ValidateAnswer` rejects duplicate option ids (except soi.split, whose duplicates are the mechanism).
 - UI: draft/reroll/ability events narrated (history + toasts); opponent portraits guarded during the draft; errata ArtId inherits ReplacesId (art regression fix) + CardArtIndex rebuilt. (The former `SoiCardFaces.DuelEnabled` character-face ability block was replaced 2026-07-25 by the `soiability:` card face.)
 - **Full card table** (id / name / set / faction / type / cost / qty / def / shield / text):
@@ -208,7 +291,7 @@ abilities and Decima discount.
   `CopyPlayedEffect`, `AllPlayersLoseHealth/LoseMastery/Discard/DestroyBiggestChampion`,
   `Custom`/`Do`.
 - **Static hooks on `ShardsCardDef`** (`ShardsTypes.cs`): `Taunt` (Zetta — the END-TURN
-  split may reach the owner/other champions ONLY when the same answer assigns Zetta
+  split in non-Duel may reach the owner/other champions ONLY when the same answer assigns Zetta
   lethal — options carry `Required`/`Amount`/`OwnerIndex` UI hints and `SplitDamageFlow`
   drops assignments that violate the rule;
   power > 1000 skips the split entirely and kills every opponent instantly), `CanBeAttacked`
@@ -275,7 +358,7 @@ abilities and Decima discount.
 
 - Staggered start mastery 0/1/2/3; cap 30; thresholds check AT PLAY/EXHAUST time and a
   card's own mastery gain counts for its own threshold (Fungal Hermit / Cache Warden).
-- Champions can be damaged/destroyed ONLY in the attacker's end-of-turn damage
+- **Non-Duel:** champions can be damaged/destroyed ONLY in the attacker's end-of-turn damage
   assignment or by destroy-EFFECTS (user decision 2026-07-20 — mid-turn power attacks
   are illegal and never advertised; Ingeminex are the only mid-turn power targets).
   Damage marks evaporate at end phase; destruction needs full (effective) defense

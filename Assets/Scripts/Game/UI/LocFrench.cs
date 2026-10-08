@@ -13,6 +13,9 @@ namespace Pascension.Game.UI
     {
         public static readonly Dictionary<string, string> Ui = new()
         {
+            ["CHOOSE YOUR OPPONENT"] = "CHOISISSEZ VOTRE ADVERSAIRE",
+            ["Auld Haïai"] = "Auld Haïai",
+            ["Nyou Haïai"] = "Nyou Haïai",
             ["PLAY SHARDS VS AI"] = "JOUER À SHARDS CONTRE L'IA",
             ["Trained AI"] = "IA entraînée",
             ["You"] = "Vous",
@@ -102,7 +105,7 @@ namespace Pascension.Game.UI
             // ---------------------------------------------------------- SoI Duel of Doom (draft, hero abilities, reroll)
             ["The shop is already dealt — check it before you commit."] =
                 "La boutique est déjà distribuée — inspectez-la avant de vous engager.",
-            ["RELICS — recruit one free at Mastery 10"] = "RELIQUES — recrutez-en une gratuitement à 10 de maîtrise",
+            ["RELICS — claim one free at Mastery 10"] = "RELIQUES — obtenez-en une gratuitement à 10 de maîtrise",
             ["VIEW SHOP"] = "VOIR LA BOUTIQUE",
             ["BACK TO DRAFT"] = "RETOUR AU DRAFT",
             ["PLAY {0}"] = "JOUER {0}",
@@ -129,6 +132,18 @@ namespace Pascension.Game.UI
             ["BEFORE"] = "AVANT",
             ["AFTER"] = "APRÈS",
             ["Pay 1 gem: gain 2 power."] = "Payez 1 cristal : gagnez 2 puissance.",
+            ["Pay 1 gem: gain 3 power."] = "Payez 1 cristal : gagnez 3 puissance.",
+            ["M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: gain 3 power.\n— Pay 2 gems: draw 1 card.\n— Pay 3 gems: gain 1 mastery."] = "M5, une fois par tour : choisissez un effet :\n— Gratuit : gagnez 3 santé.\n— Payez 1 cristal : gagnez 3 puissance.\n— Payez 2 cristaux : piochez 1 carte.\n— Payez 3 cristaux : gagnez 1 maîtrise.",
+            ["This champion cannot be attacked right now."] = "Ce champion ne peut pas être attaqué pour le moment.",
+            ["Champion combat"] = "Combat des champions",
+            ["Click this champion to attack for {0} power."] = "Cliquez sur ce champion pour l'attaquer avec {0} puissance.",
+            ["Temporary defense"] = "Défense temporaire",
+            ["+{0} defense until this champion's controller starts their next turn."] = "+{0} défense jusqu'au début du prochain tour du joueur qui contrôle ce champion.",
+            ["DNA armed"] = "ADN activé",
+            ["The next card recruited this turn creates {0} additional copies in discard."] = "La prochaine carte recrutée ce tour crée {0} exemplaires supplémentaires dans la défausse.",
+            ["copied to discard"] = "copiée dans la défausse",
+            ["Additional copies"] = "Exemplaires supplémentaires",
+            ["{0} additional copies created during this game."] = "{0} exemplaires supplémentaires créés pendant cette partie.",
             ["Pay 2 gems: draw 1 card."] = "Payez 2 cristaux : piochez 1 carte.",
             ["M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw 1 card.\n— Pay 3 gems: gain 1 mastery."] = "M5, une fois par tour : choisissez un effet :\n— Gratuit : gagnez 3 santé.\n— Payez 1 cristal : gagnez 2 puissance.\n— Payez 2 cristaux : piochez 1 carte.\n— Payez 3 cristaux : gagnez 1 maîtrise.",
             ["M5, once per turn: Scry 2 the center deck. Your next reroll this turn costs 1 gem less."] = "M5, une fois par tour : Sondez 2 la pioche commune. Votre prochaine relance ce tour coûte 1 cristal de moins.",
@@ -197,8 +212,8 @@ namespace Pascension.Game.UI
                 "Requiert autant de maîtrise au moment de jouer ou d'activer la carte.",
             ["Strikes every player at the end of the turn it appeared, unless it is defeated first. These effects aren't damage — shields don't prevent them."] =
                 "Frappe tous les joueurs à la fin du tour où il apparaît, sauf s'il est vaincu avant. Ces effets ne sont pas des dégâts — les boucliers n'y font rien.",
-            ["Deal it 10 total power to defeat it; only the player who defeats it claims the reward."] =
-                "Infligez-lui 10 puissance au total pour le vaincre ; seul le joueur qui le vainc obtient la récompense.",
+            ["Deal power equal to its defense to defeat it; only the player who defeats it claims the reward."] =
+                "Infligez-lui autant de puissance que sa défense pour le vaincre ; seul le joueur qui le vainc obtient la récompense.",
 
             // ---------------------------------------------------------- SoI table
             ["Pick a destiny from the glowing row."] = "Choisissez une destinée dans la rangée en surbrillance.",
@@ -210,7 +225,7 @@ namespace Pascension.Game.UI
             ["END TURN"] = "FIN DU TOUR",
             ["NOT YOUR TURN"] = "TOUR ADVERSE",
             ["YOUR TURN"] = "À VOUS DE JOUER",
-            ["RECRUIT RELIC"] = "RECRUTER LA RELIQUE",
+            ["CLAIM RELIC"] = "OBTENIR UNE RELIQUE",
             ["BACK TO MENU"] = "RETOUR AU MENU",
             ["Center"] = "Pioche commune",
             ["Draw"] = "Pioche",
@@ -231,8 +246,8 @@ namespace Pascension.Game.UI
             ["Nothing there yet."] = "Rien ici pour l'instant.",
             ["The shared center deck — row slots refill from here."] =
                 "La pioche commune — la rivière se remplit depuis ici.",
-            ["Recruit a relic (free, once per game)"] =
-                "Recrutez une relique (gratuit, une fois par partie)",
+            ["Claim a relic (free, once per game)"] =
+                "Obtenez une relique (gratuit, une fois par partie)",
             ["IT'S A TIE"] = "ÉGALITÉ",
             ["VICTORY!"] = "VICTOIRE !",
             ["GAME OVER"] = "PARTIE TERMINÉE",
@@ -257,6 +272,7 @@ namespace Pascension.Game.UI
 
             // Event-toast fragments (string-concatenated at the call sites).
             [" strikes every player!"] = " frappe tous les joueurs !",
+            [" claims "] = " obtient ",
             [" focuses."] = " utilise la Concentration.",
             [" recruits "] = " recrute ",
             [" has been eliminated!"] = " a été éliminé !",
@@ -288,7 +304,7 @@ namespace Pascension.Game.UI
             ["discard"] = "défausse",
             ["played"] = "jouées",
             // Duel opponent panel (1v1): inline info row + direct pile browsers.
-            ["relic recruited"] = "relique recrutée",
+            ["relic claimed"] = "relique obtenue",
             ["relic —"] = "relique —",
             ["PLAYED"] = "JOUÉES",
 
@@ -300,6 +316,17 @@ namespace Pascension.Game.UI
             ["Drag the cards to reorder them — 1 goes on top."] =
                 "Glissez les cartes pour les réordonner — la 1 va sur le dessus.",
             ["BACK TO CHOICE"] = "REVENIR AU CHOIX",
+            ["COMBAT BEFORE ENDING TURN"] = "COMBAT AVANT LA FIN DU TOUR",
+            ["COMBAT"] = "COMBAT",
+            ["Click a champion to destroy it immediately. Remaining power resolves when you finish the turn."] =
+                "Cliquez sur un champion pour le détruire immédiatement. La puissance restante est résolue quand vous terminez le tour.",
+            ["Remaining power: {0}"] = "Puissance restante : {0}",
+            ["FINISH TURN"] = "TERMINER LE TOUR",
+            ["BACK TO TURN"] = "REVENIR AU TOUR",
+            ["Destroy · {0} power"] = "Détruire · {0} puissance",
+            ["Cannot attack now"] = "Attaque impossible pour le moment",
+            ["Resolving attack..."] = "Résolution de l’attaque...",
+            ["Returning to the board does not undo attacks."] = "Revenir au plateau n’annule pas les attaques.",
             ["ALL → "] = "TOUT → ",
             ["Their shields will reduce each champion's damage — assign extra to kill through."] =
                 "Leurs boucliers réduiront les dégâts de chaque champion — assignez plus pour tuer au travers.",
@@ -313,7 +340,7 @@ namespace Pascension.Game.UI
             ["PLAYED THIS TURN"] = "JOUÉES CE TOUR",
             ["CLOSE"] = "FERMER",
             [" — played this turn"] = " — jouées ce tour",
-            [" · relic recruited"] = " · relique recrutée",
+            [" · relic claimed"] = " · relique obtenue",
 
             // ---------------------------------------------------------- pause overlay
             ["GAME PAUSED"] = "PARTIE EN PAUSE",
@@ -525,8 +552,8 @@ namespace Pascension.Game.UI
                 "Répéter l'effet une fois ? (carte Aion jouée)"),
             (new Regex(@"^Reset a champion you control\?$"),
                 "Redresser un de vos champions ?"),
-            (new Regex(@"^Reveal an Infinity Shard to gain 2 mastery\?$"),
-                "Révéler un Éclat de l'Infini pour gagner 2 maîtrise ?"),
+            (new Regex(@"^Reveal an Infinity Shard to gain (\d+) mastery\?$"),
+                "Révéler un Éclat de l'Infini pour gagner $1 maîtrise ?"),
             (new Regex(@"^Reveal cards to complete Dominion\? \((.+) needed\)$"),
                 "Révéler des cartes pour la Domination ? (il manque : $1)"),
             (new Regex(@"^Reveal your deck's top 3 cards\?$"),
@@ -597,8 +624,8 @@ namespace Pascension.Game.UI
                 "Distorsion : enrôlez gratuitement un allié coûtant $1 ou moins ?"),
             (new Regex(@"^Warp: fast-play any ally from the row for free\?$"),
                 "Distorsion : enrôlez gratuitement un allié de la rivière ?"),
-            (new Regex(@"^Recruit a relic \(free, once per game\)$"),
-                "Recrutez une relique (gratuit, une fois par partie)"),
+            (new Regex(@"^Claim a relic \(free, once per game\)$"),
+                "Obtenez une relique (gratuit, une fois par partie)"),
             (new Regex(@"^Keep fast-played cards\?.*$"),
                 "Conserver les cartes enrôlées ?"),
         };

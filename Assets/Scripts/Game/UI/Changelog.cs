@@ -71,6 +71,35 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-10-08",
+                "· END TURN skips the champion window when no champion can be defeated; multiplayer still asks how to split power between eligible opponents.\n" +
+                "· Champion HP is bright green above printed defense, white at its printed value and red below it, on a dark badge.\n" +
+                "· Champions defeated in the combat window flash, shrink and fade out.\n" +
+                "· Mastery-30 Infinity Shard bypasses Zetta and resolves automatically without the combat reminder. Comet also ignores Zetta when destroying its target.",
+                "· FIN DU TOUR passe la fenêtre des champions si aucun ne peut être vaincu ; en multijoueur, la répartition de la puissance entre les adversaires pouvant être attaqués reste proposée.\n" +
+                "· Les PV des champions sont vert clair au-dessus de la défense imprimée, blancs à sa valeur imprimée et rouges en dessous, sur une pastille sombre.\n" +
+                "· Les champions vaincus dans la fenêtre de combat clignotent, rétrécissent et disparaissent progressivement.\n" +
+                "· À 30 de maîtrise, l'Éclat de l'Infini ignore Zetta et se résout automatiquement, sans rappel de combat. Comète ignore aussi Zetta lorsqu'elle détruit sa cible."),
+            new Entry("2026-10-08",
+                "· The relic button is now CLAIM RELIC; its choice window, hero details and notification use the same wording.\n" +
+                "· Duel: END TURN opens a combat window showing opposing heroes and champions. Click a champion to defeat it immediately; remaining power and champion HP update after each kill. You can still attack champions directly during your turn.",
+                "· Le bouton de relique s’appelle désormais OBTENIR UNE RELIQUE ; la fenêtre de choix, les détails du héros et la notification emploient le même vocabulaire.\n" +
+                "· Duel : FIN DU TOUR ouvre une fenêtre de combat montrant les héros et champions adverses. Cliquez sur un champion pour le vaincre immédiatement ; la puissance restante et les PV des champions se mettent à jour après chaque élimination. Vous pouvez toujours attaquer les champions directement pendant votre tour."),
+            new Entry("2026-10-08",
+                "· Duel of Doom balance patch: 19 existing cards and hero abilities updated; the comparisons below show every changed face.\n" +
+                "· Three new market cards: Horizon Seeker, Riftbreaker and Rift Scout, two copies each. New destiny: DNA — pay 4 gems to copy the next card you recruit this turn into your discard pile.\n" +
+                "· The initial six shop slots contain cards costing at most 5, with Comet as the only exception. Later refills are unrestricted.\n" +
+                "· Spend power to defeat champions during your turn, in your chosen order. Remaining power attacks players at turn end. Each Zetta protects its owner and champions other than Zetta copies.\n" +
+                "· Testudo grants each current champion +1 defense whenever you play a shield card, lasting until your next turn. Hand shield reveals no longer protect champions.",
+                "· Équilibrage de Duel of Doom : 19 cartes existantes et capacités de héros modifiées ; les comparaisons ci-dessous montrent chaque changement.\n" +
+                "· Trois nouvelles cartes dans la rivière : Quêteur d’Horizon, Briseur de Faille et Éclaireur des Failles, en deux exemplaires chacune. Nouvelle destinée : ADN — payez 4 cristaux pour ajouter à votre défausse un exemplaire de la prochaine carte recrutée ce tour-ci.\n" +
+                "· Les six cartes initiales de la rivière coûtent au plus 5, à l’exception de Comète. Les remplacements suivants ne sont pas limités.\n" +
+                "· Dépensez de la puissance pour vaincre les champions pendant votre tour, dans l’ordre de votre choix. La puissance restante attaque les joueurs en fin de tour. Chaque Zetta protège son propriétaire et les champions qui ne sont pas des Zetta.\n" +
+                "· Testudo donne +1 défense à chaque champion présent quand vous jouez une carte avec Bouclier, jusqu’à votre prochain tour. Révéler des boucliers de la main ne protège plus les champions.",
+                Soi.SoiBalanceHistory.October2026),
+            new Entry("2026-10-08",
+                "· Choose your solo opponent: Auld Haïai keeps the original AI; Nyou Haïai uses the new trained model and its search settings. Match statistics distinguish both opponents.",
+                "· Choisissez votre adversaire en solo : Auld Haïai conserve l’IA d’origine ; Nyou Haïai utilise le nouveau modèle entraîné et ses réglages de recherche. Les statistiques distinguent les deux adversaires."),
             new Entry("2026-09-28",
                 "· 1v1: the second player now starts with 5 cards, 1 mastery and 1 crystal for the first turn. Decima's mastery-5 first-purchase discount is 2 crystals.\n" +
                 "· Terminal Crescents: gain 1 mastery; at mastery 20, gain power equal to mastery minus 5. Deadly Recruits: freely fast-play OR recruit an ally, without doing both.\n" +

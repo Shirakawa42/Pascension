@@ -79,6 +79,181 @@ namespace Pascension.Engine.Tests
             Assert.AreEqual(30, destinies, "destinies");
         }
 
+        [Test]
+        public void OctoberBalance_DuelPoolContainsOnlyApprovedNewCardsAndReplacesOriginals()
+        {
+            var adapter = NewGame(ShardsDlc.Duel);
+            CompleteDraft(adapter);
+            var engine = adapter.Inner;
+            var counts = engine.InitialCardCounts();
+            foreach (string id in new[] { "horizon_seeker", "riftbreaker", "rift_scout" })
+                Assert.AreEqual(2, counts[id], id);
+            Assert.AreEqual(1, counts["dna"]);
+            Assert.IsFalse(ShardsCardDatabase.TryGet("relief_courier", out _));
+            Assert.IsFalse(ShardsCardDatabase.TryGet("aegis_surveyor", out _));
+            foreach (string id in new[] { "giga_source_adept", "shard_abstractor", "shard_seer", "breaker",
+                "fungal_hermit", "ingeminex_corruption", "omnius", "systema_ai", "unconditional_conscription" })
+            {
+                Assert.IsFalse(counts.ContainsKey(id), id + " is replaced in Duel");
+                Assert.AreEqual(ShardsCardDatabase.Get(id).Quantity, counts[id + "_duel"], id);
+            }
+            Assert.AreEqual(ShardsCardType.Mercenary, ShardsCardDatabase.Get("rift_scout").Type);
+            Assert.AreEqual(15, ShardsCardDatabase.Get("ingeminex_corruption_duel").Defense);
+            Assert.AreEqual(10, ShardsCardDatabase.Get("ingeminex_corruption").Defense);
+            Assert.AreEqual(3, ShardsCardDatabase.Get("shard_abstractor").Cost, "original format is unchanged");
+            Assert.AreEqual(0, ShardsCardDatabase.Get("fungal_hermit").Shield);
+        }
+
+        [TestCase(9, 10)]
+        [TestCase(10, 12)]
+        [TestCase(29, 30)]
+        public void OctoberBalance_AbstractorChoosesItsTierBeforeGainingMastery(int before, int after)
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            player.Mastery = before;
+            var card = Plant(engine, player, "shard_abstractor_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = card.InstanceId }).Accepted);
+            Assert.AreEqual(after, player.Mastery);
+        }
+
+        [Test]
+        public void OctoberBalance_CrownDrawsBeforeCheckingMastery20Unify()
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            player.Hand.Clear(); player.Deck.Clear(); player.Discard.Clear();
+            player.Mastery = 18; player.Health = 20;
+            var drawn = Plant(engine, player, "spore_cleric_duel", ShardsZone.Deck);
+            var crown = Plant(engine, player, "panconscious_crown_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = crown.InstanceId }).Accepted);
+            Assert.AreEqual(20, player.Mastery);
+            Assert.AreEqual(50, player.Health, "only the newly drawn Undergrowth card enables Unify");
+            Assert.Contains(drawn, player.Hand, "Unify reveals rather than plays or discards");
+        }
+
+        [TestCase(4, 5, 5)]
+        [TestCase(5, 5, 5)]
+        [TestCase(6, 5, 6)]
+        public void OctoberBalance_HorizonSeekerNeedsStrictlyLowerMastery(int mastery, int opponent, int expected)
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            player.Mastery = mastery; engine.State.Players[1].Mastery = opponent;
+            var card = Plant(engine, player, "horizon_seeker", ShardsZone.Hand);
+            int hand = player.Hand.Count;
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = card.InstanceId }).Accepted);
+            Assert.AreEqual(expected, player.Mastery);
+            Assert.AreEqual(hand, player.Hand.Count, "draws exactly one card");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void OctoberBalance_RiftbreakerBanishIsOptionalAndRequiresMasteryDeficit(bool behind)
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            player.Mastery = 5; engine.State.Players[1].Mastery = behind ? 6 : 5;
+            var card = Plant(engine, player, "riftbreaker", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = card.InstanceId }).Accepted);
+            Assert.AreEqual(5, player.Power);
+            if (behind)
+            {
+                Assert.AreEqual(PendingInputKind.Decision, engine.PendingInput.Kind);
+                Assert.AreEqual(0, engine.PendingInput.Decision.Min);
+                Assert.AreEqual(1, engine.PendingInput.Decision.Max);
+                AnswerPending(engine, new int[0]);
+            }
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void OctoberBalance_SoulSyphonRequiresTwoActualFactionCards(bool secondCard)
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            player.Health = 20;
+            var prism = Plant(engine, player, "prism", ShardsZone.PlayZone); player.PlayedThisTurn.Add(prism);
+            if (secondCard)
+            {
+                var other = Plant(engine, player, "nil_assassin_duel", ShardsZone.PlayZone);
+                player.PlayedThisTurn.Add(other);
+            }
+            var destiny = new ShardsCard { InstanceId = engine.State.NextInstanceId++, DefId = "soul_syphon_duel", Owner = 0, Zone = ShardsZone.DestinyRow };
+            player.Destinies.Add(destiny); engine.State.InvalidateCardIndex();
+            Assert.IsTrue(engine.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = destiny.InstanceId }).Accepted);
+            Assert.AreEqual(secondCard ? 25 : 20, player.Health);
+        }
+
+        [Test]
+        public void OctoberBalance_ConscriptionStillCountsNonChampionRelics()
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            foreach (var id in new[] { "horizon_seeker", "terminal_crescents_duel" })
+                player.PlayedThisTurn.Add(Plant(engine, player, id, ShardsZone.PlayZone));
+            var destiny = new ShardsCard { InstanceId = engine.State.NextInstanceId++, DefId = "unconditional_conscription_duel", Owner = 0, Zone = ShardsZone.DestinyRow };
+            player.Destinies.Add(destiny); engine.State.InvalidateCardIndex();
+            Assert.IsTrue(engine.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = destiny.InstanceId }).Accepted);
+            Assert.AreEqual(5, player.Power);
+        }
+
+        [TestCase("giga_source_adept_duel", 2)]
+        [TestCase("omnius_duel", 3)]
+        [TestCase("order_initiate_duel", 1)]
+        public void OctoberBalance_DominionMasteryRewards(string id, int mastery)
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            foreach (string other in new[] { "kiln_drone", "spore_cleric_duel", "nil_assassin_duel" })
+                player.PlayedThisTurn.Add(Plant(engine, player, other, ShardsZone.PlayZone));
+            bool champion = ShardsCardDatabase.Get(id).IsChampion;
+            var card = Plant(engine, player, id, champion ? ShardsZone.Champions : ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(champion
+                ? (PlayerAction)new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = card.InstanceId }
+                : new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = card.InstanceId }).Accepted);
+            if (id == "order_initiate_duel")
+            {
+                Assert.AreEqual("soi.removeshop", engine.PendingInput.Decision.Context);
+                AnswerPending(engine, new int[0]);
+            }
+            Assert.AreEqual(mastery, player.Mastery);
+        }
+
+        [Test]
+        public void OctoberBalance_ShardSeerDrawsBeforeOneMasteryReveal()
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            player.Hand.Clear(); player.Deck.Clear(); player.Discard.Clear();
+            var shard = Plant(engine, player, "infinity_shard", ShardsZone.Deck);
+            var seer = Plant(engine, player, "shard_seer_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = seer.InstanceId }).Accepted);
+            Assert.AreEqual("soi.reveal", engine.PendingInput.Decision.Context);
+            Assert.AreEqual(shard.InstanceId, engine.PendingInput.Decision.Options[0].CardInstanceId);
+            AnswerPending(engine, new[] { shard.InstanceId });
+            Assert.AreEqual(1, player.Mastery);
+            Assert.Contains(shard, player.Hand);
+        }
+
+        [Test]
+        public void OctoberBalance_BreakerWarpStopsAtSix()
+        {
+            var adapter = NewGame(ShardsDlc.Duel); CompleteDraft(adapter);
+            var engine = adapter.Inner; var player = engine.State.Players[0];
+            var six = new ShardsCard { InstanceId = engine.State.NextInstanceId++, DefId = "omnius_duel", Owner = -1, Zone = ShardsZone.CenterRow };
+            var seven = new ShardsCard { InstanceId = engine.State.NextInstanceId++, DefId = "grand_architect", Owner = -1, Zone = ShardsZone.CenterRow };
+            engine.State.CenterRow[0] = six; engine.State.CenterRow[1] = seven;
+            var breaker = Plant(engine, player, "breaker_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = breaker.InstanceId }).Accepted);
+            var request = engine.PendingInput.Decision;
+            Assert.AreEqual("soi.warp", request.Context);
+            Assert.IsTrue(request.Options.Exists(o => o.CardInstanceId == six.InstanceId));
+            Assert.IsFalse(request.Options.Exists(o => o.CardInstanceId == seven.InstanceId));
+            AnswerPending(engine, new int[0]);
+        }
+
         private static ShardsEngineAdapter NewGame(ShardsDlc dlc = ShardsDlc.None, int players = 2, ulong seed = 42)
         {
             var specs = new List<PlayerSpec>();
@@ -171,7 +346,7 @@ namespace Pascension.Engine.Tests
             var brain = Plant(engine, player, "multitask_brain", ShardsZone.Hand);
             int hand = player.Hand.Count;
             Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = brain.InstanceId }).Accepted);
-            Assert.AreEqual(8, player.Power, "four factions including the Brain");
+            Assert.AreEqual(4, player.Power, "one power per faction below mastery 20");
             Assert.AreEqual(hand + 3, player.Hand.Count, "draw four after playing the Brain");
             Assert.AreEqual(0, player.Mastery, "no Dominion mastery or reveal decision");
             Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind);
@@ -387,7 +562,7 @@ namespace Pascension.Engine.Tests
             }
             Assert.AreEqual(0, baseHeal, "base Healing Hands destiny replaced");
             Assert.AreEqual(1, duelHeal, "healing_hands_duel destiny present");
-            Assert.AreEqual(30, destinies.Count, "still 30 destinies total after errata swap");
+            Assert.AreEqual(31, destinies.Count, "30 original destinies plus DNA after errata swaps");
         }
 
         [Test]
@@ -497,7 +672,7 @@ namespace Pascension.Engine.Tests
             Assert.AreEqual(0, player.Gems);
             Assert.AreEqual(mode == 0 ? 43 : 40, player.Health);
             Assert.AreEqual(hand + (mode == 2 ? 1 : 0), player.Hand.Count);
-            Assert.AreEqual(mode == 1 ? 2 : 0, player.Power);
+            Assert.AreEqual(mode == 1 ? 3 : 0, player.Power);
             Assert.AreEqual(mode == 3 ? 6 : 5, player.Mastery);
             Assert.IsFalse(engine.Submit(new ShardsHeroAbilityAction { PlayerIndex = 0 }).Accepted);
         }
@@ -648,86 +823,55 @@ namespace Pascension.Engine.Tests
         }
 
         [Test]
-        public void Duel_Testudo_OverAssignment_PaysThroughShields()
+        public void Duel_Testudo_ShieldPlayGrantsOneDefensePerCopy_AndLaterChampionsMissIt()
         {
-            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 8);
+            var adapter = NewGame(ShardsDlc.Duel);
             CompleteDraft(adapter);
             var engine = adapter.Inner;
-            var p0 = engine.State.Players[0];
-            var p1 = engine.State.Players[1];
-            var testudo = Plant(engine, p1, "testudo_vanguard", ShardsZone.Champions); // defense 4
-            var prism = Plant(engine, p1, "prism", ShardsZone.Hand);                   // shield 2
-            p0.Power = 8;
-            int healthBefore = p1.Health;
-
-            Assert.IsTrue(engine.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
-            Assert.AreEqual("soi.split", engine.PendingInput.Decision.Context);
-            // Over-assign: 6 points on the defense-4 champion (2 spare pay through the
-            // shield), the mandatory remainder on the face.
-            var split = new List<int>();
-            for (int i = 0; i < 6; i++) split.Add(ShardsEngine.ChampionSplitBase + testudo.InstanceId);
-            for (int i = 0; i < 2; i++) split.Add(p1.Index);
-            AnswerPending(engine, split);
-
-            Assert.AreEqual("soi.shields", engine.PendingInput.Decision.Context);
-            AnswerPending(engine, new[] { prism.InstanceId });
-
-            Assert.IsFalse(p1.Champions.Contains(testudo), "6 assigned - 2 shield = 4 kills through the shield");
-            Assert.AreEqual(healthBefore, p1.Health, "face damage 2 - 2 shield = 0");
+            var player = engine.State.Players[0];
+            var testudo = Plant(engine, player, "testudo_vanguard", ShardsZone.Champions);
+            Plant(engine, player, "testudo_vanguard", ShardsZone.Champions);
+            var seer = Plant(engine, player, "command_seer_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = seer.InstanceId }).Accepted);
+            Assert.AreEqual(6, engine.EffectiveDefense(player, testudo), "two Testudos grant +2, not the printed Shield 5");
+            var later = Plant(engine, player, "systema_ai_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = later.InstanceId }).Accepted);
+            Assert.AreEqual(4, engine.EffectiveDefense(player, later), "later nonshield champion receives no earlier bonus");
         }
 
         [Test]
-        public void Duel_Testudo_ExactLethal_IsSavedByAnyShield()
+        public void Duel_Testudo_HandShieldDoesNotPreventImmediateChampionAttack()
         {
-            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 8);
+            var adapter = NewGame(ShardsDlc.Duel);
             CompleteDraft(adapter);
             var engine = adapter.Inner;
-            var p0 = engine.State.Players[0];
-            var p1 = engine.State.Players[1];
-            var testudo = Plant(engine, p1, "testudo_vanguard", ShardsZone.Champions);
-            var prism = Plant(engine, p1, "prism", ShardsZone.Hand);
-            p0.Power = 8;
-            int healthBefore = p1.Health;
-
-            Assert.IsTrue(engine.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
-            var split = new List<int>();
-            for (int i = 0; i < 4; i++) split.Add(ShardsEngine.ChampionSplitBase + testudo.InstanceId);
-            for (int i = 0; i < 4; i++) split.Add(p1.Index);
-            AnswerPending(engine, split);
-            AnswerPending(engine, new[] { prism.InstanceId });
-
-            Assert.IsTrue(p1.Champions.Contains(testudo), "exact-lethal 4 - 2 shield = 2 < 4: saved");
-            Assert.AreEqual(healthBefore - 2, p1.Health, "face 4 - 2 shield = 2");
+            var attacker = engine.State.Players[0];
+            var defender = engine.State.Players[1];
+            var testudo = Plant(engine, defender, "testudo_vanguard", ShardsZone.Champions);
+            var prism = Plant(engine, defender, "prism", ShardsZone.Hand);
+            attacker.Power = 4;
+            Assert.IsTrue(engine.Submit(new ShardsAttackChampionAction { PlayerIndex = 0,
+                TargetPlayerIndex = 1, CardInstanceId = testudo.InstanceId }).Accepted);
+            Assert.IsFalse(defender.Champions.Contains(testudo));
+            Assert.Contains(prism, defender.Hand);
+            Assert.AreEqual(0, attacker.Power);
+            Assert.AreEqual(PendingInputKind.Priority, engine.PendingInput.Kind, "no champion shield reaction");
         }
 
         [Test]
-        public void Duel_Testudo_TauntHeld_ZeroesEverythingBehindIt()
+        public void Duel_Testudo_BonusRemainsAfterTestudoLeavesPlay()
         {
-            var adapter = NewGame(ShardsDlc.Duel, players: 2, seed: 8);
+            var adapter = NewGame(ShardsDlc.Duel);
             CompleteDraft(adapter);
             var engine = adapter.Inner;
-            var p0 = engine.State.Players[0];
-            var p1 = engine.State.Players[1];
-            var zetta = Plant(engine, p1, "zetta_encryptor", ShardsZone.Champions);    // taunt, defense 5
-            var testudo = Plant(engine, p1, "testudo_vanguard", ShardsZone.Champions); // defense 6
-            var prism = Plant(engine, p1, "prism", ShardsZone.Hand);                   // shield 2
-            p0.Power = 13;
-            int healthBefore = p1.Health;
-
-            Assert.IsTrue(engine.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
-            // Pre-shield lethal on the taunt (5) unlocks the rest: 6 on Testudo, 2 face.
-            var split = new List<int>();
-            for (int i = 0; i < 5; i++) split.Add(ShardsEngine.ChampionSplitBase + zetta.InstanceId);
-            for (int i = 0; i < 6; i++) split.Add(ShardsEngine.ChampionSplitBase + testudo.InstanceId);
-            for (int i = 0; i < 2; i++) split.Add(p1.Index);
-            AnswerPending(engine, split);
-            AnswerPending(engine, new[] { prism.InstanceId });
-
-            // Zetta resolves FIRST: 5 - 2 shield = 3 < 5, the wall held — every other
-            // champion hit AND the face damage resolve as zero.
-            Assert.IsTrue(p1.Champions.Contains(zetta), "the taunt champion survives its shielded hit");
-            Assert.IsTrue(p1.Champions.Contains(testudo), "hits behind a held taunt are dropped");
-            Assert.AreEqual(healthBefore, p1.Health, "face damage behind a held taunt is dropped");
+            var player = engine.State.Players[0];
+            var testudo = Plant(engine, player, "testudo_vanguard", ShardsZone.Champions);
+            var other = Plant(engine, player, "systema_ai_duel", ShardsZone.Champions);
+            var shield = Plant(engine, player, "command_seer_duel", ShardsZone.Hand);
+            Assert.IsTrue(engine.Submit(new ShardsPlayCardAction { PlayerIndex = 0, CardInstanceId = shield.InstanceId }).Accepted);
+            engine.DestroyChampion(player, testudo, 1);
+            Assert.AreEqual(5, engine.EffectiveDefense(player, other));
+            Assert.AreEqual(0, testudo.TemporaryDefenseUntilNextTurn, "a leaving champion loses its own temporary bonus");
         }
 
         [Test]
@@ -1241,8 +1385,9 @@ namespace Pascension.Engine.Tests
             };
             p0.Destinies.Add(destiny);
             engine.State.InvalidateCardIndex();
-
+            p0.Gems = 1;
             Assert.IsTrue(engine.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = destiny.InstanceId }).Accepted);
+            Assert.AreEqual(0, p0.Gems, "Deadly Recruits pays its one-gem activation cost once");
             var pick = engine.PendingInput.Decision;
             Assert.AreEqual("soi.warp", pick.Context);
             Assert.IsTrue(pick.Options.Exists(o => o.Id == 0), "the forced slot-0 ally is offered");

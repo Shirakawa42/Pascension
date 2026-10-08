@@ -415,6 +415,7 @@ namespace Shards.AI
             ShardsFocusAction => 3,
             ShardsExhaustAction => 4,
             ShardsAttackMonsterAction => 5,
+            ShardsAttackChampionAction => 5,
             ShardsTakeDestinyAction => 6,
             ShardsRecruitRelicAction => 7,
             ShardsRerollRowAction => 8,

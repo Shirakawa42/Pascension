@@ -89,19 +89,24 @@ namespace Pascension.Engine.Tests
             Assert.AreEqual(expected, p.Gems);
         }
         [TestCase(4, true)] [TestCase(5, false)]
-        public void SwyftDefenseAppliesInEndTurnDamage(int power, bool survives)
+        public void SwyftDefenseAppliesToMidTurnAttacks(int power, bool survives)
         {
             var e = Game(); var p = e.State.Players[0]; p.Power = power;
             var c = Give(e, "swyft_duel", ShardsZone.Champions, 1);
             Assert.AreEqual(5, e.EffectiveDefense(e.State.Players[1], c));
-            Assert.IsTrue(e.Submit(new ShardsEndTurnAction { PlayerIndex = 0 }).Accepted);
-            var d = e.PendingInput.Decision;
-            Assert.AreEqual("soi.split", d.Context);
-            var allocation = new List<int>();
-            for (int i = 0; i < power; i++) allocation.Add(ShardsEngine.ChampionSplitBase + c.InstanceId);
-            Assert.IsTrue(e.Submit(new Pascension.Engine.Actions.SubmitDecisionAction { PlayerIndex = 0,
-                Answer = new Pascension.Engine.Decisions.DecisionAnswer { DecisionId = d.Id, ChosenOptionIds = allocation } }).Accepted);
+            bool offered = e.LegalActions(0).Exists(action =>
+                action is ShardsAttackChampionAction attack && attack.CardInstanceId == c.InstanceId);
+            Assert.AreEqual(!survives, offered, "Four power cannot pay Swyft's full defense; five can");
+            var result = e.Submit(new ShardsAttackChampionAction
+            {
+                PlayerIndex = 0, TargetPlayerIndex = 1, CardInstanceId = c.InstanceId, Amount = 5
+            });
+            Assert.AreEqual(!survives, result.Accepted);
             Assert.AreEqual(survives, e.State.Players[1].Champions.Contains(c));
+            Assert.AreEqual(survives ? ShardsZone.Champions : ShardsZone.Discard, c.Zone);
+            Assert.AreEqual(survives ? power : 0, p.Power, "Rejected attacks spend nothing; lethal attacks pay exactly five");
+            Assert.AreEqual(0, c.DamageThisTurn, "A rejected attack cannot leave partial damage");
+            Assert.AreEqual(0, e.State.TurnPlayerIndex, "Champion combat resolves during the attacking player's turn");
         }
         [Test]
         public void CommandosGainThreeGemsAndKeepCombatValues()

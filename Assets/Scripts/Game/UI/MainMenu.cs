@@ -20,6 +20,7 @@ namespace Pascension.Game.UI
         public RectTransform Root;
 
         private RectTransform _homePanel;
+        private RectTransform _aiPanel;
         private RectTransform _settingsPanel;
         private RectTransform _changelogPanel;
         private RectTransform _changelogContent;
@@ -42,6 +43,7 @@ namespace Pascension.Game.UI
             AudioListener.volume = PlayerPrefs.GetFloat(SceneFlow.PrefMasterVolume, 1f);
 
             BuildHome();
+            BuildAiSelection();
             BuildSettings();
             BuildChangelog();
             _accountPanelComponent = AccountPanel.Create(Parent, Theme, () => ShowPanel(_homePanel));
@@ -128,7 +130,7 @@ namespace Pascension.Game.UI
             if (Pascension.Net.GameCatalog.Get("shards").GameId == "shards")
             {
                 var solo = MenuButton(_homePanel, "PLAY SHARDS VS AI", ref y);
-                solo.onClick.AddListener(Soi.SoiSoloMatch.Launch);
+                solo.onClick.AddListener(() => ShowPanel(_aiPanel));
             }
 
             var settings = MenuButton(_homePanel, "SETTINGS", ref y);
@@ -145,6 +147,22 @@ namespace Pascension.Game.UI
 
             var quit = MenuButton(_homePanel, "QUIT", ref y);
             quit.onClick.AddListener(Application.Quit);
+        }
+
+        private void BuildAiSelection()
+        {
+            _aiPanel = UiFactory.CreateRect("AiSelectionPanel", Parent);
+            UiFactory.Stretch(_aiPanel);
+            var title = UiFactory.CreateText(Theme, "ChooseOpponent", _aiPanel,
+                Loc.T("CHOOSE YOUR OPPONENT"), 44f, UiPalette.Gold, TextAlignmentOptions.Center);
+            UiFactory.Place(title.rectTransform, new Vector2(.5f, .5f), new Vector2(0, 150), new Vector2(900, 80));
+            float y = 20f;
+            var auld = MenuButton(_aiPanel, Soi.SoiAiProfile.Auld.Name, ref y);
+            auld.onClick.AddListener(() => Soi.SoiSoloMatch.Launch(Soi.SoiAiProfile.Auld));
+            var nyou = MenuButton(_aiPanel, Soi.SoiAiProfile.Nyou.Name, ref y);
+            nyou.onClick.AddListener(() => Soi.SoiSoloMatch.Launch(Soi.SoiAiProfile.Nyou));
+            var back = MenuButton(_aiPanel, "BACK", ref y);
+            back.onClick.AddListener(() => ShowPanel(_homePanel));
         }
 
         private void OpenMultiplayer()
@@ -231,6 +249,7 @@ namespace Pascension.Game.UI
         private void ShowPanel(RectTransform panel)
         {
             _homePanel.gameObject.SetActive(panel == _homePanel);
+            _aiPanel.gameObject.SetActive(panel == _aiPanel);
             _settingsPanel.gameObject.SetActive(panel == _settingsPanel);
             _changelogPanel.gameObject.SetActive(panel == _changelogPanel);
             _accountPanel.gameObject.SetActive(panel == _accountPanel);

@@ -38,6 +38,7 @@ namespace Pascension.Game.View
         public GameObject CostGroup;
         public TextMeshProUGUI CostText;
         public GameObject HpGroup;
+        public Image HpBadge;
         public TextMeshProUGUI HpText;
         public Image RulesBox;
         public TextMeshProUGUI TypeText;
@@ -84,7 +85,7 @@ namespace Pascension.Game.View
             /// <summary>Cost disc (blue, top-left).</summary>
             public bool ShowCost;
             public string CostText;
-            /// <summary>Red badge (Pascension: monster HP; SoI: champion defense).</summary>
+            /// <summary>HP badge (Pascension: monster HP; SoI: champion defense).</summary>
             public bool ShowBadge;
             public string BadgeText;
             /// <summary>Shield badge on the card face (count inside the shield icon).</summary>
@@ -205,6 +206,8 @@ namespace Pascension.Game.View
 
             CaptureRulesDefaults();
             SetMercenaryMarker(false); // ApplyExternalFace re-enables it for SoI mercenaries
+            if (HpBadge != null) HpBadge.color = UiPalette.Danger;
+            if (HpText != null) HpText.color = Color.white;
             if (def == null)
             {
                 // Not a Pascension card — another game's database may know this id.
@@ -290,6 +293,10 @@ namespace Pascension.Game.View
             if (face.ShowCost) CostText.text = face.CostText;
             CostText.color = UiPalette.Background; // clear any stale SetLiveCost tint
             HpGroup.SetActive(face.ShowBadge);
+            // Bright green/red live-defense values need a dark backing. The red
+            // monster disc otherwise hides reduced HP and dulls boosted HP.
+            if (HpBadge != null) HpBadge.color = UiPalette.Background;
+            HpText.color = Color.white; // clear a previous champion's live-defense tint
             if (face.ShowBadge) HpText.text = face.BadgeText;
             // Champions show BOTH: the defense badge keeps the right slot, the cost
             // disc slides left beside it (both live in the top bar).
@@ -350,7 +357,7 @@ namespace Pascension.Game.View
         }
 
         /// <summary>Override the HP badge value/color after a bind — the SoI split
-        /// window shows each champion's modifier-adjusted HP on its own red disc
+        /// window shows each champion's modifier-adjusted HP on its own dark disc
         /// (green above printed, red below) instead of a separate label.</summary>
         public void SetBadge(string text, Color color)
         {

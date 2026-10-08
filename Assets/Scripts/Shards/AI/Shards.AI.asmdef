@@ -6,5 +6,6 @@
     "Shards.Engine",
     "Shards.Content"
   ],
-  "noEngineReferences": true
+  "noEngineReferences": true,
+  "allowUnsafeCode": true
 }

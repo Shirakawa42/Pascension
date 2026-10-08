@@ -150,10 +150,8 @@ namespace Shards.Content
             }
             foreach (var card in chosen)
                 ctx.Engine.Banish(card, card.Zone == ShardsZone.Hand ? player.Hand : player.Discard);
-            foreach (var card in chosen)
-                if (card.Def.PlayEffect != null)
-                    foreach (var step in card.Def.PlayEffect.Resolve(ctx))
-                        yield return step;
+            foreach (var step in ctx.ResolvePublicPlayEffects(chosen))
+                yield return step;
         }
     }
 }

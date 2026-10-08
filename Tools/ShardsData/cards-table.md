@@ -236,7 +236,7 @@ Reveal your deck's top 5 cards: up to one revealed champion to your hand, the re
 | reactor_drone_duel | Reactor Drone | duel | Homodeus | Ally | 3 | 3 | – | 2 | Choose one:
 — Gain 2 gems.
 — Gain 3 gems, then banish this card at the end of your turn. |
-| furrowing_elemental_duel | Furrowing Elemental | duel | Undergrowth | Ally | 5 | 2 | – | – | Gain 4 health and draw a card.
+| furrowing_elemental_duel | Furrowing Elemental | duel | Undergrowth | Ally | 4 | 2 | – | – | Gain 4 health and draw a card.
 If you are at 50 health, gain 4 power. |
 | nectar_alchemist | Nectar Alchemist | duel | Undergrowth | Ally | 3 | 2 | – | – | Gain 4 health.
 This turn, health you would gain beyond the 50 cap becomes power instead. |
@@ -247,15 +247,24 @@ Unify: also gain 4 power. |
 | bulwark_chanter | Bulwark Chanter | duel | Order | Ally | 4 | 2 | – | 4 | Shield 4. Gain 2 gems.
 Dominion: gain 2 mastery and draw a card. |
 | command_seer_duel | Command Seer | duel | Order | Ally | 4 | 2 | – | 5 | Shield 5. Gain 3 gems. |
-| duplication_fabricator_duel | Duplication Fabricator | duel | Order | Ally | 3 | 2 | – | – | Gain 1 mastery.
+| duplication_fabricator_duel | Duplication Fabricator | duel | Order | Ally | 4 | 2 | – | – | Gain 1 mastery.
 Every player reveals their deck's top card; copy the effect of one revealed ally.
 M20: you may copy any number of effects from the revealed cards instead. |
+| horizon_seeker | Horizon Seeker | duel | Order | Ally | 2 | 2 | – | – | Draw a card.
+If you have less mastery than your opponent, gain 1 mastery. |
 | index_of_futures | Index of Futures | duel | Order | Ally | 3 | 2 | – | 2 | Shield 2. Draw a card. Look at the center deck's top 3 cards; put them back in any order. |
 | mainframe_abbot_duel | Mainframe Abbot | duel | Order | Ally | 3 | 2 | – | 3 | Shield 3. Draw a card.
 Allegiance Order 4: gain 1 mastery. |
-| order_initiate_duel | Order Initiate | duel | Order | Ally | 1 | 3 | – | – | You may remove a card from the shop. Gain 2 gems. Dominion: gain 2 mastery. |
+| order_initiate_duel | Order Initiate | duel | Order | Ally | 1 | 3 | – | – | You may remove a card from the shop.
+Gain 2 gems.
+Dominion: gain 1 mastery. |
+| shard_seer_duel | Shard Seer | duel | Order | Ally | 2 | 3 | – | – | Draw a card.
+You may reveal an Infinity Shard from your hand to gain 1 mastery. |
 | wraethe_skirmisher_duel | Wraethe Skirmisher | duel | Wraethe | Ally | 1 | 3 | – | – | Gain 2 power.
 Echo: gain 5 instead. |
+| breaker_duel | Breaker | duel | Aion | Ally | 6 | 1 | – | 4 | Shield 4.
+When you recruit this, it goes to your hand instead of your discard pile.
+Warp 6. |
 | comet | Comet | duel | Aion | Ally | 13 | 1 | – | – | Destroy target opponent.
 Can only be acquired through a normal gem purchase.
 Cannot be fast-played or removed from the shop. |
@@ -274,7 +283,7 @@ Exhaust: gain 1 power per champion you control. |
 | ferrata_guard_duel | Ferrata Guard | duel | Homodeus | Champion | 4 | 2 | 4 | – | Allegiance Homodeus 4: your champions get +2 defense.
 Exhaust: gain 1 gem, plus 1 gem per Homodeus champion you control. |
 | primus_pilus_duel | Primus Pilus | duel | Homodeus | Champion | 2 | 1 | 5 | – | Exhaust: if you control three or more champions, draw two cards. |
-| testudo_vanguard | Testudo Vanguard | duel | Homodeus | Champion | 4 | 2 | 4 | – | Your shields are also applied to each of your champions individually.
+| testudo_vanguard | Testudo Vanguard | duel | Homodeus | Champion | 4 | 2 | 4 | – | Whenever you play a card with Shield, each champion you currently control gets +1 defense until the start of your next turn.
 Exhaust: gain 2 gems. |
 | orm_madu_duel | Orm Madu | duel | Undergrowth | Champion | 7 | 1 | 7 | – | Exhaust: gain 6 health.
 If you are then at 50 health, gain 1 mastery. |
@@ -282,16 +291,23 @@ If you are then at 50 health, gain 1 mastery. |
 If you are at 50 health, also gain 2 power. |
 | aegis_archivist | Aegis Archivist | duel | Order | Champion | 4 | 1 | 5 | – | Exhaust: gain 2 gems.
 Dominion: gain 5 gems instead. |
+| giga_source_adept_duel | Giga, Source Adept | duel | Order | Champion | 2 | 1 | 4 | – | When played, draw a card.
+Exhaust — Dominion: gain 2 mastery. |
+| systema_ai_duel | Systema A.I. | duel | Order | Champion | 4 | 1 | 4 | – | Exhaust: gain 1 mastery.
+M20: also draw two cards. |
 | li_hin_duel | Li Hin, The Shattered | duel | Wraethe | Champion | 3 | 1 | 1 | – | Can't be attacked with power. Card effects can still destroy it.
 Exhaust: gain 2 power. |
 | ru_bo_vai_duel | Ru Bo Vai, The Transcendant | duel | Wraethe | Champion | 5 | 1 | 4 | – | Exhaust: gain 3 power.
 M10: your damage ignores shields this turn. |
-| j_chord_duel | J-Chord | duel | Aion | Champion | 3 | 1 | 3 | – | Exhaust — Warp 3.
+| j_chord_duel | J-Chord | duel | Aion | Champion | 4 | 1 | 3 | – | Exhaust — Warp 3.
 M15: Warp 6 instead. |
 | swyft_duel | Swyft | duel | Aion | Champion | 5 | 2 | 5 | – | Exhaust: gain 2 gems and 2 power.
 M10: you may keep cards you fast-play — they join your discard. |
 | riposte_doctrine | Riposte Doctrine | duel | Homodeus | Mercenary | 2 | 2 | – | – | Gain 3 power.
 If you played or reveal a shield card from your hand, gain 6 power instead. |
+| fungal_hermit_duel | Fungal Hermit | duel | Undergrowth | Mercenary | 3 | 2 | – | 2 | Shield 2.
+Gain 1 mastery.
+M10: gain 5 health. Its own mastery gain counts. |
 | hounds_of_volos_duel | Hounds of Volos | duel | Undergrowth | Mercenary | 3 | 2 | – | – | Gain 5 health.
 Allegiance Undergrowth 4: also gain 5 power. |
 | lifebloom_ritual | Lifebloom Ritual | duel | Undergrowth | Mercenary | 6 | 1 | – | – | Until end of turn, all healing you receive is doubled.
@@ -302,6 +318,10 @@ Unify: gain 8 power. |
 Unify: gain 6 health instead. |
 | the_rotten_duel | The Rotten | duel | Undergrowth | Mercenary | 3 | 3 | – | – | Gain 4 power and 1 mastery. |
 | data_heretic_duel | Data Heretic | duel | Order | Mercenary | 4 | 3 | – | – | Draw two cards. |
+| omnius_duel | Omnius, The All-Knowing | duel | Order | Mercenary | 6 | 1 | – | – | Draw two cards.
+Dominion: gain 3 mastery. |
+| shard_abstractor_duel | Shard Abstractor | duel | Order | Mercenary | 2 | 3 | – | – | Gain 1 mastery.
+M10: gain 2 instead. |
 | bleak_communion | Bleak Communion | duel | Wraethe | Mercenary | 3 | 2 | – | – | Lose 4 health — a loss, not damage.
 Draw two cards.
 Echo: an opponent loses that health instead of you. |
@@ -313,20 +333,26 @@ If an Ingeminex is in play, gain 8 instead. |
 | grim_tutor | Grim Tutor | duel | Wraethe | Mercenary | 3 | 2 | – | – | Search your draw pile for a card and put it into your hand, then shuffle.
 You lose 3 health. |
 | nil_assassin_duel | Nil Assassin | duel | Wraethe | Mercenary | 2 | 3 | – | – | Gain 4 power. |
+| riftbreaker | Riftbreaker | duel | Wraethe | Mercenary | 3 | 2 | – | – | Gain 5 power.
+If you have less mastery than your opponent, you may banish a card from your hand or discard pile. |
 | the_lost_duel | The Lost | duel | Wraethe | Mercenary | 4 | 2 | – | – | Gain 5 power.
 Allegiance Wraethe 4: you may banish a card from your hand or discard pile. |
+| rift_scout | Rift Scout | duel | Aion | Mercenary | 2 | 2 | – | – | Gain 3 power.
+If you have less mastery than your opponent, Warp 2. |
+| ingeminex_corruption_duel | Ingeminex: Corruption | duel | Monster | Monster | 0 | 1 | 15 | – | Attack: every player loses 3 health and 1 mastery.
+Reward: recruit an additional relic to your hand. |
 | praetorian_02_duel | Praetorian-02 | duel | Homodeus | Relic | 0 | 1 | 9 | 4 | While in play: shield 4.
 M20: shield 8 instead.
 Exhaust, pay 2 gems: until your next turn, your shields are doubled. Killing this champion does not remove this effect. |
 | praetorian_03 | Praetorian-03 | duel | Homodeus | Relic | 0 | 1 | – | 4 | Gain 1 mastery and draw a card. M15: 2 mastery and 2 cards instead. M20: 3 mastery and 3 cards instead. |
-| panconscious_crown_duel | Panconscious Crown | duel | Undergrowth | Relic | 0 | 1 | – | – | Gain 2 mastery and 5 health.
+| panconscious_crown_duel | Panconscious Crown | duel | Undergrowth | Relic | 0 | 1 | – | – | Gain 2 mastery, 5 health and draw a card.
 M20 Unify: gain 50 health. |
 | unknown_god | Unknown God | duel | Undergrowth | Relic | 0 | 1 | 6 | – | Exhaust: gain 5 health for each champion you control.
 M20: your Exhaust effects apply twice. |
 | datic_robes_duel | Datic Robes | duel | Order | Relic | 0 | 1 | – | 1 | Shield equal to your mastery. Draw two cards.
 M15: while this card is in your discard pile, you have shield equal to half your mastery, rounded up. |
-| multitask_brain | Multitask Brain | duel | Order | Relic | 0 | 1 | – | – | For each different faction you played this turn, gain 2 power and draw a card.
-M20: gain 4 power instead of 2. |
+| multitask_brain | Multitask Brain | duel | Order | Relic | 0 | 1 | – | – | For each different faction you played this turn, gain 1 power and draw a card.
+M20: gain 4 power instead of 1. |
 | terminal_crescents_duel | Terminal Crescents | duel | Order | Relic | 0 | 1 | – | – | Gain 1 mastery, then power equal to half your mastery, rounded up.
 M20: equal to your mastery minus 5. |
 | doom_gate | Doom Gate | duel | Wraethe | Relic | 0 | 1 | 7 | – | You are unaffected by Ingeminex attacks.
@@ -347,9 +373,11 @@ M20: up to 3 cards instead.
 Gain 3 gems and 3 power for each card you banished this turn. |
 | agony_of_choice_duel | The Agony of Choice | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played cards of 3+ different factions this turn, gain 5 power. |
 | datic_secrets_duel | Datic Secrets | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played 2+ Order allies this turn, gain 1 gem and 1 mastery. |
-| deadly_recruits_duel | Deadly Recruits | duel | None | Destiny | 0 | 1 | – | – | Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it for free.
+| deadly_recruits_duel | Deadly Recruits | duel | None | Destiny | 0 | 1 | – | – | Pay 1 gem, Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it.
 M20: cost 4 or less. |
+| dna | DNA | duel | None | Destiny | 0 | 1 | – | – | Pay 4 gems, Exhaust: get an additional copy of the next card you recruit this turn. Put the copy into your discard pile. |
 | healing_hands_duel | Healing Hands | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played a champion this turn, gain 5 health. |
 | paradigm_shift_duel | Paradigm Shift | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played an Order card and a Wraethe card this turn, gain 1 gem and 1 mastery. |
-| soul_syphon_duel | Soul Syphon | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played cards of 3+ different factions this turn, gain 7 health. |
+| soul_syphon_duel | Soul Syphon | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played cards of 2+ different factions this turn, gain 5 health. |
 | the_last_city_duel | The Last City | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played 2+ mercenaries this turn, gain 3 gems. |
+| unconditional_conscription_duel | Unconditional Conscription | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played 2+ non-starter allies costing 2 or less this turn, gain 5 power. |

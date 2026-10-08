@@ -88,13 +88,12 @@ Unspent Gems and Power evaporate at end of turn. Damage marked on any champion e
   (unlike players, who are only hit in the attack phase). A champion is destroyed only if a
   single player deals total damage equal to its full Defense **within one turn** — champions do
   not track damage from turn to turn.
-  - **Accumulation ruling**: damage on a champion persists WITHIN the turn (you may hit it in
-    several increments as you generate more Power, e.g. play a card, hit for 2, play another,
-    hit for 3) but resets at end of turn; partial damage is simply wasted. This matches the
-    digital adaptation. The rulebook's summary line "use enough Power to equal the champion's
-    Defense" is shorthand for the same thing. TODO-VERIFY: no official ruling text found that
-    explicitly addresses split attacks within one turn beyond the "in a single turn" clause —
-    engine should treat within-turn accumulation as legal.
+  - **Current Duel declaration rule (2026-10-08):** spend exactly the champion's
+    remaining effective defense and destroy it before taking another action. Partial
+    and excess declarations are rejected. The official book does not explicitly settle
+    arbitrary partial attacks; this exact-cost action is the local clarification.
+    Non-Duel retains the older end-turn-only champion assignment. Marked damage still
+    clears at end of turn, and direct destruction bypasses defense.
 - A destroyed champion goes to its CONTROLLER's discard pile (it can be redrawn/replayed later).
 - Shields never protect champions (FAQ). Base-game champions' printed Shield icons are only
   usable while the card is in hand (see 1.6); one RotF relic (Praetorian-02) explicitly breaks
@@ -388,3 +387,68 @@ Rez's Scry 2 discounts the next successful reroll this turn by 1 (minimum cost 0
 consumed on use and cleared at cleanup. World Piercer permits zero, one or two
 mercenaries below M20; at M20 it still returns every mercenary automatically.
 The in-game changelog archives all 12 old/new card pairs in English and French.
+
+## 2026-09-25 — information and acquisition rulings
+
+- Conditional glow hints are private to their controller. The market is evaluated
+  only for the viewer; opponent champions/destinies never expose condition hints.
+- Allegiance intentionally counts temporary fast-played cards while they are in the
+  play zone. The permanent owned-deck list still excludes those temporary cards.
+- Comet can enter a player's collection only through a normal gem purchase, including
+  normal price discounts and purchase redirects. Free recruitment and fast-play are
+  forbidden. When Shard Defiant reveals it, Keep is disabled and Banish is mandatory,
+  including timeout defaults. Playing or retrieving an already-owned Comet remains legal.
+
+## September 27, 2026 balance override
+
+In 1v1, seat 1 starts with six cards and one mastery; later hands draw five.
+Duel abilities: Tetra pays three gems for two draws; Ko Syn Wu pays one health
+for a banish; Rez scries three and, independently at mastery five, every reroll
+costs one gem less (0, 1, 2, ... each turn). Warpquartz repeats each banished
+card effect twice; its separate three gems/power per banish bonus is unchanged.
+Doom Gate defense is seven; Praetorian-02 shields four/eight at mastery twenty;
+Duel Cinder Scars quantity is four. These values supersede earlier balance notes.
+
+## 2026-10-08 — reviewed Duel balance patch
+
+The implemented package follows `Tools/BalanceReview/balance_proposals.json` v5 and
+its saved v4 revision-64 review. Card values, new definitions and bilingual texts are
+registered in the shards-cards skill and generated card table. Only Horizon Seeker,
+Riftbreaker and Rift Scout join the center deck, two copies each; the two rejected
+catch-up designs have no replacements. DNA is one new destiny.
+
+- The initial six center slots allow printed cost ≤5 or Comet. All skipped cards,
+  including setup-suppressed Ingeminex, are shuffled uniformly into the unrevealed
+  remainder before the hero draft. Every later refill is unrestricted.
+- Champion attacks in Duel resolve during the play phase, spending the full current
+  remaining defense. After a removal, recompute attack permissions and live auras.
+  At end turn, remaining power targets players only; power with no legal player
+  target expires. Non-Duel retains its prior combat timing.
+- Zetta protects its owner and non-guard champions. Guards remain attackable when
+  another guard is present, avoiding mutual immunity after DNA creates a duplicate.
+  Independent champion attack restrictions still apply. Direct destruction bypasses
+  defense and attack protection. Mastery-30 Infinity Shard bypasses Zetta and resolves
+  against every opponent automatically at end turn. Comet bypasses Zetta too, directly
+  destroying its chosen opponent; multiplayer still requires choosing that opponent.
+- Testudo Vanguard: each actual card play with positive live Shield grants every
+  currently controlled champion +1 defense per Testudo. Dynamic Shield and Phasic
+  Technology qualify; shield magnitude does not scale the +1. Fast-play and Warp
+  qualify, defensive reveals and copied effects do not. The grants last until the
+  recipient owner's next turn, survive Testudo's removal, and end if the recipient
+  leaves play. Later champions receive no past grants. Exhaust still gains 2 gems.
+- DNA: pay 4 gems and exhaust; the next actual recruit this turn creates one fresh
+  copy directly in discard. Multiple armed effects copy that same next recruitment.
+  Normal and free recruits, ordinary relic acquisition and Corruption's relic reward
+  qualify. Destiny-taking, temporary loans and owned-card returns do not. Unused
+  triggers expire at cleanup. The copy neither recruits recursively nor repeats an
+  acquisition reward or destination redirect. A normally purchased Comet can be
+  copied by DNA; Comet's other acquisition/fast-play restrictions remain.
+- Public generated-copy counts include DNA and Doom Gate, separate from setup
+  counts. This prevents AI public-stock inference from removing copies that DNA
+  created from the unknown center deck.
+- Crown gains mastery, heals, then draws before testing M20 Unify. Shard Abstractor
+  selects its mastery tier before gaining mastery: M9 gains 1; M10 gains 2.
+
+These are implemented rules and local interaction choices, not measured post-patch
+balance results. Existing frozen AIs need compatibility projections for new cards;
+no new training is implied by this patch.

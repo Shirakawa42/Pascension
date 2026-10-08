@@ -138,6 +138,13 @@ internal static class SafeTurnGains
                 if(style==2&&gain.Draw>0)score=400+gain.Draw;
                 if(style==2&&gain.Mastery>0&&p.Mastery<30)score=500+gain.Mastery;
             }
+            // A separate combat rollout explores killing a visible champion.
+            // This is a proposal, never a mandatory live-action safeguard.
+            if(style==1&&c.Action is ShardsAttackChampionAction attack)
+            {
+                var target=g.Engine.State.FindCard(attack.CardInstanceId);
+                if(target!=null)score=300+target.Def.Cost+(target.Def.Taunt?20:0);
+            }
             if(style==2&&c.Action is ShardsFocusAction&&p.Mastery<30)
                 score=p.Mastery==4||p.Mastery==9||p.Mastery==14||p.Mastery==19||p.Mastery==29?600:100;
             if(style==2&&c.Action is ShardsHeroAbilityAction)

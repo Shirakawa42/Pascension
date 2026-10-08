@@ -106,8 +106,8 @@ namespace Pascension.Game.Soi
             if (SoiSoloMatch.Current != null && player.Index != SoiSoloMatch.Current.HumanSeat)
             {
                 seat.IsBot = true;
-                seat.BotKind = "hybrid-balance-20260928-2e9d7dc1";
-                seat.Identity = "shards-ai:hybrid-balance-20260928-2e9d7dc1";
+                seat.BotKind = SoiSoloMatch.Current.Profile.BotKind;
+                seat.Identity = "shards-ai:" + seat.BotKind;
                 return seat;
             }
             if (player.Index == viewerIndex)

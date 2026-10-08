@@ -8,6 +8,32 @@ namespace Pascension.Game.Soi
     {
         public static readonly Dictionary<string, (string Name, string Text)> Cards = new()
         {
+            ["giga_source_adept_duel"] = ("Giga, Adepte de la Source", "Quand vous jouez cette carte, piochez une carte.\nActivez — Domination : gagnez 2 maîtrise."),
+
+            ["shard_abstractor_duel"] = ("Prophète de l'Éclat", "Gagnez 1 maîtrise.\nM10 : gagnez-en 2 à la place."),
+
+            ["shard_seer_duel"] = ("Voyant de l'Éclat", "Piochez une carte.\nVous pouvez révéler un Éclat de l’Infini de votre main pour gagner 1 maîtrise."),
+
+            ["breaker_duel"] = ("Iconoclaste", "Bouclier 4.\nQuand vous recrutez cette carte, elle va dans votre main au lieu de votre défausse.\nDistorsion 6."),
+
+            ["fungal_hermit_duel"] = ("Ermite Fongique", "Bouclier 2.\nGagnez 1 maîtrise.\nM10 : gagnez 5 santé. Sa propre maîtrise compte."),
+
+            ["ingeminex_corruption_duel"] = ("Ingeminex : Corruption", "Attaque : chaque joueur perd 3 santé et 1 maîtrise.\nRécompense : recrutez une relique supplémentaire dans votre main."),
+
+            ["omnius_duel"] = ("Omnius, l'Érudit", "Piochez deux cartes.\nDomination : gagnez 3 maîtrise."),
+
+            ["systema_ai_duel"] = ("I.A. Systema", "Activez : gagnez 1 maîtrise. M20 : piochez aussi deux cartes."),
+
+            ["unconditional_conscription_duel"] = ("Conscription Obligatoire", "Activez : si vous avez joué ce tour-ci 2 alliés ou plus de coût 2 ou moins, hors cartes de départ, gagnez 5 puissance."),
+
+            ["horizon_seeker"] = ("Quêteur d’Horizon", "Piochez une carte.\nSi vous avez moins de maîtrise que votre adversaire, gagnez 1 maîtrise."),
+
+            ["riftbreaker"] = ("Briseur de Faille", "Gagnez 5 puissance.\nSi vous avez moins de maîtrise que votre adversaire, vous pouvez bannir une carte de votre main ou de votre défausse."),
+
+            ["rift_scout"] = ("Éclaireur des Failles", "Gagnez 3 puissance.\nSi vous avez moins de maîtrise que votre adversaire, Distorsion 2."),
+
+            ["dna"] = ("ADN", "Payez 4 cristaux, Activez : obtenez un exemplaire supplémentaire de la prochaine carte que vous recrutez ce tour-ci. Placez cet exemplaire dans votre défausse."),
+
             // ------------------------------------------------------------- starters
             ["crystal"] = ("Cristal", "Gagnez 1 cristal."),
             ["blaster"] = ("Blaster", "Gagnez 1 puissance."),
@@ -87,7 +113,7 @@ namespace Pascension.Game.Soi
             ["datic_robes"] = ("Sphère Réflectrice", "Bouclier égal à votre maîtrise.\nPiochez une carte. M20 : piochez-en deux à la place."),
             ["terminal_crescents"] = ("Croissants Terminaux", "Gagnez 1 maîtrise, puis de la puissance égale à la moitié de votre maîtrise, arrondie au supérieur. M20 : égale à votre maîtrise totale."),
             ["entropic_talons"] = ("Serres Entropiques", "Piochez deux cartes.\nCe tour-ci, gagnez 1 puissance par santé gagnée, même au maximum de 50. M20 : gagnez aussi 10 santé."),
-            ["panconscious_crown_duel"] = ("Couronne Panconsciente", "Gagnez 2 maîtrise et 5 santé.\nM20 Union : gagnez 50 santé."),
+            ["panconscious_crown_duel"] = ("Couronne Panconsciente", "Gagnez 2 maîtrise, 5 santé et piochez une carte.\nM20 Union : gagnez 50 santé."),
             ["panconscious_crown"] = ("Couronne Panconsciente", "Gagnez 2 maîtrise et 2 santé.\nM20 Union : gagnez 50 santé."),
             ["heart_of_nothing"] = ("Cœur du Néant", "Gagnez 5 puissance. M20 : gagnez 10 à la place.\nSi vous infligez 10 dégâts non prévenus ou plus à un même adversaire ce tour-ci, piochez 3 cartes supplémentaires à la fin du tour."),
             ["world_piercer"] = ("Perce-Mondes", "Gagnez 2 maîtrise.\nRenvoyez un mercenaire de votre défausse dans votre main. M20 : renvoyez-les TOUS."),
@@ -158,12 +184,12 @@ namespace Pascension.Game.Soi
 
             // ------------------------------------------------------------- Duel of Doom — nouvelles reliques
             ["praetorian_03"] = ("Prétorien-03", "Gagnez 1 maîtrise et piochez une carte. M15 : 2 maîtrise et 2 cartes à la place. M20 : 3 maîtrise et 3 cartes à la place."),
-            ["multitask_brain"] = ("Cerveau Multitâche", "Pour chaque faction différente que vous avez jouée ce tour-ci, gagnez 2 puissance et piochez une carte. M20 : gagnez 4 puissance au lieu de 2."),
+            ["multitask_brain"] = ("Cerveau Multitâche", "Pour chaque faction différente que vous avez jouée ce tour-ci, gagnez 1 puissance et piochez une carte.\nM20 : gagnez 4 puissance au lieu de 1."),
             ["unknown_god"] = ("Dieu Inconnu", "Activez : gagnez 5 santé par champion que vous contrôlez. M20 : deux fois."),
             ["star_seeker"] = ("Chercheur d'Étoiles", "Activez : Distorsion ∞. M20 : Distorsion ∞ une seconde fois."),
 
             // ------------------------------------------------------------- Duel of Doom — nouvelles cartes
-            ["testudo_vanguard"] = ("Avant-garde Testudo", "Vos boucliers s'appliquent aussi à chacun de vos champions individuellement.\nActivez : gagnez 2 cristaux."),
+            ["testudo_vanguard"] = ("Avant-garde Testudo", "Chaque fois que vous jouez une carte avec Bouclier, chaque champion que vous contrôlez à cet instant gagne +1 défense jusqu’au début de votre prochain tour.\nActivez : gagnez 2 cristaux."),
             ["century_forge"] = ("Forge de la Centurie", "Bouclier 3. Gagnez 3 cristaux.\nInspiration : le prochain champion Homodeus que vous recrutez ce tour-ci entre directement en jeu."),
             ["riposte_doctrine"] = ("Doctrine de Riposte", "Gagnez 3 puissance.\nSi vous avez joué ou révélez une carte à bouclier de votre main, gagnez 6 puissance à la place."),
             ["index_of_futures"] = ("Index des Futurs", "Bouclier 2. Piochez une carte. Regardez les 3 cartes du dessus de la pioche commune ; remettez-les dans l'ordre de votre choix."),
@@ -210,7 +236,7 @@ namespace Pascension.Game.Soi
             ["axia_duel"] = ("Axia", "Coûte 1 de moins par champion Homodeus que vous contrôlez.\nActivez : gagnez 7 puissance."),
             ["ru_bo_vai_duel"] = ("Ru Bo Vai, le Transcendant", "Activez : gagnez 3 puissance. M10 : vos dégâts ignorent les boucliers ce tour-ci."),
             ["reactor_drone_duel"] = ("Drone Réacteur", "Choisissez l'un :\n— Gagnez 2 cristaux.\n— Gagnez 3 cristaux et bannissez cette carte à la fin de votre tour."),
-            ["order_initiate_duel"] = ("Initié de l'Ordre", "Vous pouvez retirer une carte de la boutique. Gagnez 2 cristaux.\nDomination : gagnez 2 maîtrise."),
+            ["order_initiate_duel"] = ("Initié de l'Ordre", "Vous pouvez retirer une carte de la boutique.\nGagnez 2 cristaux.\nDomination : gagnez 1 maîtrise."),
             ["spore_cleric_duel"] = ("Clerc aux Spores", "Gagnez 3 santé.\nUnion : gagnez 6 santé à la place."),
             ["warpquartz_duel"] = ("Quartz de Distorsion", "Piochez une carte.\nVous pouvez bannir une carte de votre main ou de votre défausse pour gagner deux fois son effet. M20 : jusqu'à 3 cartes à la place.\nGagnez 3 cristaux et 3 puissance par carte bannie ce tour-ci."),
             ["duplication_fabricator_duel"] = ("Duplicateur", "Gagnez 1 maîtrise.\nChaque joueur révèle la carte du dessus de sa pioche ; copiez l'effet d'un allié révélé. M20 : vous pouvez copier autant d'effets que vous voulez parmi les cartes révélées."),
@@ -225,9 +251,9 @@ namespace Pascension.Game.Soi
             ["datic_secrets_duel"] = ("Secrets Datiques", "Activez : si vous avez joué 2 alliés Ordre ou plus ce tour-ci, gagnez 1 cristal et 1 maîtrise."),
             ["healing_hands_duel"] = ("Mains Curatives", "Activez : si vous avez joué un champion ce tour-ci, gagnez 5 santé."),
             ["paradigm_shift_duel"] = ("Changement de Paradigme", "Activez : si vous avez joué une carte Ordre et une carte Spectra ce tour-ci, gagnez 1 cristal et 1 maîtrise."),
-            ["soul_syphon_duel"] = ("Siphon des Âmes", "Activez : si vous avez joué des cartes de 3 factions différentes ou plus ce tour-ci, gagnez 7 santé."),
+            ["soul_syphon_duel"] = ("Siphon des Âmes", "Activez : si vous avez joué des cartes de 2 factions différentes ou plus ce tour-ci, gagnez 5 santé."),
             ["the_last_city_duel"] = ("La Dernière Ville", "Activez : si vous avez joué 2 mercenaires ou plus ce tour-ci, gagnez 3 cristaux."),
-            ["deadly_recruits_duel"] = ("Dangereuses Recrues", "Activez : choisissez un allié de coût 2 ou moins de la rivière. Jouez-le en distorsion gratuitement OU recrutez-le gratuitement, sans le jouer. M20 : coût 4 ou moins."),
+            ["deadly_recruits_duel"] = ("Dangereuses Recrues", "Payez 1 cristal, Activez : choisissez un allié de coût 2 ou moins de la rivière. Enrôlez-le OU recrutez-le.\nM20 : coût 4 ou moins."),
         };
     }
 }

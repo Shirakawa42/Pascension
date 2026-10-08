@@ -67,6 +67,7 @@ namespace Shards.Engine
         public bool ShieldsDoubledUntilNextTurn;
         /// <summary>Counters, not flags — two Numeri Drones (or an Ojas-copied Anomaly
         /// Cleric) can arm several redirects in one turn.</summary>
+        public int PendingRecruitCopies;           // DNA: all copies apply to the same next recruit
         public int NextRecruitsToHand;            // Anomaly Cleric M10
         public int NextHomodeusChampionsIntoPlay; // Numeri Drones
         public int NextChampionsIntoPlay;         // Century Forge (Duel) — any champion
@@ -112,6 +113,7 @@ namespace Shards.Engine
             HealthToPowerThisTurn = false;
             HealingDoubledThisTurn = false;
             OverflowHealthToPowerThisTurn = false;
+            PendingRecruitCopies = 0;
             NextRecruitsToHand = 0;
             NextHomodeusChampionsIntoPlay = 0;
             NextChampionsIntoPlay = 0;
@@ -150,6 +152,10 @@ namespace Shards.Engine
         public DeterministicRng Rng;
         public bool GameOver;
         public int WinnerIndex = -1;
+
+        /// <summary>Public quantities created after setup, independent of the immutable
+        /// initial market pool. DNA copies never consume an extra center-deck card.</summary>
+        public Dictionary<string, int> GeneratedCardCounts = new();
 
         public int NextInstanceId = 1;
         public int NextDecisionId = 1;
@@ -254,11 +260,19 @@ namespace Shards.Engine
                     foreach (char ch in c.DefId) Mix(ch);
                     Mix((ulong)(c.Exhausted ? 1 : 0));
                     Mix((ulong)c.DamageThisTurn);
+                    Mix((ulong)c.TemporaryDefenseUntilNextTurn);
                 }
 
                 Mix((ulong)TurnPlayerIndex);
                 Mix((ulong)Round);
                 Mix((ulong)Dlc);
+                var generatedIds = new List<string>(GeneratedCardCounts.Keys);
+                generatedIds.Sort(System.StringComparer.Ordinal);
+                foreach (var id in generatedIds)
+                {
+                    foreach (char ch in id) Mix(ch);
+                    Mix((ulong)GeneratedCardCounts[id]);
+                }
                 foreach (var card in CenterRow) MixCard(card);
                 foreach (var card in CenterDeck) MixCard(card);
                 foreach (var card in DestinyRow) MixCard(card);
@@ -271,6 +285,7 @@ namespace Shards.Engine
                     Mix((ulong)p.Mastery);
                     Mix((ulong)p.Gems);
                     Mix((ulong)p.Power);
+                    Mix((ulong)p.PendingRecruitCopies);
                     Mix((ulong)(p.CharacterExhausted ? 1 : 0));
                     Mix((ulong)(p.Eliminated ? 1 : 0));
                     Mix((ulong)(p.RelicRecruited ? 1 : 0));

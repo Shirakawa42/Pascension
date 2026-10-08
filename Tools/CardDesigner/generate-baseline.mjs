@@ -33,12 +33,12 @@ for (let i = 2; i < lines.length; i++) {
   });
 }
 // Tripwire against a silently-shifted table. If the real pool count legitimately changed,
-// bump this number AND the '199 cards' + keyword-census expectations in smoke-test.mjs.
-// 189 = all registered defs including the Duel-only Panconscious Crown replacement.
-const EXPECTED_DEFS = 189;
+// bump this number AND the '212 cards' + keyword-census expectations in smoke-test.mjs.
+// 202 = all registered printings, including the October Duel replacements and four new cards.
+const EXPECTED_DEFS = 202;
 if (cards.length !== EXPECTED_DEFS)
   throw new Error(`expected ${EXPECTED_DEFS} card defs, parsed ${cards.length}. If the pool genuinely changed, ` +
-    `update EXPECTED_DEFS here and the '199 cards' + keyword-census asserts in Tools/CardDesigner/smoke-test.mjs.`);
+    `update EXPECTED_DEFS here and the '212 cards' + keyword-census asserts in Tools/CardDesigner/smoke-test.mjs.`);
 // Header sanity: guard against a reordered/renamed column silently corrupting positional parsing.
 const header = lines[0].split('|').map(s => s.trim());
 const EXPECTED_COLS = ['', 'Id', 'Name', 'Set', 'Faction', 'Type', 'Cost', 'Qty', 'Def', 'Shield', 'Rules (functional paraphrase)', ''];
@@ -98,7 +98,7 @@ const keywords = [
   { id: 'ingeminex-attack', name: 'Attack (Ingeminex)', faction: 'Monster', kind: 'type', pattern: '', flags: '',
     meaning: "Strikes every player at the end of the turn it appeared, unless it is defeated first. Not damage — shields don't prevent it." },
   { id: 'ingeminex-reward', name: 'Reward (Ingeminex)', faction: 'Monster', kind: 'type', pattern: '', flags: '',
-    meaning: 'Deal it 10 total power to defeat it; only the player who defeats it claims the reward.' },
+    meaning: 'Deal power equal to its defense to defeat it; only the player who defeats it claims the reward.' },
 ];
 
 const baseline = {

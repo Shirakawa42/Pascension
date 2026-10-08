@@ -1,0 +1,16 @@
+{
+  "schema": "shards-nyou-release-v1",
+  "display_name": "Nyou Ha\u00efai",
+  "source_policy_sha256": "9d7159b9baa30d78c24bc0b0ffca9dec8d59a431c85eabce414efb3bbffd7141",
+  "policy_sha256": "708f220e02d92dcfa33b7a522f9b21a0a5a47b26f45655df2b8cf6e7efed3797",
+  "width": 512,
+  "parameters": 13746737,
+  "observation_schema": "shards-zero-depth-observation-v2",
+  "required_inference_calibration": {
+    "scry_temperature": 64.0,
+    "scry_finish_bias": 0.0
+  },
+  "search_settings_resource": "AI/nyou-search-settings",
+  "runtime": "native C# CPU inference and background public-information search",
+  "note": "Frozen model from the October 8 statistics run; CPU/GPU arithmetic is not bit-identical. Original AI remains separately available."
+}

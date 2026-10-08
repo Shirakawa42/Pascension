@@ -59,10 +59,8 @@ namespace Shards.AI
         private static Dictionary<string, int> _cardIndex;
         internal static void Initialize()
         {
-            CardIds = ShardsCardDatabase.All.Select(x => x.Id).OrderBy(x => x, StringComparer.Ordinal).ToArray();
-            if (CardIds.Length > MaxCardDefinitions)
-                throw new InvalidOperationException("Schema v3 reserves count slots 189..191; maximum catalog size is 189");
-            _cardIndex = CardIds.Select((id, i) => (id, i)).ToDictionary(x => x.id, x => x.i);
+            CardIds = (string[])FrozenCatalog.Ids.Clone();
+            _cardIndex = FrozenCatalog.CreateIndex();
         }
         internal static int CardIndex(string id) => id != null && _cardIndex.TryGetValue(id, out int index) ? index : -1;
         internal static int HeroIndex(string id) => Array.IndexOf(ShardsEngine.DraftableCharacters, id);
@@ -159,7 +157,7 @@ namespace Shards.AI
             {
                 var monster = state.ActiveMonsters.Find(c => c.InstanceId == id);
                 if (monster == null) throw new InvalidOperationException("Pending monster is not public");
-                int type = Array.IndexOf(PendingMonsterIds, monster.DefId);
+                int type = Array.IndexOf(PendingMonsterIds, CardIds[CardIndex(monster.DefId)]);
                 if (type < 0) throw new InvalidOperationException("Unreviewed pending monster definition");
                 pending[type]++;
                 if (pendingIndex < 56)
@@ -332,7 +330,7 @@ namespace Shards.AI
                 Math.Max(Math.Max(h,u),Math.Max(Math.Max(o,w),a)) >= 3,
                 own.Mastery >= 15, own.Mastery >= 10, own.Champions.Count >= 3,
                 own.Champions.Count >= 2, own.Health >= 40, u > 0,
-                distinct >= 3 && factionCards >= 3, distinct >= 3 && factionCards >= 3,
+                distinct >= 3 && factionCards >= 3, distinct >= 2 && factionCards >= 2,
                 mercenaries >= 2, cheapAllies >= 2, odd >= 2, even >= 2,
                 playedChampions > 0, own.Champions.Count > 0, shieldAllies > 0, wraetheDiscard > 0,
                 row2, row4, own.Mastery >= 5, own.Mastery >= 10, own.Mastery >= 15,
@@ -447,6 +445,7 @@ namespace Shards.AI
                 }
                 output[offset + 30] = exhausted / 20f;
                 output[offset + 31] = damage / 100f;
+                output[offset + 46] = p.PendingRecruitCopies / 10f;
                 for (int faction = 0; faction < 7; faction++)
                 {
                     output[offset + 32 + faction] = p.FactionPlays((ShardsFaction)faction) / 20f;
@@ -582,7 +581,7 @@ namespace Shards.AI
             int instance = c.Action switch
             {
                 ShardsPlayCardAction a => a.CardInstanceId, ShardsExhaustAction a => a.CardInstanceId,
-                ShardsAttackMonsterAction a => a.CardInstanceId, ShardsTakeDestinyAction a => a.CardInstanceId,
+                ShardsAttackMonsterAction a => a.CardInstanceId, ShardsAttackChampionAction a => a.CardInstanceId, ShardsTakeDestinyAction a => a.CardInstanceId,
                 ShardsRecruitRelicAction a => a.CardInstanceId, _ => -1
             };
             if (c.Action is ShardsBuyCardAction buy) slot = buy.SlotIndex;
@@ -615,7 +614,7 @@ namespace Shards.AI
                 output[21] = PublicShield(game, card) / 20f;
             }
             output[25] = slot >= 0 ? slot / 6f : c.Ordinal / 128f;
-            output[26] = (c.Option?.Amount ?? (c.Action as ShardsAttackMonsterAction)?.Amount ?? 0) / 1000f;
+            output[26] = (c.Option?.Amount ?? (c.Action as ShardsAttackMonsterAction)?.Amount ?? (c.Action as ShardsAttackChampionAction)?.Amount ?? 0) / 1000f;
             output[27] = c.Option?.Required == true ? 1 : 0;
             int owner = c.Option?.OwnerIndex ?? card?.Owner ?? -1;
             output[28] = owner < 0 ? -1 : owner == game.Actor ? 0 : 1;

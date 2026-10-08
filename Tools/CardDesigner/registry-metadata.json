@@ -136,10 +136,13 @@
     "bulwark_chanter": "bulwark_chanter",
     "command_seer_duel": "command_seer",
     "duplication_fabricator_duel": "duplication_fabricator",
+    "horizon_seeker": "horizon_seeker",
     "index_of_futures": "index_of_futures",
     "mainframe_abbot_duel": "mainframe_abbot",
     "order_initiate_duel": "order_initiate",
+    "shard_seer_duel": "shard_seer",
     "wraethe_skirmisher_duel": "wraethe_skirmisher",
+    "breaker_duel": "breaker",
     "comet": "comet",
     "dash_duel": "dash",
     "longshot": "longshot",
@@ -152,23 +155,31 @@
     "orm_madu_duel": "orm_madu",
     "thornshell_warden": "thornshell_warden",
     "aegis_archivist": "aegis_archivist",
+    "giga_source_adept_duel": "giga_source_adept",
+    "systema_ai_duel": "systema_ai",
     "li_hin_duel": "li_hin",
     "ru_bo_vai_duel": "ru_bo_vai",
     "j_chord_duel": "j_chord",
     "swyft_duel": "swyft",
     "riposte_doctrine": "riposte_doctrine",
+    "fungal_hermit_duel": "fungal_hermit",
     "hounds_of_volos_duel": "hounds_of_volos",
     "lifebloom_ritual": "lifebloom_ritual",
     "root_of_the_forest_duel": "root_of_the_forest",
     "spore_cleric_duel": "spore_cleric",
     "the_rotten_duel": "the_rotten",
     "data_heretic_duel": "data_heretic",
+    "omnius_duel": "omnius",
+    "shard_abstractor_duel": "shard_abstractor",
     "bleak_communion": "bleak_communion",
     "cinder_scars_duel": "cinder_scars",
     "doomstalker": "doomstalker",
     "grim_tutor": "grim_tutor",
     "nil_assassin_duel": "nil_assassin",
+    "riftbreaker": "riftbreaker",
     "the_lost_duel": "the_lost",
+    "rift_scout": "rift_scout",
+    "ingeminex_corruption_duel": "ingeminex_corruption",
     "praetorian_02_duel": "praetorian_02",
     "praetorian_03": "praetorian_03",
     "panconscious_crown_duel": "panconscious_crown",
@@ -185,10 +196,12 @@
     "agony_of_choice_duel": "agony_of_choice",
     "datic_secrets_duel": "datic_secrets",
     "deadly_recruits_duel": "deadly_recruits",
+    "dna": "dna",
     "healing_hands_duel": "healing_hands",
     "paradigm_shift_duel": "paradigm_shift",
     "soul_syphon_duel": "soul_syphon",
-    "the_last_city_duel": "the_last_city"
+    "the_last_city_duel": "the_last_city",
+    "unconditional_conscription_duel": "unconditional_conscription"
   },
   "replacements": {
     "korvus_legionnaire_duel": "korvus_legionnaire",
@@ -201,25 +214,33 @@
     "duplication_fabricator_duel": "duplication_fabricator",
     "mainframe_abbot_duel": "mainframe_abbot",
     "order_initiate_duel": "order_initiate",
+    "shard_seer_duel": "shard_seer",
     "wraethe_skirmisher_duel": "wraethe_skirmisher",
+    "breaker_duel": "breaker",
     "dash_duel": "dash",
     "axia_duel": "axia",
     "evokatus_duel": "evokatus",
     "ferrata_guard_duel": "ferrata_guard",
     "primus_pilus_duel": "primus_pilus",
     "orm_madu_duel": "orm_madu",
+    "giga_source_adept_duel": "giga_source_adept",
+    "systema_ai_duel": "systema_ai",
     "li_hin_duel": "li_hin",
     "ru_bo_vai_duel": "ru_bo_vai",
     "j_chord_duel": "j_chord",
     "swyft_duel": "swyft",
+    "fungal_hermit_duel": "fungal_hermit",
     "hounds_of_volos_duel": "hounds_of_volos",
     "root_of_the_forest_duel": "root_of_the_forest",
     "spore_cleric_duel": "spore_cleric",
     "the_rotten_duel": "the_rotten",
     "data_heretic_duel": "data_heretic",
+    "omnius_duel": "omnius",
+    "shard_abstractor_duel": "shard_abstractor",
     "cinder_scars_duel": "cinder_scars",
     "nil_assassin_duel": "nil_assassin",
     "the_lost_duel": "the_lost",
+    "ingeminex_corruption_duel": "ingeminex_corruption",
     "praetorian_02_duel": "praetorian_02",
     "panconscious_crown_duel": "panconscious_crown",
     "datic_robes_duel": "datic_robes",
@@ -235,33 +256,34 @@
     "paradigm_shift_duel": "paradigm_shift",
     "soul_syphon_duel": "soul_syphon",
     "the_last_city_duel": "the_last_city",
+    "unconditional_conscription_duel": "unconditional_conscription",
     "cloud_oracles_sos": "cloud_oracles"
   },
   "abilities": [
     {
       "id": "soiability_decima",
       "name": "Decima — Recruiting",
-      "text": "M5 passive: the first card you buy each turn costs 1 less."
+      "text": "M5 passive: the first card you buy each turn costs 2 less."
     },
     {
       "id": "soiability_tetra",
       "name": "Tetra — Perception",
-      "text": "M5, once per turn: pay 2 gems, draw 2 cards."
+      "text": "M5, once per turn: pay 3 gems, draw 2 cards."
     },
     {
       "id": "soiability_volos",
       "name": "Volos — First Aid",
-      "text": "M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw 1 card.\n— Pay 3 gems: gain 1 mastery."
+      "text": "M5, once per turn: choose one:\n— Free: gain 3 health.\n— Pay 1 gem: gain 3 power.\n— Pay 2 gems: draw 1 card.\n— Pay 3 gems: gain 1 mastery."
     },
     {
       "id": "soiability_kosynwu",
       "name": "Ko Syn Wu — Sacrifice",
-      "text": "M5, once per turn: pay 3 health, banish a card from your hand or discard pile."
+      "text": "M5, once per turn: pay 1 health, banish a card from your hand or discard pile."
     },
     {
       "id": "soiability_rez",
       "name": "Rez — Futureproof",
-      "text": "M5, once per turn: Scry 2 the center deck. Your next reroll this turn costs 1 gem less."
+      "text": "M5 passive: all your rerolls cost 1 gem less.\nM5, once per turn: Scry 3 the center deck."
     }
   ]
 }

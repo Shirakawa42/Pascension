@@ -59,7 +59,8 @@ internal static class TacticalSearch
             if(x is ShardsCard card)
             {
                 var c=new ShardsCard{InstanceId=card.InstanceId,DefId=card.DefId,Owner=card.Owner,Zone=card.Zone,
-                    Exhausted=card.Exhausted,FastPlayed=card.FastPlayed,DamageThisTurn=card.DamageThisTurn,BanishAtCleanup=card.BanishAtCleanup};
+                    Exhausted=card.Exhausted,FastPlayed=card.FastPlayed,DamageThisTurn=card.DamageThisTurn,BanishAtCleanup=card.BanishAtCleanup,
+                    TemporaryDefenseUntilNextTurn=card.TemporaryDefenseUntilNextTurn};
                 map[x]=c;return c;
             }
             if(x is List<ShardsCard> cards)
@@ -149,9 +150,8 @@ internal static class TacticalSearch
         for(int i=reserved.Count-1;i>=0;i--){reserved[i].Zone=ShardsZone.Deck;enemy.Deck.Add(reserved[i]);}
         ((List<string>)g.Knowledge.For(1-seat)).Clear();
         var counts=g.Engine.InitialCardCounts();
-        var monsters=ShardsCardDatabase.All.Where(d=>d.IsMonster&&d.Set=="into_the_horizon").Select(d=>d.Id).OrderBy(x=>x,StringComparer.Ordinal).ToArray();
-        foreach(var player in s.Players.Where(p=>p.DoomGateFloodUsed))
-            for(int i=0;i<25;i++){string id=monsters[i%monsters.Length];counts.TryGetValue(id,out int n);counts[id]=n+1;}
+        foreach(var pair in s.GeneratedCardCounts)
+        {counts.TryGetValue(pair.Key,out int n);counts[pair.Key]=n+pair.Value;}
         // Subtract visible zones and both public complete player collections. Never inspect
         // actual center/destiny identities to construct the sampling distribution.
         var reservedIds=new HashSet<int>();
@@ -190,7 +190,7 @@ internal static class TacticalSearch
                 // Keep already revealed objects/IDs: paused scry continuations reference them.
                 cards[i].DefId=top<known.Count?known[top]:pool.Count>0?pool[i%pool.Count]:"crystal";
                 if(top>=known.Count){cards[i].InstanceId=Allocate(100000+i+(cards==s.DestinyDeck?10000:0));cards[i].Owner=-1;
-                    cards[i].Exhausted=false;cards[i].FastPlayed=false;cards[i].BanishAtCleanup=false;cards[i].DamageThisTurn=0;}
+                    cards[i].Exhausted=false;cards[i].FastPlayed=false;cards[i].BanishAtCleanup=false;cards[i].DamageThisTurn=0;cards[i].TemporaryDefenseUntilNextTurn=0;}
             }
         }
         Replace(s.CenterDeck,center,g.Knowledge.For(seat));Replace(s.DestinyDeck,destiny,Array.Empty<string>());

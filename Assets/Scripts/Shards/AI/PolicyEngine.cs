@@ -12,7 +12,7 @@ using Shards.Engine;
 namespace Shards.AI
 {
     /// <summary>Host-facing engine with public decision memory shared by human and policy submissions.</summary>
-    public sealed class PolicyEngine : IEngineAdapter
+    public sealed class PolicyEngine : IPlayablePolicyEngine
     {
         private readonly ShardsEngineAdapter _inner;
         private readonly Adapter _adapter;

@@ -66,7 +66,7 @@ namespace Shards.Content
 
             SoiCard.New("shard_seer", "Shard Seer").InSet(SET).Faction(O)
                 .Type(ShardsCardType.Ally).Cost(2).Qty(3)
-                .Plays(E.Seq(E.Draw(1), new Custom(ShardSeerFlow)))
+                .Plays(E.Seq(E.Draw(1), new Custom(ctx => ShardSeerFlow(ctx, 2))))
                 .Text("Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 2 mastery.")
                 .Art("a seer gazing into a shard that reflects every possible future").Register();
 
@@ -163,7 +163,9 @@ namespace Shards.Content
             if (revealed.Count == 0) yield break;
             var defIds = new List<string>();
             foreach (var card in revealed) defIds.Add(card.DefId);
-            engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = defIds });
+            engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = defIds,
+                PersonalTopPlayers = revealed.ConvertAll(c => player.Index),
+                PersonalTopInstanceIds = revealed.ConvertAll(c => c.InstanceId), RemovedFromPersonalTop = true });
 
             ShardsCard toHand = null;
             var pick = new DecisionRequest
@@ -186,6 +188,8 @@ namespace Shards.Content
             if (ctx.Answer.ChosenOptionIds.Count > 0)
                 toHand = revealed.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0] && c.Def.IsChampion);
 
+            var discardedIds = new List<int>();
+            var discardedDefs = new List<string>();
             foreach (var card in revealed)
             {
                 if (card == toHand)
@@ -198,8 +202,13 @@ namespace Shards.Content
                 {
                     card.Zone = ShardsZone.Discard;
                     player.Discard.Add(card);
+                    discardedIds.Add(card.InstanceId);
+                    discardedDefs.Add(card.DefId);
                 }
             }
+            if (discardedIds.Count > 0)
+                engine.Emit(new ShardsRevealedCardsDiscardedEvent { PlayerIndex = player.Index,
+                    InstanceIds = discardedIds, DefIds = discardedDefs });
         }
 
         private static IEnumerable<ShardsStep> FabricatorFlow(ShardsContext ctx)
@@ -218,7 +227,9 @@ namespace Shards.Content
                 defIds.Add(top.DefId);
             }
             if (defIds.Count > 0)
-                engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds });
+                engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = ctx.ControllerIndex, DefIds = defIds,
+                    PersonalTopPlayers = revealed.ConvertAll(c => c.Owner),
+                    PersonalTopInstanceIds = revealed.ConvertAll(c => c.InstanceId) });
 
             var copyable = revealed.FindAll(c => !c.Def.IsChampion && c.Def.PlayEffect != null && !ctx.InCopyChain(c));
             if (copyable.Count == 0) yield break;
@@ -236,12 +247,11 @@ namespace Shards.Content
             yield return ShardsStep.AwaitDecision(request);
             var chosen = copyable.Find(c => c.InstanceId == ctx.Answer.ChosenOptionIds[0]);
             if (chosen == null) yield break;
-            ctx.MarkCopied(chosen);
-            foreach (var step in chosen.Def.PlayEffect.Resolve(ctx))
+            foreach (var step in ctx.ResolvePublicPlayEffects(new[] { chosen }, markCopied: true))
                 yield return step;
         }
 
-        private static IEnumerable<ShardsStep> ShardSeerFlow(ShardsContext ctx)
+        internal static IEnumerable<ShardsStep> ShardSeerFlow(ShardsContext ctx, int mastery)
         {
             var player = ctx.Controller;
             var shards = player.Hand.FindAll(c => c.DefId == "infinity_shard");
@@ -250,7 +260,7 @@ namespace Shards.Content
             {
                 PlayerIndex = player.Index,
                 Kind = DecisionKind.ChooseCards,
-                Title = "Reveal an Infinity Shard to gain 2 mastery?",
+                Title = $"Reveal an Infinity Shard to gain {mastery} mastery?",
                 Context = "soi.reveal",
                 Min = 0,
                 Max = 1
@@ -259,8 +269,8 @@ namespace Shards.Content
                 request.Options.Add(new DecisionOption(card.InstanceId, card.Def.Name) { CardInstanceId = card.InstanceId, DefId = card.DefId });
             yield return ShardsStep.AwaitDecision(request);
             if (ctx.Answer.ChosenOptionIds.Count == 0) yield break;
-            ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { "infinity_shard" } });
-            ctx.Engine.GainMastery(player.Index, 2);
+            ctx.Engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { "infinity_shard" }, FromHand = true, HandInstanceIds = new List<int> { ctx.Answer.ChosenOptionIds[0] } });
+            ctx.Engine.GainMastery(player.Index, mastery);
         }
 
         private static IEnumerable<ShardsStep> GatekeeperFlow(ShardsContext ctx)
@@ -269,7 +279,8 @@ namespace Shards.Content
             var engine = ctx.Engine;
             var top = engine.PeekTopOfDeck(player);
             if (top == null) yield break;
-            engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { top.DefId } });
+            engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { top.DefId },
+                PersonalTopPlayers = new List<int> { player.Index }, PersonalTopInstanceIds = new List<int> { top.InstanceId } });
             int cost = top.Def.Cost;
             player.Deck.Remove(top);
             top.Zone = ShardsZone.Hand;
@@ -327,7 +338,7 @@ namespace Shards.Content
                 .Art("a grinning shadow puppeteer snipping marionette strings").Register();
         }
 
-        private static IEnumerable<ShardsStep> CorruptionReward(ShardsContext ctx)
+        internal static IEnumerable<ShardsStep> CorruptionReward(ShardsContext ctx)
         {
             // An ADDITIONAL relic: bypasses the once-per-game limit and goes to hand.
             var player = ctx.Controller;
@@ -360,6 +371,7 @@ namespace Shards.Content
             player.Hand.Add(chosen);
             ctx.Engine.Emit(new ShardsRelicRecruitedEvent { PlayerIndex = player.Index, DefId = chosen.DefId });
             ctx.Engine.Emit(new ShardsCardReturnedEvent { PlayerIndex = player.Index, InstanceId = chosen.InstanceId, DefId = chosen.DefId });
+            ctx.Engine.NotifyRecruit(player, chosen);
         }
 
         private static IEnumerable<ShardsStep> BonusDestiny(ShardsContext ctx)
@@ -666,7 +678,7 @@ namespace Shards.Content
             {
                 var card = engine.DrawFromCenterDeck();
                 if (card == null) yield break;
-                engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { card.DefId }, TakenFromCenterTop = true });
+                engine.Emit(new ShardsCardsRevealedEvent { PlayerIndex = player.Index, DefIds = new List<string> { card.DefId }, TakenFromCenterTop = true, CenterInstanceIds = new List<int> { card.InstanceId } });
 
                 // Mandatory keep-or-banish (user decision 2026-07-19). Both options
                 // carry the revealed card so the UI renders the CARD, never just a name.

@@ -116,6 +116,9 @@ namespace Shards.AI
                     case ShardsCardBoughtEvent bought when !bought.FastPlay:
                         AddAcquisition(bought.PlayerIndex, bought.DefId);
                         break;
+                    case ShardsCardCopiedEvent copied:
+                        AddAcquisition(copied.PlayerIndex, copied.DefId);
+                        break;
                     case ShardsRelicRecruitedEvent relic:
                         AddAcquisition(relic.PlayerIndex, relic.DefId);
                         break;

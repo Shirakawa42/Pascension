@@ -146,6 +146,12 @@ internal sealed partial class HybridLookahead
         var selected=groups.Take(limit).ToList();
         var fallbackGroup=groups.FirstOrDefault(group=>group.Contains(fallback));
         if(fallbackGroup!=null&&!selected.Contains(fallbackGroup))selected.Add(fallbackGroup);
+        // Frozen policies learned attacks only against monsters. Explicitly
+        // evaluate legal champion kills even when that old prior is low; the
+        // real rollout still decides whether spending the power is worthwhile.
+        if(guards)
+            foreach(var group in groups.Where(xs=>g.Visible(xs[0]).Action is ShardsAttackChampionAction))
+                if(!selected.Contains(group))selected.Add(group);
         // An optional effect always has a meaningful no-effect alternative.
         // A confident policy or small branch budget must not erase that choice.
         if(optionalChoices&&g.Decision!=null)

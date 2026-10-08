@@ -183,6 +183,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 69cf340524f84254684875a16c4bd7ec, type: 3}
   - id: deadly_recruits
     sprite: {fileID: 21300000, guid: b15ab9e13dfce0a48a62cdc537da11cd, type: 3}
+  - id: dna
+    sprite: {fileID: 21300000, guid: 0a4f1788b43bc4e4a8905432d0b19b8b, type: 3}
   - id: doomstalker
     sprite: {fileID: 21300000, guid: a8b66ce743b71b24c9bac74772402212, type: 3}
   - id: doom_gate
@@ -221,6 +223,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: be1670aad98e4564fabc77157e1fb631, type: 3}
   - id: heart_of_nothing
     sprite: {fileID: 21300000, guid: aa702309e5706f14f8504fab9269572a, type: 3}
+  - id: horizon_seeker
+    sprite: {fileID: 21300000, guid: 386be47a2ef2fb047b9100104a7b3e52, type: 3}
   - id: hounds_of_volos
     sprite: {fileID: 21300000, guid: fb0f4e4c966b3e2478f1d25060a80218, type: 3}
   - id: index_of_futures
@@ -317,6 +321,10 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 9b1db6622c0dd36448bfd3537cc1c570, type: 3}
   - id: reactor_drone
     sprite: {fileID: 21300000, guid: 61a6f3e7909f0184b86deda790487f7d, type: 3}
+  - id: riftbreaker
+    sprite: {fileID: 21300000, guid: 94b671cec861bd74692bbff41e1630e1, type: 3}
+  - id: rift_scout
+    sprite: {fileID: 21300000, guid: 351699a6dcd6cf94abbcd46d466a6a6a, type: 3}
   - id: riposte_doctrine
     sprite: {fileID: 21300000, guid: 41ae093a4eb7851409c6aa38aa81f4ae, type: 3}
   - id: root_of_the_forest

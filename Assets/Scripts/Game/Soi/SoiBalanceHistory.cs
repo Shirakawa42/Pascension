@@ -9,6 +9,125 @@ namespace Pascension.Game.Soi
     /// printed stats and bilingual text from that patch, even after later tuning.</summary>
     public static class SoiBalanceHistory
     {
+        public static readonly System.Collections.Generic.IReadOnlyList<Changelog.CardChange> October2026 =
+            System.Array.AsReadOnly(new[]
+        {
+            // giga_source_adept
+            new Changelog.CardChange(
+                Revision("Giga, Source Adept", "Giga, Adepte de la Source", "Order Champion", "Champion Ordre", "When played, draw a card.\nExhaust — Dominion: gain 3 mastery.", "Quand vous jouez cette carte, piochez une carte.\nActivez — Domination : gagnez 3 maîtrise.", "giga_source_adept",
+                    ShardsFaction.Order, 2, 4, 0, false),
+                Revision("Giga, Source Adept", "Giga, Adepte de la Source", "Order Champion", "Champion Ordre", "When played, draw a card.\nExhaust — Dominion: gain 2 mastery.", "Quand vous jouez cette carte, piochez une carte.\nActivez — Domination : gagnez 2 maîtrise.", "giga_source_adept",
+                    ShardsFaction.Order, 2, 4, 0, false)),
+            // deadly_recruits_duel
+            new Changelog.CardChange(
+                Revision("Deadly Recruits", "Dangereuses Recrues", "Destiny", "Destinée", "Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it for free.\nM20: cost 4 or less.", "Activez : choisissez un allié de coût 2 ou moins de la rivière. Jouez-le en distorsion gratuitement OU recrutez-le gratuitement, sans le jouer. M20 : coût 4 ou moins.", "deadly_recruits",
+                    ShardsFaction.None, -1, 0, 0, false),
+                Revision("Deadly Recruits", "Dangereuses Recrues", "Destiny", "Destinée", "Pay 1 gem, Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it.\nM20: cost 4 or less.", "Payez 1 cristal, Activez : choisissez un allié de coût 2 ou moins de la rivière. Enrôlez-le OU recrutez-le.\nM20 : coût 4 ou moins.", "deadly_recruits",
+                    ShardsFaction.None, -1, 0, 0, false)),
+            // multitask_brain
+            new Changelog.CardChange(
+                Revision("Multitask Brain", "Cerveau Multitâche", "Order Relic Ally", "Relique Ordre — Allié", "For each different faction you played this turn, gain 2 power and draw a card.\nM20: gain 4 power instead of 2.", "Pour chaque faction différente que vous avez jouée ce tour-ci, gagnez 2 puissance et piochez une carte. M20 : gagnez 4 puissance au lieu de 2.", "multitask_brain",
+                    ShardsFaction.Order, -1, 0, 0, false),
+                Revision("Multitask Brain", "Cerveau Multitâche", "Order Relic Ally", "Relique Ordre — Allié", "For each different faction you played this turn, gain 1 power and draw a card.\nM20: gain 4 power instead of 1.", "Pour chaque faction différente que vous avez jouée ce tour-ci, gagnez 1 puissance et piochez une carte.\nM20 : gagnez 4 puissance au lieu de 1.", "multitask_brain",
+                    ShardsFaction.Order, -1, 0, 0, false)),
+            // panconscious_crown_duel
+            new Changelog.CardChange(
+                Revision("Panconscious Crown", "Couronne Panconsciente", "Undergrowth Relic Ally", "Relique Maquis — Allié", "Gain 2 mastery and 5 health.\nM20 Unify: gain 50 health.", "Gagnez 2 maîtrise et 5 santé.\nM20 Union : gagnez 50 santé.", "panconscious_crown",
+                    ShardsFaction.Undergrowth, -1, 0, 0, false),
+                Revision("Panconscious Crown", "Couronne Panconsciente", "Undergrowth Relic Ally", "Relique Maquis — Allié", "Gain 2 mastery, 5 health and draw a card.\nM20 Unify: gain 50 health.", "Gagnez 2 maîtrise, 5 santé et piochez une carte.\nM20 Union : gagnez 50 santé.", "panconscious_crown",
+                    ShardsFaction.Undergrowth, -1, 0, 0, false)),
+            // unconditional_conscription
+            new Changelog.CardChange(
+                Revision("Unconditional Conscription", "Conscription Obligatoire", "Destiny", "Destinée", "Exhaust: if you played 2+ non-starter allies costing 2 or less this turn, gain 4 power.", "Activez : si vous avez joué ce tour-ci 2 alliés ou plus de coût 2 ou moins, hors cartes de départ, gagnez 4 puissance.", "unconditional_conscription",
+                    ShardsFaction.None, -1, 0, 0, false),
+                Revision("Unconditional Conscription", "Conscription Obligatoire", "Destiny", "Destinée", "Exhaust: if you played 2+ non-starter allies costing 2 or less this turn, gain 5 power.", "Activez : si vous avez joué ce tour-ci 2 alliés ou plus de coût 2 ou moins, hors cartes de départ, gagnez 5 puissance.", "unconditional_conscription",
+                    ShardsFaction.None, -1, 0, 0, false)),
+            // soul_syphon_duel
+            new Changelog.CardChange(
+                Revision("Soul Syphon", "Siphon des Âmes", "Destiny", "Destinée", "Exhaust: if you played cards of 3+ different factions this turn, gain 7 health.", "Activez : si vous avez joué des cartes de 3 factions différentes ou plus ce tour-ci, gagnez 7 santé.", "soul_syphon",
+                    ShardsFaction.None, -1, 0, 0, false),
+                Revision("Soul Syphon", "Siphon des Âmes", "Destiny", "Destinée", "Exhaust: if you played cards of 2+ different factions this turn, gain 5 health.", "Activez : si vous avez joué des cartes de 2 factions différentes ou plus ce tour-ci, gagnez 5 santé.", "soul_syphon",
+                    ShardsFaction.None, -1, 0, 0, false)),
+            // furrowing_elemental_duel
+            new Changelog.CardChange(
+                Revision("Furrowing Elemental", "Élémental du Sillon", "Undergrowth Ally", "Allié Maquis", "Gain 4 health and draw a card.\nIf you are at 50 health, gain 4 power.", "Gagnez 4 santé et piochez une carte.\nSi vous êtes à 50 PV, gagnez 4 puissance.", "furrowing_elemental",
+                    ShardsFaction.Undergrowth, 5, 0, 0, false),
+                Revision("Furrowing Elemental", "Élémental du Sillon", "Undergrowth Ally", "Allié Maquis", "Gain 4 health and draw a card.\nIf you are at 50 health, gain 4 power.", "Gagnez 4 santé et piochez une carte.\nSi vous êtes à 50 PV, gagnez 4 puissance.", "furrowing_elemental",
+                    ShardsFaction.Undergrowth, 4, 0, 0, false)),
+            // j_chord_duel
+            new Changelog.CardChange(
+                Revision("J-Chord", "Riff Ralf", "Aion Champion", "Champion Aion", "Exhaust — Warp 3.\nM15: Warp 6 instead.", "Activez — Distorsion 3. M15 : Distorsion 6 à la place.", "j_chord",
+                    ShardsFaction.Aion, 3, 3, 0, false),
+                Revision("J-Chord", "Riff Ralf", "Aion Champion", "Champion Aion", "Exhaust — Warp 3.\nM15: Warp 6 instead.", "Activez — Distorsion 3. M15 : Distorsion 6 à la place.", "j_chord",
+                    ShardsFaction.Aion, 4, 3, 0, false)),
+            // shard_abstractor
+            new Changelog.CardChange(
+                Revision("Shard Abstractor", "Prophète de l'Éclat", "Order Mercenary", "Mercenaire Ordre", "Gain 2 mastery.", "Gagnez 2 maîtrise.", "shard_abstractor",
+                    ShardsFaction.Order, 3, 0, 0, false),
+                Revision("Shard Abstractor", "Prophète de l'Éclat", "Order Mercenary", "Mercenaire Ordre", "Gain 1 mastery.\nM10: gain 2 instead.", "Gagnez 1 maîtrise.\nM10 : gagnez-en 2 à la place.", "shard_abstractor",
+                    ShardsFaction.Order, 2, 0, 0, false)),
+            // volos_first_aid
+            new Changelog.CardChange(
+                Revision("Volos — First Aid", "Volos — Premiers Soins", "Hero Ability", "Capacité de héros", "M5: once per turn, choose one:\n— Gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw a card.\n— Pay 3 gems: gain 1 mastery.", "M5 : une fois par tour, choisissez un effet :\n— Gagnez 3 santé.\n— Payez 1 cristal : gagnez 2 puissance.\n— Payez 2 cristaux : piochez une carte.\n— Payez 3 cristaux : gagnez 1 maîtrise.", "soiability_volos",
+                    ShardsFaction.Undergrowth, -1, 0, 0, true),
+                Revision("Volos — First Aid", "Volos — Premiers Soins", "Hero Ability", "Capacité de héros", "M5: once per turn, choose one:\n— Gain 3 health.\n— Pay 1 gem: gain 3 power.\n— Pay 2 gems: draw a card.\n— Pay 3 gems: gain 1 mastery.", "M5 : une fois par tour, choisissez un effet :\n— Gagnez 3 santé.\n— Payez 1 cristal : gagnez 3 puissance.\n— Payez 2 cristaux : piochez une carte.\n— Payez 3 cristaux : gagnez 1 maîtrise.", "soiability_volos",
+                    ShardsFaction.Undergrowth, -1, 0, 0, true)),
+            // order_initiate_duel
+            new Changelog.CardChange(
+                Revision("Order Initiate", "Initié de l'Ordre", "Order Ally", "Allié Ordre", "You may remove a card from the shop. Gain 2 gems. Dominion: gain 2 mastery.", "Vous pouvez retirer une carte de la boutique. Gagnez 2 cristaux.\nDomination : gagnez 2 maîtrise.", "order_initiate",
+                    ShardsFaction.Order, 1, 0, 0, false),
+                Revision("Order Initiate", "Initié de l'Ordre", "Order Ally", "Allié Ordre", "You may remove a card from the shop.\nGain 2 gems.\nDominion: gain 1 mastery.", "Vous pouvez retirer une carte de la boutique.\nGagnez 2 cristaux.\nDomination : gagnez 1 maîtrise.", "order_initiate",
+                    ShardsFaction.Order, 1, 0, 0, false)),
+            // shard_seer
+            new Changelog.CardChange(
+                Revision("Shard Seer", "Voyant de l'Éclat", "Order Ally", "Allié Ordre", "Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 2 mastery.", "Piochez une carte.\nVous pouvez révéler un Éclat de l'Infini de votre main pour gagner 2 maîtrise.", "shard_seer",
+                    ShardsFaction.Order, 2, 0, 0, false),
+                Revision("Shard Seer", "Voyant de l'Éclat", "Order Ally", "Allié Ordre", "Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 1 mastery.", "Piochez une carte.\nVous pouvez révéler un Éclat de l’Infini de votre main pour gagner 1 maîtrise.", "shard_seer",
+                    ShardsFaction.Order, 2, 0, 0, false)),
+            // duplication_fabricator_duel
+            new Changelog.CardChange(
+                Revision("Duplication Fabricator", "Duplicateur", "Order Ally", "Allié Ordre", "Gain 1 mastery.\nEvery player reveals their deck's top card; copy the effect of one revealed ally.\nM20: you may copy any number of effects from the revealed cards instead.", "Gagnez 1 maîtrise.\nChaque joueur révèle la carte du dessus de sa pioche ; copiez l'effet d'un allié révélé. M20 : vous pouvez copier autant d'effets que vous voulez parmi les cartes révélées.", "duplication_fabricator",
+                    ShardsFaction.Order, 3, 0, 0, false),
+                Revision("Duplication Fabricator", "Duplicateur", "Order Ally", "Allié Ordre", "Gain 1 mastery.\nEvery player reveals their deck's top card; copy the effect of one revealed ally.\nM20: you may copy any number of effects from the revealed cards instead.", "Gagnez 1 maîtrise.\nChaque joueur révèle la carte du dessus de sa pioche ; copiez l'effet d'un allié révélé. M20 : vous pouvez copier autant d'effets que vous voulez parmi les cartes révélées.", "duplication_fabricator",
+                    ShardsFaction.Order, 4, 0, 0, false)),
+            // breaker
+            new Changelog.CardChange(
+                Revision("Breaker", "Iconoclaste", "Aion Ally", "Allié Aion", "Shield 4.\nWhen you recruit this, it goes to your hand instead of your discard pile.\nWarp.", "Bouclier 4.\nQuand vous recrutez cette carte, elle va dans votre main au lieu de votre défausse.\nDistorsion.", "breaker",
+                    ShardsFaction.Aion, 6, 0, 4, false),
+                Revision("Breaker", "Iconoclaste", "Aion Ally", "Allié Aion", "Shield 4.\nWhen you recruit this, it goes to your hand instead of your discard pile.\nWarp 6.", "Bouclier 4.\nQuand vous recrutez cette carte, elle va dans votre main au lieu de votre défausse.\nDistorsion 6.", "breaker",
+                    ShardsFaction.Aion, 6, 0, 4, false)),
+            // fungal_hermit
+            new Changelog.CardChange(
+                Revision("Fungal Hermit", "Ermite Fongique", "Undergrowth Mercenary", "Mercenaire Maquis", "Gain 1 mastery.\nM10: gain 5 health. Its own mastery gain counts.", "Gagnez 1 maîtrise. M10 : gagnez 5 santé. Sa propre maîtrise compte.", "fungal_hermit",
+                    ShardsFaction.Undergrowth, 3, 0, 0, false),
+                Revision("Fungal Hermit", "Ermite Fongique", "Undergrowth Mercenary", "Mercenaire Maquis", "Shield 2.\nGain 1 mastery.\nM10: gain 5 health. Its own mastery gain counts.", "Bouclier 2.\nGagnez 1 maîtrise.\nM10 : gagnez 5 santé. Sa propre maîtrise compte.", "fungal_hermit",
+                    ShardsFaction.Undergrowth, 3, 0, 2, false)),
+            // ingeminex_corruption
+            new Changelog.CardChange(
+                Revision("Ingeminex: Corruption", "Ingeminex : Corruption", "Monster", "Ingeminex", "Attack: every player loses 3 health and 1 mastery.\nReward: recruit an additional relic to your hand.", "Attaque : chaque joueur perd 3 santé et 1 maîtrise.\nRécompense : recrutez une relique supplémentaire dans votre main.", "ingeminex_corruption",
+                    ShardsFaction.Monster, 0, 10, 0, false),
+                Revision("Ingeminex: Corruption", "Ingeminex : Corruption", "Monster", "Ingeminex", "Attack: every player loses 3 health and 1 mastery.\nReward: recruit an additional relic to your hand.", "Attaque : chaque joueur perd 3 santé et 1 maîtrise.\nRécompense : recrutez une relique supplémentaire dans votre main.", "ingeminex_corruption",
+                    ShardsFaction.Monster, 0, 15, 0, false)),
+            // omnius
+            new Changelog.CardChange(
+                Revision("Omnius, The All-Knowing", "Omnius, l'Érudit", "Order Mercenary", "Mercenaire Ordre", "Draw two cards.\nDominion: gain 5 mastery.", "Piochez deux cartes.\nDomination : gagnez 5 maîtrise.", "omnius",
+                    ShardsFaction.Order, 6, 0, 0, false),
+                Revision("Omnius, The All-Knowing", "Omnius, l'Érudit", "Order Mercenary", "Mercenaire Ordre", "Draw two cards.\nDominion: gain 3 mastery.", "Piochez deux cartes.\nDomination : gagnez 3 maîtrise.", "omnius",
+                    ShardsFaction.Order, 6, 0, 0, false)),
+            // systema_ai
+            new Changelog.CardChange(
+                Revision("Systema A.I.", "I.A. Systema", "Order Champion", "Champion Ordre", "Exhaust: gain 1 mastery.\nM20: also draw two cards.", "Activez : gagnez 1 maîtrise. M20 : piochez aussi deux cartes.", "systema_ai",
+                    ShardsFaction.Order, 3, 4, 0, false),
+                Revision("Systema A.I.", "I.A. Systema", "Order Champion", "Champion Ordre", "Exhaust: gain 1 mastery.\nM20: also draw two cards.", "Activez : gagnez 1 maîtrise. M20 : piochez aussi deux cartes.", "systema_ai",
+                    ShardsFaction.Order, 4, 4, 0, false)),
+            // testudo_vanguard
+            new Changelog.CardChange(
+                Revision("Testudo Vanguard", "Avant-garde Testudo", "Homodeus Champion", "Champion Homodeus", "Your shields are also applied to each of your champions individually.\nExhaust: gain 2 gems.", "Vos boucliers s'appliquent aussi à chacun de vos champions individuellement.\nActivez : gagnez 2 cristaux.", "testudo_vanguard",
+                    ShardsFaction.Homodeus, 4, 4, 0, false),
+                Revision("Testudo Vanguard", "Avant-garde Testudo", "Homodeus Champion", "Champion Homodeus", "Whenever you play a card with Shield, each champion you currently control gets +1 defense until the start of your next turn.\nExhaust: gain 2 gems.", "Chaque fois que vous jouez une carte avec Bouclier, chaque champion que vous contrôlez à cet instant gagne +1 défense jusqu’au début de votre prochain tour.\nActivez : gagnez 2 cristaux.", "testudo_vanguard",
+                    ShardsFaction.Homodeus, 4, 4, 0, false))
+        });
+
         public static readonly System.Collections.Generic.IReadOnlyList<Changelog.CardChange> September2026 =
             System.Array.AsReadOnly(new[]
         {
@@ -98,6 +217,7 @@ namespace Pascension.Game.Soi
             var en = new CardView.ExternalFace
             {
                 Name = name, TypeLine = type, RulesText = SoiCardFaces.Iconize(text), ArtId = artId,
+                IsMercenary = type.Contains("Mercenary"),
                 FrameColor = heroAbility ? new Color(0.5f, 0.42f, 0.2f, 1f) : SoiCardFaces.FactionColor(faction),
                 ShowCost = cost >= 0, CostText = cost.ToString(),
                 ShowBadge = defense > 0, BadgeText = defense.ToString(),

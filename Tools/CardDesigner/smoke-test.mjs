@@ -23,7 +23,7 @@ const baseKwMap = new Map(B.keywords.map(k => [k.id, k]));
 const freshState = () => ({ cards: B.cards.map(Core.clone), keywords: B.keywords.map(Core.clone), sessionName: 't', notes: 'n' });
 
 test('baseline shape', () => {
-  assert(B.cards.length === 199, 'expected 199 cards (189 defs + 5 characters + 5 abilities), got ' + B.cards.length);
+  assert(B.cards.length === 212, 'expected 212 cards (202 defs + 5 characters + 5 abilities), got ' + B.cards.length);
   assert(B.keywords.length === 12, 'expected 12 keywords');
   assert(B.cards.every(c => c.id && c.name && c.set && c.faction && Array.isArray(c.types) && c.types.length), 'every card has identity fields incl. a types array');
 });
@@ -35,7 +35,7 @@ test('current registry, replacements, and hero abilities are represented', () =>
   eq(baseMap.get('spore_cleric_duel').art, 'spore_cleric.png', 'errata uses original artwork');
   assert(baseMap.get('spore_cleric').notes.includes('spore_cleric_duel'), 'original identifies its replacement');
   const volos = baseMap.get('soiability_volos');
-  for (const text of ['M5', 'Free: gain 3 health.', 'Pay 1 gem: gain 2 power.', 'Pay 2 gems: draw 1 card.', 'Pay 3 gems: gain 1 mastery.'])
+  for (const text of ['M5', 'Free: gain 3 health.', 'Pay 1 gem: gain 3 power.', 'Pay 2 gems: draw 1 card.', 'Pay 3 gems: gain 1 mastery.'])
     assert(volos.text.includes(text), 'Volos has ' + text);
   assert(baseMap.get('soiability_tetra').text.includes('draw 2 cards'), 'Tetra reflects current engine');
   assert(baseKwMap.get('unify').meaning.includes('automatically'), 'Unify auto-reveal documented');
@@ -106,12 +106,17 @@ test('status detection', () => {
 
 test('keyword detection matches the census', () => {
   const kws = Object.fromEntries(B.keywords.map(k => [k.id, k]));
-  const cards = B.cards.filter(c => !c.types.includes('Character') && !c.types.includes('Hero Ability')); // census ran on the 189 defs (incl. Duel of Doom)
-  const live = cards.filter(c => c.id !== 'cloud_oracles');  // errata-superseded
-  eq(Core.keywordUsage(kws['unify'], live), 13, 'Unify count');
-  eq(Core.keywordUsage(kws['warp'], live), 6, 'Warp count');
-  eq(Core.keywordUsage(kws['dominion'], live), 6, 'Dominion count');
-  eq(Core.keywordUsage(kws['mastery-threshold'], live), 51, 'threshold count');
+  // The designer retains all 202 card printings, including original/replacement
+  // pairs. Count those definitions once each; hero and ability faces are separate.
+  const cards = B.cards.filter(c => !c.types.includes('Character') && !c.types.includes('Hero Ability'));
+  const expected = {
+    exhaust: 74, unify: 13, dominion: 8, allegiance: 4, inspire: 4, echo: 5,
+    warp: 8, 'mastery-threshold': 54, shield: 28, mercenary: 40,
+    'ingeminex-attack': 6, 'ingeminex-reward': 6
+  };
+  eq(Object.keys(expected).sort(), Object.keys(kws).sort(), 'every keyword has a census expectation');
+  for (const [id, count] of Object.entries(expected))
+    eq(Core.keywordUsage(kws[id], cards), count, id + ' count');
   assert(Core.cardHasKeyword(cards.find(c => c.id === 'ingeminex_agony'), kws['ingeminex-attack']), 'ingeminex type keyword');
   assert(Core.cardHasKeyword(cards.find(c => c.id === 'nil_assassin'), kws['mercenary']), 'mercenary type keyword');
 });

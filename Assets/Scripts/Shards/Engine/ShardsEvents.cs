@@ -35,6 +35,15 @@ namespace Shards.Engine
         public bool FastPlay;
     }
 
+    /// <summary>A fresh public copy created by DNA, placed directly in discard.</summary>
+    public sealed class ShardsCardCopiedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public int SourceInstanceId;
+        public int InstanceId;
+        public string DefId;
+    }
+
     public sealed class ShardsCardDrawnEvent : GameEvent
     {
         public int PlayerIndex;
@@ -66,6 +75,17 @@ namespace Shards.Engine
         public int SlotIndex;
         public string DefId;
     }
+
+    /// <summary>A publicly visible market card was put on the center deck's bottom,
+    /// whether by a paid reroll or a free card effect. Emitted before its refill.</summary>
+    public sealed class ShardsCenterCardBottomedEvent : GameEvent
+    {
+        public int InstanceId;
+        public string DefId;
+    }
+
+    /// <summary>The center deck was publicly shuffled. Contains no hidden identities.</summary>
+    public sealed class ShardsCenterDeckShuffledEvent : GameEvent { }
 
     /// <summary>Duel of Doom: a player used their hero's unique M5 ability.</summary>
     public sealed class ShardsHeroAbilityUsedEvent : GameEvent
@@ -169,6 +189,9 @@ namespace Shards.Engine
         public int PlayerIndex;
         /// <summary>Public by rule — revealing IS showing the cards.</summary>
         public List<string> DefIds = new();
+        /// <summary>Parallel identities of the selected cards publicly shown
+        /// FROM HAND. Passive in-play shields are not included.</summary>
+        public List<int> HandInstanceIds;
         public int Prevented;
     }
 
@@ -261,12 +284,37 @@ namespace Shards.Engine
         /// <summary>These cards are still in the player's hand after reveal.
         /// Personal-deck and center reveals leave this false.</summary>
         public bool FromHand;
+        /// <summary>Parallel public identities for a FromHand reveal. Null for
+        /// deck/center reveals; contains no unrevealed hand identities.</summary>
+        public List<int> HandInstanceIds;
+        /// <summary>Public deck-top provenance, parallel to DefIds. Null for other
+        /// reveals. These cards were shown by the effect; no hidden card is named.</summary>
+        public List<int> PersonalTopPlayers;
+        public List<int> PersonalTopInstanceIds;
+        /// <summary>The shown cards have already been removed from their decks
+        /// into the effect's temporary revealed-card window.</summary>
+        public bool RemovedFromPersonalTop;
+        /// <summary>Shown center-card identities, parallel to DefIds; present only
+        /// after the cards were publicly removed from the center top.</summary>
+        public List<int> CenterInstanceIds;
     }
 
     public sealed class ShardsMercenaryReturnedEvent : GameEvent
     {
         public int PlayerIndex;
+        public int InstanceId = -1;
         public string DefId;
+    }
+
+    /// <summary>Already-public cards held by a personal-deck reveal effect have
+    /// returned to their owner's face-up discard. Emitted before any later
+    /// effect can reshuffle/reveal them again. Lists are parallel; no hidden
+    /// personal-deck order or unrevealed hand identity is exposed.</summary>
+    public sealed class ShardsRevealedCardsDiscardedEvent : GameEvent
+    {
+        public int PlayerIndex;
+        public List<int> InstanceIds = new();
+        public List<string> DefIds = new();
     }
 
     public sealed class ShardsCleanupEvent : GameEvent

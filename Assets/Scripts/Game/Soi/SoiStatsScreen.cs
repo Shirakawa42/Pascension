@@ -275,6 +275,9 @@ namespace Pascension.Game.Soi
         private static string DeriveOpponentName(string identityKey)
         {
             if (string.IsNullOrEmpty(identityKey)) return "?";
+            foreach (var profile in new[] { SoiAiProfile.Auld, SoiAiProfile.Nyou })
+                if (identityKey == "shards-ai:" + profile.BotKind || identityKey == "bot:" + profile.BotKind)
+                    return profile.Name;
             return identityKey.StartsWith("bot:") ? "Bot (" + identityKey.Substring(4) + ")" : identityKey;
         }
 

@@ -82,6 +82,9 @@ namespace Pascension.Game.Soi
         private RectTransform _handRect;
         private PileWidget _drawPile, _playedPile, _discardPile, _banishPile, _centerDeckPile;
         private SoiDecisionModal _modal;
+        private SoiCombatReviewModal _combatReview;
+        private bool _combatAttackPending, _endTurnSubmitted;
+        private int _combatReviewRound;
         private SoiHeroDraftPanel _heroDraft;
         private CardListModal _cardList;
         private SoiOpponentDetailModal _opponentDetail;
@@ -305,19 +308,13 @@ namespace Pascension.Game.Soi
             _banishPile.Clicked += ShowBanishedByPlayer;
 
             // END TURN sits at the very bottom, below the discard pile (clear of its
-            // title text); RECRUIT RELIC directly to its left, pulsing once usable.
+            // title text); CLAIM RELIC directly to its left, pulsing once usable.
             _endTurn = UiFactory.CreateButton(Theme, "EndTurn", root, UI.Loc.T("END TURN"), 21f,
                 UiPalette.Gold, UiPalette.Background);
             UiFactory.Place((RectTransform)_endTurn.transform, new Vector2(1f, 0f), new Vector2(-108f, 62f), new Vector2(186f, 58f));
-            _endTurn.onClick.AddListener(() =>
-            {
-                // Optimistic: buying is over the moment END TURN is clicked — the
-                // affordable halos must not linger for the snapshot round-trip.
-                ClearAffordableGlows();
-                Submit(new ShardsEndTurnAction { PlayerIndex = MyIndex });
-            });
+            _endTurn.onClick.AddListener(OnEndTurnClicked);
             _endTurnLabel = UiFactory.ButtonLabel(_endTurn);
-            _relics = UiFactory.CreateButton(Theme, "Relics", root, UI.Loc.T("RECRUIT RELIC"), 14f);
+            _relics = UiFactory.CreateButton(Theme, "Relics", root, UI.Loc.T("CLAIM RELIC"), 14f);
             UiFactory.Place((RectTransform)_relics.transform, new Vector2(1f, 0f), new Vector2(-306f, 62f), new Vector2(186f, 58f));
             _relics.onClick.AddListener(OnRelicsClicked);
             _relics.gameObject.SetActive(false);
@@ -361,6 +358,7 @@ namespace Pascension.Game.Soi
             _cardList.Init(Theme);
             _opponentDetail = SoiOpponentDetailModal.Create(root, Theme);
             _modal = SoiDecisionModal.Create(root, Theme);
+            _combatReview = SoiCombatReviewModal.Create(root, Theme);
             // Duel of Doom hero draft (created before the hover preview so relic/thumbnail
             // hovers still preview ABOVE the draft panel).
             _heroDraft = SoiHeroDraftPanel.Create(root, Theme);
@@ -471,8 +469,8 @@ namespace Pascension.Game.Soi
 
         private Coroutine _relicPulse;
 
-        /// <summary>Pulse the RECRUIT RELIC button gold while it is usable (Mastery 10,
-        /// not yet recruited) so the free once-per-game pick is impossible to miss.</summary>
+        /// <summary>Pulse the CLAIM RELIC button gold while it is usable (Mastery 10,
+        /// not yet claimed) so the free once-per-game pick is impossible to miss.</summary>
         private void SetRelicGlow(bool on)
         {
             if (on)
@@ -502,19 +500,38 @@ namespace Pascension.Game.Soi
 
         private int MyIndex => _session.LocalPlayerIndex;
         private ShardsPlayerSnap Me => _snap != null ? _snap.Players[MyIndex] : null;
-        private bool MyPriority => _pending != null && _pending.PlayerIndex == MyIndex &&
-                                   _pending.Kind == PendingInputKind.Priority;
+        private bool MyPriority => !_endTurnSubmitted && _pending != null && _pending.PlayerIndex == MyIndex &&
+                                   _pending.Kind == PendingInputKind.Priority &&
+                                   _snap != null && !_snap.GameOver && _snap.Pending != null &&
+                                   _snap.Pending.PlayerIndex == MyIndex &&
+                                   _snap.Pending.Kind == (int)PendingInputKind.Priority;
 
         private void OnSnapshot(SnapshotBase snapshotBase)
         {
             _snap = snapshotBase as ShardsSnapshot;
             if (_snap == null) return;
+            if (_combatReview.Visible)
+            {
+                if (!CombatReviewIsCurrent) CloseCombatReview();
+                else
+                {
+                    // Snapshots arrive before the matching legal-action list. Never
+                    // allow a second attack against the previous defense/aura state.
+                    _combatReview.SetWaiting(true);
+                    _combatReview.Refresh(_snap, new List<ShardsAttackChampionAction>());
+                }
+            }
             _conditionGlow.Clear();
             _killable.Clear();
             _buyable.Clear();
             if (_snap.ConditionGlowIds != null) _conditionGlow.UnionWith(_snap.ConditionGlowIds);
             if (_snap.KillableIds != null) _killable.UnionWith(_snap.KillableIds);
             if (_snap.BuyableSlots != null) _buyable.UnionWith(_snap.BuyableSlots);
+            if (_preview != null && _preview.gameObject.activeSelf)
+            {
+                SoiCardFaces.ApplyChampionState(_preview, FindChampionSnap(_hoverInstanceId));
+                if (_hoverSource != null) ShowKeywordTips(_hoverSource);
+            }
             RefreshHandLive();
             if (_queue.IsIdle)
                 RefreshAll();
@@ -522,6 +539,12 @@ namespace Pascension.Game.Soi
 
         private void OnEvents(List<GameEvent> batch)
         {
+            // Confirmed kills animate above the combat panel while the next snapshot
+            // immediately updates the surviving champions and their defense auras.
+            foreach (var e in batch)
+                if (e is ShardsChampionDestroyedEvent destroyed)
+                    _combatReview?.MarkDestroyed(destroyed.InstanceId);
+
             // Drawn cards render hidden until their flight lands (mine only).
             foreach (var e in batch)
                 if (e is ShardsCardDrawnEvent drawn && drawn.PlayerIndex == MyIndex && drawn.InstanceId > 0)
@@ -548,6 +571,9 @@ namespace Pascension.Game.Soi
         private void OnInputRequested(PendingSnap pending)
         {
             _pending = pending;
+            _endTurnSubmitted = false;
+            _combatAttackPending = false;
+            RefreshCombatReview();
             bool myDecision = pending != null && pending.Kind == PendingInputKind.Decision &&
                               pending.PlayerIndex == MyIndex && pending.Decision != null;
 
@@ -570,20 +596,34 @@ namespace Pascension.Game.Soi
                     _deferredDecision = pending.Decision;
             }
             RefreshInteractivity();
+            if (_hoverSource != null && _preview != null && _preview.gameObject.activeSelf)
+                ShowKeywordTips(_hoverSource);
         }
 
-        private void OnActionRejected(string error) => _toast.Show(error);
+        private void OnActionRejected(string error)
+        {
+            _endTurnSubmitted = false;
+            _combatAttackPending = false;
+            RefreshCombatReview();
+            RefreshInteractivity();
+            _toast.Show(error);
+        }
 
         private void OnPauseChanged(PauseInfo info)
         {
             if (_pauseOverlay == null) return;
-            if (info != null && info.Paused) _pauseOverlay.ShowWaiting(info);
+            if (info != null && info.Paused)
+            {
+                CloseCombatReview();
+                _pauseOverlay.ShowWaiting(info);
+            }
             else _pauseOverlay.HideWaiting();
         }
 
         private void OnLocalClientDisconnected(string reason)
         {
             if (_pauseOverlay == null || _gameOverShown) return;
+            CloseCombatReview();
             _pauseOverlay.ShowConnectionLost(reason);
         }
 
@@ -594,6 +634,79 @@ namespace Pascension.Game.Soi
         }
 
         // ------------------------------------------------------------------ input handlers
+
+        private bool CombatReviewIsCurrent => MyPriority &&
+            _snap.TurnPlayerIndex == MyIndex && _snap.Round == _combatReviewRound;
+
+        private List<ShardsAttackChampionAction> CombatAttacks()
+        {
+            var attacks = new List<ShardsAttackChampionAction>();
+            if (!MyPriority || _snap.TurnPlayerIndex != MyIndex || _pending.LegalActions == null)
+                return attacks;
+            foreach (var action in _pending.LegalActions)
+                if (action is ShardsAttackChampionAction attack) attacks.Add(attack);
+            return attacks;
+        }
+
+        private void OnEndTurnClicked()
+        {
+            if (_pauseOverlay != null && _pauseOverlay.gameObject.activeSelf) return;
+            if (!MyPriority || _snap.TurnPlayerIndex != MyIndex || _combatAttackPending) return;
+            var attacks = CombatAttacks();
+            if (((ShardsDlc)_snap.Dlc & ShardsDlc.Duel) == 0 ||
+                attacks.Count == 0 || _snap.AutomaticEndTurnVictory)
+            {
+                CommitEndTurn();
+                return;
+            }
+            if (_buyPopup != null) _buyPopup.gameObject.SetActive(false);
+            _modal.Hide();
+            _opponentDetail.Hide();
+            ClearHover();
+            _combatReviewRound = _snap.Round;
+            _combatReview.Show(_snap, MyIndex, _maxHealth, attacks,
+                OnCombatChampionClicked, CommitEndTurn, CloseCombatReview);
+        }
+
+        private void RefreshCombatReview()
+        {
+            if (_combatReview == null || !_combatReview.Visible) return;
+            if (!CombatReviewIsCurrent) { CloseCombatReview(); return; }
+            _combatReview.Refresh(_snap, CombatAttacks());
+            _combatReview.SetWaiting(_combatAttackPending);
+        }
+
+        private void CloseCombatReview()
+        {
+            _combatReview?.Hide();
+            _combatAttackPending = false;
+        }
+
+        private void OnCombatChampionClicked(int instanceId)
+        {
+            if (!_combatReview.Visible || _combatAttackPending || !CombatReviewIsCurrent) return;
+            var attack = ChampionAttack(instanceId);
+            if (attack == null) { RefreshCombatReview(); return; }
+            // Local Submit calls back synchronously; mark busy before submitting.
+            _combatAttackPending = true;
+            _combatReview.SetWaiting(true);
+            Submit(attack);
+        }
+
+        private void CommitEndTurn()
+        {
+            if (!MyPriority || _snap.TurnPlayerIndex != MyIndex || _combatAttackPending) return;
+            ShardsEndTurnAction end = null;
+            if (_pending.LegalActions != null)
+                foreach (var action in _pending.LegalActions)
+                    if (action is ShardsEndTurnAction finish) { end = finish; break; }
+            if (end == null) return;
+            CloseCombatReview();
+            _endTurnSubmitted = true;
+            ClearAffordableGlows();
+            RefreshInteractivity();
+            Submit(end);
+        }
 
         private void OnHandPlayRequested(int instanceId)
         {
@@ -615,6 +728,29 @@ namespace Pascension.Game.Soi
             if (me.Gems < 1) { _toast.Show(UI.Loc.T("Focus costs 1 gem.")); return; }
             _portrait.SetTapped(true); // the portrait taps visually; the snapshot confirms
             Submit(new ShardsFocusAction { PlayerIndex = MyIndex });
+        }
+
+        private ShardsAttackChampionAction ChampionAttack(int instanceId)
+        {
+            if (!MyPriority || _snap?.TurnPlayerIndex != MyIndex || _pending.LegalActions == null) return null;
+            foreach (var action in _pending.LegalActions)
+                if (action is ShardsAttackChampionAction attack && attack.CardInstanceId == instanceId)
+                    return attack;
+            return null;
+        }
+
+        private void OnChampionClicked(int instanceId)
+        {
+            if (!MyPriority) { _toast.Show(UI.Loc.T("Not your turn.")); return; }
+            if (_snap == null || ((ShardsDlc)_snap.Dlc & ShardsDlc.Duel) == 0)
+            {
+                _toast.Show(UI.Loc.T("Champions are destroyed in the end-of-turn damage assignment."));
+                return;
+            }
+            var action = ChampionAttack(instanceId);
+            if (action == null)
+                _toast.Show(UI.Loc.T("This champion cannot be attacked right now."));
+            else Submit(action);
         }
 
         private void OnHeroAbilityClicked()
@@ -711,7 +847,7 @@ namespace Pascension.Game.Soi
             {
                 Id = -1,
                 PlayerIndex = MyIndex,
-                Title = UI.Loc.T("Recruit a relic (free, once per game)"),
+                Title = UI.Loc.T("Claim a relic (free, once per game)"),
                 Context = "local.relic",
                 Min = 0,
                 Max = 1
@@ -1133,7 +1269,7 @@ namespace Pascension.Game.Soi
             $"<color=#73AEF2>{player.Gems}</color><sprite name=\"soi_gem\">  " +
             $"<color=#E06C55>{player.Power}</color><sprite name=\"soi_power\">\n" +
             $"<size=14>{UI.Loc.T("played")} {player.PlayZone.Count} · " +
-            $"{UI.Loc.T(player.RelicRecruited ? "relic recruited" : "relic —")}\n" +
+            $"{UI.Loc.T(player.RelicRecruited ? "relic claimed" : "relic —")}\n" +
             $"{UI.Loc.T("hand")} {player.HandCount} · {UI.Loc.T("deck")} {player.DeckCount} · {UI.Loc.T("discard")} {player.Discard.Count}</size>";
 
         /// <summary>Life totals update the instant damage lands — never waiting for the
@@ -1216,6 +1352,7 @@ namespace Pascension.Game.Soi
             view.Rect.anchoredPosition = new Vector2(bandX, 4f);
             view.BindDef(card.DefId, card.InstanceId);
             view.SetTapped(card.Exhausted);
+            SoiCardFaces.ApplyChampionState(view, card);
             ApplyBoardGlow(view, card);
             _boardViews[card.InstanceId] = view;
             return view;
@@ -1258,10 +1395,7 @@ namespace Pascension.Game.Soi
                 var view = OpponentBandCard(rect, 0.3f, cx, champion);
                 cx += championStep;
                 view.SetMarkedDamage(champion.DamageThisTurn);
-                // Champions can't be attacked mid-turn — they die in the end-of-turn
-                // damage assignment (the red glow means "your split can kill this").
-                view.Clicked += _ => _toast.Show(
-                    UI.Loc.T("Champions are destroyed in the end-of-turn damage assignment."));
+                view.Clicked += w => OnChampionClicked(w.InstanceId);
             }
 
             float dx = 254f;
@@ -1347,8 +1481,7 @@ namespace Pascension.Game.Soi
                 var view = OpponentBandCard(rect, 0.44f, cx, champion);
                 cx += championStep;
                 view.SetMarkedDamage(champion.DamageThisTurn);
-                view.Clicked += _ => _toast.Show(
-                    UI.Loc.T("Champions are destroyed in the end-of-turn damage assignment."));
+                view.Clicked += w => OnChampionClicked(w.InstanceId);
             }
 
             float dx = destinyX;
@@ -1379,7 +1512,7 @@ namespace Pascension.Game.Soi
             {
                 _cardList.Show(title, cards);
                 _cardList.Container.SetAsLastSibling(); // above the detail modal
-            });
+            }, OnChampionClicked, _killable);
         }
 
         /// <summary>Keep an open detail sheet live: re-bind it to the current snapshot
@@ -1479,6 +1612,7 @@ namespace Pascension.Game.Soi
                 view.BindDef(champion.DefId, champion.InstanceId);
                 view.SetTapped(champion.Exhausted);
                 view.SetMarkedDamage(champion.DamageThisTurn);
+                SoiCardFaces.ApplyChampionState(view, champion);
                 ApplyBoardGlow(view, champion);
                 view.Clicked += w =>
                 {
@@ -1669,6 +1803,10 @@ namespace Pascension.Game.Soi
                     return PlayDraws(drawn.PlayerIndex, new List<int> { drawn.InstanceId });
                 case ShardsCardBoughtEvent bought:
                     return PlayBuy(bought);
+                case ShardsCardCopiedEvent copied:
+                    _history.AttachAffected(copied.PlayerIndex, copied.DefId);
+                    _history.Push(copied.DefId, copied.PlayerIndex, UI.Loc.T("copied to discard"));
+                    return PlayRecruitCopy(copied);
                 case ShardsRowRefilledEvent refilled:
                     return PlayRefill(refilled);
                 case ShardsDeckShuffledEvent shuffled:
@@ -1743,7 +1881,7 @@ namespace Pascension.Game.Soi
                 case ShardsDestinyTakenEvent destiny:
                     return PlayShowcase(destiny.PlayerIndex, destiny.DefId);
                 case ShardsRelicRecruitedEvent relic:
-                    _toast.Show(NameOf(relic.PlayerIndex) + UI.Loc.T(" recruits ") + DefName(relic.DefId));
+                    _toast.Show(NameOf(relic.PlayerIndex) + UI.Loc.T(" claims ") + DefName(relic.DefId));
                     return PlayShowcase(relic.PlayerIndex, relic.DefId);
                 case ShardsCardBanishedEvent banished:
                     return PlayBanish(banished);
@@ -1886,6 +2024,15 @@ namespace Pascension.Game.Soi
                 : AnchorOf(bought.PlayerIndex, null);
             yield return _flights.Fly(_queue, bought.DefId, from, to, 0.62f, 0.4f, 0.42f);
             if (bought.PlayerIndex == MyIndex) _discardPile.Pulse();
+        }
+
+        private IEnumerator PlayRecruitCopy(ShardsCardCopiedEvent copied)
+        {
+            Vector2 from = AnchorOf(copied.PlayerIndex, _ownDestinyRow);
+            Vector2 to = copied.PlayerIndex == MyIndex
+                ? _flights.ToLocal(_discardPile.AnchorRect) : AnchorOf(copied.PlayerIndex, null);
+            yield return _flights.Fly(_queue, copied.DefId, from, to, 0.5f, 0.4f, 0.4f);
+            if (copied.PlayerIndex == MyIndex) _discardPile.Pulse();
         }
 
         private IEnumerator PlayRefill(ShardsRowRefilledEvent refilled)
@@ -2106,6 +2253,7 @@ namespace Pascension.Game.Soi
                 if (!sameCard)
                 {
                     _preview.BindDef(view.DefId);
+                    SoiCardFaces.ApplyChampionState(_preview, FindChampionSnap(view.InstanceId));
                     ShowKeywordTips(view);
                 }
                 BroadcastLocalHover(view, true);
@@ -2141,15 +2289,42 @@ namespace Pascension.Game.Soi
         /// stacked to the RIGHT of the fixed preview, explaining how the keyword
         /// activates. Real cards only (InstanceId > 0) — history-bar hover proxies
         /// keep the space free for their own "affected cards" panel.</summary>
+        private ShardsCardSnap FindChampionSnap(int instanceId)
+        {
+            if (_snap == null || instanceId <= 0) return null;
+            foreach (var player in _snap.Players)
+                foreach (var card in player.Champions)
+                    if (card.InstanceId == instanceId) return card;
+            return null;
+        }
+
         private void ShowKeywordTips(CardView source)
         {
             HideKeywordTips();
             if (source.InstanceId <= 0) return;
             if (!ShardsCardDatabase.TryGet(source.DefId, out var def)) return;
             var entries = SoiKeywordGlossary.For(def);
+            var champion = FindChampionSnap(source.InstanceId);
+            if (champion != null && champion.TemporaryDefenseUntilNextTurn > 0)
+                entries.Insert(0, new SoiKeywordGlossary.Entry("Temporary defense",
+                    "+{0} defense until this champion's controller starts their next turn.",
+                    champion.TemporaryDefenseUntilNextTurn.ToString()));
+            var attack = ChampionAttack(source.InstanceId);
+            if (attack != null)
+                entries.Insert(0, new SoiKeywordGlossary.Entry("Champion combat",
+                    "Click this champion to attack for {0} power.", attack.Amount.ToString()));
+            if (def.Id == "dna" && _snap != null)
+                foreach (var player in _snap.Players)
+                    if (player.PendingRecruitCopies > 0 && player.Destinies.Exists(c => c.InstanceId == source.InstanceId))
+                        entries.Insert(0, new SoiKeywordGlossary.Entry("DNA armed",
+                            "The next card recruited this turn creates {0} additional copies in discard.",
+                            player.PendingRecruitCopies.ToString()));
             if (_snap != null && _snap.InitialCardCounts.TryGetValue(def.Id, out int copies))
                 entries.Insert(0, new SoiKeywordGlossary.Entry("Copies in this game",
                     copies == 1 ? "1 copy at the start of this game." : "{0} copies at the start of this game.", copies.ToString()));
+            if (_snap != null && _snap.GeneratedCardCounts.TryGetValue(def.Id, out int generated) && generated > 0)
+                entries.Insert(System.Math.Min(1, entries.Count), new SoiKeywordGlossary.Entry("Additional copies",
+                    "{0} additional copies created during this game.", generated.ToString()));
 
             if (_keywordTips == null)
             {
@@ -2261,6 +2436,7 @@ namespace Pascension.Game.Soi
                     _hoverDefId = _hoverSource.DefId;
                     _hoverInstanceId = _hoverSource.InstanceId;
                     _preview.BindDef(_hoverDefId);
+                    SoiCardFaces.ApplyChampionState(_preview, FindChampionSnap(_hoverInstanceId));
                     ShowKeywordTips(_hoverSource);
                 }
             }

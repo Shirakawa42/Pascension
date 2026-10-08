@@ -70,6 +70,9 @@ namespace Shards.Engine
         public bool FastPlayed;
         /// <summary>Champion/Ingeminex damage marked THIS turn — clears every end phase.</summary>
         public int DamageThisTurn;
+        /// <summary>Granted champion defense, expiring at the start of its owner's next turn.
+        /// Leaves with the recipient, not the source that granted it.</summary>
+        public int TemporaryDefenseUntilNextTurn;
         /// <summary>Reactor Drone (Duel) mode 2: this play-zone card is BANISHED at cleanup
         /// instead of going to the discard pile.</summary>
         public bool BanishAtCleanup;
@@ -167,6 +170,9 @@ namespace Shards.Engine
         /// shields also reduce the damage assigned to EACH of their champions individually
         /// in the end-turn split resolution.</summary>
         public bool ShieldsProtectChampions;
+        /// <summary>While this champion is in play, each actual positive-shield card
+        /// play grants this much temporary defense to every currently controlled champion.</summary>
+        public int ChampionDefensePerShieldPlay;
         /// <summary>Datic Robes (Duel M20): passive shield granted while this card sits in
         /// the owner's DISCARD pile: (owner) → value (0 = inactive).</summary>
         public System.Func<ShardsPlayer, int> DiscardPassiveShield;

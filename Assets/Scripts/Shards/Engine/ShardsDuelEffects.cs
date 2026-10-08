@@ -61,7 +61,7 @@ namespace Shards.Engine
         public static string Text(int mode) => mode switch
         {
             0 => "Free: gain 3 health.",
-            1 => "Pay 1 gem: gain 2 power.",
+            1 => "Pay 1 gem: gain 3 power.",
             2 => "Pay 2 gems: draw 1 card.",
             3 => "Pay 3 gems: gain 1 mastery.",
             _ => null
@@ -69,7 +69,7 @@ namespace Shards.Engine
         public static Gain Effect(int mode) => mode switch
         {
             0 => new Gain { Health = 3 },
-            1 => new Gain { Power = 2 },
+            1 => new Gain { Power = 3 },
             2 => new Gain { Draw = 1 },
             3 => new Gain { Mastery = 1 },
             _ => null

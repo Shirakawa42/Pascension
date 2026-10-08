@@ -629,14 +629,21 @@ namespace Pascension.Engine.Tests
             // shuffle them back into the center deck: none active, none in the row, none
             // lost. (RotF keeps Corruption in the deck so the count is exact.)
             var dlc = ShardsDlc.IntoTheHorizon | ShardsDlc.RelicsOfTheFuture;
-            int expectedMonsters = 0;
-            foreach (var def in ShardsCardDatabase.All)
-                if (def.IsMonster) expectedMonsters += def.Quantity;
-            Assert.Greater(expectedMonsters, 0, "ItH must contribute Ingeminex");
-
             for (ulong seed = 1; seed <= 40; seed++)
             {
-                var st = NewGame(dlc, seed: seed).State;
+                var engine = NewGame(dlc, seed: seed);
+                var st = engine.State;
+                int expectedMonsters = 0;
+                // The registry also contains disabled Duel replacements. Only the
+                // enabled initial stock belongs to this non-Duel game.
+                foreach (var item in engine.InitialCardCounts())
+                    if (ShardsCardDatabase.Get(item.Key).IsMonster)
+                    {
+                        expectedMonsters += item.Value;
+                        Assert.AreEqual(item.Value, st.CenterDeck.FindAll(c => c.DefId == item.Key).Count,
+                            "seed " + seed + ": conserve each enabled monster identity " + item.Key);
+                    }
+                Assert.AreEqual(5, expectedMonsters, "The original ItH pool with Corruption has five Ingeminex");
                 Assert.AreEqual(0, st.ActiveMonsters.Count, "seed " + seed + ": no active Ingeminex at setup");
                 Assert.AreEqual(0, st.PendingMonsterAttacks.Count, "seed " + seed + ": no pending monster attacks at setup");
                 foreach (var slot in st.CenterRow)

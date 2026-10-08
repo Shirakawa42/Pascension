@@ -34,6 +34,8 @@ namespace Pascension.Game.Soi
 
         private ShardsPlayerSnap _shown;
         private Action<string, List<CardSnap>> _browse;
+        private Action<int> _attackChampion;
+        private ISet<int> _killable;
 
         public bool Visible => _root != null && _root.gameObject.activeSelf;
         /// <summary>Seat currently displayed (-1 when hidden) — lets the host screen
@@ -117,10 +119,13 @@ namespace Pascension.Game.Soi
             rect.gameObject.SetActive(false);
         }
 
-        public void Show(ShardsPlayerSnap player, int maxHealth, Action<string, List<CardSnap>> browse)
+        public void Show(ShardsPlayerSnap player, int maxHealth, Action<string, List<CardSnap>> browse,
+            Action<int> attackChampion = null, ISet<int> killable = null)
         {
             _shown = player;
             _browse = browse;
+            _attackChampion = attackChampion;
+            _killable = killable;
             ShownIndex = player.Index;
 
             _portrait.BindDef(SoiCardFaces.CharacterPrefix + player.CharacterId);
@@ -134,7 +139,7 @@ namespace Pascension.Game.Soi
                 $"<color=#E06C55>{player.Power}</color><sprite name=\"soi_power\">";
             _counts.text = $"{Loc.T("hand")} {player.HandCount} · {Loc.T("deck")} {player.DeckCount} · " +
                            $"{Loc.T("discard")} {player.Discard.Count} · {Loc.T("played")} {player.PlayZone.Count}" +
-                           (player.RelicRecruited ? Loc.T(" · relic recruited") : "");
+                           (player.RelicRecruited ? Loc.T(" · relic claimed") : "");
 
             foreach (Transform child in _championRow) Destroy(child.gameObject);
             foreach (Transform child in _destinyRow) Destroy(child.gameObject);
@@ -176,6 +181,12 @@ namespace Pascension.Game.Soi
                 {
                     view.SetTapped(card.Exhausted);
                     view.SetMarkedDamage(card.DamageThisTurn);
+                    SoiCardFaces.ApplyChampionState(view, card);
+                }
+                if (ShardsCardDatabase.TryGet(card.DefId, out var def) && def.IsChampion)
+                {
+                    view.SetGlow(_killable?.Contains(card.InstanceId) == true, UiPalette.WoundedRed);
+                    view.Clicked += w => _attackChampion?.Invoke(w.InstanceId);
                 }
             }
         }

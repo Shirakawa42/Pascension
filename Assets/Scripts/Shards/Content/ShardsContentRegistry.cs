@@ -13,7 +13,7 @@ namespace Shards.Content
         {
             if (ShardsCardDatabase.TryGet("crystal", out _) &&
                 ShardsCardDatabase.TryGet("ingeminex_malice", out _) &&
-                ShardsCardDatabase.TryGet("testudo_vanguard", out _))
+                ShardsCardDatabase.TryGet("dna", out _))
                 return;
             ShardsCardDatabase.Clear();
             ShardsBaseSet.Register();

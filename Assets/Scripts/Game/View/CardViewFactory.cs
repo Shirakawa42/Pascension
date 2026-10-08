@@ -89,6 +89,7 @@ namespace Pascension.Game.View
             UiFactory.Stretch(hpText.rectTransform);
             hpGroup.gameObject.SetActive(false);
             view.HpGroup = hpGroup.gameObject;
+            view.HpBadge = hpBadge;
             view.HpText = hpText;
 
             // Shield badge (Shards of Infinity): a big shield icon with the count on it,

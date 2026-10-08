@@ -33,6 +33,17 @@ namespace Pascension.Game.Soi
             CardView.ExternalFaceResolver = Resolve;
         }
 
+        /// <summary>Use the host's live champion defense on board and preview faces.</summary>
+        public static void ApplyChampionState(CardView view, ShardsCardSnap card)
+        {
+            if (view == null || card == null ||
+                !ShardsCardDatabase.TryGet(card.DefId, out var def) || !def.IsChampion) return;
+            int remaining = System.Math.Max(0, card.EffectiveDefense - card.DamageThisTurn);
+            view.SetBadge(remaining.ToString(), remaining > def.Defense ? UiPalette.HealthyGreen
+                : remaining < def.Defense ? UiPalette.WoundedRed : Color.white);
+            view.SetMarkedDamage(card.DamageThisTurn);
+        }
+
         public static CardView.ExternalFace? Resolve(string defId)
         {
             if (defId.StartsWith(VolosAbilityChoice.FacePrefix) &&

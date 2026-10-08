@@ -107,7 +107,7 @@ namespace Pascension.Game.Soi
             _abilityCard.SetRaycastable(false);
 
             _relicLabel = UiFactory.CreateText(_theme, "RelicLabel", _infoPanel,
-                UI.Loc.T("RELICS — recruit one free at Mastery 10"), 16f,
+                UI.Loc.T("RELICS — claim one free at Mastery 10"), 16f,
                 UiPalette.TextDim, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             UiFactory.Place(_relicLabel.rectTransform, new Vector2(0f, 1f), new Vector2(28f, -226f), new Vector2(620f, 24f));
             _relicRow = UiFactory.CreateRect("Relics", _infoPanel);

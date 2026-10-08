@@ -11,6 +11,9 @@ namespace Shards.Engine
         public bool Exhausted;
         /// <summary>Champion/Ingeminex damage marked this turn.</summary>
         public int DamageThisTurn;
+        public int TemporaryDefenseUntilNextTurn;
+        /// <summary>Current defense including public auras and temporary grants.</summary>
+        public int EffectiveDefense;
         /// <summary>Owning player (-1 = market card). Lets the banish browser group
         /// cards by who banished them.</summary>
         public int Owner = -1;
@@ -25,6 +28,7 @@ namespace Shards.Engine
         public int Mastery;
         public int Gems;
         public int Power;
+        public int PendingRecruitCopies;
         public bool CharacterExhausted;
         public bool FocusedThisTurn;
         public bool HeroAbilityUsedThisTurn; // Duel
@@ -64,6 +68,7 @@ namespace Shards.Engine
         public int WinnerIndex;
 
         public Dictionary<string, int> InitialCardCounts = new();
+        public Dictionary<string, int> GeneratedCardCounts = new();
         public int CenterDeckCount;
         public List<ShardsCardSnap> CenterRow = new();
         /// <summary>Shared face-up destiny row (ItH) — public.</summary>
@@ -74,6 +79,9 @@ namespace Shards.Engine
         public List<ShardsCardSnap> Banished = new();
         public List<ShardsPlayerSnap> Players = new();
         public PendingSnapInfo Pending;
+        /// <summary>The viewer can end their turn now for an automatic overwhelming-
+        /// power victory. Host-derived from public health and power; bypasses guards.</summary>
+        public bool AutomaticEndTurnVictory;
 
         /// <summary>Instance ids whose conditional effect (Unify/Dominion/If/per-count…;
         /// mastery thresholds deliberately excluded — they'd glow forever) is satisfied
@@ -115,7 +123,13 @@ namespace Shards.Engine
                 GameOver = state.GameOver,
                 WinnerIndex = state.WinnerIndex,
                 InitialCardCounts = engine.InitialCardCounts(),
-                CenterDeckCount = state.CenterDeck.Count
+                GeneratedCardCounts = new Dictionary<string, int>(state.GeneratedCardCounts),
+                CenterDeckCount = state.CenterDeck.Count,
+                AutomaticEndTurnVictory = viewerIndex >= 0 && viewerIndex < state.Players.Count &&
+                    state.TurnPlayerIndex == viewerIndex &&
+                    engine.PendingInput?.Kind == PendingInputKind.Priority &&
+                    engine.PendingInput.PlayerIndex == viewerIndex &&
+                    engine.WouldEndTurnWinAutomatically(state.Players[viewerIndex])
             };
 
             foreach (var card in state.CenterRow)
@@ -135,6 +149,7 @@ namespace Shards.Engine
                     Mastery = player.Mastery,
                     Gems = player.Gems,
                     Power = player.Power,
+                    PendingRecruitCopies = player.PendingRecruitCopies,
                     CharacterExhausted = player.CharacterExhausted,
                     FocusedThisTurn = player.FocusedThisTurn,
                     HeroAbilityUsedThisTurn = player.HeroAbilityUsedThisTurn,
@@ -149,7 +164,12 @@ namespace Shards.Engine
                 };
                 foreach (var card in player.Discard) snap.Discard.Add(Snap(card));
                 foreach (var card in player.PlayZone) snap.PlayZone.Add(Snap(card));
-                foreach (var card in player.Champions) snap.Champions.Add(Snap(card));
+                foreach (var card in player.Champions)
+                {
+                    var championSnap = Snap(card);
+                    championSnap.EffectiveDefense = engine.EffectiveDefense(player, card);
+                    snap.Champions.Add(championSnap);
+                }
                 foreach (var card in player.Destinies) snap.Destinies.Add(Snap(card));
                 if (player.Index == viewerIndex)
                 {
@@ -236,7 +256,10 @@ namespace Shards.Engine
                     Lit(card.Def.ExhaustEffect, viewerIndex, card))
                     snapshot.ConditionGlowIds.Add(card.InstanceId);
 
-            if (viewer.Eliminated) return;
+            // Duel kill glows are actionable mid-turn attacks. They must disappear
+            // during every decision, including the opponent's end-turn shield prompt.
+            // Non-Duel retains the historical preview of possible split targets.
+            if (viewer.Eliminated || (state.Dlc & ShardsDlc.Duel) != 0 && !viewerCanBuy) return;
             foreach (var opponent in state.LivingOpponentsOf(viewerIndex))
                 foreach (var champion in opponent.Champions)
                 {
@@ -259,6 +282,8 @@ namespace Shards.Engine
             DefId = card.DefId,
             Exhausted = card.Exhausted,
             DamageThisTurn = card.DamageThisTurn,
+            TemporaryDefenseUntilNextTurn = card.TemporaryDefenseUntilNextTurn,
+            EffectiveDefense = card.Def.Defense + card.TemporaryDefenseUntilNextTurn,
             Owner = card.Owner
         };
     }
