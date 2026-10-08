@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "scope": "Actual frozen production evaluate_match loop, fake CPU actors/hosts only; no real games/GPU",
+  "planned_games": 4000,
+  "unique_paired_seeds": 2000,
+  "host_launches": 80,
+  "wins_a": 3764,
+  "censored_games": 236,
+  "score_a": null,
+  "pairing_and_partial_batch_parity": true,
+  "cuda_initialized": false,
+  "probe_source_sha256": "c8c15d90fb825f7afef711959e483914c9105dbf017a9c00f530d0c4124265c5",
+  "production_evaluate_match_sha256": "b424b6a89e8bcbf371794783882ac113e7dfca5bec3777548f481c1bced9f4c3",
+  "review_scope": "Actual production match loop with synthetic CPU hosts/actors; no validation of real CUDA kernels or real-game strength."
+}

@@ -1,0 +1,37 @@
+{
+  "generations": 49,
+  "start_generation": 8762,
+  "end_generation": 8811,
+  "completed_games": 12544,
+  "censored_games": 0,
+  "accepted_optimizer_steps": 6169,
+  "rejected_minibatches": 1,
+  "max_behavior_logp_error": 7.390975952148438e-05,
+  "max_behavior_value_error": 2.1904706954956055e-06,
+  "all_finite": true,
+  "pilot_medians": {
+    "seconds": 2.915258670000185,
+    "collection_seconds": 2.4492103199954727,
+    "actor_seconds": 1.0335528899158817,
+    "host_seconds": 1.0164625199467991,
+    "storage_seconds": 0.2239827300873003,
+    "learning_seconds": 0.32883434999530436,
+    "verification_seconds": 0.06449129999964498,
+    "learning_rows": 85661
+  },
+  "preceding_v8_medians": {
+    "seconds": 2.8269453600005363,
+    "collection_seconds": 2.3819807700056117,
+    "actor_seconds": 1.0203029100375716,
+    "host_seconds": 0.9522853197631775,
+    "storage_seconds": 0.21513240010244772,
+    "learning_seconds": 0.3312052199980826,
+    "verification_seconds": 0.06626780999795301,
+    "learning_rows": 86195
+  },
+  "performance_scope": "Adjacent-run descriptive windows, differing trajectories; excludes evaluation, not a controlled speed comparison",
+  "generation_time_ratio": 1.0312398362024344,
+  "pilot_rows_per_second": 28688.937336751773,
+  "v8_rows_per_second": 29882.95262315302,
+  "passes_pilot_gates": true
+}

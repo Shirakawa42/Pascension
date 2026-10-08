@@ -1,0 +1,14 @@
+test_process_factory_strips_inherited_settings_and_only_explicit_context_enables (test_runtime_v4.RoutingTests.test_process_factory_strips_inherited_settings_and_only_explicit_context_enables) ... ok
+test_real_cpu_actor_five_steps_training_and_eval_routing (test_runtime_v4.RoutingTests.test_real_cpu_actor_five_steps_training_and_eval_routing) ... ok
+test_training_constructor_context_resets_on_failure (test_runtime_v4.RoutingTests.test_training_constructor_context_resets_on_failure) ... ok
+test_active_or_locked_ledger_rejected (test_runtime_v4.RuntimeMigrationTests.test_active_or_locked_ledger_rejected) ... ok
+test_cross_campaign_and_charge_ahead_rejected (test_runtime_v4.RuntimeMigrationTests.test_cross_campaign_and_charge_ahead_rejected) ... ok
+test_exact_identity_catalog_and_all_payload_preservation (test_runtime_v4.RuntimeMigrationTests.test_exact_identity_catalog_and_all_payload_preservation) ... ok
+test_identity_drift_or_installed_runtime_rejected (test_runtime_v4.RuntimeMigrationTests.test_identity_drift_or_installed_runtime_rejected) ... ok
+test_source_configuration_and_partial_boundary_rejected (test_runtime_v4.RuntimeMigrationTests.test_source_configuration_and_partial_boundary_rejected) ... ok
+test_temporary_publication_strict_reload_no_overwrite (test_runtime_v4.RuntimeMigrationTests.test_temporary_publication_strict_reload_no_overwrite) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 12.005s
+
+OK

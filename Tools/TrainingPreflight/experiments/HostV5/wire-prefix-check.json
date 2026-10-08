@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "catalog_bytes_unchanged": true,
+  "cases": [
+    {
+      "shared": false,
+      "fused": false,
+      "passed": true,
+      "initial_forced_lanes": 22,
+      "initial_natural_lanes": 10,
+      "suffix_steps": 4,
+      "administrative_concession_fixtures": 1,
+      "complete_matches_simulated": 0,
+      "optimizer_updates": 0
+    },
+    {
+      "shared": false,
+      "fused": true,
+      "passed": true,
+      "initial_forced_lanes": 22,
+      "initial_natural_lanes": 10,
+      "suffix_steps": 4,
+      "administrative_concession_fixtures": 1,
+      "complete_matches_simulated": 0,
+      "optimizer_updates": 0
+    },
+    {
+      "shared": true,
+      "fused": false,
+      "passed": true,
+      "initial_forced_lanes": 22,
+      "initial_natural_lanes": 10,
+      "suffix_steps": 4,
+      "administrative_concession_fixtures": 1,
+      "complete_matches_simulated": 0,
+      "optimizer_updates": 0
+    },
+    {
+      "shared": true,
+      "fused": true,
+      "passed": true,
+      "initial_forced_lanes": 22,
+      "initial_natural_lanes": 10,
+      "suffix_steps": 4,
+      "administrative_concession_fixtures": 1,
+      "complete_matches_simulated": 0,
+      "optimizer_updates": 0
+    }
+  ],
+  "scope": "CPU prefixes, exact wire/manual-setup parity and single-action auto-reset fixtures only"
+}

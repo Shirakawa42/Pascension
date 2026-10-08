@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><AssemblyName>MatchupBenchmarkHost</AssemblyName><TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion><Nullable>disable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../MatchupBenchmark/Host/*.cs" Exclude="../MatchupBenchmark/Host/LaneWorkers.cs" />
+    <Compile Include="../../Assets/Scripts/Core/**/*.cs" LinkBase="Core" />
+    <Compile Include="../../Assets/Scripts/Shards/Engine/**/*.cs" LinkBase="Engine" />
+    <Compile Include="../../Assets/Scripts/Shards/Content/**/*.cs" LinkBase="Content" />
+    <Compile Include="../../Assets/Scripts/Shards/AI/**/*.cs" Exclude="../../Assets/Scripts/Shards/AI/FrozenPolicy.cs" LinkBase="Incumbent" />
+    <Compile Include="../BalancePatchHost/EffectDescriptors.cs" Link="EffectDescriptors.cs" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

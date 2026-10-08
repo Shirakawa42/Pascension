@@ -1,0 +1,37 @@
+{
+  "evaluation_only": true,
+  "optimizer_updates": 0,
+  "policy_sha256": {
+    "before-rez": "cfb37fdb1dac6c6637cb0eacafa4629caf00bf2a2d2967c70943b0666961faca",
+    "block-001": "8543a2a6a27fcabe4ab1ccf191715f6f355ef85f2090ba7212f8a15cd7ea5455",
+    "block-002": "bb7f3acdc811395d7687f070785fefcba488c384067ea34d85a76e7d72450a5c",
+    "current": "f15c9d40644f6ef7e84ebf44d325ec4d6f3bae771e3f6ac7f7904a52baf4a177"
+  },
+  "source_sha256": {
+    "Tools/PolicyVerify/HeroTactics.cs": "3a3f7d48db01faa96ba851e7f05be4c9c51beb6bfd1a659a66b02a10bbed5b70",
+    "Tools/PolicyVerify/EffectStructureAudit.cs": "10d2ea400ddebcc09dc506a2000a69c512a4ff1eb2f73c073b9586b2745e5b4c",
+    "Tools/PolicyVerify/Program.cs": "adda7a20ee4020b3b862a228dcd4de200f90e02d2d44ee37b654a0390c9c72bb",
+    "Tools/TrainingPreflight/hero_tactical_gate.py": "1aea920c69c584c1c0dbea60dedfa0ec9c566da3c6dd0b0ee246c0a15a0ca3b9",
+    "Assets/Scripts/Shards/AI/Encoder.cs": "167c435853583a03d34a3746cc27ca20dcf9d1f378f70bdec86c60335ae584eb",
+    "Assets/Scripts/Shards/AI/FrozenPolicy.cs": "3d872787daf185684a843e8fd4b780c4c29debcd726ea8007105a23ec672682a",
+    "Tools/RezTrainingHost/EffectDescriptors.cs": "b1467fac8e9124b141b1a7667626d16da1c664b76f61786470e286a29b7ecb45"
+  },
+  "result_sha256": {
+    "before-rez.json": "04dda7113541a3fd20d75eea9037095bcb21031fa9e7e22906dc489e93beaa64",
+    "block-001.json": "d7e11203628c0d681e208d87a6accbcaa3915562d8e020b69a405034aabdfdb1",
+    "block-002.json": "ec863ba9b1d5ee62c7629bf5eee940481a7e8c6d0550841104101f54f4b0dd95",
+    "current-gate.json": "c61591849bb1df1972437591eab6beb11fa49228e7cd3c42524f874703c0823a",
+    "current.json": "d997db58d0422029fb508f6d1a85cb05765221bf499f6dbdfc72175d08dcf89c",
+    "effect-structure.json": "5ead2ccd595826e16223f038abf6c3fb9e8a2957dd0504045077b73905e76a19"
+  },
+  "policy_rollouts_per_model": 4608,
+  "total_policy_rollouts": 18432,
+  "current_gate": {
+    "passed": false,
+    "threshold": 0.95,
+    "cases": 32,
+    "passing_cases": 3,
+    "constructed_positions": 512,
+    "policy_rollouts": 4608
+  }
+}

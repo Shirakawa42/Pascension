@@ -1,0 +1,11 @@
+{
+  "Assets/Scripts/Shards/AI/HybridLookahead.cs": "3b8661083edef2e5f7482afad54c07f90b31bb44cfa9314d723beceab82f8f6d",
+  "Assets/Scripts/Shards/AI/HybridMenuRollouts.cs": "bdc031b6c10c9ee3dd2eff978c06b2074171fc90386397703b359dbd6d4831f7",
+  "Assets/Scripts/Shards/AI/MenuPlanning.cs": "e7763dc849a76b6d75f91f6ba39007655b3f52d91e45a788f04168049f9e96a5",
+  "Assets/Scripts/Shards/AI/SequenceRepairs.cs": "40d3f6dbf551981095e70bb09d02a4d62bb716fcbec0e3ec73754b3be565023a",
+  "Assets/Scripts/Shards/AI/SafeTurnGains.cs": "e7ebc3b00c721fa16ecfb9fa521a5abc1ba15ddcb95e63fd94f295e8a2bbee57",
+  "Assets/Scripts/Shards/AI/ScryPlanning.cs": "86ae8ce9647270546d5d84f73b610c61873819b96f269545e1ac1ccc2274b4e0",
+  "Assets/Scripts/Shards/AI/NoEffectPlans.cs": "04938f899c604182af609798b369eed2fe879f0f890b47f7b4ebceb1295123dc",
+  "Assets/Scripts/Shards/AI/SetupPlanning.cs": "9a652288bbee6d5c0317e46c924ddd5e217e9493d88f29e519c34442797d77b9",
+  "Assets/Scripts/Shards/AI/TacticalSearch.cs": "11cddfdd3a706ef560f5b34c2d5c2ea79a0ffda9faee212b302e15acfa0382ae"
+}

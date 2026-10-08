@@ -1,0 +1,19 @@
+{
+  "Tools/ZeroDepthTraining/Host/Adapter.cs": "49c0e2c6a277fa9e415887f0540bef2ded17bfce6e881bdec516604644c14a54",
+  "Tools/ZeroDepthTraining/Host/Encoder.cs": "9cddf22b5cb2d3a768516d9e1327edccff68445bf700cf4d6eac23702fbd0e4f",
+  "Tools/ZeroDepthTraining/Host/Knowledge.cs": "f50f8564cbc73020bb1654e0fad3449fc5e483ee253fa9aba59c7afd172d9cf8",
+  "Tools/DepthTraining/Host/DepthCopy.cs": "f551291a2eb9dd8be46c3b0bbc3fd34fbec2ec3beafac4ccf2bf26e07933aefb",
+  "Tools/DepthTraining/Host/PublicWorld.cs": "9886a5c804923ff21dc0f6975c2eaa0f27286a755db4d64f96fc2c3a4340c779",
+  "Tools/DepthTraining/Host/Hybrid/FutureScryRollouts.cs": "7b89d5101611ba151a78dcf5c8217ddfc320da2a4ec5344a19c01d6a9dc1268c",
+  "Tools/DepthTraining/Host/Hybrid/HybridKnowledge.cs": "79f6793d5a38bc0eeda59a35838e1d9d687b0a0496591d61b2288a8244f341ee",
+  "Tools/DepthTraining/Host/Hybrid/HybridLookahead.cs": "97a72e2141d31e0106fea4772d8f79ae502c7a968068fbd1e6cd4fcaf764a03e",
+  "Tools/DepthTraining/Host/Hybrid/HybridMenuRollouts.cs": "de10f02b837d0b767fc885e81e20507e75ea0de832cdbb68531b6a5eeb3314b0",
+  "Tools/DepthTraining/Host/Hybrid/MarketPlanning.cs": "65aa6c259e73f34de6ac168722111196195d4f26d89b309d464979b70f64b230",
+  "Tools/DepthTraining/Host/Hybrid/MenuPlanning.cs": "5caf98b36295e5daeefde42f26490c51d768dc204afb9b454f8ae2812d63929f",
+  "Tools/DepthTraining/Host/Hybrid/NoEffectPlans.cs": "d9a35280158a29d21488ccc9fc2663317300bf3885f47248161e601c16be2c16",
+  "Tools/DepthTraining/Host/Hybrid/SafeTurnGains.cs": "39c69d81413f9aff6b5d7cb6e6a3eaa53e24c0e66d54157f62e9d4d7a37bd783",
+  "Tools/DepthTraining/Host/Hybrid/ScryPlanning.cs": "86ee405b0d0911c6b07f777d07ecbe9dd37514ae7257b20a0f71e09f17301674",
+  "Tools/DepthTraining/Host/Hybrid/SequenceRepairs.cs": "74c9a03f5d59ec9c4191709074fe7de26cd60540b3c4aaf13320440829bbecef",
+  "Tools/DepthTraining/Host/Hybrid/SetupPlanning.cs": "6346d17dbf9cf97fbdc986b3c86452c5c8f0229d22c2b6a96dd3933b0fb16ab8",
+  "Tools/DepthTraining/Host/Hybrid/TacticalSearch.cs": "ca4f5a926427ccc62533ebdd54a06f7a28a199f48b98caa403ab861c9bbda0d1"
+}

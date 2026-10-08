@@ -1,0 +1,3151 @@
+{
+  "schema": "shards-catchup-value-analysis-v1",
+  "proposal_version": "2026-10-08-v4",
+  "compared_proposal_version": "2026-10-08-v3",
+  "method": [
+    "Compare printed costs and separate resource outputs; no universal gem/power/mastery exchange rate is assumed.",
+    "Trigger probabilities 0%, 25%, 50%, 75%, 100% are sensitivity inputs, not measured gameplay frequencies.",
+    "Warp availability = 1 - choose(N-K, 6) / choose(N, 6), using physical copies without replacement.",
+    "The market model uses fresh stock, with no strategic depletion or mastery/row correlation. Real later shops differ.",
+    "Per-play Scout scenarios remove one owned Scout, then sample a normal row. Initial restricted rows are a separate setup illustration.",
+    "Healing examples use min(printed heal, 50-current health), without special relic modifiers. Banishing values are opportunities, not guaranteed removals.",
+    "Printed hand shields are not immediate healing and do not work from a fast-played card in the play zone.",
+    "Only mercenaries have ordinary paid fast-play. Refund examples exclude discounts, doubled effects and free-play effects.",
+    "No games were simulated; this is an auditable design calculation, not proof of post-patch win rates."
+  ],
+  "stock_models": {
+    "previous": {
+      "fresh": {
+        "row_stock": 184,
+        "cost_at_most_five_stock": 173,
+        "owned_scout_copies_excluded": 0,
+        "thresholds": {
+          "1": {
+            "eligible_copies": 16,
+            "eligible_definitions": 6,
+            "normal_six_probability": 0.42521579415960564,
+            "restricted_six_probability": 0.44639995036553715,
+            "targets": [
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              }
+            ]
+          },
+          "2": {
+            "eligible_copies": 64,
+            "eligible_definitions": 24,
+            "normal_six_probability": 0.9264119161743001,
+            "restricted_six_probability": 0.9406327452804122,
+            "targets": [
+              {
+                "id": "arach_devotees",
+                "name": "Arach Devotees",
+                "copies": 3
+              },
+              {
+                "id": "cache_warden",
+                "name": "Cache Warden",
+                "copies": 2
+              },
+              {
+                "id": "cinder_scars_duel",
+                "name": "Cinder Scars",
+                "copies": 4
+              },
+              {
+                "id": "cloud_oracles_sos",
+                "name": "Cloud Oracles",
+                "copies": 3
+              },
+              {
+                "id": "dash_duel",
+                "name": "Dash",
+                "copies": 2
+              },
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "legion_carrier_duel",
+                "name": "Legion Carrier",
+                "copies": 2
+              },
+              {
+                "id": "limiter_drones",
+                "name": "Limiter Drones",
+                "copies": 3
+              },
+              {
+                "id": "mining_drones",
+                "name": "Mining Drones",
+                "copies": 3
+              },
+              {
+                "id": "nil_assassin_duel",
+                "name": "Nil Assassin",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "pall_shades",
+                "name": "Pall Shades",
+                "copies": 3
+              },
+              {
+                "id": "riposte_doctrine",
+                "name": "Riposte Doctrine",
+                "copies": 2
+              },
+              {
+                "id": "shadow_apostle",
+                "name": "Shadow Apostle",
+                "copies": 3
+              },
+              {
+                "id": "shard_abstractor",
+                "name": "Shard Abstractor",
+                "copies": 3
+              },
+              {
+                "id": "shard_seer",
+                "name": "Shard Seer",
+                "copies": 3
+              },
+              {
+                "id": "spore_cleric_duel",
+                "name": "Spore Cleric",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "horizon_seeker",
+                "name": "Horizon Seeker",
+                "copies": 2
+              },
+              {
+                "id": "riftbreaker",
+                "name": "Riftbreaker",
+                "copies": 2
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              },
+              {
+                "id": "rift_scout",
+                "name": "Rift Scout",
+                "copies": 2
+              }
+            ]
+          },
+          "3": {
+            "eligible_copies": 108,
+            "eligible_definitions": 43,
+            "normal_six_probability": 0.9955957103885893,
+            "restricted_six_probability": 0.997578463125074,
+            "targets": [
+              {
+                "id": "arach_devotees",
+                "name": "Arach Devotees",
+                "copies": 3
+              },
+              {
+                "id": "bleak_communion",
+                "name": "Bleak Communion",
+                "copies": 2
+              },
+              {
+                "id": "brute",
+                "name": "Brute",
+                "copies": 2
+              },
+              {
+                "id": "cache_warden",
+                "name": "Cache Warden",
+                "copies": 2
+              },
+              {
+                "id": "cinder_scars_duel",
+                "name": "Cinder Scars",
+                "copies": 4
+              },
+              {
+                "id": "cloud_oracles_sos",
+                "name": "Cloud Oracles",
+                "copies": 3
+              },
+              {
+                "id": "dash_duel",
+                "name": "Dash",
+                "copies": 2
+              },
+              {
+                "id": "fungal_hermit",
+                "name": "Fungal Hermit",
+                "copies": 2
+              },
+              {
+                "id": "grim_tutor",
+                "name": "Grim Tutor",
+                "copies": 2
+              },
+              {
+                "id": "hounds_of_volos_duel",
+                "name": "Hounds of Volos",
+                "copies": 2
+              },
+              {
+                "id": "index_of_futures",
+                "name": "Index of Futures",
+                "copies": 2
+              },
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "korvus_legionnaire_duel",
+                "name": "Korvus Legionnaire",
+                "copies": 3
+              },
+              {
+                "id": "legion_carrier_duel",
+                "name": "Legion Carrier",
+                "copies": 2
+              },
+              {
+                "id": "leshai_knight",
+                "name": "Le'shai Knight",
+                "copies": 3
+              },
+              {
+                "id": "limiter_drones",
+                "name": "Limiter Drones",
+                "copies": 3
+              },
+              {
+                "id": "mainframe_abbot_duel",
+                "name": "Mainframe Abbot",
+                "copies": 2
+              },
+              {
+                "id": "mining_drones",
+                "name": "Mining Drones",
+                "copies": 3
+              },
+              {
+                "id": "nectar_alchemist",
+                "name": "Nectar Alchemist",
+                "copies": 2
+              },
+              {
+                "id": "nil_assassin_duel",
+                "name": "Nil Assassin",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "pall_shades",
+                "name": "Pall Shades",
+                "copies": 3
+              },
+              {
+                "id": "portal_monk",
+                "name": "Portal Monk",
+                "copies": 2
+              },
+              {
+                "id": "prism",
+                "name": "Prism",
+                "copies": 2
+              },
+              {
+                "id": "reactor_drone_duel",
+                "name": "Reactor Drone",
+                "copies": 3
+              },
+              {
+                "id": "riposte_doctrine",
+                "name": "Riposte Doctrine",
+                "copies": 2
+              },
+              {
+                "id": "shadebound_sentry",
+                "name": "Shadebound Sentry",
+                "copies": 2
+              },
+              {
+                "id": "shadow_apostle",
+                "name": "Shadow Apostle",
+                "copies": 3
+              },
+              {
+                "id": "shard_abstractor",
+                "name": "Shard Abstractor",
+                "copies": 3
+              },
+              {
+                "id": "shard_seer",
+                "name": "Shard Seer",
+                "copies": 3
+              },
+              {
+                "id": "spore_cleric_duel",
+                "name": "Spore Cleric",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "the_rotten_duel",
+                "name": "The Rotten",
+                "copies": 3
+              },
+              {
+                "id": "thorn_zealot",
+                "name": "Thorn Zealot",
+                "copies": 2
+              },
+              {
+                "id": "torian_commandos",
+                "name": "Torian Commandos",
+                "copies": 3
+              },
+              {
+                "id": "umbral_scourge",
+                "name": "Umbral Scourge",
+                "copies": 3
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "horizon_seeker",
+                "name": "Horizon Seeker",
+                "copies": 2
+              },
+              {
+                "id": "riftbreaker",
+                "name": "Riftbreaker",
+                "copies": 2
+              },
+              {
+                "id": "relief_courier",
+                "name": "Relief Courier",
+                "copies": 2
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              },
+              {
+                "id": "rift_scout",
+                "name": "Rift Scout",
+                "copies": 2
+              }
+            ]
+          }
+        }
+      },
+      "one_scout_owned": {
+        "row_stock": 183,
+        "cost_at_most_five_stock": 172,
+        "owned_scout_copies_excluded": 1,
+        "thresholds": {
+          "1": {
+            "eligible_copies": 16,
+            "eligible_definitions": 6,
+            "normal_six_probability": 0.42706100830355553,
+            "restricted_six_probability": 0.44842693860936444,
+            "targets": [
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              }
+            ]
+          },
+          "2": {
+            "eligible_copies": 63,
+            "eligible_definitions": 24,
+            "normal_six_probability": 0.9239314189666922,
+            "restricted_six_probability": 0.9384997900210258,
+            "targets": [
+              {
+                "id": "arach_devotees",
+                "name": "Arach Devotees",
+                "copies": 3
+              },
+              {
+                "id": "cache_warden",
+                "name": "Cache Warden",
+                "copies": 2
+              },
+              {
+                "id": "cinder_scars_duel",
+                "name": "Cinder Scars",
+                "copies": 4
+              },
+              {
+                "id": "cloud_oracles_sos",
+                "name": "Cloud Oracles",
+                "copies": 3
+              },
+              {
+                "id": "dash_duel",
+                "name": "Dash",
+                "copies": 2
+              },
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "legion_carrier_duel",
+                "name": "Legion Carrier",
+                "copies": 2
+              },
+              {
+                "id": "limiter_drones",
+                "name": "Limiter Drones",
+                "copies": 3
+              },
+              {
+                "id": "mining_drones",
+                "name": "Mining Drones",
+                "copies": 3
+              },
+              {
+                "id": "nil_assassin_duel",
+                "name": "Nil Assassin",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "pall_shades",
+                "name": "Pall Shades",
+                "copies": 3
+              },
+              {
+                "id": "riposte_doctrine",
+                "name": "Riposte Doctrine",
+                "copies": 2
+              },
+              {
+                "id": "shadow_apostle",
+                "name": "Shadow Apostle",
+                "copies": 3
+              },
+              {
+                "id": "shard_abstractor",
+                "name": "Shard Abstractor",
+                "copies": 3
+              },
+              {
+                "id": "shard_seer",
+                "name": "Shard Seer",
+                "copies": 3
+              },
+              {
+                "id": "spore_cleric_duel",
+                "name": "Spore Cleric",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "horizon_seeker",
+                "name": "Horizon Seeker",
+                "copies": 2
+              },
+              {
+                "id": "riftbreaker",
+                "name": "Riftbreaker",
+                "copies": 2
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              },
+              {
+                "id": "rift_scout",
+                "name": "Rift Scout",
+                "copies": 1
+              }
+            ]
+          },
+          "3": {
+            "eligible_copies": 107,
+            "eligible_definitions": 43,
+            "normal_six_probability": 0.9954472511882047,
+            "restricted_six_probability": 0.9974914618002264,
+            "targets": [
+              {
+                "id": "arach_devotees",
+                "name": "Arach Devotees",
+                "copies": 3
+              },
+              {
+                "id": "bleak_communion",
+                "name": "Bleak Communion",
+                "copies": 2
+              },
+              {
+                "id": "brute",
+                "name": "Brute",
+                "copies": 2
+              },
+              {
+                "id": "cache_warden",
+                "name": "Cache Warden",
+                "copies": 2
+              },
+              {
+                "id": "cinder_scars_duel",
+                "name": "Cinder Scars",
+                "copies": 4
+              },
+              {
+                "id": "cloud_oracles_sos",
+                "name": "Cloud Oracles",
+                "copies": 3
+              },
+              {
+                "id": "dash_duel",
+                "name": "Dash",
+                "copies": 2
+              },
+              {
+                "id": "fungal_hermit",
+                "name": "Fungal Hermit",
+                "copies": 2
+              },
+              {
+                "id": "grim_tutor",
+                "name": "Grim Tutor",
+                "copies": 2
+              },
+              {
+                "id": "hounds_of_volos_duel",
+                "name": "Hounds of Volos",
+                "copies": 2
+              },
+              {
+                "id": "index_of_futures",
+                "name": "Index of Futures",
+                "copies": 2
+              },
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "korvus_legionnaire_duel",
+                "name": "Korvus Legionnaire",
+                "copies": 3
+              },
+              {
+                "id": "legion_carrier_duel",
+                "name": "Legion Carrier",
+                "copies": 2
+              },
+              {
+                "id": "leshai_knight",
+                "name": "Le'shai Knight",
+                "copies": 3
+              },
+              {
+                "id": "limiter_drones",
+                "name": "Limiter Drones",
+                "copies": 3
+              },
+              {
+                "id": "mainframe_abbot_duel",
+                "name": "Mainframe Abbot",
+                "copies": 2
+              },
+              {
+                "id": "mining_drones",
+                "name": "Mining Drones",
+                "copies": 3
+              },
+              {
+                "id": "nectar_alchemist",
+                "name": "Nectar Alchemist",
+                "copies": 2
+              },
+              {
+                "id": "nil_assassin_duel",
+                "name": "Nil Assassin",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "pall_shades",
+                "name": "Pall Shades",
+                "copies": 3
+              },
+              {
+                "id": "portal_monk",
+                "name": "Portal Monk",
+                "copies": 2
+              },
+              {
+                "id": "prism",
+                "name": "Prism",
+                "copies": 2
+              },
+              {
+                "id": "reactor_drone_duel",
+                "name": "Reactor Drone",
+                "copies": 3
+              },
+              {
+                "id": "riposte_doctrine",
+                "name": "Riposte Doctrine",
+                "copies": 2
+              },
+              {
+                "id": "shadebound_sentry",
+                "name": "Shadebound Sentry",
+                "copies": 2
+              },
+              {
+                "id": "shadow_apostle",
+                "name": "Shadow Apostle",
+                "copies": 3
+              },
+              {
+                "id": "shard_abstractor",
+                "name": "Shard Abstractor",
+                "copies": 3
+              },
+              {
+                "id": "shard_seer",
+                "name": "Shard Seer",
+                "copies": 3
+              },
+              {
+                "id": "spore_cleric_duel",
+                "name": "Spore Cleric",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "the_rotten_duel",
+                "name": "The Rotten",
+                "copies": 3
+              },
+              {
+                "id": "thorn_zealot",
+                "name": "Thorn Zealot",
+                "copies": 2
+              },
+              {
+                "id": "torian_commandos",
+                "name": "Torian Commandos",
+                "copies": 3
+              },
+              {
+                "id": "umbral_scourge",
+                "name": "Umbral Scourge",
+                "copies": 3
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "horizon_seeker",
+                "name": "Horizon Seeker",
+                "copies": 2
+              },
+              {
+                "id": "riftbreaker",
+                "name": "Riftbreaker",
+                "copies": 2
+              },
+              {
+                "id": "relief_courier",
+                "name": "Relief Courier",
+                "copies": 2
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              },
+              {
+                "id": "rift_scout",
+                "name": "Rift Scout",
+                "copies": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    "revised": {
+      "fresh": {
+        "row_stock": 184,
+        "cost_at_most_five_stock": 173,
+        "owned_scout_copies_excluded": 0,
+        "thresholds": {
+          "1": {
+            "eligible_copies": 16,
+            "eligible_definitions": 6,
+            "normal_six_probability": 0.42521579415960564,
+            "restricted_six_probability": 0.44639995036553715,
+            "targets": [
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              }
+            ]
+          },
+          "2": {
+            "eligible_copies": 64,
+            "eligible_definitions": 24,
+            "normal_six_probability": 0.9264119161743001,
+            "restricted_six_probability": 0.9406327452804122,
+            "targets": [
+              {
+                "id": "arach_devotees",
+                "name": "Arach Devotees",
+                "copies": 3
+              },
+              {
+                "id": "cache_warden",
+                "name": "Cache Warden",
+                "copies": 2
+              },
+              {
+                "id": "cinder_scars_duel",
+                "name": "Cinder Scars",
+                "copies": 4
+              },
+              {
+                "id": "cloud_oracles_sos",
+                "name": "Cloud Oracles",
+                "copies": 3
+              },
+              {
+                "id": "dash_duel",
+                "name": "Dash",
+                "copies": 2
+              },
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "legion_carrier_duel",
+                "name": "Legion Carrier",
+                "copies": 2
+              },
+              {
+                "id": "limiter_drones",
+                "name": "Limiter Drones",
+                "copies": 3
+              },
+              {
+                "id": "mining_drones",
+                "name": "Mining Drones",
+                "copies": 3
+              },
+              {
+                "id": "nil_assassin_duel",
+                "name": "Nil Assassin",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "pall_shades",
+                "name": "Pall Shades",
+                "copies": 3
+              },
+              {
+                "id": "riposte_doctrine",
+                "name": "Riposte Doctrine",
+                "copies": 2
+              },
+              {
+                "id": "shadow_apostle",
+                "name": "Shadow Apostle",
+                "copies": 3
+              },
+              {
+                "id": "shard_abstractor",
+                "name": "Shard Abstractor",
+                "copies": 3
+              },
+              {
+                "id": "shard_seer",
+                "name": "Shard Seer",
+                "copies": 3
+              },
+              {
+                "id": "spore_cleric_duel",
+                "name": "Spore Cleric",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "horizon_seeker",
+                "name": "Horizon Seeker",
+                "copies": 2
+              },
+              {
+                "id": "relief_courier",
+                "name": "Relief Courier",
+                "copies": 2
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              },
+              {
+                "id": "rift_scout",
+                "name": "Rift Scout",
+                "copies": 2
+              }
+            ]
+          },
+          "3": {
+            "eligible_copies": 108,
+            "eligible_definitions": 43,
+            "normal_six_probability": 0.9955957103885893,
+            "restricted_six_probability": 0.997578463125074,
+            "targets": [
+              {
+                "id": "arach_devotees",
+                "name": "Arach Devotees",
+                "copies": 3
+              },
+              {
+                "id": "bleak_communion",
+                "name": "Bleak Communion",
+                "copies": 2
+              },
+              {
+                "id": "brute",
+                "name": "Brute",
+                "copies": 2
+              },
+              {
+                "id": "cache_warden",
+                "name": "Cache Warden",
+                "copies": 2
+              },
+              {
+                "id": "cinder_scars_duel",
+                "name": "Cinder Scars",
+                "copies": 4
+              },
+              {
+                "id": "cloud_oracles_sos",
+                "name": "Cloud Oracles",
+                "copies": 3
+              },
+              {
+                "id": "dash_duel",
+                "name": "Dash",
+                "copies": 2
+              },
+              {
+                "id": "fungal_hermit",
+                "name": "Fungal Hermit",
+                "copies": 2
+              },
+              {
+                "id": "grim_tutor",
+                "name": "Grim Tutor",
+                "copies": 2
+              },
+              {
+                "id": "hounds_of_volos_duel",
+                "name": "Hounds of Volos",
+                "copies": 2
+              },
+              {
+                "id": "index_of_futures",
+                "name": "Index of Futures",
+                "copies": 2
+              },
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "korvus_legionnaire_duel",
+                "name": "Korvus Legionnaire",
+                "copies": 3
+              },
+              {
+                "id": "legion_carrier_duel",
+                "name": "Legion Carrier",
+                "copies": 2
+              },
+              {
+                "id": "leshai_knight",
+                "name": "Le'shai Knight",
+                "copies": 3
+              },
+              {
+                "id": "limiter_drones",
+                "name": "Limiter Drones",
+                "copies": 3
+              },
+              {
+                "id": "mainframe_abbot_duel",
+                "name": "Mainframe Abbot",
+                "copies": 2
+              },
+              {
+                "id": "mining_drones",
+                "name": "Mining Drones",
+                "copies": 3
+              },
+              {
+                "id": "nectar_alchemist",
+                "name": "Nectar Alchemist",
+                "copies": 2
+              },
+              {
+                "id": "nil_assassin_duel",
+                "name": "Nil Assassin",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "pall_shades",
+                "name": "Pall Shades",
+                "copies": 3
+              },
+              {
+                "id": "portal_monk",
+                "name": "Portal Monk",
+                "copies": 2
+              },
+              {
+                "id": "prism",
+                "name": "Prism",
+                "copies": 2
+              },
+              {
+                "id": "reactor_drone_duel",
+                "name": "Reactor Drone",
+                "copies": 3
+              },
+              {
+                "id": "riposte_doctrine",
+                "name": "Riposte Doctrine",
+                "copies": 2
+              },
+              {
+                "id": "shadebound_sentry",
+                "name": "Shadebound Sentry",
+                "copies": 2
+              },
+              {
+                "id": "shadow_apostle",
+                "name": "Shadow Apostle",
+                "copies": 3
+              },
+              {
+                "id": "shard_abstractor",
+                "name": "Shard Abstractor",
+                "copies": 3
+              },
+              {
+                "id": "shard_seer",
+                "name": "Shard Seer",
+                "copies": 3
+              },
+              {
+                "id": "spore_cleric_duel",
+                "name": "Spore Cleric",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "the_rotten_duel",
+                "name": "The Rotten",
+                "copies": 3
+              },
+              {
+                "id": "thorn_zealot",
+                "name": "Thorn Zealot",
+                "copies": 2
+              },
+              {
+                "id": "torian_commandos",
+                "name": "Torian Commandos",
+                "copies": 3
+              },
+              {
+                "id": "umbral_scourge",
+                "name": "Umbral Scourge",
+                "copies": 3
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "horizon_seeker",
+                "name": "Horizon Seeker",
+                "copies": 2
+              },
+              {
+                "id": "riftbreaker",
+                "name": "Riftbreaker",
+                "copies": 2
+              },
+              {
+                "id": "relief_courier",
+                "name": "Relief Courier",
+                "copies": 2
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              },
+              {
+                "id": "rift_scout",
+                "name": "Rift Scout",
+                "copies": 2
+              }
+            ]
+          }
+        }
+      },
+      "one_scout_owned": {
+        "row_stock": 183,
+        "cost_at_most_five_stock": 172,
+        "owned_scout_copies_excluded": 1,
+        "thresholds": {
+          "1": {
+            "eligible_copies": 16,
+            "eligible_definitions": 6,
+            "normal_six_probability": 0.42706100830355553,
+            "restricted_six_probability": 0.44842693860936444,
+            "targets": [
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              }
+            ]
+          },
+          "2": {
+            "eligible_copies": 63,
+            "eligible_definitions": 24,
+            "normal_six_probability": 0.9239314189666922,
+            "restricted_six_probability": 0.9384997900210258,
+            "targets": [
+              {
+                "id": "arach_devotees",
+                "name": "Arach Devotees",
+                "copies": 3
+              },
+              {
+                "id": "cache_warden",
+                "name": "Cache Warden",
+                "copies": 2
+              },
+              {
+                "id": "cinder_scars_duel",
+                "name": "Cinder Scars",
+                "copies": 4
+              },
+              {
+                "id": "cloud_oracles_sos",
+                "name": "Cloud Oracles",
+                "copies": 3
+              },
+              {
+                "id": "dash_duel",
+                "name": "Dash",
+                "copies": 2
+              },
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "legion_carrier_duel",
+                "name": "Legion Carrier",
+                "copies": 2
+              },
+              {
+                "id": "limiter_drones",
+                "name": "Limiter Drones",
+                "copies": 3
+              },
+              {
+                "id": "mining_drones",
+                "name": "Mining Drones",
+                "copies": 3
+              },
+              {
+                "id": "nil_assassin_duel",
+                "name": "Nil Assassin",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "pall_shades",
+                "name": "Pall Shades",
+                "copies": 3
+              },
+              {
+                "id": "riposte_doctrine",
+                "name": "Riposte Doctrine",
+                "copies": 2
+              },
+              {
+                "id": "shadow_apostle",
+                "name": "Shadow Apostle",
+                "copies": 3
+              },
+              {
+                "id": "shard_abstractor",
+                "name": "Shard Abstractor",
+                "copies": 3
+              },
+              {
+                "id": "shard_seer",
+                "name": "Shard Seer",
+                "copies": 3
+              },
+              {
+                "id": "spore_cleric_duel",
+                "name": "Spore Cleric",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "horizon_seeker",
+                "name": "Horizon Seeker",
+                "copies": 2
+              },
+              {
+                "id": "relief_courier",
+                "name": "Relief Courier",
+                "copies": 2
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              },
+              {
+                "id": "rift_scout",
+                "name": "Rift Scout",
+                "copies": 1
+              }
+            ]
+          },
+          "3": {
+            "eligible_copies": 107,
+            "eligible_definitions": 43,
+            "normal_six_probability": 0.9954472511882047,
+            "restricted_six_probability": 0.9974914618002264,
+            "targets": [
+              {
+                "id": "arach_devotees",
+                "name": "Arach Devotees",
+                "copies": 3
+              },
+              {
+                "id": "bleak_communion",
+                "name": "Bleak Communion",
+                "copies": 2
+              },
+              {
+                "id": "brute",
+                "name": "Brute",
+                "copies": 2
+              },
+              {
+                "id": "cache_warden",
+                "name": "Cache Warden",
+                "copies": 2
+              },
+              {
+                "id": "cinder_scars_duel",
+                "name": "Cinder Scars",
+                "copies": 4
+              },
+              {
+                "id": "cloud_oracles_sos",
+                "name": "Cloud Oracles",
+                "copies": 3
+              },
+              {
+                "id": "dash_duel",
+                "name": "Dash",
+                "copies": 2
+              },
+              {
+                "id": "fungal_hermit",
+                "name": "Fungal Hermit",
+                "copies": 2
+              },
+              {
+                "id": "grim_tutor",
+                "name": "Grim Tutor",
+                "copies": 2
+              },
+              {
+                "id": "hounds_of_volos_duel",
+                "name": "Hounds of Volos",
+                "copies": 2
+              },
+              {
+                "id": "index_of_futures",
+                "name": "Index of Futures",
+                "copies": 2
+              },
+              {
+                "id": "kiln_drone",
+                "name": "Kiln Drone",
+                "copies": 3
+              },
+              {
+                "id": "korvus_legionnaire_duel",
+                "name": "Korvus Legionnaire",
+                "copies": 3
+              },
+              {
+                "id": "legion_carrier_duel",
+                "name": "Legion Carrier",
+                "copies": 2
+              },
+              {
+                "id": "leshai_knight",
+                "name": "Le'shai Knight",
+                "copies": 3
+              },
+              {
+                "id": "limiter_drones",
+                "name": "Limiter Drones",
+                "copies": 3
+              },
+              {
+                "id": "mainframe_abbot_duel",
+                "name": "Mainframe Abbot",
+                "copies": 2
+              },
+              {
+                "id": "mining_drones",
+                "name": "Mining Drones",
+                "copies": 3
+              },
+              {
+                "id": "nectar_alchemist",
+                "name": "Nectar Alchemist",
+                "copies": 2
+              },
+              {
+                "id": "nil_assassin_duel",
+                "name": "Nil Assassin",
+                "copies": 3
+              },
+              {
+                "id": "order_initiate_duel",
+                "name": "Order Initiate",
+                "copies": 3
+              },
+              {
+                "id": "pall_shades",
+                "name": "Pall Shades",
+                "copies": 3
+              },
+              {
+                "id": "portal_monk",
+                "name": "Portal Monk",
+                "copies": 2
+              },
+              {
+                "id": "prism",
+                "name": "Prism",
+                "copies": 2
+              },
+              {
+                "id": "reactor_drone_duel",
+                "name": "Reactor Drone",
+                "copies": 3
+              },
+              {
+                "id": "riposte_doctrine",
+                "name": "Riposte Doctrine",
+                "copies": 2
+              },
+              {
+                "id": "shadebound_sentry",
+                "name": "Shadebound Sentry",
+                "copies": 2
+              },
+              {
+                "id": "shadow_apostle",
+                "name": "Shadow Apostle",
+                "copies": 3
+              },
+              {
+                "id": "shard_abstractor",
+                "name": "Shard Abstractor",
+                "copies": 3
+              },
+              {
+                "id": "shard_seer",
+                "name": "Shard Seer",
+                "copies": 3
+              },
+              {
+                "id": "spore_cleric_duel",
+                "name": "Spore Cleric",
+                "copies": 3
+              },
+              {
+                "id": "the_dispossessed",
+                "name": "The Dispossessed",
+                "copies": 2
+              },
+              {
+                "id": "the_rotten_duel",
+                "name": "The Rotten",
+                "copies": 3
+              },
+              {
+                "id": "thorn_zealot",
+                "name": "Thorn Zealot",
+                "copies": 2
+              },
+              {
+                "id": "torian_commandos",
+                "name": "Torian Commandos",
+                "copies": 3
+              },
+              {
+                "id": "umbral_scourge",
+                "name": "Umbral Scourge",
+                "copies": 3
+              },
+              {
+                "id": "undergrowth_aspirant_duel",
+                "name": "Undergrowth Aspirant",
+                "copies": 3
+              },
+              {
+                "id": "wraethe_skirmisher_duel",
+                "name": "Wraethe Skirmisher",
+                "copies": 3
+              },
+              {
+                "id": "horizon_seeker",
+                "name": "Horizon Seeker",
+                "copies": 2
+              },
+              {
+                "id": "riftbreaker",
+                "name": "Riftbreaker",
+                "copies": 2
+              },
+              {
+                "id": "relief_courier",
+                "name": "Relief Courier",
+                "copies": 2
+              },
+              {
+                "id": "aegis_surveyor",
+                "name": "Aegis Surveyor",
+                "copies": 2
+              },
+              {
+                "id": "rift_scout",
+                "name": "Rift Scout",
+                "copies": 1
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "cards": {
+    "horizon_seeker": {
+      "previous": {
+        "card": {
+          "id": "horizon_seeker",
+          "name": "Horizon Seeker",
+          "faction": "Order",
+          "type": "Ally",
+          "cost": 2,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 0,
+          "rules_text": "Draw a card.\nIf you have less mastery than your opponent, gain 1 mastery.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 0,
+          "base_gems": 0,
+          "base_draw": 1,
+          "bonus_mastery": 1,
+          "bonus_gems": 0,
+          "bonus_health": 0,
+          "bonus_banish": 0,
+          "bonus_warp_cap": 0
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 0,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 0,
+            "gems": 0.0,
+            "mastery": 0.25,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 0,
+            "gems": 0.0,
+            "mastery": 0.5,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 0,
+            "gems": 0.0,
+            "mastery": 0.75,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 0,
+            "gems": 0,
+            "mastery": 1,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0
+          }
+        ]
+      },
+      "revised": {
+        "card": {
+          "id": "horizon_seeker",
+          "name": "Horizon Seeker",
+          "faction": "Order",
+          "type": "Ally",
+          "cost": 2,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 0,
+          "rules_text": "Draw a card.\nIf you have less mastery than your opponent, gain 2 mastery.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 0,
+          "base_gems": 0,
+          "base_draw": 1,
+          "bonus_mastery": 2,
+          "bonus_gems": 0,
+          "bonus_health": 0,
+          "bonus_banish": 0,
+          "bonus_warp_cap": 0
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 0,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 0,
+            "gems": 0.0,
+            "mastery": 0.5,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 0,
+            "gems": 0.0,
+            "mastery": 1.0,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 0,
+            "gems": 0.0,
+            "mastery": 1.5,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 0,
+            "gems": 0,
+            "mastery": 2,
+            "draws": 1,
+            "net_hand_cards_before_banish": 0,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0
+          }
+        ]
+      },
+      "current_patch_peers": [
+        {
+          "card_id": 27,
+          "id": "cloud_oracles_sos",
+          "name": "Cloud Oracles",
+          "set": "shadow_of_salvation",
+          "faction": "Order",
+          "type": "Ally",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Draw a card.\nIf your mastery is higher than every enemy player's, gain 2 gems.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=cloud_oracles_sos"
+        },
+        {
+          "card_id": 142,
+          "id": "shard_seer",
+          "name": "Shard Seer",
+          "set": "into_the_horizon",
+          "faction": "Order",
+          "type": "Ally",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 1 mastery.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=shard_seer",
+          "art_id": "shard_seer"
+        },
+        {
+          "card_id": 21,
+          "id": "cache_warden",
+          "name": "Cache Warden",
+          "set": "base",
+          "faction": "Order",
+          "type": "Mercenary",
+          "cost": 2,
+          "character": null,
+          "quantity": 2,
+          "replaces_id": null,
+          "rules_text": "Gain 1 mastery.\nM10: draw a card. Its own mastery gain counts.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=cache_warden"
+        },
+        {
+          "card_id": 139,
+          "id": "shard_abstractor",
+          "name": "Shard Abstractor",
+          "set": "base",
+          "faction": "Order",
+          "type": "Mercenary",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Gain 1 mastery.\nM10: gain 2 instead.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=shard_abstractor",
+          "art_id": "shard_abstractor"
+        }
+      ]
+    },
+    "riftbreaker": {
+      "previous": {
+        "card": {
+          "id": "riftbreaker",
+          "name": "Riftbreaker",
+          "faction": "Wraethe",
+          "type": "Mercenary",
+          "cost": 2,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 0,
+          "rules_text": "Gain 3 power.\nIf you have less mastery than your opponent, you may banish a card from your hand or discard pile.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 3,
+          "base_gems": 0,
+          "base_draw": 0,
+          "bonus_mastery": 0,
+          "bonus_gems": 0,
+          "bonus_health": 0,
+          "bonus_banish": 1,
+          "bonus_warp_cap": 0
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 3,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0,
+            "paid_fast_play_net_gems": -2,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.25,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -2.0,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.5,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -2.0,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.75,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -2.0,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 3,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 1,
+            "warp_with_legal_target_model": 0,
+            "paid_fast_play_net_gems": -2,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          }
+        ]
+      },
+      "revised": {
+        "card": {
+          "id": "riftbreaker",
+          "name": "Riftbreaker",
+          "faction": "Wraethe",
+          "type": "Mercenary",
+          "cost": 3,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 0,
+          "rules_text": "Gain 5 power.\nIf you have less mastery than your opponent, you may banish a card from your hand or discard pile.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 5,
+          "base_gems": 0,
+          "base_draw": 0,
+          "bonus_mastery": 0,
+          "bonus_gems": 0,
+          "bonus_health": 0,
+          "bonus_banish": 1,
+          "bonus_warp_cap": 0
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 5,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0,
+            "paid_fast_play_net_gems": -3,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 5,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.25,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -3.0,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 5,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.5,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -3.0,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 5,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.75,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -3.0,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 5,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 1,
+            "warp_with_legal_target_model": 0,
+            "paid_fast_play_net_gems": -3,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          }
+        ]
+      },
+      "current_patch_peers": [
+        {
+          "card_id": 138,
+          "id": "shadow_apostle",
+          "name": "Shadow Apostle",
+          "set": "base",
+          "faction": "Wraethe",
+          "type": "Mercenary",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Gain 2 power.\nYou may banish a card from your hand or discard pile.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=shadow_apostle"
+        },
+        {
+          "card_id": 100,
+          "id": "nil_assassin_duel",
+          "name": "Nil Assassin",
+          "set": "duel",
+          "faction": "Wraethe",
+          "type": "Mercenary",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": "nil_assassin",
+          "rules_text": "Gain 4 power.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=nil_assassin_duel"
+        },
+        {
+          "card_id": 85,
+          "id": "leshai_knight",
+          "name": "Le'shai Knight",
+          "set": "base",
+          "faction": "Undergrowth",
+          "type": "Mercenary",
+          "cost": 3,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Gain 4 power.\nUnify: gain 6 instead.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=leshai_knight"
+        },
+        {
+          "card_id": 166,
+          "id": "the_lost_duel",
+          "name": "The Lost",
+          "set": "duel",
+          "faction": "Wraethe",
+          "type": "Mercenary",
+          "cost": 4,
+          "character": null,
+          "quantity": 2,
+          "replaces_id": "the_lost",
+          "rules_text": "Gain 5 power.\nAllegiance Wraethe 4: you may banish a card from your hand or discard pile.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=the_lost_duel"
+        },
+        {
+          "card_id": 168,
+          "id": "the_rotten_duel",
+          "name": "The Rotten",
+          "set": "duel",
+          "faction": "Undergrowth",
+          "type": "Mercenary",
+          "cost": 3,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": "the_rotten",
+          "rules_text": "Gain 4 power and 1 mastery.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=the_rotten_duel"
+        }
+      ]
+    },
+    "relief_courier": {
+      "previous": {
+        "card": {
+          "id": "relief_courier",
+          "name": "Relief Courier",
+          "faction": "Undergrowth",
+          "type": "Ally",
+          "cost": 3,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 0,
+          "rules_text": "Gain 2 gems.\nIf you have less mastery than your opponent, gain 4 health.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 0,
+          "base_gems": 2,
+          "base_draw": 0,
+          "bonus_mastery": 0,
+          "bonus_gems": 0,
+          "bonus_health": 4,
+          "bonus_banish": 0,
+          "bonus_warp_cap": 0
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 0,
+            "gems": 2,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 0,
+            "gems": 2.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 1.0,
+            "actual_healing_examples": {
+              "40": 1.0,
+              "45": 1.0,
+              "48": 0.5,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 0,
+            "gems": 2.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 2.0,
+            "actual_healing_examples": {
+              "40": 2.0,
+              "45": 2.0,
+              "48": 1.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 0,
+            "gems": 2.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 3.0,
+            "actual_healing_examples": {
+              "40": 3.0,
+              "45": 3.0,
+              "48": 1.5,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 0,
+            "gems": 2,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 4,
+            "actual_healing_examples": {
+              "40": 4,
+              "45": 4,
+              "48": 2,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0
+          }
+        ]
+      },
+      "revised": {
+        "card": {
+          "id": "relief_courier",
+          "name": "Relief Courier",
+          "faction": "Undergrowth",
+          "type": "Ally",
+          "cost": 2,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 0,
+          "rules_text": "Gain 2 gems.\nIf you have less mastery than your opponent, gain 5 health.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 0,
+          "base_gems": 2,
+          "base_draw": 0,
+          "bonus_mastery": 0,
+          "bonus_gems": 0,
+          "bonus_health": 5,
+          "bonus_banish": 0,
+          "bonus_warp_cap": 0
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 0,
+            "gems": 2,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 0,
+            "gems": 2.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 1.25,
+            "actual_healing_examples": {
+              "40": 1.25,
+              "45": 1.25,
+              "48": 0.5,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 0,
+            "gems": 2.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 2.5,
+            "actual_healing_examples": {
+              "40": 2.5,
+              "45": 2.5,
+              "48": 1.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 0,
+            "gems": 2.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 3.75,
+            "actual_healing_examples": {
+              "40": 3.75,
+              "45": 3.75,
+              "48": 1.5,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 0,
+            "gems": 2,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 5,
+            "actual_healing_examples": {
+              "40": 5,
+              "45": 5,
+              "48": 2,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0
+          }
+        ]
+      },
+      "current_patch_peers": [
+        {
+          "card_id": 80,
+          "id": "kiln_drone",
+          "name": "Kiln Drone",
+          "set": "base",
+          "faction": "Homodeus",
+          "type": "Ally",
+          "cost": 1,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Gain 2 gems.\nInspire: gain 4 instead.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=kiln_drone"
+        },
+        {
+          "card_id": 95,
+          "id": "mining_drones",
+          "name": "Mining Drones",
+          "set": "base",
+          "faction": "Homodeus",
+          "type": "Ally",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Gain 1 gem and draw a card.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=mining_drones"
+        },
+        {
+          "card_id": 171,
+          "id": "torian_commandos",
+          "name": "Torian Commandos",
+          "set": "into_the_horizon",
+          "faction": "Homodeus",
+          "type": "Ally",
+          "cost": 3,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Shield 4.\nGain 3 gems and 2 power.",
+          "defense": 0,
+          "shield": 4,
+          "image_url": "/api/card-image?id=torian_commandos"
+        },
+        {
+          "card_id": 150,
+          "id": "spore_cleric_duel",
+          "name": "Spore Cleric",
+          "set": "duel",
+          "faction": "Undergrowth",
+          "type": "Mercenary",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": "spore_cleric",
+          "rules_text": "Gain 3 health.\nUnify: gain 6 health instead.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=spore_cleric_duel"
+        },
+        {
+          "card_id": 10,
+          "id": "arach_devotees",
+          "name": "Arach Devotees",
+          "set": "relics_of_the_future",
+          "faction": "Undergrowth",
+          "type": "Ally",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Draw a card.\nUnify: gain 3 health.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=arach_devotees"
+        }
+      ]
+    },
+    "aegis_surveyor": {
+      "previous": {
+        "card": {
+          "id": "aegis_surveyor",
+          "name": "Aegis Surveyor",
+          "faction": "Homodeus",
+          "type": "Mercenary",
+          "cost": 1,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 2,
+          "rules_text": "Shield 2.\nGain 2 power.\nIf you have less mastery than your opponent, gain 1 gem.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 2,
+          "base_gems": 0,
+          "base_draw": 0,
+          "bonus_mastery": 0,
+          "bonus_gems": 1,
+          "bonus_health": 0,
+          "bonus_banish": 0,
+          "bonus_warp_cap": 0
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 2,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0,
+            "paid_fast_play_net_gems": -1,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 2,
+            "gems": 0.25,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -0.75,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 2,
+            "gems": 0.5,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -0.5,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 2,
+            "gems": 0.75,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -0.25,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 2,
+            "gems": 1,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0,
+            "paid_fast_play_net_gems": 0,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          }
+        ]
+      },
+      "revised": {
+        "card": {
+          "id": "aegis_surveyor",
+          "name": "Aegis Surveyor",
+          "faction": "Homodeus",
+          "type": "Mercenary",
+          "cost": 1,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 2,
+          "rules_text": "Shield 2.\nGain 2 power.\nIf you have less mastery than your opponent, gain 1 gem.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 2,
+          "base_gems": 0,
+          "base_draw": 0,
+          "bonus_mastery": 0,
+          "bonus_gems": 1,
+          "bonus_health": 0,
+          "bonus_banish": 0,
+          "bonus_warp_cap": 0
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 2,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0,
+            "paid_fast_play_net_gems": -1,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 2,
+            "gems": 0.25,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -0.75,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 2,
+            "gems": 0.5,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -0.5,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 2,
+            "gems": 0.75,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.0,
+            "paid_fast_play_net_gems": -0.25,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 2,
+            "gems": 1,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0,
+            "paid_fast_play_net_gems": 0,
+            "paid_fast_play_draws_without_spending_hand_card": 0,
+            "paid_fast_play_shield": 0
+          }
+        ]
+      },
+      "current_patch_peers": [
+        {
+          "card_id": 80,
+          "id": "kiln_drone",
+          "name": "Kiln Drone",
+          "set": "base",
+          "faction": "Homodeus",
+          "type": "Ally",
+          "cost": 1,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": null,
+          "rules_text": "Gain 2 gems.\nInspire: gain 4 instead.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=kiln_drone"
+        },
+        {
+          "card_id": 162,
+          "id": "the_dispossessed",
+          "name": "The Dispossessed",
+          "set": "into_the_horizon",
+          "faction": "Wraethe",
+          "type": "Ally",
+          "cost": 1,
+          "character": null,
+          "quantity": 2,
+          "replaces_id": null,
+          "rules_text": "Gain 3 power.\nWhile in your discard pile: when you play a Wraethe card, you may return this to your hand.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=the_dispossessed"
+        },
+        {
+          "card_id": 131,
+          "id": "riposte_doctrine",
+          "name": "Riposte Doctrine",
+          "set": "duel",
+          "faction": "Homodeus",
+          "type": "Mercenary",
+          "cost": 2,
+          "character": null,
+          "quantity": 2,
+          "replaces_id": null,
+          "rules_text": "Gain 3 power.\nIf you played or reveal a shield card from your hand, gain 6 power instead.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=riposte_doctrine"
+        }
+      ]
+    },
+    "rift_scout": {
+      "previous": {
+        "card": {
+          "id": "rift_scout",
+          "name": "Rift Scout",
+          "faction": "Aion",
+          "type": "Ally",
+          "cost": 2,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 0,
+          "rules_text": "Gain 3 power.\nIf you have less mastery than your opponent, Warp 1.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 3,
+          "base_gems": 0,
+          "base_draw": 0,
+          "bonus_mastery": 0,
+          "bonus_gems": 0,
+          "bonus_health": 0,
+          "bonus_banish": 0,
+          "bonus_warp_cap": 1
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 3,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.10676525207588888
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.21353050415177777
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.32029575622766665
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 3,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0.42706100830355553
+          }
+        ]
+      },
+      "revised": {
+        "card": {
+          "id": "rift_scout",
+          "name": "Rift Scout",
+          "faction": "Aion",
+          "type": "Ally",
+          "cost": 2,
+          "quantity": 2,
+          "defense": 0,
+          "shield": 0,
+          "rules_text": "Gain 3 power.\nIf you have less mastery than your opponent, Warp 2.",
+          "character": null,
+          "art_id": ""
+        },
+        "yield": {
+          "base_power": 3,
+          "base_gems": 0,
+          "base_draw": 0,
+          "bonus_mastery": 0,
+          "bonus_gems": 0,
+          "bonus_health": 0,
+          "bonus_banish": 0,
+          "bonus_warp_cap": 2
+        },
+        "scenarios": [
+          {
+            "assumed_lower_mastery_probability": 0,
+            "power": 3,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0.0
+          },
+          {
+            "assumed_lower_mastery_probability": 0.25,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.23098285474167304
+          },
+          {
+            "assumed_lower_mastery_probability": 0.5,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.4619657094833461
+          },
+          {
+            "assumed_lower_mastery_probability": 0.75,
+            "power": 3,
+            "gems": 0.0,
+            "mastery": 0.0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0.0,
+            "actual_healing_examples": {
+              "40": 0.0,
+              "45": 0.0,
+              "48": 0.0,
+              "50": 0.0
+            },
+            "optional_banish_opportunities": 0.0,
+            "warp_with_legal_target_model": 0.6929485642250192
+          },
+          {
+            "assumed_lower_mastery_probability": 1,
+            "power": 3,
+            "gems": 0,
+            "mastery": 0,
+            "draws": 0,
+            "net_hand_cards_before_banish": -1,
+            "requested_health": 0,
+            "actual_healing_examples": {
+              "40": 0,
+              "45": 0,
+              "48": 0,
+              "50": 0
+            },
+            "optional_banish_opportunities": 0,
+            "warp_with_legal_target_model": 0.9239314189666922
+          }
+        ]
+      },
+      "current_patch_peers": [
+        {
+          "card_id": 19,
+          "id": "brute",
+          "name": "Brute",
+          "set": "shadow_of_salvation",
+          "faction": "Aion",
+          "type": "Ally",
+          "cost": 3,
+          "character": null,
+          "quantity": 2,
+          "replaces_id": null,
+          "rules_text": "Shield 2.\nGain 4 power.\nWarp 2.",
+          "defense": 0,
+          "shield": 2,
+          "image_url": "/api/card-image?id=brute"
+        },
+        {
+          "card_id": 35,
+          "id": "dash_duel",
+          "name": "Dash",
+          "set": "duel",
+          "faction": "Aion",
+          "type": "Ally",
+          "cost": 2,
+          "character": null,
+          "quantity": 2,
+          "replaces_id": "dash",
+          "rules_text": "Shield 2.\nYou may put an Aion card from your discard pile on top of your deck.\nM10: any card instead.\nDraw a card.",
+          "defense": 0,
+          "shield": 2,
+          "image_url": "/api/card-image?id=dash_duel"
+        },
+        {
+          "card_id": 100,
+          "id": "nil_assassin_duel",
+          "name": "Nil Assassin",
+          "set": "duel",
+          "faction": "Wraethe",
+          "type": "Mercenary",
+          "cost": 2,
+          "character": null,
+          "quantity": 3,
+          "replaces_id": "nil_assassin",
+          "rules_text": "Gain 4 power.",
+          "defense": 0,
+          "shield": 0,
+          "image_url": "/api/card-image?id=nil_assassin_duel"
+        }
+      ]
+    }
+  },
+  "banish_example": {
+    "assumption": "20-card deck, 8 useful cards, draw 5 without replacement; banish one other card before drawing.",
+    "expected_useful_before": 2.0,
+    "expected_useful_after": 2.1052631578947367,
+    "increase_per_hand": 0.10526315789473673,
+    "limitation": "The value depends on which card was removed and future draws; one banish is not assigned a fixed number of gems."
+  },
+  "inputs": {
+    "catalog": {
+      "path": "/home/lva/.local/share/shards-zero-depth/2026-10-08/new-ai-search-statistics-10000/card-catalog.json",
+      "sha256": "66a1f54af94c339ef244e2dedd41a8ad5fabf11a92122c1589bf64c11b2e3ae4"
+    },
+    "previews": {
+      "path": "/mnt/f/unity/projects/pascension/Tools/BalanceReview/balance_card_previews.json",
+      "sha256": "54e9f7fbf30568789c53c758266711dc86eaa24d3d7c98a12e2fcdbe92a34032"
+    },
+    "prior_previews": {
+      "path": "Tools/BalanceReview/proposal_versions/2026-10-08-v3-card-previews.json",
+      "sha256": "8b19f8f0b19a627e5e8d2d23eb741a6bd283a00cef4af080b88038d88c9b33a6"
+    }
+  }
+}

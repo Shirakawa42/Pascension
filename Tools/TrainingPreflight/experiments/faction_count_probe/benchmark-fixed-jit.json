@@ -1,0 +1,535 @@
+{
+  "schema": "shards-faction-count-probe-v1",
+  "passed": true,
+  "utc": "2026-09-26T14:26:41.4292503Z",
+  "hostSha256": "472f94ef69e265b1ab03249413275ccc088063dfa5f0fc2d9b57e806025a8520",
+  "referencedAssembly": "/mnt/f/unity/projects/pascension/Tools/TrainingPreflight/experiments/faction_count_probe/bin/Release/net8.0/TrainingHostV3.dll",
+  "originalHost": "/mnt/f/unity/projects/pascension/Tools/TrainingPreflight/experiments/HostV3/bin/Release/net8.0/TrainingHostV3.dll",
+  "processId": 39912,
+  "logicalProcessorsVisible": 1,
+  "workers": 1,
+  "serverGc": false,
+  "tieredCompilationEnvironment": "0",
+  "tieredPgoEnvironment": "0",
+  "timingContext": "Single-worker CPU microbench while another campaign may run; not quiet, end-to-end, or training-throughput measurements.",
+  "timingFixture": "Constructed mixed owned-zone collections; owned size includes temporary cards. Not seed-reachability or population-distribution evidence.",
+  "tests": {
+    "catalogDefinitions": 189,
+    "membershipChecks": 2646,
+    "zoneFixtures": 3780,
+    "mixedCollectionFixtures": 100,
+    "specialExpectedCounts": [
+      0,
+      1,
+      2,
+      1,
+      2,
+      1,
+      0
+    ],
+    "replayRows": 1177,
+    "hiddenOpponentPerturbationSeats": 2,
+    "outputsBitExact": true,
+    "noRulesMutation": true,
+    "scope": "All-definition unit fixtures plus bounded seeded legal replay and full-encoding hidden-zone differential; candidate not installed in a serving Host."
+  },
+  "timings": [
+    {
+      "ownedCards": 10,
+      "yggdrasil": false,
+      "temporaryCards": 1,
+      "baselineCounterUs": 1.1798978271484375,
+      "candidateCounterUs": 0.17255966949462892,
+      "currentFullEncodeUs": 2.6251444091796876,
+      "countOnlySpeedup": 6.837622201085422,
+      "baselineCounterShareOfEncode": 0.4494601603715718,
+      "estimatedEncodeSavingsShare": 0.3837267596141823,
+      "estimateCaveat": "Difference of separately measured medians, not a measured integrated replacement or end-to-end speedup.",
+      "iterations": [
+        32768,
+        131072,
+        8192
+      ],
+      "samplesUs": [
+        [
+          0.9525970764160157,
+          0.9930369262695312,
+          1.1798978271484375,
+          1.167284149169922,
+          1.242339599609375,
+          1.2070750122070313,
+          1.2681124572753906,
+          1.098962158203125,
+          1.2724596557617187
+        ],
+        [
+          0.1600390167236328,
+          0.16084607696533204,
+          0.17255966949462892,
+          0.20083834075927734,
+          0.18645877838134767,
+          0.16739070129394532,
+          0.1780398635864258,
+          0.17464097595214845,
+          0.17192325592041016
+        ],
+        [
+          2.457275390625,
+          2.48023681640625,
+          2.6251444091796876,
+          2.7659007568359373,
+          2.7501343994140623,
+          2.606647705078125,
+          2.91639208984375,
+          2.58860986328125,
+          2.9519195556640625
+        ]
+      ],
+      "allocatedBytesPerCall": [
+        0,
+        0,
+        0
+      ],
+      "methods": [
+        "original_seven_OwnedCount_normalized",
+        "candidate_one_pass_normalized",
+        "original_full_Encoder.Encode"
+      ]
+    },
+    {
+      "ownedCards": 10,
+      "yggdrasil": true,
+      "temporaryCards": 1,
+      "baselineCounterUs": 1.062645721435547,
+      "candidateCounterUs": 0.17372481536865234,
+      "currentFullEncodeUs": 2.755012939453125,
+      "countOnlySpeedup": 6.116833217986516,
+      "baselineCounterShareOfEncode": 0.3857135137980456,
+      "estimatedEncodeSavingsShare": 0.3226558007540055,
+      "estimateCaveat": "Difference of separately measured medians, not a measured integrated replacement or end-to-end speedup.",
+      "iterations": [
+        32768,
+        131072,
+        8192
+      ],
+      "samplesUs": [
+        [
+          1.0467730407714844,
+          1.062645721435547,
+          1.078985595703125,
+          1.1320391235351563,
+          1.0560941162109374,
+          1.0582005920410156,
+          1.0419054870605469,
+          1.0931658630371093,
+          1.4518822021484374
+        ],
+        [
+          0.17372481536865234,
+          0.17261142730712892,
+          0.17177568817138672,
+          0.18831348419189453,
+          0.1780419692993164,
+          0.17279676055908202,
+          0.171968017578125,
+          0.18503697967529298,
+          0.2027755813598633
+        ],
+        [
+          2.69024658203125,
+          2.64822900390625,
+          3.0506805419921874,
+          2.8860789794921873,
+          2.8716441650390623,
+          2.67950439453125,
+          2.6776580810546875,
+          2.755012939453125,
+          3.3713795166015625
+        ]
+      ],
+      "allocatedBytesPerCall": [
+        0,
+        0,
+        0
+      ],
+      "methods": [
+        "original_seven_OwnedCount_normalized",
+        "candidate_one_pass_normalized",
+        "original_full_Encoder.Encode"
+      ]
+    },
+    {
+      "ownedCards": 20,
+      "yggdrasil": false,
+      "temporaryCards": 1,
+      "baselineCounterUs": 1.8846552734375,
+      "candidateCounterUs": 0.3204304962158203,
+      "currentFullEncodeUs": 3.8319508056640625,
+      "countOnlySpeedup": 5.881635161742294,
+      "baselineCounterShareOfEncode": 0.4918265836429224,
+      "estimatedEncodeSavingsShare": 0.4082058608136556,
+      "estimateCaveat": "Difference of separately measured medians, not a measured integrated replacement or end-to-end speedup.",
+      "iterations": [
+        16384,
+        65536,
+        8192
+      ],
+      "samplesUs": [
+        [
+          1.831487060546875,
+          2.8069616088867186,
+          1.8846552734375,
+          1.8734207763671875,
+          2.284203125,
+          2.068559326171875,
+          1.871294677734375,
+          2.0786356811523437,
+          1.7896987915039062
+        ],
+        [
+          0.34034271240234376,
+          0.3515996246337891,
+          0.31005058288574217,
+          0.31696726989746093,
+          0.3467950134277344,
+          0.3555230407714844,
+          0.31007855224609376,
+          0.3204304962158203,
+          0.30648944091796876
+        ],
+        [
+          3.9157623291015624,
+          4.5525838623046875,
+          3.8319508056640625,
+          4.11212060546875,
+          3.7658416748046877,
+          3.803931640625,
+          3.69276123046875,
+          3.753107666015625,
+          4.147726440429688
+        ]
+      ],
+      "allocatedBytesPerCall": [
+        0,
+        0,
+        0
+      ],
+      "methods": [
+        "original_seven_OwnedCount_normalized",
+        "candidate_one_pass_normalized",
+        "original_full_Encoder.Encode"
+      ]
+    },
+    {
+      "ownedCards": 20,
+      "yggdrasil": true,
+      "temporaryCards": 1,
+      "baselineCounterUs": 2.2476573486328126,
+      "candidateCounterUs": 0.32741432189941405,
+      "currentFullEncodeUs": 3.87552392578125,
+      "countOnlySpeedup": 6.86487181010769,
+      "baselineCounterShareOfEncode": 0.5799621913519002,
+      "estimatedEncodeSavingsShare": 0.4954795954062663,
+      "estimateCaveat": "Difference of separately measured medians, not a measured integrated replacement or end-to-end speedup.",
+      "iterations": [
+        8192,
+        65536,
+        8192
+      ],
+      "samplesUs": [
+        [
+          1.9844737548828124,
+          2.1676727294921876,
+          2.3956197509765627,
+          2.434056640625,
+          2.322393798828125,
+          2.05928857421875,
+          2.07323095703125,
+          2.2476573486328126,
+          2.6091318359375
+        ],
+        [
+          0.32358741760253906,
+          0.32270762634277345,
+          0.3398839263916016,
+          0.41478691101074217,
+          0.3256421356201172,
+          0.3416882781982422,
+          0.32741432189941405,
+          0.32409515380859377,
+          0.33711447143554685
+        ],
+        [
+          3.7971282958984376,
+          3.8532674560546876,
+          4.551285888671875,
+          4.400458740234375,
+          3.8997833251953127,
+          3.79454345703125,
+          3.87401318359375,
+          3.87552392578125,
+          6.095878173828125
+        ]
+      ],
+      "allocatedBytesPerCall": [
+        0,
+        0,
+        0
+      ],
+      "methods": [
+        "original_seven_OwnedCount_normalized",
+        "candidate_one_pass_normalized",
+        "original_full_Encoder.Encode"
+      ]
+    },
+    {
+      "ownedCards": 40,
+      "yggdrasil": false,
+      "temporaryCards": 1,
+      "baselineCounterUs": 3.68509619140625,
+      "candidateCounterUs": 0.6216901245117188,
+      "currentFullEncodeUs": 5.664534423828125,
+      "countOnlySpeedup": 5.92754500371155,
+      "baselineCounterShareOfEncode": 0.6505558825637502,
+      "estimatedEncodeSavingsShare": 0.5408045635680441,
+      "estimateCaveat": "Difference of separately measured medians, not a measured integrated replacement or end-to-end speedup.",
+      "iterations": [
+        8192,
+        32768,
+        4096
+      ],
+      "samplesUs": [
+        [
+          4.3494893798828125,
+          3.6320679931640627,
+          3.6204193115234373,
+          4.4200633544921875,
+          3.917082763671875,
+          3.6468607177734373,
+          3.632258056640625,
+          3.76915380859375,
+          3.68509619140625
+        ],
+        [
+          0.6120277404785156,
+          0.6156755981445312,
+          0.6676549377441406,
+          0.6950335083007813,
+          0.7293050231933593,
+          0.6094345092773438,
+          0.6082204284667969,
+          0.6351514282226562,
+          0.6216901245117188
+        ],
+        [
+          5.9968486328125,
+          5.664534423828125,
+          5.545184326171875,
+          7.44793896484375,
+          6.424253173828125,
+          5.485677001953125,
+          5.67500830078125,
+          5.501835205078125,
+          5.641998291015625
+        ]
+      ],
+      "allocatedBytesPerCall": [
+        0,
+        0,
+        0
+      ],
+      "methods": [
+        "original_seven_OwnedCount_normalized",
+        "candidate_one_pass_normalized",
+        "original_full_Encoder.Encode"
+      ]
+    },
+    {
+      "ownedCards": 40,
+      "yggdrasil": true,
+      "temporaryCards": 1,
+      "baselineCounterUs": 3.967212890625,
+      "candidateCounterUs": 0.6344212646484375,
+      "currentFullEncodeUs": 5.916371826171875,
+      "countOnlySpeedup": 6.253278557463577,
+      "baselineCounterShareOfEncode": 0.6705482696465247,
+      "estimatedEncodeSavingsShare": 0.5633167968303658,
+      "estimateCaveat": "Difference of separately measured medians, not a measured integrated replacement or end-to-end speedup.",
+      "iterations": [
+        8192,
+        32768,
+        4096
+      ],
+      "samplesUs": [
+        [
+          4.014288330078125,
+          3.922599365234375,
+          3.972002197265625,
+          4.645380615234375,
+          3.9662281494140625,
+          3.8857177734375,
+          3.967212890625,
+          4.38914599609375,
+          3.9227335205078124
+        ],
+        [
+          0.6344212646484375,
+          0.6436249084472656,
+          0.6318560485839844,
+          0.6332603454589844,
+          0.6308741455078125,
+          0.634289794921875,
+          0.6378425598144531,
+          0.64402490234375,
+          0.6359906616210937
+        ],
+        [
+          5.811053466796875,
+          5.7663837890625,
+          6.190543701171875,
+          5.953320556640625,
+          5.747674560546875,
+          5.94942626953125,
+          5.916371826171875,
+          6.4805380859375,
+          5.822869873046875
+        ]
+      ],
+      "allocatedBytesPerCall": [
+        0,
+        0,
+        0
+      ],
+      "methods": [
+        "original_seven_OwnedCount_normalized",
+        "candidate_one_pass_normalized",
+        "original_full_Encoder.Encode"
+      ]
+    },
+    {
+      "ownedCards": 100,
+      "yggdrasil": false,
+      "temporaryCards": 1,
+      "baselineCounterUs": 8.7369345703125,
+      "candidateCounterUs": 1.4938858032226563,
+      "currentFullEncodeUs": 11.51043310546875,
+      "countOnlySpeedup": 5.848462145811223,
+      "baselineCounterShareOfEncode": 0.7590448152781908,
+      "estimatedEncodeSavingsShare": 0.6292594466882903,
+      "estimateCaveat": "Difference of separately measured medians, not a measured integrated replacement or end-to-end speedup.",
+      "iterations": [
+        4096,
+        16384,
+        2048
+      ],
+      "samplesUs": [
+        [
+          9.143391845703125,
+          9.354207275390625,
+          8.727378173828125,
+          8.727534912109375,
+          9.56954345703125,
+          8.656010009765625,
+          8.613824462890625,
+          8.7369345703125,
+          9.266591552734376
+        ],
+        [
+          1.4935836791992188,
+          1.4908701171875,
+          1.4938858032226563,
+          1.5110565795898439,
+          1.549560546875,
+          1.4855774536132813,
+          1.4872279052734374,
+          1.50430908203125,
+          1.5495269775390625
+        ],
+        [
+          12.29273291015625,
+          11.42001953125,
+          11.16650390625,
+          11.73279638671875,
+          12.11611328125,
+          11.51043310546875,
+          11.1092568359375,
+          11.31734228515625,
+          11.87911376953125
+        ]
+      ],
+      "allocatedBytesPerCall": [
+        0,
+        0,
+        0
+      ],
+      "methods": [
+        "original_seven_OwnedCount_normalized",
+        "candidate_one_pass_normalized",
+        "original_full_Encoder.Encode"
+      ]
+    },
+    {
+      "ownedCards": 100,
+      "yggdrasil": true,
+      "temporaryCards": 1,
+      "baselineCounterUs": 9.8621787109375,
+      "candidateCounterUs": 1.5949295043945313,
+      "currentFullEncodeUs": 13.169966796875,
+      "countOnlySpeedup": 6.183457440447432,
+      "baselineCounterShareOfEncode": 0.7488385402215,
+      "estimatedEncodeSavingsShare": 0.6277350075403865,
+      "estimateCaveat": "Difference of separately measured medians, not a measured integrated replacement or end-to-end speedup.",
+      "iterations": [
+        2048,
+        16384,
+        2048
+      ],
+      "samplesUs": [
+        [
+          10.27642431640625,
+          9.97506103515625,
+          9.9620810546875,
+          9.84718408203125,
+          10.13914794921875,
+          9.66841650390625,
+          9.8621787109375,
+          9.69898681640625,
+          9.68743896484375
+        ],
+        [
+          1.6548451538085938,
+          1.5784637451171875,
+          1.6323760986328124,
+          1.5949295043945313,
+          1.5892562866210938,
+          1.5873875732421876,
+          1.612738037109375,
+          1.6665440673828125,
+          1.5723988647460938
+        ],
+        [
+          14.05015478515625,
+          12.41116552734375,
+          13.20528173828125,
+          13.1939130859375,
+          12.4940146484375,
+          13.169966796875,
+          13.7906416015625,
+          12.3495771484375,
+          12.17188330078125
+        ]
+      ],
+      "allocatedBytesPerCall": [
+        0,
+        0,
+        0
+      ],
+      "methods": [
+        "original_seven_OwnedCount_normalized",
+        "candidate_one_pass_normalized",
+        "original_full_Encoder.Encode"
+      ]
+    }
+  ],
+  "consumed": 3
+}

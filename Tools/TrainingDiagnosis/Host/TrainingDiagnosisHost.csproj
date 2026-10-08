@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><AssemblyName>TrainingDiagnosisHost</AssemblyName><TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion><Nullable>disable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../MatchupBenchmark/Host/*.cs" Exclude="../../MatchupBenchmark/Host/LaneWorkers.cs;../../MatchupBenchmark/Host/CurrentOpponent.cs;../../MatchupBenchmark/Host/Program.cs" />
+    <Compile Include="../../MatchupOptimizedHost/FrozenPolicy.cs" />
+    <Compile Include="../../MatchupOptimizedHost/LaneWorkers.cs" />
+    <Compile Include="../../../Assets/Scripts/Core/**/*.cs" LinkBase="Core" />
+    <Compile Include="../../../Assets/Scripts/Shards/Engine/**/*.cs" LinkBase="Engine" />
+    <Compile Include="../../../Assets/Scripts/Shards/Content/**/*.cs" LinkBase="Content" />
+    <Compile Include="../../../Assets/Scripts/Shards/AI/**/*.cs" Exclude="../../../Assets/Scripts/Shards/AI/FrozenPolicy.cs" LinkBase="Incumbent" />
+    <Compile Include="../../BalancePatchHost/EffectDescriptors.cs" Link="EffectDescriptors.cs" />
+    <Compile Include="../../FinalEvaluationHost/VictoryEvidence.cs" Link="VictoryEvidence.cs" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

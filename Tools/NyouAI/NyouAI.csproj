@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><LangVersion>9.0</LangVersion><Nullable>disable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks><UseSharedCompilation>false</UseSharedCompilation></PropertyGroup>
+<ItemGroup>
+<Compile Include="../../Assets/Scripts/Core/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/Engine/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/Content/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/AI/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Net/Host/**/*.cs" />
+<Compile Include="../ZeroDepthTraining/Host/Adapter.cs" />
+<Compile Include="../ZeroDepthTraining/Host/Encoder.cs" />
+<Compile Include="../ZeroDepthTraining/Host/Knowledge.cs" />
+<Compile Include="../ZeroDepthTraining/Host/HeroAssignments.cs" />
+<Compile Include="../BalancePatchHost/EffectDescriptors.cs" />
+<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+</ItemGroup></Project>

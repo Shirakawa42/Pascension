@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "actual_event_fixtures": "buy/fastplay/relic/destiny/effect_acquire/effect_fastplay",
+  "duplicate_player_and_game_cluster_checks": true,
+  "caps_not_draws": true,
+  "incomplete_reset_omitted": true,
+  "reset_reuses_lane_arrays": true,
+  "hero_choices": true,
+  "terminal_sums": true,
+  "final_flush": true,
+  "publication_after_10000_resolved_games": true,
+  "error_sidecar_and_history_isolation": true,
+  "fixture": "Tools/TrainingPreflight/experiments/HostV4/statistics-fixture.json",
+  "scope": "Fixed expected typed-event/outcome unit fixtures; wire tests separately execute real legal games"
+}

@@ -1,0 +1,33 @@
+import hashlib,json,statistics,sys,time
+from pathlib import Path
+from types import SimpleNamespace
+sys.path.insert(0,str(Path.cwd()/'Tools/TrainingPreflight'))
+import numpy as np
+import torch
+from learning_model import LearningPolicy,LearningActor
+from adaptive_actor import AdaptiveLearningActor
+from gpu_bench import load_recorded_fixture
+torch.set_num_threads(1)
+torch.backends.fp32_precision='ieee';torch.backends.cuda.matmul.fp32_precision='tf32';torch.manual_seed(993)
+data,_,fixture=load_recorded_fixture({'fixture_path':'Tools/TrainingPreflight/results/real-states.npz','batch':256,'obs_dim':2048,'actions':64,'action_dim':32})
+host=SimpleNamespace(upload=torch.cat((data[0].flatten(),data[1].flatten(),data[2].float().flatten())).pin_memory())
+policy=LearningPolicy().cuda();full=LearningActor(policy,256,graph=True);adaptive=AdaptiveLearningActor(policy,256,graph=True)
+cases=[]
+for count in (32,64,128,256):
+ lanes=np.sort(np.random.default_rng(count).choice(256,count,replace=False))
+ def run(mode):
+  if mode=='adaptive':return adaptive.act_subset(host,lanes)
+  actions,packet=full.act(host)
+  return actions[lanes].copy(),packet[lanes].copy()
+ for _ in range(3):run('full');run('adaptive')
+ repeats={'full':[],'adaptive':[]}
+ for repeat in range(3):
+  for mode in (('full','adaptive') if repeat%2==0 else ('adaptive','full')):
+   start=time.perf_counter();iterations=0
+   while time.perf_counter()-start < .15:
+    actions,packet=run(mode);iterations+=1
+   repeats[mode].append((time.perf_counter()-start)/iterations)
+ med={mode:statistics.median(values) for mode,values in repeats.items()}
+ cases.append({'selected_rows':count,'host_rows':256,'batch_seconds_repeats':repeats,'median_ms':{m:v*1000 for m,v in med.items()},'useful_rows_per_second':{m:count/v for m,v in med.items()},'speedup':med['full']/med['adaptive']})
+result={'kind':'recorded_authorized_states_inference_only_no_outcome_training','fixture':fixture,'width':128,'scope':'includes lane validation, CPU packing, padding, GPU forward/sample, D2H and owned output copies; full ordered subsets skip repacking','cases':cases,'source_sha256':{name:hashlib.sha256(Path('Tools/TrainingPreflight',name).read_bytes()).hexdigest() for name in ('adaptive_actor.py','learning_model.py')}}
+Path('Tools/TrainingPreflight/results/adaptive-actor-paired.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))

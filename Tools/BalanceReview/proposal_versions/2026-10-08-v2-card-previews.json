@@ -1,0 +1,810 @@
+{
+  "proposal_version": "2026-10-08-v2",
+  "proposals": {
+    "giga-mastery": {
+      "cards": [
+        {
+          "before": {
+            "id": "giga_source_adept",
+            "name": "Giga, Source Adept",
+            "faction": "Order",
+            "type": "Champion",
+            "cost": 2,
+            "quantity": 1,
+            "defense": 4,
+            "shield": 0,
+            "rules_text": "When played, draw a card.\nExhaust — Dominion: gain 3 mastery.",
+            "character": null,
+            "art_id": "giga_source_adept"
+          },
+          "after": {
+            "id": "giga_source_adept",
+            "name": "Giga, Source Adept",
+            "faction": "Order",
+            "type": "Champion",
+            "cost": 2,
+            "quantity": 1,
+            "defense": 4,
+            "shield": 0,
+            "rules_text": "When played, draw a card.\nExhaust — Dominion: gain 2 mastery.",
+            "character": null,
+            "art_id": "giga_source_adept"
+          }
+        }
+      ],
+      "summary": "Dominion mastery 3 → 2. Cost 2, defense 4 and draw stay the same."
+    },
+    "deadly-recruits-cost": {
+      "cards": [
+        {
+          "before": {
+            "id": "deadly_recruits_duel",
+            "name": "Deadly Recruits",
+            "faction": "None",
+            "type": "Destiny",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it for free.\nM20: cost 4 or less.",
+            "character": null,
+            "art_id": "deadly_recruits"
+          },
+          "after": {
+            "id": "deadly_recruits_duel",
+            "name": "Deadly Recruits",
+            "faction": "None",
+            "type": "Destiny",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Pay 1 gem, Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it for free.\nM20: cost 4 or less.",
+            "character": null,
+            "art_id": "deadly_recruits"
+          }
+        }
+      ],
+      "summary": "Activation costs 1 gem. Both modes and both target-cost limits stay the same."
+    },
+    "brain-power": {
+      "cards": [
+        {
+          "before": {
+            "id": "multitask_brain",
+            "name": "Multitask Brain",
+            "faction": "Order",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "For each different faction you played this turn, gain 2 power and draw a card.\nM20: gain 4 power instead of 2.",
+            "character": "tetra",
+            "art_id": "multitask_brain"
+          },
+          "after": {
+            "id": "multitask_brain",
+            "name": "Multitask Brain",
+            "faction": "Order",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "For each different faction you played this turn, gain 1 power and draw a card.\nM20: gain 4 power instead of 1.",
+            "character": "tetra",
+            "art_id": "multitask_brain"
+          }
+        }
+      ],
+      "summary": "Power per faction 2 → 1 below M20. Drawing and the M20 power tier stay the same."
+    },
+    "crown-draw": {
+      "cards": [
+        {
+          "before": {
+            "id": "panconscious_crown_duel",
+            "name": "Panconscious Crown",
+            "faction": "Undergrowth",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 2 mastery and 5 health.\nM20 Unify: gain 50 health.",
+            "character": "volos",
+            "art_id": "panconscious_crown"
+          },
+          "after": {
+            "id": "panconscious_crown_duel",
+            "name": "Panconscious Crown",
+            "faction": "Undergrowth",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 2 mastery and 5 health.\nM20 Unify: gain 50 health.\nDraw a card.",
+            "character": "volos",
+            "art_id": "panconscious_crown"
+          }
+        },
+        {
+          "before": {
+            "id": "entropic_talons",
+            "name": "Entropic Talons",
+            "faction": "Undergrowth",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Draw two cards.\nThis turn, gain 1 power per health you gain, even at the 50 health cap.\nM20: also gain 10 health.",
+            "character": "volos",
+            "art_id": "entropic_talons"
+          },
+          "after": {
+            "id": "entropic_talons",
+            "name": "Entropic Talons",
+            "faction": "Undergrowth",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Draw two cards.\nThis turn, gain 1 power per health you gain, even at the 50 health cap.\nM20: also gain 10 health.",
+            "character": "volos",
+            "art_id": "entropic_talons"
+          }
+        }
+      ],
+      "summary": "Draw a card after Crown’s existing effects. Entropic Talons is shown for the interaction and stays unchanged."
+    },
+    "conscription-reliability": {
+      "cards": [
+        {
+          "before": {
+            "id": "unconditional_conscription",
+            "name": "Unconditional Conscription",
+            "faction": "None",
+            "type": "Destiny",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Exhaust: if you played 2+ non-starter allies costing 2 or less this turn, gain 4 power.",
+            "character": null,
+            "art_id": "unconditional_conscription"
+          },
+          "after": {
+            "id": "unconditional_conscription",
+            "name": "Unconditional Conscription",
+            "faction": "None",
+            "type": "Destiny",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Exhaust: if you played 2+ non-starter allies costing 2 or less this turn, gain 5 power.",
+            "character": null,
+            "art_id": "unconditional_conscription"
+          }
+        }
+      ],
+      "summary": "Conditional power 4 → 5. The existing two-card requirement and eligible cards stay the same."
+    },
+    "soul-syphon-reliability": {
+      "cards": [
+        {
+          "before": {
+            "id": "soul_syphon_duel",
+            "name": "Soul Syphon",
+            "faction": "None",
+            "type": "Destiny",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Exhaust: if you played cards of 3+ different factions this turn, gain 7 health.",
+            "character": null,
+            "art_id": "soul_syphon"
+          },
+          "after": {
+            "id": "soul_syphon_duel",
+            "name": "Soul Syphon",
+            "faction": "None",
+            "type": "Destiny",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Exhaust: if you played 2+ faction-bearing cards spanning 2+ different factions this turn, gain 5 health.",
+            "character": null,
+            "art_id": "soul_syphon"
+          }
+        }
+      ],
+      "summary": "Require 2 cards spanning 2 factions instead of 3 cards spanning 3 factions; healing 7 → 5."
+    },
+    "furrowing-price": {
+      "cards": [
+        {
+          "before": {
+            "id": "furrowing_elemental_duel",
+            "name": "Furrowing Elemental",
+            "faction": "Undergrowth",
+            "type": "Ally",
+            "cost": 5,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 4 health and draw a card.\nIf you are at 50 health, gain 4 power.",
+            "character": null,
+            "art_id": "furrowing_elemental"
+          },
+          "after": {
+            "id": "furrowing_elemental_duel",
+            "name": "Furrowing Elemental",
+            "faction": "Undergrowth",
+            "type": "Ally",
+            "cost": 4,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 4 health and draw a card.\nIf you are at 50 health, gain 4 power.",
+            "character": null,
+            "art_id": "furrowing_elemental"
+          }
+        }
+      ],
+      "summary": "Cost 5 → 4. All effects and the two copies stay the same."
+    },
+    "j-chord-hold": {
+      "cards": [
+        {
+          "before": {
+            "id": "j_chord_duel",
+            "name": "J-Chord",
+            "faction": "Aion",
+            "type": "Champion",
+            "cost": 3,
+            "quantity": 1,
+            "defense": 3,
+            "shield": 0,
+            "rules_text": "Exhaust — Warp 3.\nM15: Warp 6 instead.",
+            "character": null,
+            "art_id": "j_chord"
+          },
+          "after": {
+            "id": "j_chord_duel",
+            "name": "J-Chord",
+            "faction": "Aion",
+            "type": "Champion",
+            "cost": 4,
+            "quantity": 1,
+            "defense": 3,
+            "shield": 0,
+            "rules_text": "Exhaust — Warp 3.\nM15: Warp 6 instead.",
+            "character": null,
+            "art_id": "j_chord"
+          }
+        }
+      ],
+      "summary": "Cost 3 → 4. Defense 3, Warp 3 and M15 Warp 6 stay the same."
+    },
+    "abstractor-hold": {
+      "cards": [
+        {
+          "before": {
+            "id": "shard_abstractor",
+            "name": "Shard Abstractor",
+            "faction": "Order",
+            "type": "Mercenary",
+            "cost": 3,
+            "quantity": 3,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 2 mastery.",
+            "character": null,
+            "art_id": "shard_abstractor"
+          },
+          "after": {
+            "id": "shard_abstractor",
+            "name": "Shard Abstractor",
+            "faction": "Order",
+            "type": "Mercenary",
+            "cost": 2,
+            "quantity": 3,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 1 mastery.\nM10: gain 2 instead. Use your mastery before this gain.",
+            "character": null,
+            "art_id": "shard_abstractor"
+          }
+        }
+      ],
+      "summary": "Cost 3 → 2. Gain 1 mastery below M10, or 2 at M10. Check the tier before gaining mastery."
+    },
+    "hero-powers-hold": {
+      "cards": [
+        {
+          "before": {
+            "id": "volos_first_aid",
+            "name": "Volos — First Aid",
+            "faction": "Undergrowth",
+            "type": "Hero",
+            "cost": null,
+            "quantity": null,
+            "defense": 0,
+            "shield": 0,
+            "character": "volos",
+            "art_id": "volos",
+            "rules_text": "M5: once per turn, choose one:\n— Gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw a card.\n— Pay 3 gems: gain 1 mastery."
+          },
+          "after": {
+            "id": "volos_first_aid",
+            "name": "Volos — First Aid",
+            "faction": "Undergrowth",
+            "type": "Hero",
+            "cost": null,
+            "quantity": null,
+            "defense": 0,
+            "shield": 0,
+            "character": "volos",
+            "art_id": "volos",
+            "rules_text": "M5: once per turn, choose one:\n— Gain 3 health.\n— Pay 1 gem: gain 3 power.\n— Pay 2 gems: draw a card.\n— Pay 3 gems: gain 1 mastery."
+          }
+        }
+      ],
+      "summary": "Volos’s one-gem option gives 3 power instead of 2. All other modes stay the same."
+    },
+    "catchup-card": {
+      "cards": [
+        {
+          "before": null,
+          "after": {
+            "id": "aegis_surveyor",
+            "name": "Aegis Surveyor",
+            "faction": "Homodeus",
+            "type": "Mercenary",
+            "cost": 1,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 2,
+            "rules_text": "Shield 2.\nGain 2 power.\nIf your mastery is lower than your opponent’s, gain 1 mastery.",
+            "art_id": "",
+            "character": null
+          }
+        }
+      ],
+      "summary": "New Homodeus mercenary: 2 copies. A cheap attack with hand shield and a mastery bonus when behind."
+    },
+    "relief-courier": {
+      "cards": [
+        {
+          "before": null,
+          "after": {
+            "id": "relief_courier",
+            "name": "Relief Courier",
+            "faction": "Undergrowth",
+            "type": "Ally",
+            "cost": 3,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 2 gems.\nIf your health is lower than your opponent’s, gain 4 health.",
+            "art_id": "",
+            "character": null
+          }
+        }
+      ],
+      "summary": "New Undergrowth ally: 2 copies. Economy with healing when behind in health."
+    },
+    "riftbreaker": {
+      "cards": [
+        {
+          "before": null,
+          "after": {
+            "id": "riftbreaker",
+            "name": "Riftbreaker",
+            "faction": "Wraethe",
+            "type": "Mercenary",
+            "cost": 4,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 4 power.\nIf you control fewer champions than your opponent, gain 3 more power.",
+            "art_id": "",
+            "character": null
+          }
+        }
+      ],
+      "summary": "New Wraethe mercenary: 2 copies. Extra power against a larger champion board."
+    },
+    "early-order-hold": {
+      "cards": [
+        {
+          "before": {
+            "id": "order_initiate_duel",
+            "name": "Order Initiate",
+            "faction": "Order",
+            "type": "Ally",
+            "cost": 1,
+            "quantity": 3,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "You may remove a card from the shop. Gain 2 gems. Dominion: gain 2 mastery.",
+            "character": null,
+            "art_id": "order_initiate"
+          },
+          "after": {
+            "id": "order_initiate_duel",
+            "name": "Order Initiate",
+            "faction": "Order",
+            "type": "Ally",
+            "cost": 1,
+            "quantity": 3,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "You may remove a card from the shop. Gain 2 gems. Dominion: gain 2 mastery.",
+            "character": null,
+            "art_id": "order_initiate"
+          }
+        },
+        {
+          "before": {
+            "id": "shard_seer",
+            "name": "Shard Seer",
+            "faction": "Order",
+            "type": "Ally",
+            "cost": 2,
+            "quantity": 3,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 2 mastery.",
+            "character": null,
+            "art_id": "shard_seer"
+          },
+          "after": {
+            "id": "shard_seer",
+            "name": "Shard Seer",
+            "faction": "Order",
+            "type": "Ally",
+            "cost": 2,
+            "quantity": 3,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 2 mastery.",
+            "character": null,
+            "art_id": "shard_seer"
+          }
+        },
+        {
+          "before": {
+            "id": "duplication_fabricator_duel",
+            "name": "Duplication Fabricator",
+            "faction": "Order",
+            "type": "Ally",
+            "cost": 3,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 1 mastery.\nEvery player reveals their deck's top card; copy the effect of one revealed ally.\nM20: you may copy any number of effects from the revealed cards instead.",
+            "character": null,
+            "art_id": "duplication_fabricator"
+          },
+          "after": {
+            "id": "duplication_fabricator_duel",
+            "name": "Duplication Fabricator",
+            "faction": "Order",
+            "type": "Ally",
+            "cost": 3,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 1 mastery.\nEvery player reveals their deck's top card; copy the effect of one revealed ally.\nM20: you may copy any number of effects from the revealed cards instead.",
+            "character": null,
+            "art_id": "duplication_fabricator"
+          }
+        }
+      ],
+      "summary": "These three early Order cards keep their current rules."
+    },
+    "rare-relics-hold": {
+      "cards": [
+        {
+          "before": {
+            "id": "terminal_crescents_duel",
+            "name": "Terminal Crescents",
+            "faction": "Order",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 1 mastery, then power equal to half your mastery, rounded up.\nM20: equal to your mastery minus 5.",
+            "character": "tetra",
+            "art_id": "terminal_crescents"
+          },
+          "after": {
+            "id": "terminal_crescents_duel",
+            "name": "Terminal Crescents",
+            "faction": "Order",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 1 mastery, then power equal to half your mastery, rounded up.\nM20: equal to your mastery minus 5.",
+            "character": "tetra",
+            "art_id": "terminal_crescents"
+          }
+        },
+        {
+          "before": {
+            "id": "world_piercer_duel",
+            "name": "The World Piercer",
+            "faction": "Wraethe",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 2 mastery.\nReturn up to two mercenaries from your discard or draw pile to your hand.\nM20: return ALL of them.",
+            "character": "kosynwu",
+            "art_id": "world_piercer"
+          },
+          "after": {
+            "id": "world_piercer_duel",
+            "name": "The World Piercer",
+            "faction": "Wraethe",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 2 mastery.\nReturn up to two mercenaries from your discard or draw pile to your hand.\nM20: return ALL of them.",
+            "character": "kosynwu",
+            "art_id": "world_piercer"
+          }
+        },
+        {
+          "before": {
+            "id": "unknown_god",
+            "name": "Unknown God",
+            "faction": "Undergrowth",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 6,
+            "shield": 0,
+            "rules_text": "Exhaust: gain 5 health for each champion you control.\nM20: your Exhaust effects apply twice.",
+            "character": "volos",
+            "art_id": "unknown_god"
+          },
+          "after": {
+            "id": "unknown_god",
+            "name": "Unknown God",
+            "faction": "Undergrowth",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 6,
+            "shield": 0,
+            "rules_text": "Exhaust: gain 5 health for each champion you control.\nM20: your Exhaust effects apply twice.",
+            "character": "volos",
+            "art_id": "unknown_god"
+          }
+        },
+        {
+          "before": {
+            "id": "praetorian_03",
+            "name": "Praetorian-03",
+            "faction": "Homodeus",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 4,
+            "rules_text": "Gain 1 mastery and draw a card. M15: 2 mastery and 2 cards instead. M20: 3 mastery and 3 cards instead.",
+            "character": "decima",
+            "art_id": "praetorian_03"
+          },
+          "after": {
+            "id": "praetorian_03",
+            "name": "Praetorian-03",
+            "faction": "Homodeus",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 4,
+            "rules_text": "Gain 1 mastery and draw a card. M15: 2 mastery and 2 cards instead. M20: 3 mastery and 3 cards instead.",
+            "character": "decima",
+            "art_id": "praetorian_03"
+          }
+        },
+        {
+          "before": {
+            "id": "doom_gate",
+            "name": "Doom Gate",
+            "faction": "Wraethe",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 7,
+            "shield": 0,
+            "rules_text": "You are unaffected by Ingeminex attacks.\nWhen you play this champion, shuffle 35 new Ingeminex into the center deck. Once per game.\nExhaust: destroy an Ingeminex.",
+            "character": "kosynwu",
+            "art_id": "doom_gate"
+          },
+          "after": {
+            "id": "doom_gate",
+            "name": "Doom Gate",
+            "faction": "Wraethe",
+            "type": "Relic",
+            "cost": null,
+            "quantity": 1,
+            "defense": 7,
+            "shield": 0,
+            "rules_text": "You are unaffected by Ingeminex attacks.\nWhen you play this champion, shuffle 35 new Ingeminex into the center deck. Once per game.\nExhaust: destroy an Ingeminex.",
+            "character": "kosynwu",
+            "art_id": "doom_gate"
+          }
+        },
+        {
+          "before": {
+            "id": "comet",
+            "name": "Comet",
+            "faction": "Aion",
+            "type": "Ally",
+            "cost": 13,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Destroy target opponent.\nCan only be acquired through a normal gem purchase.\nCannot be fast-played or removed from the shop.",
+            "character": null,
+            "art_id": "comet"
+          },
+          "after": {
+            "id": "comet",
+            "name": "Comet",
+            "faction": "Aion",
+            "type": "Ally",
+            "cost": 13,
+            "quantity": 1,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Destroy target opponent.\nCan only be acquired through a normal gem purchase.\nCannot be fast-played or removed from the shop.",
+            "character": null,
+            "art_id": "comet"
+          }
+        },
+        {
+          "before": {
+            "id": "scion_of_nothingness",
+            "name": "Scion of Nothingness",
+            "faction": "Wraethe",
+            "type": "Mercenary",
+            "cost": 5,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 3 power.\nEcho: gain 2 more per Wraethe card.",
+            "character": null,
+            "art_id": "scion_of_nothingness"
+          },
+          "after": {
+            "id": "scion_of_nothingness",
+            "name": "Scion of Nothingness",
+            "faction": "Wraethe",
+            "type": "Mercenary",
+            "cost": 5,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 3 power.\nEcho: gain 2 more per Wraethe card.",
+            "character": null,
+            "art_id": "scion_of_nothingness"
+          }
+        },
+        {
+          "before": {
+            "id": "shadebound_sentry",
+            "name": "Shadebound Sentry",
+            "faction": "Wraethe",
+            "type": "Ally",
+            "cost": 3,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 3 power.\nReturn a mercenary from your discard pile to your hand.",
+            "character": null,
+            "art_id": "shadebound_sentry"
+          },
+          "after": {
+            "id": "shadebound_sentry",
+            "name": "Shadebound Sentry",
+            "faction": "Wraethe",
+            "type": "Ally",
+            "cost": 3,
+            "quantity": 2,
+            "defense": 0,
+            "shield": 0,
+            "rules_text": "Gain 3 power.\nReturn a mercenary from your discard pile to your hand.",
+            "character": null,
+            "art_id": "shadebound_sentry"
+          }
+        }
+      ],
+      "summary": "These relics and finishers keep their current rules."
+    },
+    "global-rules-hold": {
+      "cards": [
+        {
+          "before": {
+            "id": "duel_pacing_rules",
+            "name": "Duel pacing",
+            "faction": "None",
+            "type": "Rule",
+            "cost": null,
+            "quantity": null,
+            "defense": 0,
+            "shield": 0,
+            "character": null,
+            "art_id": "",
+            "rules_text": "Both players start with 5 cards.\nSecond player: start with 1 mastery and 1 extra gem for the first turn.\nM10: choose a relic and recruit it to your discard pile.\nM30: Infinity Shard grants infinite power."
+          },
+          "after": {
+            "id": "duel_pacing_rules",
+            "name": "Duel pacing",
+            "faction": "None",
+            "type": "Rule",
+            "cost": null,
+            "quantity": null,
+            "defense": 0,
+            "shield": 0,
+            "character": null,
+            "art_id": "",
+            "rules_text": "Both players start with 5 cards.\nSecond player: start with 1 mastery and 1 extra gem for the first turn.\nM10: choose a relic and recruit it to your discard pile.\nM30: Infinity Shard grants infinite power."
+          }
+        }
+      ],
+      "summary": "Starting compensation, mastery thresholds and ordinary relic routing stay the same."
+    },
+    "giga-price": {
+      "cards": [
+        {
+          "before": {
+            "id": "giga_source_adept",
+            "name": "Giga, Source Adept",
+            "faction": "Order",
+            "type": "Champion",
+            "cost": 2,
+            "quantity": 1,
+            "defense": 4,
+            "shield": 0,
+            "rules_text": "When played, draw a card.\nExhaust — Dominion: gain 3 mastery.",
+            "character": null,
+            "art_id": "giga_source_adept"
+          },
+          "after": {
+            "id": "giga_source_adept",
+            "name": "Giga, Source Adept",
+            "faction": "Order",
+            "type": "Champion",
+            "cost": 2,
+            "quantity": 1,
+            "defense": 4,
+            "shield": 0,
+            "rules_text": "When played, draw a card.\nExhaust — Dominion: gain 3 mastery.",
+            "character": null,
+            "art_id": "giga_source_adept"
+          }
+        }
+      ],
+      "summary": "Price increase rejected: Giga keeps cost 2. This comparison concerns price only; the mastery reduction is shown in Giga’s active proposal."
+    }
+  }
+}

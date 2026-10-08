@@ -1,0 +1,49 @@
+{
+  "schema": "shards-host-v4-counter-and-statistics-v1",
+  "observation_schema": "shards-observation-v3",
+  "host_v3_sha256": "472f94ef69e265b1ab03249413275ccc088063dfa5f0fc2d9b57e806025a8520",
+  "host_v4_sha256": "cdda3e733d416f5e32b7af93b232ef2de898be7adcfdc0a09e34a9e447ca6315",
+  "base_v3_training_source_sha256": "4d7b826d5d11b7ab825faf170115e4bbc75adf115250706244dcdb6ecb9f72f6",
+  "training_source_sha256": "3b8cf5b37bc032081d46c944b570ec64c3e231240f2e57ec82d8f3b43aad862c",
+  "observation_semantics_unchanged": true,
+  "rules_unchanged": true,
+  "hero_assignment_unchanged": true,
+  "original_manifest_source_hashes_unchanged": true,
+  "source_sha256": {
+    "Tools/TrainingPreflight/experiments/HostV4/Encoder.cs": "c61e5a386a8db36f586a40e4f1e402462df1c1f49c50477943d301e273209799",
+    "Tools/TrainingPreflight/experiments/HostV4/FactionCounter.cs": "b9e87ba5b7d0f7a713639b52b0c5d46a705e81b58df62dd727e2c0399643a672",
+    "Tools/TrainingPreflight/experiments/HostV4/Program.cs": "0f0c27aff65ece7ad68bd2f1a8397b05e8952df6190f5dcf734ae72ec3f82d68",
+    "Tools/TrainingPreflight/experiments/HostV4/StatisticsSelfTest.cs": "c1b5c407870ad0be4f8e93cc98dc40f64bda112177eafcf460c3a2e055f71f90",
+    "Tools/TrainingPreflight/experiments/HostV4/TrainingStatistics.cs": "62020e96b91f14d9d7bcebad9f370af12080214d395f5bd8da6db78c965be3d4",
+    "Tools/TrainingPreflight/experiments/HostV4/TrainingHostV4.csproj": "9584ba18bf483418cc6525bcb0a573ffb639257361288059dc02d5f3a15b2b95",
+    "Tools/TrainingPreflight/experiments/variant_v4_runtime.py": "d56c51b5da4717630530cc66351ec796e57b0a59c8177c47471f4a2ea48f1b45",
+    "Tools/TrainingPreflight/experiments/variant_v4_entry.py": "443d11e38792bbdb83ef1dcec89f23968dcbdddd63104279e3f940b98c82c42d",
+    "Tools/TrainingPreflight/experiments/migrate_runtime_v4.py": "975add92aa2e23e32b1d9822dd8916d8d93f42e4a588a720343c8789c36186f0",
+    "Tools/TrainingPreflight/experiments/migrate_checkpoint.py": "4ea8c542cd0e5a97281d6559d6885a61b39474042427f16fa40ecd6e4a9decfd"
+  },
+  "shared_frozen_source_manifest": "Tools/TrainingPreflight/experiments/HostV3/manifest.json",
+  "statistics": {
+    "schema": "shards-training-pool-stats-v1",
+    "routing": "explicit training Host context only",
+    "directory": "<run-dir>/training-statistics/",
+    "every_completed_games": 10000,
+    "history_snapshots_per_process": 512
+  },
+  "reports": [
+    "statistics-selftest.json",
+    "statistics-wire-differential.json",
+    "v3-selftest-statistics.json",
+    "statistics-request-benchmark.json",
+    "runtime-cpu-tests.txt",
+    "actual-checkpoint-preview.json",
+    "runtime-identity.json"
+  ],
+  "historical_counter_only_reports": [
+    "v3-selftest.json",
+    "wire-differential.json",
+    "request-benchmark-fixed-jit.json",
+    "request-benchmark-default-jit.json",
+    "reference-host-fraction.json"
+  ],
+  "status": "isolated reviewed candidate; no live runtime adoption or campaign checkpoint publication"
+}

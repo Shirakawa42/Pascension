@@ -1,0 +1,22 @@
+{
+  "Adapter": {
+    "original_sha256": "be89ed9729d105bb870d9bff6716134cf091814255c7330ae5515e6c820ade6d",
+    "native_sha256": "eaf3605bbf4450b02f9c7d3933221fd1c8a50da7d7357303e455dfd1c34591a4"
+  },
+  "Encoder": {
+    "original_sha256": "25e3a611dd7186ea87ee885bf2b307efaa417cb1493161e5f2bc3d798ed28119",
+    "native_sha256": "b63dc1e6525ac7ce37b0fb124d0525619a63bb68976562ef667b3fb0e5c9e7bf"
+  },
+  "CenterKnowledge": {
+    "original_sha256": "95a8e103d618a6e985f2bdc0583542a7dc58478f4bc4950fe1623102d7512729",
+    "native_sha256": "6e3b35d0dcca16ec18116e6bfe74ef7d1ccfcee12c7f2b8769abf9b3dbe9e455"
+  },
+  "Knowledge": {
+    "original_sha256": "1b79ba447f489a71353b9be7391a6918e56bdeb2f4949c03c13ed22cf3ac827f",
+    "native_sha256": "64f327e2e28861798d94877591fcf76846dbafd60a2fce2f1ffcc602faefe988"
+  },
+  "HeroFeatures": {
+    "original_sha256": "bec2af0e46f6f3b9b616f3eb3023a3dad0b8140793b63abfc36a5ad71cfc70f8",
+    "native_sha256": "07ca4765d3fb8be9ac60524158d67164043fd22bde6525edef13068a1670a37d"
+  }
+}

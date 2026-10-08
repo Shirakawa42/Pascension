@@ -1,0 +1,153 @@
+{
+  "schema": "shards-representation-alias-fixture-v1",
+  "liveAssemblyReadOnly": true,
+  "scope": "Constructed card-conserving starting fixtures, then five advertised legal Submit actions per case; not a complete seed-to-position reachability proof.",
+  "prefixA": [
+    "play Crystal x3",
+    "fast-buy Shard Abstractor",
+    "play Fungal Hermit"
+  ],
+  "prefixB": [
+    "play Crystal x3",
+    "play Shard Abstractor",
+    "fast-buy Fungal Hermit"
+  ],
+  "floatsCompared": 4160,
+  "observationAndCandidatesAndMaskExactlyEqual": true,
+  "differences": [],
+  "caseA": {
+    "before": {
+      "hero": "tetra",
+      "masteryBefore": 8,
+      "gems": 0,
+      "orderAllegianceCount": 4,
+      "deck": [
+        "shard_abstractor"
+      ],
+      "hand": [
+        "mainframe_abbot_duel"
+      ],
+      "played": [
+        {
+          "card": "crystal",
+          "temporary": false
+        },
+        {
+          "card": "crystal",
+          "temporary": false
+        },
+        {
+          "card": "crystal",
+          "temporary": false
+        },
+        {
+          "card": "shard_abstractor",
+          "temporary": true
+        },
+        {
+          "card": "fungal_hermit",
+          "temporary": false
+        }
+      ],
+      "ownFactionPlays": [
+        3,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      "ownAllyPlays": [
+        3,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      "visibleLegal": [
+        "ShardsPlayCardAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsEndTurnAction",
+        "ConcedeAction"
+      ]
+    },
+    "mainframeAbbotAccepted": true,
+    "masteryAfter": 9
+  },
+  "caseB": {
+    "before": {
+      "hero": "tetra",
+      "masteryBefore": 8,
+      "gems": 0,
+      "orderAllegianceCount": 3,
+      "deck": [
+        "fungal_hermit"
+      ],
+      "hand": [
+        "mainframe_abbot_duel"
+      ],
+      "played": [
+        {
+          "card": "crystal",
+          "temporary": false
+        },
+        {
+          "card": "crystal",
+          "temporary": false
+        },
+        {
+          "card": "crystal",
+          "temporary": false
+        },
+        {
+          "card": "shard_abstractor",
+          "temporary": false
+        },
+        {
+          "card": "fungal_hermit",
+          "temporary": true
+        }
+      ],
+      "ownFactionPlays": [
+        3,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      "ownAllyPlays": [
+        3,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      "visibleLegal": [
+        "ShardsPlayCardAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsTakeDestinyAction",
+        "ShardsEndTurnAction",
+        "ConcedeAction"
+      ]
+    },
+    "mainframeAbbotAccepted": true,
+    "masteryAfter": 8
+  },
+  "hostSha256": "7a5039afacccfd6e9aad4f56a2705a3a5523a6c1df62e72af3754cf4bad00ef1"
+}

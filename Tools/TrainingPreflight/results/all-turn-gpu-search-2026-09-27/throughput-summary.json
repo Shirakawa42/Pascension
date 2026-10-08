@@ -1,0 +1,53 @@
+{
+  "same_outcomes_verified": true,
+  "recommended_search_workers": 16,
+  "recommended_server_gc": true,
+  "runs": {
+    "baseline": {
+      "games": 5000,
+      "seconds": 15.0481805,
+      "games_per_second": 332.2660791812528,
+      "server_gc": false,
+      "cloneSeconds": 0.0,
+      "rolloutSeconds": 0.0,
+      "terminalSeconds": 0.0
+    },
+    "both": {
+      "games": 40,
+      "seconds": 100.8846943,
+      "games_per_second": 0.39649225364955953,
+      "server_gc": false,
+      "cloneSeconds": 12.123810800000008,
+      "rolloutSeconds": 15.91292659999998,
+      "terminalSeconds": 71.52286309999994
+    },
+    "servergc": {
+      "games": 40,
+      "seconds": 68.7962632,
+      "games_per_second": 0.5814269275872138,
+      "server_gc": true,
+      "cloneSeconds": 6.285601099999998,
+      "rolloutSeconds": 11.57372630000001,
+      "terminalSeconds": 49.88558679999995
+    },
+    "baseline-servergc": {
+      "games": 5000,
+      "seconds": 13.8207178,
+      "games_per_second": 361.77570775827786,
+      "server_gc": true,
+      "cloneSeconds": 0.0,
+      "rolloutSeconds": 0.0,
+      "terminalSeconds": 0.0
+    },
+    "workers16": {
+      "games": 40,
+      "seconds": 63.2546451,
+      "games_per_second": 0.6323646261355753,
+      "server_gc": true,
+      "cloneSeconds": 5.068652799999996,
+      "rolloutSeconds": 11.012728600000006,
+      "terminalSeconds": 46.0262742
+    }
+  },
+  "limits": "Single isolated timing cohort per configuration, no balance-acquisition telemetry; both-player cohorts contain 20 unique seeds repeated for deterministic comparisons. CUDA setup excluded and separately recorded."
+}

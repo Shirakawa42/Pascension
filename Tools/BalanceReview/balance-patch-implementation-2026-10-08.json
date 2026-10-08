@@ -1,0 +1,100 @@
+{
+  "schema": "shards.balance-patch-implementation/v1",
+  "implemented_at": "2026-10-08T19:55:34.212836+00:00",
+  "source_reviewed_proposal": "2026-10-08-v5",
+  "status": "implemented",
+  "scope": "Duel game content and rules; original printings remain available for non-Duel formats",
+  "content": {
+    "registered_definitions": 202,
+    "changed_existing_faces": 19,
+    "new_cards": [
+      "horizon_seeker",
+      "riftbreaker",
+      "rift_scout",
+      "dna"
+    ],
+    "rejected_cards_not_added": [
+      "relief_courier",
+      "aegis_surveyor"
+    ]
+  },
+  "rules": {
+    "opening_shop": "Initial six: cost 5 or less, with reviewed Comet exception. Later refills unrestricted. Skipped cards retained and shuffled privately.",
+    "champion_combat": "Duel attacks resolve during the active turn, pay exact remaining effective defense, and immediately recalculate target restrictions. Player damage remains at turn end.",
+    "zetta": "Guards protect their owner and non-guards; guards remain targetable when multiple guards are present. Direct destruction keeps its existing behavior.",
+    "testudo": "Each actual card play with positive live shield grants current champions +1 defense per Testudo until owner next turn. Grants survive Testudo removal; recipients lose grants when leaving play.",
+    "dna": "Pay 4 gems/exhaust; next actual paid or free recruit this turn, including relic recruit or normally purchased Comet, creates one copy straight into discard. No recursive recruit trigger. Unused copy expires at cleanup.",
+    "crown_order": "Mastery, health, draw, then M20 Unify check."
+  },
+  "ai": {
+    "profiles": [
+      "Auld Haïai",
+      "Nyou Haïai"
+    ],
+    "packaged_weights_changed": false,
+    "training_started": false,
+    "compatibility": "Frozen original card slots; errata map to replaced identities; new cards use explicit existing-card embeddings. Actual numeric properties, legal actions, public inventory and search simulation use patched rules.",
+    "new_identity_aliases": {
+      "horizon_seeker": "shard_seer",
+      "riftbreaker": "shadow_apostle",
+      "rift_scout": "brute",
+      "dna": "deadly_recruits_duel"
+    },
+    "post_patch_strength_measured": false
+  },
+  "validation": {
+    "headless_suite": {
+      "passed": 324,
+      "failed": 0,
+      "skipped": 0,
+      "command": "dotnet test Tools/EngineVerify/Engine.Verify.csproj",
+      "result": "Tools/EngineVerify/TestResults/balance-october08-full.trx"
+    },
+    "unity_editmode": {
+      "fixture": "Pascension.Engine.Tests.ShardsBalancePatchTests",
+      "passed": 19,
+      "failed": 0,
+      "job_id": "68e4ab03a2e746a39487f3224cb39bb5"
+    },
+    "card_designer": {
+      "passed": 23,
+      "failed": 0,
+      "entries": 212
+    },
+    "unity_faces": "Four new faces have rendered art and text; champion live defense and tint reset pass.",
+    "unity_playmode": "Both profiles load. In each, board pointer click kills an enemy Zetta immediately, pays 7 power including +2 temporary defense, and moves card to discard.",
+    "content_audit": "22 reviewed card records match exported values. 202 unique French card entries; 19 bilingual before/after records.",
+    "unity_console_errors": 0,
+    "balance_simulations_run": false,
+    "git_diff_check": "passed",
+    "review_page": "Live page: 25 comparisons and patch links, before/after labels, resolved DNA/Testudo/combat notes; 390px mobile layout without horizontal overflow; zero JavaScript errors. Saved reviews and user drafts unchanged."
+  },
+  "art": {
+    "generator": "ComfyUI / Anima",
+    "manifest": "Tools/BalanceReview/balance-patch-art-2026-10-08.json",
+    "files": {
+      "horizon_seeker": {
+        "path": "Assets/Art/Shards/Cards/horizon_seeker.png",
+        "sha256": "ca92169ee17b932f8ee564f4db9d27712d2502db1e7fdf12ea0faffd46055a25"
+      },
+      "riftbreaker": {
+        "path": "Assets/Art/Shards/Cards/riftbreaker.png",
+        "sha256": "df260b5d70d1f2c406c98652ea8209c66c673483ffa2acb859906746704cc48b"
+      },
+      "rift_scout": {
+        "path": "Assets/Art/Shards/Cards/rift_scout.png",
+        "sha256": "f29f65f9115f8ca442920e9b4f0e0d47276c036784350de392da49932852096b"
+      },
+      "dna": {
+        "path": "Assets/Art/Shards/Cards/dna.png",
+        "sha256": "bd00b15238f5becfa4f1574056459cdaab6d9a2e8c726a46194de9b1416bc209"
+      }
+    }
+  },
+  "cleanup": {
+    "unity_playmode_stopped": true,
+    "editor_scene": "MainMenu",
+    "comfy_model_cache_released": true
+  },
+  "published_review_version": "2026-10-08-v6"
+}

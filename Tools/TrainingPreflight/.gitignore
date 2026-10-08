@@ -1,0 +1,5 @@
+__pycache__/
+Host/bin/
+Host/obj/
+!Host/*.csproj
+*.trace.json

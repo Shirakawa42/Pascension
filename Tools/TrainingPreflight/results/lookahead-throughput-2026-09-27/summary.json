@@ -1,0 +1,87 @@
+{
+  "benchmarks": [
+    {
+      "label": "baseline",
+      "games": 40,
+      "batch": 40,
+      "seconds": 76.4830146,
+      "games_per_second": 0.5229919355597997,
+      "clone_seconds": 6.9595274999999965,
+      "rollout_seconds": 12.388113799999998,
+      "terminal_seconds": 56.17031450000002,
+      "decisions": 13648
+    },
+    {
+      "label": "typed-copy-and-pruning",
+      "games": 40,
+      "batch": 40,
+      "seconds": 48.0446805,
+      "games_per_second": 0.8325583498623571,
+      "clone_seconds": 4.841415799999998,
+      "rollout_seconds": 12.594481199999995,
+      "terminal_seconds": 29.672448400000007,
+      "decisions": 13648
+    },
+    {
+      "label": "pooled-identity-map",
+      "games": 40,
+      "batch": 40,
+      "seconds": 42.4637955,
+      "games_per_second": 0.9419789125021129,
+      "clone_seconds": 4.889096100000003,
+      "rollout_seconds": 11.22040319999999,
+      "terminal_seconds": 25.48196189999999,
+      "decisions": 13648
+    },
+    {
+      "label": "skip-identical-retry",
+      "games": 40,
+      "batch": 40,
+      "seconds": 42.4519921,
+      "games_per_second": 0.9422408191664541,
+      "clone_seconds": 4.7378955000000005,
+      "rollout_seconds": 11.587674800000002,
+      "terminal_seconds": 25.243485699999997,
+      "decisions": 13648
+    },
+    {
+      "label": "compiled-fields",
+      "games": 40,
+      "batch": 40,
+      "seconds": 40.8325224,
+      "games_per_second": 0.9796112890160042,
+      "clone_seconds": 4.6808966000000005,
+      "rollout_seconds": 12.076074199999997,
+      "terminal_seconds": 23.15737580000001,
+      "decisions": 13648
+    },
+    {
+      "label": "cached-prefixes",
+      "games": 40,
+      "batch": 40,
+      "seconds": 34.6237524,
+      "games_per_second": 1.1552762803511838,
+      "clone_seconds": 4.361233099999999,
+      "rollout_seconds": 11.3206766,
+      "terminal_seconds": 18.06795009999999,
+      "decisions": 13648
+    },
+    {
+      "label": "larger-batch",
+      "games": 160,
+      "batch": 160,
+      "seconds": 118.4270454,
+      "games_per_second": 1.3510427385009425,
+      "clone_seconds": 10.767491399999992,
+      "rollout_seconds": 40.049493800000064,
+      "terminal_seconds": 65.59445479999994,
+      "decisions": 52018
+    }
+  ],
+  "speedup": 2.208975321808274,
+  "all_matched_game_rows_identical": true,
+  "all_4608_tactical_traces_identical": true,
+  "copy_audit_transitions": 15289,
+  "engine_tests_passed": 258,
+  "statistics_run": "/home/lva/.local/share/shards-training/2026-09-27/lookahead-statistics-5000"
+}

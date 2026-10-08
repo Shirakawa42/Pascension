@@ -1,0 +1,13 @@
+test_all_balanced_prefixes_use_original_legal_slots (test_evaluate_variants.EvaluationTests.test_all_balanced_prefixes_use_original_legal_slots) ... ok
+test_balanced_cuda_adapter_allocation_and_censors_with_fake_evaluator (test_evaluate_variants.EvaluationTests.test_balanced_cuda_adapter_allocation_and_censors_with_fake_evaluator) ... ok
+test_censored_replay_directory_records_forced_prefix_and_is_forwarded (test_evaluate_variants.EvaluationTests.test_censored_replay_directory_records_forced_prefix_and_is_forwarded) ... ok
+test_import_does_not_load_cpu_shadow_or_initialize_cuda (test_evaluate_variants.EvaluationTests.test_import_does_not_load_cpu_shadow_or_initialize_cuda) ... ok
+test_incomplete_cell_is_not_reported_as_complete (test_evaluate_variants.EvaluationTests.test_incomplete_cell_is_not_reported_as_complete) ... ok
+test_loader_selects_only_exact_v4_or_v5_resolver_and_restores_global (test_evaluate_variants.EvaluationTests.test_loader_selects_only_exact_v4_or_v5_resolver_and_restores_global) ... ok
+test_pinned_plan_matches_shared_cpu_plan_exactly (test_evaluate_variants.EvaluationTests.test_pinned_plan_matches_shared_cpu_plan_exactly) ... ok
+test_prefix_failure_closes_host_and_restores_evaluation_factory (test_evaluate_variants.EvaluationTests.test_prefix_failure_closes_host_and_restores_evaluation_factory) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.130s
+
+OK

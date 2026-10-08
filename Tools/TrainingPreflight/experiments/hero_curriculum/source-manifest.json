@@ -1,0 +1,14 @@
+{
+  "schema": "shards-hero-curriculum-prototype-v1",
+  "files": {
+    "Tools/TrainingPreflight/experiments/hero_curriculum/HeroCurriculum.cs": "7c141926eb7251eae974ff9d67dbdcc54187f51ed82b9055fdc311d72a92df4a",
+    "Tools/TrainingPreflight/experiments/hero_curriculum/Program.cs": "6a619ef165583a022ea10e3ccde2a379a5f351725f60d1408bb01feb46dcecf3",
+    "Tools/TrainingPreflight/experiments/hero_curriculum/HeroCurriculumProbe.csproj": "e6ce3feb8604a7204107331acbcad0aed156a0eb6e4df759cf824a029af2bb48",
+    "Tools/TrainingPreflight/experiments/hero_curriculum/balanced_evaluation.py": "44414c46f77f24b85de14d1f9a626ba8ce9bd4f60645ab8b264fb3d89ef58efe",
+    "Tools/TrainingPreflight/experiments/hero_curriculum/test_balanced_evaluation.py": "75c8ba52e0013ac9a8d0871087153065c77b5a9f59f62e71fc62764338d72e94",
+    "Tools/TrainingPreflight/experiments/HostV3/bin/Release/net8.0/TrainingHostV3.dll": "472f94ef69e265b1ab03249413275ccc088063dfa5f0fc2d9b57e806025a8520"
+  },
+  "pinned_host_v3_hash_matches": true,
+  "real_complete_matches_run": 0,
+  "optimizer_updates": 0
+}

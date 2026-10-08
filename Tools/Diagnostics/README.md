@@ -1,0 +1,10 @@
+# Windows game diagnostics
+
+These scripts inspect the local Windows installation without administrator access. Run through Windows PowerShell with `-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File <absolute-script-path>`. Hidden mode avoids creating a visible diagnostic console. They do not kill or refocus the user's game, inspect account data, or record raw process command lines.
+
+- `trace-fast.ps1 -Seconds 300`: native process snapshots plus visible Unity/console/ghost windows and window-create/show event hooks (to catch flashes between polls). Writes `window-trace-fast.jsonl`. Probes the real window with bounded WM_NULL messages. Exit 2 means a hung/ghost window or at least five seconds of consecutive probe timeouts; exit 3 means no game window was observed. It does not automatically drive focus changes: minimize/Alt-Tab manually during capture.
+- `trace-game-windows.ps1`: slower parent-chain enrichment and window response samples, useful for durable processes. Outputs only executable and script paths, not raw command arguments. Process creation events through WMI were denied on this machine, so it uses polling.
+- `inspect-game-environment.ps1`: matching startup/tasks, compatibility flags, loaded game modules and recent Windows application-hang/crash records. Read-only. Generated artifacts stay local.
+- `install-draft-fix.ps1`: stages the verified `Builds/WindowsDraftFix` player, verifies key file hashes, waits up to 15 minutes for the installed game to exit normally, then swaps complete directories retaining the previous install as `pascension-windows-v1.0.4-before-draft2`. It never terminates a process. `draft-install-status.json` is the authoritative state. If waiting expires, the running install is untouched and staging remains; inspect the state before any manual retry.
+
+The trace must capture the reported failure before attributing it to a console, background service, graphics driver or input component. The presence of a loaded module or startup shortcut alone is not evidence of causation.

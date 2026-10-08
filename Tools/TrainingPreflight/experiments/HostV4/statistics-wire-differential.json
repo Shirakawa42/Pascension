@@ -1,0 +1,102 @@
+{
+  "schema": "shards-host-v3-v4-wire-probe-v1",
+  "passed": true,
+  "mode": "check",
+  "host_v3_sha256": "472f94ef69e265b1ab03249413275ccc088063dfa5f0fc2d9b57e806025a8520",
+  "host_v4_sha256": "cdda3e733d416f5e32b7af93b232ef2de898be7adcfdc0a09e34a9e447ca6315",
+  "catalogs_exactly_equal": true,
+  "scope": "CPU-only, one low-priority worker per alternating request; other training may contend. No GPU/optimizer/ledger use or runtime migration.",
+  "timestamp": 1790434940.2757995,
+  "cases": [
+    {
+      "transport": "pipe",
+      "fused": false,
+      "response_batches": 385,
+      "batch": 8,
+      "terminal_responses": 24,
+      "all_payload_bytes_equal": true,
+      "counters_equal": true,
+      "reset_observe_selective_hold_and_auto_reset": true,
+      "v3_v4_off_v4_on_identical": true,
+      "statistics_totals": {
+        "completed_games": 24,
+        "draws": 0,
+        "seat0_wins": 10,
+        "seat1_wins": 14,
+        "censored_games": 0,
+        "unfinished_discarded_games": 8
+      },
+      "statistics_rows": 107
+    },
+    {
+      "transport": "pipe",
+      "fused": true,
+      "response_batches": 385,
+      "batch": 8,
+      "terminal_responses": 24,
+      "all_payload_bytes_equal": true,
+      "counters_equal": true,
+      "reset_observe_selective_hold_and_auto_reset": true,
+      "v3_v4_off_v4_on_identical": true,
+      "statistics_totals": {
+        "completed_games": 24,
+        "draws": 0,
+        "seat0_wins": 10,
+        "seat1_wins": 14,
+        "censored_games": 0,
+        "unfinished_discarded_games": 8
+      },
+      "statistics_rows": 107
+    },
+    {
+      "transport": "shared",
+      "fused": false,
+      "response_batches": 385,
+      "batch": 8,
+      "terminal_responses": 24,
+      "all_payload_bytes_equal": true,
+      "counters_equal": true,
+      "reset_observe_selective_hold_and_auto_reset": true,
+      "v3_v4_off_v4_on_identical": true,
+      "statistics_totals": {
+        "completed_games": 24,
+        "draws": 0,
+        "seat0_wins": 10,
+        "seat1_wins": 14,
+        "censored_games": 0,
+        "unfinished_discarded_games": 8
+      },
+      "statistics_rows": 107
+    },
+    {
+      "transport": "shared",
+      "fused": true,
+      "response_batches": 385,
+      "batch": 8,
+      "terminal_responses": 24,
+      "all_payload_bytes_equal": true,
+      "counters_equal": true,
+      "reset_observe_selective_hold_and_auto_reset": true,
+      "v3_v4_off_v4_on_identical": true,
+      "statistics_totals": {
+        "completed_games": 24,
+        "draws": 0,
+        "seat0_wins": 10,
+        "seat1_wins": 14,
+        "censored_games": 0,
+        "unfinished_discarded_games": 8
+      },
+      "statistics_rows": 107
+    },
+    {
+      "trace": "/home/lva/.local/share/shards-training/2026-09-26/pilot128-v2/censored-episodes/censored-v4-lane137-1790424400651778390.json",
+      "trace_sha256": "6e5b7bf1a8bb6da66495bc88d7c70cce30b36fdb9ec023f5906217486b3fd4bc",
+      "actual_learned_actions": 3713,
+      "all_payload_bytes_equal": true,
+      "cap_identical": true,
+      "terminal_reset_hold_identical": true,
+      "statistics_censor_only": true,
+      "statistics_rows": 34
+    }
+  ]
+}

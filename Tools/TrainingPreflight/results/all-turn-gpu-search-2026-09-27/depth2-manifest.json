@@ -1,0 +1,37 @@
+{
+  "schema": "gpu-public-rollout-driver-v1",
+  "args": {
+    "policy": "Assets/Resources/AI/shards-policy.bytes",
+    "host": "Tools/GpuSearchHost/bin/Release/net8.0/GpuSearchHost.dll",
+    "output": "/tmp/shards-gpu-d2w2",
+    "games": 80,
+    "batch": 80,
+    "mode": "paired",
+    "workers": 8,
+    "candidates": 4,
+    "depth": 2,
+    "worlds": 2,
+    "margin": 0.04,
+    "prior": 0.015,
+    "seed": 7998392938210000000
+  },
+  "policy_sha256": "f15c9d40644f6ef7e84ebf44d325ec4d6f3bae771e3f6ac7f7904a52baf4a177",
+  "host_sha256": "52a2efee86b5f6cfa116b7a5090175859c435bb4f37099836cc972db794cc3ef",
+  "device": "NVIDIA GeForce RTX 5090",
+  "torch": "2.14.0+cu130",
+  "unity": false,
+  "training_updates": 0,
+  "cuda_graphs": [
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024
+  ],
+  "setup_seconds": 1.314532260003034,
+  "seconds": 17.225156340005924,
+  "inference_seconds": 2.4193497600062983,
+  "inference_calls": 1621,
+  "completed": true
+}

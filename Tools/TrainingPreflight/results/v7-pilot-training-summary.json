@@ -1,0 +1,14 @@
+{
+  "pilot_generations": 77,
+  "generation_start": 7253,
+  "generation_end": 7330,
+  "games": 19712,
+  "censors": 0,
+  "rejected_minibatches": 2,
+  "accepted_optimizer_steps": 9504,
+  "max_behavior_logp_error": 7.581710815429688e-05,
+  "v7_rows_per_second": 24156.002440241147,
+  "v6_reference_rows_per_second": 22680.489583915307,
+  "scope": "V6 recent40 generations versus77-generationV7pilot; uncontrolled trajectories and CPU workload. Forward microbenchmark is the controlled arithmetic cost comparison.",
+  "charged_seconds": 270.2648336659986
+}

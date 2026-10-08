@@ -1,0 +1,6 @@
+{
+  "matmul_precision": "ieee",
+  "contiguous_store": true,
+  "fast_validation": true,
+  "queued_actors": false
+}

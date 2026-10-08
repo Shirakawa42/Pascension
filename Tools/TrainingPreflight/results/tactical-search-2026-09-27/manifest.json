@@ -1,0 +1,52 @@
+{
+  "profile": "public-tactical-search-v1",
+  "network_sha256": "f15c9d40644f6ef7e84ebf44d325ec4d6f3bae771e3f6ac7f7904a52baf4a177",
+  "search_source_sha256": "d46d253202aaa35a97d735073288c7cb3357f229d6cda2fd30d231685b43ec7e",
+  "frozen_release": "/home/lva/.local/share/shards-training/2026-09-26/tactical-search-20260927/frozen-v3",
+  "frozen_confirmation": "/home/lva/.local/share/shards-training/2026-09-26/tactical-search-20260927/frozen-confirmation",
+  "installed_path": "E:\\Bureau\\pascension-windows-v1.0.4",
+  "backup": "E:\\Bureau\\pascension-windows-v1.0.4-before-tactical-20260927-173854",
+  "build": {
+    "job": "build-96d082581e",
+    "result": "succeeded",
+    "duration_seconds": 29.9930581,
+    "errors": 0,
+    "warnings": 1,
+    "warning": "Existing TMP_Text.enableWordWrapping deprecation in MarketView.cs:66"
+  },
+  "tests": {
+    "engine_passed": 258,
+    "async_games": 10,
+    "async_decisions": 3594,
+    "stale_result_rejected": true,
+    "unity_sync_game_decisions": 277,
+    "unity_async_game_decisions": 277,
+    "unity_main_call_max_ms": 58.7681,
+    "unity_sync_call_max_ms": 2443.7226
+  },
+  "pilot_accepted": false,
+  "live_statistics_replaced": false,
+  "binaries": {
+    "Builds/WindowsTacticalAI/pascension.exe": "4bf762016829b0c975960cf300aac5a5bb1f84d25745f2aa8f4a508f9af5243f",
+    "Builds/WindowsTacticalAI/pascension_Data/Managed/Shards.AI.dll": "8fde2c304e034b02ac289bcfe5590fa57073ac314a48e948e8c12274148d4184",
+    "Builds/WindowsTacticalAI/pascension_Data/Managed/Pascension.Game.dll": "80977009577a753a78b31c2c6c4d87ae6696487e570a758db7190d599b51ed72"
+  },
+  "confirmation": {
+    "tactical_successes": 4603,
+    "tactical_rollouts": 4608,
+    "passing_families": 32,
+    "baseline_tactical_successes": 1748,
+    "fresh_games": 160,
+    "fresh_wins": 89,
+    "fresh_losses": 71,
+    "release_games": 400,
+    "release_wins": 220,
+    "release_losses": 180
+  },
+  "training_guards": {
+    "deduplicates_inputs": true,
+    "heldout_seed_pairs": true,
+    "minimum_distinct_labels_per_hero": 200,
+    "small_pilot_default_rejected": true
+  }
+}

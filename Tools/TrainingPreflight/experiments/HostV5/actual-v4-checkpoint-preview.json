@@ -1,0 +1,54 @@
+{
+  "schema": "shards-v4-v5-runtime-migration-v1",
+  "prepared_wall": 1790436877.5054483,
+  "source_file_sha256": "1b0d449b7e5b879f0bf73c156b6bfbf05f5fb413dfe9f25d2df59f1118bfd6b4",
+  "source_payload_sha256": "c681e01a8be6b747fc0406bbb5a3b96f5cdd2c8935ea9f69c209fde054cc52f7",
+  "source_identity_sha256": "a03bb9a2da3b25c924cdd79ce6c4aafb30ce0aef3c9eb922efff0775eb26df85",
+  "target_identity_sha256": "7a206dd58033c99e379a7f3cc96c88a405ac401e89af61a3b02a04a5267439e8",
+  "source_runtime_sha256": "3b8cf5b37bc032081d46c944b570ec64c3e231240f2e57ec82d8f3b43aad862c",
+  "helper_sha256": "170545493a097988abfa38f66c2fd3501031e97817e3ba0c07d40422b891908f",
+  "changed_identity_fields": [
+    "base_v4_training_source_sha256",
+    "host_binary_sha256",
+    "schema",
+    "training_population",
+    "training_source_sha256"
+  ],
+  "protected_payload_sha256": "78d8992dbd7e60ea002114d615ba444c502bae8d1c6d481e909af6abf284bd67",
+  "preserved_state_sha256": "10e92e517ab13a1c84c607b83009ef25121184d7daad77af1e53b6c844a5e0d0",
+  "preserved_rng_sha256": "4dfd3e1d5a5229c5f843ff3052820b6affea7de558f68d62fd453a98ab43ccd6",
+  "preserved_budget_sha256": "79b43f43dc4ad0b2d090cfeaa19823b82753d7672631ee3b5fbc548d5dec4653",
+  "generation": 3330,
+  "state_mutation": "none",
+  "training_population": {
+    "schema": "shards-hero-curriculum-75-25-v1",
+    "mode": "curriculum-75-25",
+    "forced_probability": 0.75,
+    "natural_probability": 0.25,
+    "forced_ordered_hero_pairs": 20,
+    "setup_actions_in_ppo": false,
+    "evaluation_mode": "natural",
+    "setup_descriptor": {
+      "schema": "shards-hero-curriculum-75-25-v1",
+      "defaultMode": "natural",
+      "trainingMode": "curriculum-75-25",
+      "forcedProbability": 0.75,
+      "orderedPairCount": 20,
+      "heroOrder": [
+        "decima",
+        "tetra",
+        "volos",
+        "kosynwu",
+        "rez"
+      ],
+      "selection": "separate-seed-derived-splitmix64-rejection-v1",
+      "setupPolicyActions": false,
+      "adapterCapCountersIncludeSetup": true
+    }
+  },
+  "observation_schema_unchanged": true,
+  "training_started": false,
+  "budget_scope": "No new allocation; future continuation requires the original shared ledger",
+  "scope": "Read-only actual V4 checkpoint preview; no shared ledger access/write, checkpoint publication, runtime install or GPU.",
+  "cuda_initialized": false
+}

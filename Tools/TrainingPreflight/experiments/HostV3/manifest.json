@@ -1,0 +1,95 @@
+{
+  "schema": "shards-host-v3-extension-manifest-v1",
+  "from_observation_schema": "shards-observation-v2",
+  "to_observation_schema": "shards-observation-v3",
+  "observation_dim": 2048,
+  "max_actions": 64,
+  "candidate_dim": 32,
+  "max_card_definitions": 189,
+  "changed_observation_slots": [
+    317,
+    318,
+    319,
+    509,
+    510,
+    511,
+    701
+  ],
+  "extraObservationFeatures": [
+    {
+      "slot": 317,
+      "name": "own_allegiance_none",
+      "faction": "None",
+      "normalization": 20,
+      "source": "AllegianceEffect.OwnedCount(current deciding player)"
+    },
+    {
+      "slot": 318,
+      "name": "own_allegiance_homodeus",
+      "faction": "Homodeus",
+      "normalization": 20,
+      "source": "AllegianceEffect.OwnedCount(current deciding player)"
+    },
+    {
+      "slot": 319,
+      "name": "own_allegiance_undergrowth",
+      "faction": "Undergrowth",
+      "normalization": 20,
+      "source": "AllegianceEffect.OwnedCount(current deciding player)"
+    },
+    {
+      "slot": 509,
+      "name": "own_allegiance_order",
+      "faction": "Order",
+      "normalization": 20,
+      "source": "AllegianceEffect.OwnedCount(current deciding player)"
+    },
+    {
+      "slot": 510,
+      "name": "own_allegiance_wraethe",
+      "faction": "Wraethe",
+      "normalization": 20,
+      "source": "AllegianceEffect.OwnedCount(current deciding player)"
+    },
+    {
+      "slot": 511,
+      "name": "own_allegiance_aion",
+      "faction": "Aion",
+      "normalization": 20,
+      "source": "AllegianceEffect.OwnedCount(current deciding player)"
+    },
+    {
+      "slot": 701,
+      "name": "own_allegiance_monster",
+      "faction": "Monster",
+      "normalization": 20,
+      "source": "AllegianceEffect.OwnedCount(current deciding player)"
+    }
+  ],
+  "host_v2_sha256": "7a5039afacccfd6e9aad4f56a2705a3a5523a6c1df62e72af3754cf4bad00ef1",
+  "host_v3_sha256": "472f94ef69e265b1ab03249413275ccc088063dfa5f0fc2d9b57e806025a8520",
+  "v3_binary": "Tools/TrainingPreflight/experiments/HostV3/bin/Release/net8.0/TrainingHostV3.dll",
+  "v3_project": "Tools/TrainingPreflight/experiments/HostV3/TrainingHostV3.csproj",
+  "catalog_sha256": "14ede9dc461d03efe5474dea89574221fa9da216562e7de9daeebb63b5ae9ede",
+  "card_order_unchanged": true,
+  "legacy_features_unchanged": true,
+  "rule_sources_unchanged": true,
+  "v2_zero_proof": "Card indices0..188 write128+192*channel+index; selected slots are unused indices189..191 in channels0..2; other encoder regions disjoint.",
+  "required_migration": "Zero only corresponding core.trunk.0.weight columns and validate optimizer moments; convert every frozen policy and preserve ledger/RNG/seeds through explicit new identity.",
+  "source_sha256": {
+    "Tools/TrainingPreflight/experiments/HostV3/Encoder.cs": "0324651071620f9064635b1aa876cb38df3186e4f48b1a4c64369e695d70d587",
+    "Tools/TrainingPreflight/experiments/HostV3/Program.cs": "456378377636313e7ac03a79295428f288ac34d0ff72f4cff1b1528515c6fe9a",
+    "Tools/TrainingPreflight/experiments/HostV3/V3SelfTest.cs": "7f29e02d726fb1b8edec29b29b826b8cb0b383097963c0ffa006f4726867a97e",
+    "Tools/TrainingPreflight/experiments/HostV3/TrainingHostV3.csproj": "82537c3b6c7acd1a9fc44b5a82a9a0eb20d614b9265e141324ad765722b28783",
+    "Tools/TrainingPreflight/Host/Adapter.cs": "9ac5df4fe31a2bdf3d4202b28ac67bb87420180ed0acae4fc40e6344813a1931",
+    "Tools/TrainingPreflight/Host/MappedBody.cs": "88c681e8857083324d7c8e7013302f8f799274b2db46bade7a79bd0ebbaaf73b",
+    "Tools/TrainingPreflight/Host/SelfTest.cs": "81738f6cf23e5b75241a91f2ab3995bc1f68512b0ce66d4843a62a648c92520c",
+    "Tools/TrainingPreflight/Host/Encoder.cs": "5fde8d4676f009bbf02fe9324ebf07c054f25cd8ea01e8ee81ab1bfe8857494b",
+    "Tools/TrainingPreflight/Host/Program.cs": "ca9a08d50d69c01e2226fe365cad96add959a75a42c777069877e5f7a0a30029"
+  },
+  "correctness_reports": [
+    "Tools/TrainingPreflight/results/host-v3-selftest.json",
+    "Tools/TrainingPreflight/results/host-v3-regression-selftest.json",
+    "Tools/TrainingPreflight/results/host-v3-differential.json"
+  ]
+}

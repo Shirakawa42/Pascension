@@ -1,0 +1,922 @@
+{
+  "version": "2026-10-08-v2",
+  "title": "Duel balance patch — revised after your review",
+  "summary": "This revised draft incorporates your submitted review: nine card changes are retained or rewritten to your specifications. Giga stays cost 2; Conscription keeps its condition and gains 1 power; J-Chord costs 4; Shard Abstractor costs 2 with mastery 1, upgraded to 2 at M10. A small Volos buff and three catch-up cards, two copies each, are presented as new designs for review. No game rules have been applied.",
+  "cohort": {
+    "games": 3780,
+    "date": "2026-10-08",
+    "format": "Duel, Nyou Haïai with search on both sides",
+    "matchups": "189 games in each of the 20 ordered matchups of different heroes; no mirrors",
+    "mean_rounds": 9.98042328,
+    "first_player_win_rate": 0.5171957672,
+    "analysis_url": "/balance-review",
+    "rules_changed": false,
+    "new_simulations": false,
+    "validation_plan": "After the review, define the intended package and its acceptable balance range. Compare baseline, individual changes and their combination on paired seeds with both starting seats. Track hero matchups, relic choices and rewards, opening-card availability, victory routes and game-length tails. Give the policy an opportunity to adapt before treating the result as final balance; self-play's aggregate win rate is always 50% and is not a patch success metric."
+  },
+  "groups": [
+    {
+      "id": "reviewed",
+      "title": "Changes from your review",
+      "description": "Six changes you accepted, plus your exact revisions to Conscription, J-Chord and Shard Abstractor. These describe the planned patch; the game is not yet modified."
+    },
+    {
+      "id": "new-designs",
+      "title": "New designs for your review",
+      "description": "A small Volos power-mode buff and the three requested catch-up cards. The new exact designs are not treated as already approved."
+    },
+    {
+      "id": "retained",
+      "title": "Current rules retained",
+      "description": "Your accepted keep decisions, with interactions updated for the revised package."
+    },
+    {
+      "id": "excluded",
+      "title": "Excluded from the patch",
+      "description": "The rejected Giga price increase is recorded here for clarity."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "giga-mastery",
+      "group": "reviewed",
+      "title": "Giga: Dominion mastery 3 → 2",
+      "kind": "recommended",
+      "confidence": "Strong imbalance signal; moderate confidence in this tuning",
+      "card_ids": [
+        "giga_source_adept"
+      ],
+      "current": "Cost 2, defense 4. When played, draw 1 card. Exhaust — Dominion: gain 3 mastery.",
+      "proposed": "In Duel only, change the Dominion exhaust to gain 2 mastery. Keep cost 2, defense 4 and the draw on play. Add a Duel replacement so the original card remains unchanged in other formats.",
+      "reason": "Reduce a cheap champion's repeated mastery acceleration while preserving its identity and accessibility. This is the strongest opening outlier supported by both acquisition and initial-market evidence. A normal purchase puts Giga into discard; the draw is on playing it, not on buying it.",
+      "evidence": [
+        "Giga was in the initial market in 117 games. The first player acquired it in all 117 and won 82, or 70.1%; first-player wins were 51.1% when Giga was absent.",
+        "The initial-offer association remains about +18.1 percentage points after controlling hero matchup and both opening hands' buying power; the 95% interval is +9.4 to +26.8 points.",
+        "Players acquiring Giga by round 2 won 145/206 games, or 70.4%. Successful Dominion triggers were not logged, so the exact contribution of each activation remains unknown."
+      ],
+      "interactions": [
+        {
+          "id": "giga-price",
+          "text": "You rejected the price increase. Giga remains cost 2; only its Dominion mastery changes."
+        },
+        {
+          "id": "brain-power",
+          "text": "Giga slows one mastery engine while Brain reduces damage below mastery 20. Their combined effect can shift the balance between victory routes."
+        },
+        {
+          "id": "abstractor-hold",
+          "text": "Abstractor becomes cheaper but produces less mastery below M10. Affordability and new free-acquisition access may offset some of the mastery reduction."
+        },
+        {
+          "id": "hero-powers-hold",
+          "text": "Watch Rez’s mastery route and the small proposed Volos power buff within the complete package."
+        }
+      ],
+      "watch": [
+        "Initial-market Giga advantage and early purchase rate",
+        "Successful Dominion triggers and mastery 10/20/30 timing",
+        "Rez's matchups and the overall share of mastery victories",
+        "Round distribution, including unusually early finishes"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "giga-mastery",
+        "decision": "accept",
+        "comment": "accept",
+        "explanation": "Kept the change you accepted."
+      }
+    },
+    {
+      "id": "deadly-recruits-cost",
+      "group": "reviewed",
+      "title": "Deadly Recruits: activation costs 1 gem",
+      "kind": "recommended",
+      "confidence": "Strong selection signal; moderate confidence in the amount",
+      "card_ids": [
+        "deadly_recruits_duel"
+      ],
+      "current": "Exhaust for no gem cost: choose an ally in the market costing 2 or less, then fast-play it OR recruit it for free. At mastery 20, the limit becomes 4.",
+      "proposed": "Pay 1 gem and exhaust to use the same fast-play-or-recruit choice. Retain the cost-2 limit below mastery 20 and cost-4 limit from mastery 20 onward. The payment is an activation cost, not an additional price charged for the selected card.",
+      "reason": "Charge for repeatable access to immediate effects or permanent cards. Reducing only recruitment would miss the principal observed use, which is fast-play. One gem could be too severe for an already conditional market-dependent action, so its choice and usage rates matter.",
+      "evidence": [
+        "Normal selectors won 64.5% of 752 games. The association remains about +11.0 percentage points after matchup, seat and selection-timing adjustment.",
+        "Of 3,043 recorded mode choices, 2,554 were fast-play and 489 recruit: approximately 84% fast-play.",
+        "The favorable raw result appears across all five heroes, although choosing the destiny remains a strategic, nonrandom event."
+      ],
+      "interactions": [
+        {
+          "id": "brain-power",
+          "text": "Charging for recurring free plays can reduce faction coverage and compound Brain’s power reduction."
+        },
+        {
+          "id": "abstractor-hold",
+          "text": "Abstractor now costs 2, making it eligible before mastery 20. At mastery 10 it already grants 2 mastery per play."
+        },
+        {
+          "id": "conscription-reliability",
+          "text": "The unchanged cheap-card condition becomes easier to use with cost-2 Abstractor and cost-1 Aegis; successful Conscription now pays 5 power."
+        },
+        {
+          "id": "catchup-card",
+          "text": "Only Aegis is eligible before mastery 20; all three new card designs are eligible at mastery 20."
+        },
+        {
+          "id": "j-chord-hold",
+          "text": "Both recurring free-play engines become more expensive in different ways: a per-use gem here and a higher purchase price for J-Chord."
+        }
+      ],
+      "watch": [
+        "Choice rate when this destiny is available",
+        "Paid activations, eligible targets and successful fast-play/recruit resolutions",
+        "Pre-mastery-20 usefulness versus other destinies",
+        "Power, mastery and permanent-card value gained per activation"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "deadly-recruits-cost",
+        "decision": "accept",
+        "comment": "ok",
+        "explanation": "Kept the change you accepted."
+      }
+    },
+    {
+      "id": "brain-power",
+      "group": "reviewed",
+      "title": "Multitask Brain: pre-mastery-20 power per faction 2 → 1",
+      "kind": "recommended",
+      "confidence": "Strong Tetra signal; moderate confidence in the relic attribution",
+      "card_ids": [
+        "multitask_brain"
+      ],
+      "current": "For each distinct faction played this turn, gain 2 power and draw 1 card. At mastery 20, gain 4 power per faction instead. The faction count is evaluated before these draws.",
+      "proposed": "Below mastery 20, gain 1 power and draw 1 card per distinct faction played. At mastery 20, retain 4 power and 1 draw per faction. Keep Tetra's hero power unchanged.",
+      "reason": "Reduce the damage attached to Tetra's exceptionally strong draw engine without removing her cycling identity. This halves the relic's early power, a substantial change; retaining the mastery-20 reward gives the build a later payoff.",
+      "evidence": [
+        "Tetra wins 876/1,512 games, or 57.9%, and leads against every opposing hero. Ordinary damage accounts for 77.7% of her wins.",
+        "Brain is 90.1% of Tetra's normal relic choices; those games win 734/1,190, or 61.7%. The timing-adjusted association is similar, but hero power, relic choice and deck quality are not causally separated.",
+        "A normal Brain play supplies its own Order faction. Prism can supply all five factions, giving the current card a maximum of 10 power plus 5 draws below mastery 20. The proposal lowers that maximum to 5 power plus 5 draws; mastery-20 output stays 20 power plus 5 draws."
+      ],
+      "interactions": [
+        {
+          "id": "giga-mastery",
+          "text": "Slower Giga output may delay Brain’s unchanged M20 tier; lower early damage may conversely give both players time to reach it."
+        },
+        {
+          "id": "deadly-recruits-cost",
+          "text": "The activation cost can reduce free faction plays and compound the direct power reduction."
+        },
+        {
+          "id": "crown-draw",
+          "text": "Crown’s draw and less incoming Tetra damage can improve Volos together."
+        },
+        {
+          "id": "catchup-card",
+          "text": "The three proposed new cards span Homodeus, Undergrowth and Wraethe, creating additional low-cost faction sources even though they add no draws."
+        }
+      ],
+      "watch": [
+        "Every Tetra matchup and both starting seats",
+        "Brain output per faction, tier and play",
+        "Switching to other relics",
+        "Late mastery wins, long games and the size of the mastery-20 power jump"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "brain-power",
+        "decision": "accept",
+        "comment": "ok",
+        "explanation": "Kept the change you accepted."
+      }
+    },
+    {
+      "id": "crown-draw",
+      "group": "reviewed",
+      "title": "Panconscious Crown: add Draw 1",
+      "kind": "recommended",
+      "confidence": "Strong route weakness; uncertain rules-versus-policy cause",
+      "card_ids": [
+        "panconscious_crown_duel",
+        "entropic_talons"
+      ],
+      "current": "Gain 2 mastery and 5 health. Then, at mastery 20, Unify grants another 50 health. Crown's own mastery gain can reach the threshold before the check.",
+      "proposed": "Retain the existing mastery and healing effects, then draw 1 card after those effects resolve. Placing the draw last preserves the present Unify check. Do not increase First Aid or Entropic Talons at the same time.",
+      "reason": "Help a weak relic route cycle into its payoff instead of adding more healing to games it already prolongs. This is the core proposal with the largest interaction concern: improving consistency can strengthen an already explosive Crown-plus-Talons deck.",
+      "evidence": [
+        "Crown selectors win 95/299 games, or 31.8%, versus 485/998, or 48.6%, for Talons. The large gap persists after measured selection and mastery timing adjustment.",
+        "Crown players reach mastery 20 in 59.5% of games, yet average 10.96 rounds and frequently fail to finish. Volos already reaches mastery 10 most often, so earlier access is not the obvious bottleneck.",
+        "Volos acquired both Crown and Talons in 75 games and won 60, or 80.0%. These selected reward-enriched decks do not establish a causal combo win rate. Mechanically, Talons before Crown can convert Crown's 5 + 50 healing into 55 power, even at full health."
+      ],
+      "interactions": [
+        {
+          "id": "brain-power",
+          "text": "Less early Tetra damage may already improve the Crown route; evaluate the combined benefit."
+        },
+        {
+          "id": "hero-powers-hold",
+          "text": "Volos’s proposed +1 power affects only his paid power mode, preserving the existing healing conversion amount."
+        },
+        {
+          "id": "soul-syphon-reliability",
+          "text": "More reliable healing can become Talons power; Crown’s draw can help satisfy the revised two-card/two-faction condition."
+        },
+        {
+          "id": "relief-courier",
+          "text": "Courier’s conditional healing can become Talons power while Volos is behind in health."
+        },
+        {
+          "id": "rare-relics-hold",
+          "text": "The existing 55-power Crown/Talons interaction is retained; record extra relic rewards and same-turn use."
+        }
+      ],
+      "watch": [
+        "Crown selected alone versus acquired alongside Talons",
+        "Same-turn relic order and healing converted to power, including at full health",
+        "Mastery-30 conversion, long-game tail and Volos matchups",
+        "Whether better relic selection alone removes the apparent weakness"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "crown-draw",
+        "decision": "accept",
+        "comment": "ok",
+        "explanation": "Kept the change you accepted."
+      }
+    },
+    {
+      "id": "conscription-reliability",
+      "group": "reviewed",
+      "title": "Unconditional Conscription: power 4 → 5",
+      "kind": "recommended",
+      "confidence": "Your requested tuning; effect size remains untested",
+      "card_ids": [
+        "unconditional_conscription"
+      ],
+      "current": "Exhaust: if you played at least 2 non-starter allies costing 2 or less this turn, gain 4 power. The current engine checks played non-starter, non-champion cards at printed cost 2 or less; qualifying non-champion relics also count.",
+      "proposed": "Keep the existing requirement of at least 2 qualifying non-starter, non-champion cards costing 2 or less played this turn. Increase the reward from 4 power to 5. Retain the current eligibility check, including qualifying non-champion relics. No other change.",
+      "reason": "Your review replaces the reliability redesign with a direct +1 power increase. The two-card condition and all existing eligibility rules stay intact.",
+      "evidence": [
+        "Normal selectors won 178/424 games, or 42.0%; the adjusted association is about -7.9 percentage points.",
+        "First-seat selectors won 72/210, or 34.3%, while second-seat selectors won 106/214, or 49.5%. Their average selection rounds differ, reinforcing the timing and choice concern.",
+        "Activation counters do not reveal how often the current condition successfully paid out."
+      ],
+      "interactions": [
+        {
+          "id": "abstractor-hold",
+          "text": "Abstractor’s new printed cost of 2 makes it qualify for the existing condition. This indirectly improves reliability without changing that condition."
+        },
+        {
+          "id": "catchup-card",
+          "text": "Cost-1 Aegis qualifies when played or fast-played. The two other new designs cost more than 2 and do not qualify."
+        },
+        {
+          "id": "deadly-recruits-cost",
+          "text": "Free-effect plays still count as qualifying plays, but the destiny now charges 1 gem per activation."
+        }
+      ],
+      "watch": [
+        "Successful triggers versus attempts, using the unchanged two-card condition",
+        "How often Abstractor and Aegis provide the second qualifying card",
+        "Power gained per game and the shared destiny draft"
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "conscription-reliability",
+        "decision": "change",
+        "comment": "make it simply give 1 additional power, no other change",
+        "explanation": "Applied your exact direction: 4 → 5 power, with no condition or eligibility change. The earlier one-card/two-power redesign is removed."
+      }
+    },
+    {
+      "id": "soul-syphon-reliability",
+      "group": "reviewed",
+      "title": "Soul Syphon: two factions for 5 health",
+      "kind": "recommended",
+      "confidence": "Moderate weakness signal; low confidence in this redesign",
+      "card_ids": [
+        "soul_syphon_duel"
+      ],
+      "current": "Exhaust: if you played at least 3 faction-bearing cards spanning at least 3 different factions this turn, gain 7 health. The separate card-count gate prevents a lone Prism from meeting the condition.",
+      "proposed": "Require at least 2 faction-bearing cards spanning at least 2 factions, and heal 5 instead of 7. Keep the minimum-card gate aligned with the faction requirement, so a lone Prism still does not qualify.",
+      "reason": "Trade a larger conditional heal for more frequent modest healing. This may improve ordinary damage matchups but cannot answer an Infinity finish; if mastery defeats explain most losses, easier healing may fail to solve the actual problem.",
+      "evidence": [
+        "Normal selectors win 44.5% of 539 games; the adjusted association is about -7.1 percentage points.",
+        "The existing logs do not identify successful Soul Syphon triggers or healing converted to power by source.",
+        "No tested hero-by-initial-destiny-offer interaction survives multiple-testing correction, so this is not established as a problem confined to one hero."
+      ],
+      "interactions": [
+        {
+          "id": "crown-draw",
+          "text": "Talons converts the revised healing into 5 power when active; Crown’s draw may help satisfy the two-card/two-faction condition."
+        },
+        {
+          "id": "relief-courier",
+          "text": "Both add potential healing output. Track actual healing and Talons-converted power separately."
+        },
+        {
+          "id": "brain-power",
+          "text": "The same faction variety that enables this destiny can feed Brain’s draw and power."
+        }
+      ],
+      "watch": [
+        "Condition success rate and healing actually restored",
+        "Healing converted to power, especially through Talons",
+        "Damage defeats versus mastery defeats",
+        "Destiny choice rate and longer-game frequency"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "soul-syphon-reliability",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Kept the change you accepted."
+      }
+    },
+    {
+      "id": "furrowing-price",
+      "group": "reviewed",
+      "title": "Furrowing Elemental: cost 5 → 4",
+      "kind": "recommended",
+      "confidence": "Low; small early sample and purchase-timing bias",
+      "card_ids": [
+        "furrowing_elemental_duel"
+      ],
+      "current": "Cost 5, Undergrowth ally. Gain 4 health and draw 1 card; then, if at 50 health, gain 4 power. There are 2 copies.",
+      "proposed": "Reduce the Duel card's cost to 4. Retain both copies and all effects, including checking full health after its healing and draw resolve.",
+      "reason": "Test whether the card asks too much economy for a conditional damage payoff. The alternative explanation is simply that this AI buys a defensive midgame card too early, so this is optional rather than part of the recommended core.",
+      "evidence": [
+        "Players acquiring it by round 2 won 19/61 games, or 31.1%. This is a small and strategically selected sample.",
+        "A weak early-purchase result does not establish that the card is weak later or when offered in suitable decks."
+      ],
+      "interactions": [
+        {
+          "id": "deadly-recruits-cost",
+          "text": "The new cost of 4 makes Furrowing eligible for the destiny’s M20 mode; it was previously too expensive."
+        },
+        {
+          "id": "crown-draw",
+          "text": "Healing and full-health power can support Volos, especially with Talons. This interacts with improved Crown cycling."
+        },
+        {
+          "id": "relief-courier",
+          "text": "Courier provides behind-health recovery and buying resources, while Furrowing still rewards returning to full health."
+        }
+      ],
+      "watch": [
+        "Normal purchases versus free acquisitions at cost thresholds",
+        "Performance when first acquired in early, middle and late rounds",
+        "Full-health trigger success",
+        "Talons combinations and defensive game length"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "furrowing-price",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Kept the change you accepted."
+      }
+    },
+    {
+      "id": "j-chord-hold",
+      "group": "reviewed",
+      "title": "J-Chord: cost 3 → 4",
+      "kind": "recommended",
+      "confidence": "Your requested tuning; opening advantage will need rechecking",
+      "card_ids": [
+        "j_chord_duel"
+      ],
+      "current": "Cost 3, defense 3. Exhaust — Warp 3. At mastery 15, Warp 6 instead.",
+      "proposed": "Raise the Duel purchase cost from 3 to 4. Keep defense 3 and Exhaust — Warp 3; at mastery 15, keep Warp 6 instead. No change to the target-cost thresholds.",
+      "reason": "Your review calls for a higher acquisition price. This reduces opening affordability while preserving J-Chord’s role once it enters play.",
+      "evidence": [
+        "When initially offered in 124 games, first-player wins were 65.3%, versus 51.3% when absent. The adjusted association is about +14.0 percentage points, with a wider interval than Giga's.",
+        "The first player acquired it in round 1 in 120 of those 124 games. Early acquisition is also positively associated with winning."
+      ],
+      "interactions": [
+        {
+          "id": "deadly-recruits-cost",
+          "text": "Both free-play engines receive an economic cost increase; check that they remain viable together and separately."
+        },
+        {
+          "id": "abstractor-hold",
+          "text": "Warp 3 can still fast-play cost-2 Abstractor, including its 2-mastery effect from M10 onward."
+        },
+        {
+          "id": "catchup-card",
+          "text": "Warp 3 reaches Aegis and Relief Courier. Riftbreaker costs 4 and requires J-Chord’s M15 Warp 6 tier."
+        }
+      ],
+      "watch": [
+        "Opening availability versus actual purchase rates at cost 4",
+        "Successful Warp targets before and after M15",
+        "Champion survival and total value gained per purchase"
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "j-chord-hold",
+        "decision": "change",
+        "comment": "make it cost 4",
+        "explanation": "Changed from “keep and monitor” to the cost-4 card you requested. Warp and defense remain unchanged."
+      }
+    },
+    {
+      "id": "abstractor-hold",
+      "group": "reviewed",
+      "title": "Shard Abstractor: cost 2; mastery 1 / 2 at M10",
+      "kind": "recommended",
+      "confidence": "Your requested redesign; mixed cost/output effects",
+      "card_ids": [
+        "shard_abstractor"
+      ],
+      "current": "Order mercenary, cost 3, quantity 3. Play: gain 2 mastery.",
+      "proposed": "Reduce cost from 3 to 2. Play: gain 1 mastery; if already at mastery 10 or more when this effect starts resolving, gain 2 mastery instead. Keep its Order mercenary type and 3 copies. This is a replacement tier: starting at 9 grants 1 and reaches 10; starting at 10 or more grants 2.",
+      "reason": "Your review trades lower early mastery output for a lower price, with the original two-mastery output restored from M10. This changes both its opening opportunity cost and eligibility for other card effects.",
+      "evidence": [
+        "With Abstractor in the initial market, first-player wins were 60.2% of 387 games versus 50.8% when absent; the adjusted association is about +10.0 percentage points.",
+        "Early acquirers win 57.1% of 613 games. The guaranteed opening-fast-play subset is only 32 player records and wins 53.1%, insufficient to establish a strong positive effect."
+      ],
+      "interactions": [
+        {
+          "id": "deadly-recruits-cost",
+          "text": "New cost 2 qualifies for the destiny below M20. Once the player reaches M10, each eligible fast-play grants 2 mastery."
+        },
+        {
+          "id": "conscription-reliability",
+          "text": "Its new printed cost qualifies for the unchanged cheap-card condition, which now rewards 5 power."
+        },
+        {
+          "id": "giga-mastery",
+          "text": "Both reduce early printed mastery output, but Abstractor’s cheaper price can leave a gem for Focus or another purchase."
+        },
+        {
+          "id": "catchup-card",
+          "text": "Aegis is another cheap mastery source while behind. Compare actual output and keep versus fast-play choices across both cards."
+        }
+      ],
+      "watch": [
+        "Paid recruit, paid fast-play and effect fast-play separately",
+        "M10 tier selected before mastery gain; no double reward at the threshold",
+        "Early mastery tempo including Focus purchases",
+        "New interactions with Conscription and Deadly Recruits"
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "abstractor-hold",
+        "decision": "change",
+        "comment": "make it cost 2 that give 1 mastery. and a 10 mastery threshold where it gives 2 instead",
+        "explanation": "Applied your cost-2, mastery-1, M10-mastery-2 design. Made the threshold timing explicit to avoid a double reward when crossing M10."
+      }
+    },
+    {
+      "id": "hero-powers-hold",
+      "group": "new-designs",
+      "title": "Volos: one-gem power mode 2 → 3",
+      "kind": "experimental",
+      "confidence": "New response to your request; needs review",
+      "card_ids": [],
+      "current": "At mastery 5: Decima's first-buy discount is 2; Tetra pays 3 gems to draw 2; Volos chooses free heal 3, pay 1 gem for 2 power, pay 2 gems to draw 1, or pay 3 gems for 1 mastery; Ko Syn Wu pays 1 health to banish from hand/discard; Rez can Scry 3 and has a separate passive reducing each reroll's price by 1.",
+      "proposed": "Slight Volos buff: increase only the pay-1-gem option from 2 power to 3 power. Keep free heal 3, pay 2 gems to draw 1, pay 3 gems for 1 mastery, the mastery-5 unlock and once-per-turn limit. Keep every other hero’s ability unchanged.",
+      "reason": "You asked for a slight Volos buff. One extra power on the paid attack option helps turns without Talons and is bounded to once per turn. It avoids increasing healing conversion or adding more draw/mastery acceleration alongside Crown’s accepted buff.",
+      "evidence": [
+        "Hero wins: Tetra 57.9%, Decima 50.1%, Rez 49.3%, Ko Syn Wu 47.6%, Volos 45.0%, each over 1,512 balanced player-games.",
+        "Rez uses his ability 6.39 times and rerolls 5.21 times per game. Mastery accounts for 428 of his 745 wins.",
+        "Ko's thinning is active, averaging 6.08 starter banishes per game. Decima's zero activation counter is expected for a passive ability. Volos reaches mastery 10 most often, so a starting-mastery buff targets no demonstrated access problem."
+      ],
+      "interactions": [
+        {
+          "id": "crown-draw",
+          "text": "Crown gains cycling while this option gains a small attack payoff. Evaluate both benefits in Volos’s complete package."
+        },
+        {
+          "id": "soul-syphon-reliability",
+          "text": "Healing-related buffs already affect Talons; leaving Volos’s healing amount unchanged avoids another increase."
+        },
+        {
+          "id": "rare-relics-hold",
+          "text": "With Talons active, free heal 3 already grants 3 power even at full health, so the paid option is not a stronger replacement there."
+        }
+      ],
+      "watch": [
+        "Choice frequencies for all four modes",
+        "Volos with Crown versus Talons and Unknown God",
+        "Every Volos matchup, not just pooled win rate",
+        "Whether the paid option is used on meaningful finishing or monster-defeat turns"
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "hero-powers-hold",
+        "decision": "change",
+        "comment": "up Volos slightly, find something",
+        "explanation": "Proposed a bounded +1 power on the one-gem option. You requested a small buff, but this exact number and mode are new for review."
+      }
+    },
+    {
+      "id": "catchup-card",
+      "group": "new-designs",
+      "title": "New card · Aegis Surveyor",
+      "kind": "experimental",
+      "confidence": "Requested cost and type; new card remains untested",
+      "card_ids": [],
+      "current": "No such card exists. Current evidence does not require adding a new card to fix the clearest outliers.",
+      "proposed": "Duel · Homodeus mercenary · cost 1 · 2 copies · hand shield 2. Play: gain 2 power. Then, if your mastery is lower than your opponent’s, gain 1 mastery. Check the strict mastery comparison when that conditional effect resolves; a tie grants no mastery. It can be bought normally or fast-played as a mercenary. Shield works only from hand; fast-playing it gives no persistent shield.",
+      "reason": "Updated Aegis to the cost-1 mercenary you requested, retaining its power, hand shield and behind-mastery bonus. This becomes the mastery catch-up member of a three-card, six-copy package.",
+      "evidence": [
+        "When both players reached mastery 10 in different rounds, the earlier player won 68.9%. This motivates exploring catch-up tools but does not prove the threshold itself is unfair.",
+        "There is no measured result for this proposed card. Cost, shield, quantity and output are explicit starting design values, not validated balance numbers."
+      ],
+      "interactions": [
+        {
+          "id": "abstractor-hold",
+          "text": "Aegis trades conditional mastery and a defensive hand use against Abstractor’s guaranteed mastery and M10 scaling."
+        },
+        {
+          "id": "conscription-reliability",
+          "text": "Its cost 1 makes it a qualifying play for the retained cheap-card condition."
+        },
+        {
+          "id": "deadly-recruits-cost",
+          "text": "Eligible before M20 for the paid destiny activation; it also qualifies for J-Chord’s Warp 3."
+        },
+        {
+          "id": "relief-courier",
+          "text": "Together with Courier and Riftbreaker, adds six market cards across three factions. Review the package’s market dilution and faction access."
+        }
+      ],
+      "watch": [
+        "Purchased versus fast-played value at cost 1",
+        "Frequency of actual behind-mastery triggers",
+        "Hand-shield use versus immediate fast-play power",
+        "Whether it becomes too efficient as a universal early purchase"
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "catchup-card",
+        "decision": "change",
+        "comment": "it's interesting to have some catchup cards, suggest 3 different catchup cards, 2 copies each.\nfor Aegis Surveyor, make it a mercenary and make it cost 1.",
+        "explanation": "Aegis now costs 1 and is a mercenary, exactly as requested. It retains the previously proposed shield/power/mastery effect; the three-card package remains a new design for review."
+      }
+    },
+    {
+      "id": "relief-courier",
+      "group": "new-designs",
+      "title": "New card · Relief Courier",
+      "kind": "experimental",
+      "confidence": "New catch-up design; no measured game results",
+      "card_ids": [],
+      "current": "No such card exists in the current game.",
+      "proposed": "Duel · Undergrowth ally · cost 3 · 2 copies · no shield. Play: gain 2 gems. Then, if your health is lower than your opponent’s, gain 4 health. Compare current health strictly when the conditional effect resolves; a tie grants no healing. It has no ordinary paid fast-play mode, no draw and no champion defense.",
+      "reason": "A health catch-up card that also supports buying decisions. The two gems keep it useful outside its recovery window; the heal requires an actual health deficit. It adds no extra draw chain.",
+      "evidence": [
+        "This is a new design, not a conclusion supported by a measured card win rate.",
+        "Its healing condition is distinct from Aegis’s mastery deficit and Riftbreaker’s champion deficit."
+      ],
+      "interactions": [
+        {
+          "id": "crown-draw",
+          "text": "With Talons active, successful healing also produces power. At full health it cannot meet the deficit condition; self-inflicted health loss can enable it."
+        },
+        {
+          "id": "deadly-recruits-cost",
+          "text": "Eligible for Deadly Recruits only from M20 because it costs 3; free-effect fast-play can return two gems after the one-gem activation."
+        },
+        {
+          "id": "j-chord-hold",
+          "text": "Eligible for J-Chord’s Warp 3 even though it is an ally without ordinary paid fast-play."
+        },
+        {
+          "id": "soul-syphon-reliability",
+          "text": "Adds an Undergrowth play and more potential healing, which can strengthen two-faction and Talons turns."
+        }
+      ],
+      "watch": [
+        "Health restored and Talons-converted power separately",
+        "Self-health-loss setups, especially Ko and Talons turns",
+        "Recruitment versus effect-driven fast-play and gem return",
+        "Game-length tails and whether it crowds out existing recovery cards"
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "catchup-card",
+        "decision": "change",
+        "comment": "it's interesting to have some catchup cards, suggest 3 different catchup cards, 2 copies each.\nfor Aegis Surveyor, make it a mercenary and make it cost 1.",
+        "explanation": "One of the two additional catch-up designs you requested. The exact name, cost and effects are new proposals for review."
+      }
+    },
+    {
+      "id": "riftbreaker",
+      "group": "new-designs",
+      "title": "New card · Riftbreaker",
+      "kind": "experimental",
+      "confidence": "New catch-up design; no measured game results",
+      "card_ids": [],
+      "current": "No such card exists in the current game.",
+      "proposed": "Duel · Wraethe mercenary · cost 4 · 2 copies · no shield. Play: gain 4 power. Then, if you control fewer champions than your opponent, gain 3 additional power, for 7 total. Compare champions currently in play strictly when the conditional effect resolves; a tie grants no bonus. The power uses normal attack rules and may target the opponent or champions. It does not automatically destroy a champion.",
+      "reason": "A board catch-up option against champion-heavy opponents. It gives an immediate mercenary response while preserving normal shields, taunt and damage assignment. The condition rewards having fewer champions, which is a board disadvantage but does not always mean the player is losing overall.",
+      "evidence": [
+        "This is an untested new design; there is no claimed observed win-rate benefit.",
+        "The condition targets a different public-state gap from the two other catch-up cards."
+      ],
+      "interactions": [
+        {
+          "id": "j-chord-hold",
+          "text": "Cost 4 is outside Warp 3; J-Chord can access it only through the M15 Warp 6 tier."
+        },
+        {
+          "id": "deadly-recruits-cost",
+          "text": "Eligible from M20, alongside all other new cards, but not before it."
+        },
+        {
+          "id": "brain-power",
+          "text": "Adds another Wraethe faction source and damage option. Watch whether champion-light aggressive decks use the bonus routinely rather than as recovery."
+        },
+        {
+          "id": "rare-relics-hold",
+          "text": "Champion relics count as champions; an opponent’s additional relic rewards can enable the bonus."
+        }
+      ],
+      "watch": [
+        "How often the champion deficit corresponds to a losing position",
+        "Champion damage versus face damage from its power",
+        "Use by champion-light aggressive decks",
+        "Paid fast-play, normal recruitment and M20 free-effect output"
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "catchup-card",
+        "decision": "change",
+        "comment": "it's interesting to have some catchup cards, suggest 3 different catchup cards, 2 copies each.\nfor Aegis Surveyor, make it a mercenary and make it cost 1.",
+        "explanation": "One of the two additional catch-up designs you requested. The exact name, cost and effects are new proposals for review."
+      }
+    },
+    {
+      "id": "early-order-hold",
+      "group": "retained",
+      "title": "Other early Order cards: keep current rules",
+      "kind": "keep",
+      "confidence": "Positive card signals, insufficient evidence for a combined nerf",
+      "card_ids": [
+        "order_initiate_duel",
+        "shard_seer",
+        "duplication_fabricator_duel"
+      ],
+      "current": "Order Initiate, Shard Seer and Duplication Fabricator are associated with good early results. Existing logs mix acquisition modes in first-acquisition timing.",
+      "proposed": "Keep Order Initiate, Shard Seer and Duplication Fabricator unchanged. Retain first-turn fast-play rules. The separately reviewed Giga and Shard Abstractor changes are included.",
+      "reason": "You accepted retaining these other early engines. Avoid additional unreviewed cuts while evaluating the expanded package.",
+      "evidence": [
+        "By-round-2 acquisition win rates are 57.1% for Order Initiate, 57.4% for Shard Seer and 57.3% for Duel Fabricator. Their adjusted associations remain positive.",
+        "None of 221 tested early card-by-hero interactions or 119 supported early card-pair interactions survives multiple-testing correction.",
+        "Lifetime fast-play counts cannot establish the exact mode of the first-round acquisition. The identifiable opening-fast-play subsets provide no convincing positive outlier."
+      ],
+      "interactions": [
+        {
+          "id": "giga-mastery",
+          "text": "Giga’s accepted mastery reduction changes the payoff from Dominion-friendly decks."
+        },
+        {
+          "id": "abstractor-hold",
+          "text": "Abstractor has its own explicit cost/output redesign, separate from this hold decision."
+        },
+        {
+          "id": "brain-power",
+          "text": "Brain’s lower early power changes the payoff of multi-faction draw chains."
+        }
+      ],
+      "watch": [
+        "Availability-adjusted purchase and fast-play value",
+        "Copied effects and successful Dominion triggers",
+        "Performance across heroes",
+        "Whether several individually reasonable changes combine into an excessive engine nerf"
+      ],
+      "response": {
+        "status": "retained",
+        "source_id": "early-order-hold",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Kept the existing rules as you accepted."
+      }
+    },
+    {
+      "id": "rare-relics-hold",
+      "group": "retained",
+      "title": "Rare relics, Doom Gate and finishers: retain current rules",
+      "kind": "keep",
+      "confidence": "Strong evidence of selection bias; weak evidence for more tuning",
+      "card_ids": [
+        "terminal_crescents_duel",
+        "world_piercer_duel",
+        "unknown_god",
+        "praetorian_03",
+        "doom_gate",
+        "comet",
+        "scion_of_nothingness",
+        "shadebound_sentry"
+      ],
+      "current": "Rare relic selections and late finishers can show very high raw win rates. Corruption rewards can grant additional relics outside the normal mastery-10 choice.",
+      "proposed": "Make no additional changes to these cards in the proposed core patch. Retain Doom Gate's current defense 7 and one-time flood of 35 monsters. Separate single-relic routes, reward relics and same-turn combinations in the next analysis.",
+      "reason": "Many apparent winners are already advantaged decks obtaining additional relics, or players acquiring a finisher on their winning turn. Raw ownership win rates are unsuitable nerf targets. The Crown-plus-Talons interaction still deserves explicit review and measurement.",
+      "evidence": [
+        "There are 859 player records with multiple distinct relics. Another relic was acquired in 67/72 Terminal Crescents selections, 22/28 World Piercer selections and 56/85 Unknown God selections.",
+        "Praetorian-03's raw advantage over Praetorian-01 disappears after measured selection and mastery timing adjustment.",
+        "In 272 Ko games where Doom Gate was played, Ko averaged 2.36 monsters defeated versus 1.11 for the opponent. The evidence does not show that the flood systematically favors his opponent.",
+        "High lifetime ownership scores for Comet, Scion and Shadebound include cards acquired immediately before winning."
+      ],
+      "interactions": [
+        {
+          "id": "crown-draw",
+          "text": "The potential 55-power Crown/Talons burst means a cycling buff must be evaluated in multiple-relic decks, not only normal Crown selections."
+        },
+        {
+          "id": "brain-power",
+          "text": "Tetra may switch to Crescents after Brain changes; that supplies more informative normal-choice data than the current tiny standalone sample."
+        },
+        {
+          "id": "deadly-recruits-cost",
+          "text": "Changing acquisition economy can change both finisher access and the ability to defeat monsters for rewards."
+        }
+      ],
+      "watch": [
+        "Every relic's acquisition source and chronological use",
+        "Normal choices versus reward-enriched decks",
+        "Doom Gate rewards for both players",
+        "Finisher availability before purchase, not just ownership at victory"
+      ],
+      "response": {
+        "status": "retained",
+        "source_id": "rare-relics-hold",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Kept the existing rules as you accepted."
+      }
+    },
+    {
+      "id": "global-rules-hold",
+      "group": "retained",
+      "title": "Global pacing: retain mastery thresholds and starting compensation",
+      "kind": "keep",
+      "confidence": "Current pacing supports targeted changes first",
+      "card_ids": [],
+      "current": "Normal relic access unlocks at mastery 10 and recruits into discard. Mastery 30 enables Infinity's finishing effect. In a duel both seats start with 5 cards; the second seat also receives 1 mastery and 1 gem for its first turn.",
+      "proposed": "Keep mastery 10 and 30, ordinary relic routing, starting hands and second-seat compensation unchanged. Do not add automatic relic-to-hand catch-up, a blanket first-turn fast-play restriction or a global healing nerf in this package.",
+      "reason": "The present games already center on ten rounds. First-player advantage is modest overall, while specific opening cards have much larger signals. Fix those candidates before redesigning the game's global race.",
+      "evidence": [
+        "Mean length is 9.98 rounds and median 10; the middle 80% is 8–12 rounds.",
+        "First-player wins are 1,955/3,780, or 51.72%, with a 95% interval of 50.13–53.31%.",
+        "When both players reach mastery 10 in different rounds, the earlier player wins 68.9%. A one-round lead wins 62.2%, a two-round lead 71.7%, and a lead of at least three rounds 78.9%. These are lead indicators, not isolated causal effects of the threshold.",
+        "Current victory routes are 62.4% ordinary damage, 32.3% mastery, 3.7% Comet and 1.6% other health loss."
+      ],
+      "interactions": [
+        {
+          "id": "giga-mastery",
+          "text": "Targeted card changes retain the global mastery thresholds."
+        },
+        {
+          "id": "abstractor-hold",
+          "text": "A cheaper mastery card may offset some printed mastery reductions; measure actual threshold timing."
+        },
+        {
+          "id": "crown-draw",
+          "text": "Improved cycling and healing-related optional designs can change finishing speed and the long-game tail."
+        },
+        {
+          "id": "catchup-card",
+          "text": "Adding six catch-up copies changes the market mix even while global rules stay fixed."
+        }
+      ],
+      "watch": [
+        "Starting-seat results within each hero matchup",
+        "Round distribution and extremely short or long games",
+        "Mastery threshold timing with exact action order",
+        "Damage, mastery and alternative victory shares"
+      ],
+      "response": {
+        "status": "retained",
+        "source_id": "global-rules-hold",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Kept the existing rules as you accepted."
+      }
+    },
+    {
+      "id": "giga-price",
+      "group": "excluded",
+      "title": "Not included · Giga price increase",
+      "kind": "keep",
+      "confidence": "Rejected in your previous review",
+      "card_ids": [
+        "giga_source_adept"
+      ],
+      "current": "Giga costs 2, has defense 4, draws 1 on play and exhausts for Dominion: gain 3 mastery.",
+      "proposed": "Do not raise Giga’s price. It remains cost 2; the accepted Dominion mastery reduction is the only Giga tuning.",
+      "reason": "You rejected the cost increase. This entry records that decision so it cannot accidentally be stacked with the accepted mastery nerf.",
+      "evidence": [
+        "The same initial-market and early-acquisition evidence underlying the core Giga proposal applies.",
+        "Every first-seat opening hand in this cohort can generate at least 3 gems. A price increase to 3 would therefore not prevent an opening purchase; it would compete with Focus and other purchases.",
+        "The effect of a price change was not simulated and cannot be inferred as a precise win-rate reduction from the existing games."
+      ],
+      "interactions": [
+        {
+          "id": "giga-mastery",
+          "text": "Only Dominion mastery 3 → 2 is included."
+        }
+      ],
+      "watch": [],
+      "response": {
+        "status": "rejected",
+        "source_id": "giga-price",
+        "decision": "reject",
+        "comment": "",
+        "explanation": "Removed this price increase from the patch."
+      }
+    }
+  ],
+  "previous_review": {
+    "proposal_version": "2026-10-08-v1",
+    "revision": 64,
+    "submitted_at": "2026-10-08T11:04:22.862114Z",
+    "general_comment": "",
+    "source_sha256": "c26a0820bb1809f7434fffb26ef0efa745059d38103684aff69f42f7c38e8698"
+  },
+  "patch_notes": {
+    "title": "Revised patch notes",
+    "status": "Draft v2 · incorporates your submitted v1 review · not implemented",
+    "changes": [
+      {
+        "id": "giga-mastery",
+        "title": "Giga",
+        "detail": "Dominion mastery 3 → 2. Cost remains 2; defense and draw unchanged."
+      },
+      {
+        "id": "deadly-recruits-cost",
+        "title": "Deadly Recruits",
+        "detail": "Activation now costs 1 gem. Both modes and the cost-2 / M20 cost-4 limits remain."
+      },
+      {
+        "id": "brain-power",
+        "title": "Multitask Brain",
+        "detail": "Below M20: power per faction 2 → 1. Draw per faction and the M20 tier remain."
+      },
+      {
+        "id": "crown-draw",
+        "title": "Panconscious Crown",
+        "detail": "Draw 1 after its existing mastery and healing effects."
+      },
+      {
+        "id": "conscription-reliability",
+        "title": "Unconditional Conscription",
+        "detail": "Power 4 → 5. Keep the existing two-card condition and eligibility."
+      },
+      {
+        "id": "soul-syphon-reliability",
+        "title": "Soul Syphon",
+        "detail": "Requires 2 faction-bearing cards spanning 2 factions, instead of 3/3; healing 7 → 5."
+      },
+      {
+        "id": "furrowing-price",
+        "title": "Furrowing Elemental",
+        "detail": "Cost 5 → 4. Existing effects and 2 copies remain."
+      },
+      {
+        "id": "j-chord-hold",
+        "title": "J-Chord",
+        "detail": "Cost 3 → 4. Defense 3, Warp 3 and M15 Warp 6 remain."
+      },
+      {
+        "id": "abstractor-hold",
+        "title": "Shard Abstractor",
+        "detail": "Cost 3 → 2. Gain 1 mastery; at M10 gain 2 instead. Tier is checked before the gain."
+      }
+    ],
+    "new_designs": [
+      {
+        "id": "hero-powers-hold",
+        "title": "Volos — proposed small buff",
+        "detail": "Pay 1 gem: gain 3 power instead of 2. All other modes remain."
+      },
+      {
+        "id": "catchup-card",
+        "title": "Aegis Surveyor — 2 copies",
+        "detail": "Homodeus mercenary, cost 1, shield 2. Gain 2 power; if behind in mastery, gain 1 mastery."
+      },
+      {
+        "id": "relief-courier",
+        "title": "Relief Courier — 2 copies",
+        "detail": "Undergrowth ally, cost 3. Gain 2 gems; if behind in health, gain 4 health."
+      },
+      {
+        "id": "riftbreaker",
+        "title": "Riftbreaker — 2 copies",
+        "detail": "Wraethe mercenary, cost 4. Gain 4 power; if you control fewer champions, gain 3 additional power."
+      }
+    ],
+    "not_included": [
+      "Giga’s price increase is rejected; its cost remains 2.",
+      "Other hero abilities, other early Order engines, rare relics, Doom Gate, mastery thresholds and starting compensation retain their current rules."
+    ],
+    "package_notes": [
+      "Abstractor at cost 2 now qualifies for early Deadly Recruits and Conscription. Its redesign is not simply a mastery nerf.",
+      "Conscription gains only 1 power directly, but the two new cheap Aegis copies and cheaper Abstractor can improve its trigger rate.",
+      "All six new card copies qualify for Deadly Recruits at M20; only Aegis qualifies before M20. J-Chord Warp 3 reaches Aegis and Courier.",
+      "Volos’s proposed power-mode buff preserves free healing, avoiding an additional increase to Talons healing conversion.",
+      "The new cards compare public values when their conditions resolve; equal values give no catch-up bonus."
+    ]
+  }
+}

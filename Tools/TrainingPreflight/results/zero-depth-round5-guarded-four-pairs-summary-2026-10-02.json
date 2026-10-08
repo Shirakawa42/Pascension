@@ -1,0 +1,45 @@
+{
+  "total_seconds": {
+    "baseline_median": 2.8709360499997274,
+    "bundle_median": 2.62678004999907,
+    "median_paired_reduction_percent": 8.630349906430716,
+    "median_saved_seconds": 0.24408970000149566
+  },
+  "collection_seconds": {
+    "baseline_median": 2.184083099997224,
+    "bundle_median": 1.996870349994424,
+    "median_paired_reduction_percent": 9.326754414558462,
+    "median_saved_seconds": 0.20006470000225818
+  },
+  "actor_seconds": {
+    "baseline_median": 1.1878764498542296,
+    "bundle_median": 1.0964330999959202,
+    "median_paired_reduction_percent": 5.926821231277908,
+    "median_saved_seconds": 0.0674925999082916
+  },
+  "append_seconds": {
+    "baseline_median": 0.20440780010540038,
+    "bundle_median": 0.15131769996514777,
+    "median_paired_reduction_percent": 25.724815852269167,
+    "median_saved_seconds": 0.05083580011705635
+  },
+  "exposed_host_wait_seconds": {
+    "baseline_median": 0.6999664501781808,
+    "bundle_median": 0.6697642999424716,
+    "median_paired_reduction_percent": 6.718918210218813,
+    "median_saved_seconds": 0.04667885016533546
+  },
+  "ppo_seconds": {
+    "baseline_median": 0.6738711500001955,
+    "bundle_median": 0.6344371500017587,
+    "median_paired_reduction_percent": 5.498227334512315,
+    "median_saved_seconds": 0.03660420000232989
+  },
+  "median_paired_throughput_gain_percent": 9.45959334275016,
+  "aggregate_throughput_gain_percent": 9.007137417783873,
+  "probe_raw_seconds": 113.74211050000304,
+  "minimum_real_free_bytes": 11714691072,
+  "peak_allocated": 17313883136,
+  "peak_reserved": 18729664512,
+  "full_report_sha256": "e41731f7771c645ec5aab8f6728fc7166eba8aa7e06550117d1943c6815e9ee3"
+}

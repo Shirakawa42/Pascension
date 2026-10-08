@@ -1,0 +1,44 @@
+{
+  "source": "/home/lva/.local/share/shards-training/2026-09-26/pilot-v3/metrics.jsonl",
+  "quiet_windows": [
+    [
+      "2026-09-26T14:19:19Z",
+      "2026-09-26T14:20:19Z"
+    ],
+    [
+      "2026-09-26T14:20:49Z",
+      "2026-09-26T14:21:49Z"
+    ]
+  ],
+  "whole_generation_within_window": true,
+  "selection": "last20 eligible generations",
+  "generations": [
+    2042,
+    2043,
+    2044,
+    2045,
+    2046,
+    2047,
+    2048,
+    2049,
+    2050,
+    2051,
+    2052,
+    2053,
+    2054,
+    2055,
+    2056,
+    2057,
+    2058,
+    2059,
+    2060,
+    2061
+  ],
+  "generation_seconds": 45.9502266749987,
+  "host_seconds": 15.269244750121288,
+  "collection_seconds": 38.91386460900321,
+  "learning_seconds": 5.273186722997707,
+  "verification_seconds": 1.1647626020003372,
+  "host_fraction_of_generation": 0.33229966106846676,
+  "absolute_speedup_if_all_host_time_removed": 1.4976778379358306
+}

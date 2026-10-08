@@ -1,0 +1,1114 @@
+{
+  "version": "2026-10-08-v3",
+  "title": "Duel balance patch — changes only",
+  "summary": "Your reviewed card and hero changes, five edits from My creations, a five-faction mastery catch-up cycle, and the opening-shop and champion-combat rules. Unchanged cards have been removed from the patch list. Exact new-card values and the custom Testudo combat handling are proposals for review. No gameplay changes have been implemented.",
+  "cohort": {
+    "games": 3780,
+    "date": "2026-10-08",
+    "format": "Duel, Nyou Haïai with search on both sides",
+    "matchups": "189 games in each of the 20 ordered matchups of different heroes; no mirrors",
+    "mean_rounds": 9.98042328,
+    "first_player_win_rate": 0.5171957672,
+    "analysis_url": "/balance-review",
+    "rules_changed": false,
+    "new_simulations": false,
+    "validation_plan": "After the review, define the intended package and its acceptable balance range. Compare baseline, individual changes and their combination on paired seeds with both starting seats. Track hero matchups, relic choices and rewards, opening-card availability, victory routes and game-length tails. Give the policy an opportunity to adapt before treating the result as final balance; self-play's aggregate win rate is always 50% and is not a patch success metric."
+  },
+  "groups": [
+    {
+      "id": "reviewed",
+      "title": "Reviewed card and hero changes",
+      "description": "Accepted changes and your exact card-specific revisions."
+    },
+    {
+      "id": "your-designs",
+      "title": "Changes from My creations",
+      "description": "Your five saved designs update existing cards."
+    },
+    {
+      "id": "new-designs",
+      "title": "Five mastery catch-up cards",
+      "description": "One per faction, two copies each; proposed exact values."
+    },
+    {
+      "id": "rules",
+      "title": "New rules",
+      "description": "Your requested opening shop and champion attack rules."
+    },
+    {
+      "id": "combat-designs",
+      "title": "Champion interaction proposal",
+      "description": "Recommended handling for the custom shield champion."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "giga-mastery",
+      "group": "reviewed",
+      "title": "Giga: Dominion mastery 3 → 2",
+      "kind": "recommended",
+      "confidence": "Strong imbalance signal; moderate confidence in this tuning",
+      "card_ids": [
+        "giga_source_adept"
+      ],
+      "current": "Cost 2, defense 4. When played, draw 1 card. Exhaust — Dominion: gain 3 mastery.",
+      "proposed": "In Duel only, change the Dominion exhaust to gain 2 mastery. Keep cost 2, defense 4 and the draw on play. Add a Duel replacement so the original card remains unchanged in other formats.",
+      "reason": "Reduce a cheap champion's repeated mastery acceleration while preserving its identity and accessibility. This is the strongest opening outlier supported by both acquisition and initial-market evidence. A normal purchase puts Giga into discard; the draw is on playing it, not on buying it.",
+      "evidence": [
+        "Giga was in the initial market in 117 games. The first player acquired it in all 117 and won 82, or 70.1%; first-player wins were 51.1% when Giga was absent.",
+        "The initial-offer association remains about +18.1 percentage points after controlling hero matchup and both opening hands' buying power; the 95% interval is +9.4 to +26.8 points.",
+        "Players acquiring Giga by round 2 won 145/206 games, or 70.4%. Successful Dominion triggers were not logged, so the exact contribution of each activation remains unknown."
+      ],
+      "interactions": [
+        {
+          "id": "order-initiate-mastery",
+          "text": "These Dominion reductions stack in early Order decks."
+        },
+        {
+          "id": "omnius-mastery",
+          "text": "Omnius also produces less Dominion mastery."
+        },
+        {
+          "id": "abstractor-hold",
+          "text": "The cheaper Abstractor gives a different early mastery route."
+        }
+      ],
+      "watch": [
+        "Initial-market Giga advantage and early purchase rate",
+        "Successful Dominion triggers and mastery 10/20/30 timing",
+        "Rez's matchups and the overall share of mastery victories",
+        "Round distribution, including unusually early finishes"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "giga-mastery",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "deadly-recruits-cost",
+      "group": "reviewed",
+      "title": "Deadly Recruits: activation costs 1 gem",
+      "kind": "recommended",
+      "confidence": "Strong selection signal; moderate confidence in the amount",
+      "card_ids": [
+        "deadly_recruits_duel"
+      ],
+      "current": "Exhaust for no gem cost: choose an ally in the market costing 2 or less, then fast-play it OR recruit it for free. At mastery 20, the limit becomes 4.",
+      "proposed": "Pay 1 gem and exhaust, then fast-play OR recruit one eligible ally. Remove “for free” from the card text. Eligibility remains cost 2 or less, upgraded to 4 or less at M20. The chosen card has no additional purchase payment; the 1 gem is the activation cost.",
+      "reason": "Charge for repeatable access to immediate effects or permanent cards. Reducing only recruitment would miss the principal observed use, which is fast-play. One gem could be too severe for an already conditional market-dependent action, so its choice and usage rates matter.",
+      "evidence": [
+        "Normal selectors won 64.5% of 752 games. The association remains about +11.0 percentage points after matchup, seat and selection-timing adjustment.",
+        "Of 3,043 recorded mode choices, 2,554 were fast-play and 489 recruit: approximately 84% fast-play.",
+        "The favorable raw result appears across all five heroes, although choosing the destiny remains a strategic, nonrandom event."
+      ],
+      "interactions": [
+        {
+          "id": "abstractor-hold",
+          "text": "Cost-2 Abstractor becomes an early eligible target."
+        },
+        {
+          "id": "catchup-card",
+          "text": "Aegis can refund the activation gem if its mastery condition succeeds."
+        },
+        {
+          "id": "rift-scout",
+          "text": "The new cost-2 Scout is an eligible fast-play target before M20."
+        }
+      ],
+      "watch": [
+        "Choice rate when this destiny is available",
+        "Paid activations, eligible targets and successful fast-play/recruit resolutions",
+        "Pre-mastery-20 usefulness versus other destinies",
+        "Power, mastery and permanent-card value gained per activation"
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "deadly-recruits-cost",
+        "decision": "accept",
+        "comment": "remove the \"for free\" in the text, not relevant",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "brain-power",
+      "group": "reviewed",
+      "title": "Multitask Brain: pre-mastery-20 power per faction 2 → 1",
+      "kind": "recommended",
+      "confidence": "Strong Tetra signal; moderate confidence in the relic attribution",
+      "card_ids": [
+        "multitask_brain"
+      ],
+      "current": "For each distinct faction played this turn, gain 2 power and draw 1 card. At mastery 20, gain 4 power per faction instead. The faction count is evaluated before these draws.",
+      "proposed": "Below mastery 20, gain 1 power and draw 1 card per distinct faction played. At mastery 20, retain 4 power and 1 draw per faction. Keep Tetra's hero power unchanged.",
+      "reason": "Reduce the damage attached to Tetra's exceptionally strong draw engine without removing her cycling identity. This halves the relic's early power, a substantial change; retaining the mastery-20 reward gives the build a later payoff.",
+      "evidence": [
+        "Tetra wins 876/1,512 games, or 57.9%, and leads against every opposing hero. Ordinary damage accounts for 77.7% of her wins.",
+        "Brain is 90.1% of Tetra's normal relic choices; those games win 734/1,190, or 61.7%. The timing-adjusted association is similar, but hero power, relic choice and deck quality are not causally separated.",
+        "A normal Brain play supplies its own Order faction. Prism can supply all five factions, giving the current card a maximum of 10 power plus 5 draws below mastery 20. The proposal lowers that maximum to 5 power plus 5 draws; mastery-20 output stays 20 power plus 5 draws."
+      ],
+      "interactions": [
+        {
+          "id": "crown-draw",
+          "text": "Lower early Tetra damage and Crown’s improved cycling can strengthen Volos together."
+        }
+      ],
+      "watch": [
+        "Every Tetra matchup and both starting seats",
+        "Brain output per faction, tier and play",
+        "Switching to other relics",
+        "Late mastery wins, long games and the size of the mastery-20 power jump"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "brain-power",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "crown-draw",
+      "group": "reviewed",
+      "title": "Panconscious Crown: add Draw 1",
+      "kind": "recommended",
+      "confidence": "Strong route weakness; uncertain rules-versus-policy cause",
+      "card_ids": [
+        "panconscious_crown_duel"
+      ],
+      "current": "Gain 2 mastery and 5 health. Then, at mastery 20, Unify grants another 50 health. Crown's own mastery gain can reach the threshold before the check.",
+      "proposed": "Gain 2 mastery, 5 health and draw a card. Then check M20 Unify to gain 50 health. Resolve mastery, healing, draw, then the M20 Unify check in that order, as you confirmed. The newly drawn card may be revealed to satisfy Unify; Crown’s own mastery gain can reach M20.",
+      "reason": "Improve Crown’s cycling. You requested one combined base-effect line and confirmed that the draw happens before the M20 Unify check. This is an explicit timing change from the previous draw-last draft.",
+      "evidence": [
+        "Crown selectors win 95/299 games, or 31.8%, versus 485/998, or 48.6%, for Talons. The large gap persists after measured selection and mastery timing adjustment.",
+        "Crown players reach mastery 20 in 59.5% of games, yet average 10.96 rounds and frequently fail to finish. Volos already reaches mastery 10 most often, so earlier access is not the obvious bottleneck.",
+        "Volos acquired both Crown and Talons in 75 games and won 60, or 80.0%. These selected reward-enriched decks do not establish a causal combo win rate. Mechanically, Talons before Crown can convert Crown's 5 + 50 healing into 55 power, even at full health."
+      ],
+      "interactions": [
+        {
+          "id": "hero-powers-hold",
+          "text": "Volos also gets +1 power on his paid power mode."
+        },
+        {
+          "id": "relief-courier",
+          "text": "The new conditional healing can also interact with Volos’s healing-to-power relic."
+        }
+      ],
+      "watch": [
+        "Crown selected alone versus acquired alongside Talons",
+        "Same-turn relic order and healing converted to power, including at full health",
+        "Mastery-30 conversion, long-game tail and Volos matchups",
+        "Whether better relic selection alone removes the apparent weakness"
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "crown-draw",
+        "decision": "accept",
+        "comment": "make it 1 line: Gain 2 mastery, 5 health and draw a card.",
+        "explanation": "Applied your exact first line and your chat clarification: draw before the M20 Unify check.",
+        "source_card_id": "panconscious_crown_duel"
+      }
+    },
+    {
+      "id": "conscription-reliability",
+      "group": "reviewed",
+      "title": "Unconditional Conscription: power 4 → 5",
+      "kind": "recommended",
+      "confidence": "Your requested tuning; effect size remains untested",
+      "card_ids": [
+        "unconditional_conscription"
+      ],
+      "current": "Exhaust: if you played at least 2 non-starter allies costing 2 or less this turn, gain 4 power. The current engine checks played non-starter, non-champion cards at printed cost 2 or less; qualifying non-champion relics also count.",
+      "proposed": "Keep the existing requirement of at least 2 qualifying non-starter, non-champion cards costing 2 or less played this turn. Increase the reward from 4 power to 5. Retain the current eligibility check, including qualifying non-champion relics. No other change.",
+      "reason": "Your review replaces the reliability redesign with a direct +1 power increase. The two-card condition and all existing eligibility rules stay intact.",
+      "evidence": [
+        "Normal selectors won 178/424 games, or 42.0%; the adjusted association is about -7.9 percentage points.",
+        "First-seat selectors won 72/210, or 34.3%, while second-seat selectors won 106/214, or 49.5%. Their average selection rounds differ, reinforcing the timing and choice concern.",
+        "Activation counters do not reveal how often the current condition successfully paid out."
+      ],
+      "interactions": [
+        {
+          "id": "abstractor-hold",
+          "text": "Cost 2 makes Abstractor satisfy the unchanged eligibility rule."
+        },
+        {
+          "id": "horizon-seeker",
+          "text": "Four of the five new designs cost 2 or less, improving access to qualifying plays."
+        }
+      ],
+      "watch": [
+        "Successful triggers versus attempts, using the unchanged two-card condition",
+        "How often Abstractor and Aegis provide the second qualifying card",
+        "Power gained per game and the shared destiny draft"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "conscription-reliability",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "soul-syphon-reliability",
+      "group": "reviewed",
+      "title": "Soul Syphon: two factions for 5 health",
+      "kind": "recommended",
+      "confidence": "Moderate weakness signal; low confidence in this redesign",
+      "card_ids": [
+        "soul_syphon_duel"
+      ],
+      "current": "Exhaust: if you played at least 3 faction-bearing cards spanning at least 3 different factions this turn, gain 7 health. The separate card-count gate prevents a lone Prism from meeting the condition.",
+      "proposed": "Keep the original card wording, replacing only “3+” with “2+” and “7 health” with “5 health”. The underlying requirement becomes at least 2 faction-bearing cards spanning at least 2 different factions; a lone Prism still does not qualify.",
+      "reason": "Trade a larger conditional heal for more frequent modest healing. This may improve ordinary damage matchups but cannot answer an Infinity finish; if mastery defeats explain most losses, easier healing may fail to solve the actual problem.",
+      "evidence": [
+        "Normal selectors win 44.5% of 539 games; the adjusted association is about -7.1 percentage points.",
+        "The existing logs do not identify successful Soul Syphon triggers or healing converted to power by source.",
+        "No tested hero-by-initial-destiny-offer interaction survives multiple-testing correction, so this is not established as a problem confined to one hero."
+      ],
+      "interactions": [
+        {
+          "id": "catchup-card",
+          "text": "Five faction-specific new cards support diverse plays; a lone Prism still fails the separate minimum-card gate."
+        }
+      ],
+      "watch": [
+        "Condition success rate and healing actually restored",
+        "Healing converted to power, especially through Talons",
+        "Damage defeats versus mastery defeats",
+        "Destiny choice rate and longer-game frequency"
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "soul-syphon-reliability",
+        "decision": "accept",
+        "comment": "change text, keep the original text and swap 3+ to 2+ and 7 health to 5 health",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "furrowing-price",
+      "group": "reviewed",
+      "title": "Furrowing Elemental: cost 5 → 4",
+      "kind": "recommended",
+      "confidence": "Low; small early sample and purchase-timing bias",
+      "card_ids": [
+        "furrowing_elemental_duel"
+      ],
+      "current": "Cost 5, Undergrowth ally. Gain 4 health and draw 1 card; then, if at 50 health, gain 4 power. There are 2 copies.",
+      "proposed": "Reduce the Duel card's cost to 4. Retain both copies and all effects, including checking full health after its healing and draw resolve.",
+      "reason": "Apply your accepted price reduction to make this healing-and-draw card easier to acquire. Its contribution to Volos and to other heroes under the combined patch remains untested.",
+      "evidence": [
+        "Players acquiring it by round 2 won 19/61 games, or 31.1%. This is a small and strategically selected sample.",
+        "A weak early-purchase result does not establish that the card is weak later or when offered in suitable decks."
+      ],
+      "interactions": [],
+      "watch": [
+        "Normal purchases versus free acquisitions at cost thresholds",
+        "Performance when first acquired in early, middle and late rounds",
+        "Full-health trigger success",
+        "Talons combinations and defensive game length"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "furrowing-price",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "j-chord-hold",
+      "group": "reviewed",
+      "title": "J-Chord: cost 3 → 4",
+      "kind": "recommended",
+      "confidence": "Your requested tuning; opening advantage will need rechecking",
+      "card_ids": [
+        "j_chord_duel"
+      ],
+      "current": "Cost 3, defense 3. Exhaust — Warp 3. At mastery 15, Warp 6 instead.",
+      "proposed": "Raise the Duel purchase cost from 3 to 4. Keep defense 3 and Exhaust — Warp 3; at mastery 15, keep Warp 6 instead. No change to the target-cost thresholds.",
+      "reason": "Your review calls for a higher acquisition price. This reduces opening affordability while preserving J-Chord’s role once it enters play.",
+      "evidence": [
+        "When initially offered in 124 games, first-player wins were 65.3%, versus 51.3% when absent. The adjusted association is about +14.0 percentage points, with a wider interval than Giga's.",
+        "The first player acquired it in round 1 in 120 of those 124 games. Early acquisition is also positively associated with winning."
+      ],
+      "interactions": [],
+      "watch": [
+        "Opening availability versus actual purchase rates at cost 4",
+        "Successful Warp targets before and after M15",
+        "Champion survival and total value gained per purchase"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "j-chord-hold",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "abstractor-hold",
+      "group": "reviewed",
+      "title": "Shard Abstractor: cost 2; mastery 1 / 2 at M10",
+      "kind": "recommended",
+      "confidence": "Your requested redesign; mixed cost/output effects",
+      "card_ids": [
+        "shard_abstractor"
+      ],
+      "current": "Order mercenary, cost 3, quantity 3. Play: gain 2 mastery.",
+      "proposed": "Cost 3 → 2. Gain 1 mastery; at M10 gain 2 instead. Remove the timing explanation from the card face. This remains a replacement tier evaluated before this gain: starting at 9 grants 1 and reaches 10; starting at 10 grants 2. Keep 3 copies.",
+      "reason": "Your review trades lower early mastery output for a lower price, with the original two-mastery output restored from M10. This changes both its opening opportunity cost and eligibility for other card effects.",
+      "evidence": [
+        "With Abstractor in the initial market, first-player wins were 60.2% of 387 games versus 50.8% when absent; the adjusted association is about +10.0 percentage points.",
+        "Early acquirers win 57.1% of 613 games. The guaranteed opening-fast-play subset is only 32 player records and wins 53.1%, insufficient to establish a strong positive effect."
+      ],
+      "interactions": [],
+      "watch": [
+        "Paid recruit, paid fast-play and effect fast-play separately",
+        "M10 tier selected before mastery gain; no double reward at the threshold",
+        "Early mastery tempo including Focus purchases",
+        "New interactions with Conscription and Deadly Recruits"
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "abstractor-hold",
+        "decision": "accept",
+        "comment": "remove the \"Use your mastery before this gain.\"",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "hero-powers-hold",
+      "group": "reviewed",
+      "title": "Volos: one-gem power mode 2 → 3",
+      "kind": "experimental",
+      "confidence": "New response to your request; needs review",
+      "card_ids": [
+        "volos_first_aid"
+      ],
+      "current": "M5: once per turn, choose one:\n— Gain 3 health.\n— Pay 1 gem: gain 2 power.\n— Pay 2 gems: draw a card.\n— Pay 3 gems: gain 1 mastery.",
+      "proposed": "At M5, Volos’s once-per-turn pay-1-gem mode grants 3 power instead of 2. The other three modes keep their existing costs and effects.",
+      "reason": "You asked for a slight Volos buff. One extra power on the paid attack option helps turns without Talons and is bounded to once per turn. It avoids increasing healing conversion or adding more draw/mastery acceleration alongside Crown’s accepted buff.",
+      "evidence": [
+        "Hero wins: Tetra 57.9%, Decima 50.1%, Rez 49.3%, Ko Syn Wu 47.6%, Volos 45.0%, each over 1,512 balanced player-games.",
+        "Rez uses his ability 6.39 times and rerolls 5.21 times per game. Mastery accounts for 428 of his 745 wins.",
+        "Ko's thinning is active, averaging 6.08 starter banishes per game. Decima's zero activation counter is expected for a passive ability. Volos reaches mastery 10 most often, so a starting-mastery buff targets no demonstrated access problem."
+      ],
+      "interactions": [],
+      "watch": [
+        "Choice frequencies for all four modes",
+        "Volos with Crown versus Talons and Unknown God",
+        "Every Volos matchup, not just pooled win rate",
+        "Whether the paid option is used on meaningful finishing or monster-defeat turns"
+      ],
+      "response": {
+        "status": "accepted",
+        "source_id": "hero-powers-hold",
+        "decision": "accept",
+        "comment": "",
+        "explanation": "Retained the accepted change and applied your latest wording requests."
+      }
+    },
+    {
+      "id": "order-initiate-mastery",
+      "group": "reviewed",
+      "title": "Order Initiate: Dominion mastery 2 → 1",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [
+        "order_initiate_duel"
+      ],
+      "current": "You may remove a card from the shop. Gain 2 gems. Dominion: gain 2 mastery.",
+      "proposed": "Dominion mastery 2 → 1. Other stats and effects stay the same.",
+      "reason": "Your card-specific review requests less mastery from the cheap Dominion engine.",
+      "evidence": [],
+      "interactions": [],
+      "watch": [
+        "Early acquisition and mastery timing under the full package."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "early-order-hold",
+        "decision": "change",
+        "comment": "change dominion to give only 1 mastery",
+        "explanation": "Updated from your submitted v2 review.",
+        "source_card_id": "order_initiate_duel"
+      }
+    },
+    {
+      "id": "shard-seer-mastery",
+      "group": "reviewed",
+      "title": "Shard Seer: reveal mastery 2 → 1",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [
+        "shard_seer"
+      ],
+      "current": "Draw a card.\nYou may reveal an Infinity Shard from your hand to gain 2 mastery.",
+      "proposed": "Infinity Shard reveal grants 1 mastery instead of 2. Other stats and effects stay the same.",
+      "reason": "Your card-specific review reduces the Infinity Shard reveal reward.",
+      "evidence": [],
+      "interactions": [],
+      "watch": [
+        "Early acquisition and mastery timing under the full package."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "early-order-hold",
+        "decision": "change",
+        "comment": "make it 1 mastery on infinity shard reveal",
+        "explanation": "Updated from your submitted v2 review.",
+        "source_card_id": "shard_seer"
+      }
+    },
+    {
+      "id": "fabricator-price",
+      "group": "reviewed",
+      "title": "Duplication Fabricator: cost 3 → 4",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [
+        "duplication_fabricator_duel"
+      ],
+      "current": "Gain 1 mastery.\nEvery player reveals their deck's top card; copy the effect of one revealed ally.\nM20: you may copy any number of effects from the revealed cards instead.",
+      "proposed": "Cost 3 → 4. Other stats and effects stay the same.",
+      "reason": "Your card-specific review raises the purchase and free-acquisition threshold for this copying engine.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "j-chord-hold",
+          "text": "Fabricator at cost 4 falls outside J-Chord’s Warp 3 tier."
+        },
+        {
+          "id": "deadly-recruits-cost",
+          "text": "Fabricator remains above the early limit but qualifies at M20."
+        }
+      ],
+      "watch": [
+        "Early acquisition and mastery timing under the full package."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "early-order-hold",
+        "decision": "change",
+        "comment": "make it cost 4",
+        "explanation": "Updated from your submitted v2 review.",
+        "source_card_id": "duplication_fabricator_duel"
+      }
+    },
+    {
+      "id": "breaker-warp",
+      "group": "your-designs",
+      "title": "Breaker: Warp is limited to allies costing 6 or less.",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [
+        "breaker"
+      ],
+      "current": "Shield 4.\nWhen you recruit this, it goes to your hand instead of your discard pile.\nWarp.",
+      "proposed": "Warp is limited to allies costing 6 or less. All other fields keep the values in your saved card design.",
+      "reason": "Imported from your saved card design as an edit to the existing card.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "opening-shop",
+          "text": "Breaker cannot start in the initial six slots, but can appear on a first-turn refill."
+        }
+      ],
+      "watch": [
+        "Combined impact with the other mastery, opening-market and combat changes."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "breaker-warp",
+        "source_draft_id": "draft-a98eccfc-881e-427a-98b9-a493bc6323bd",
+        "decision": "change",
+        "comment": "",
+        "explanation": "Imported your saved design. This updates the existing card; it does not add another card identity or copies."
+      }
+    },
+    {
+      "id": "fungal-hermit-shield",
+      "group": "your-designs",
+      "title": "Fungal Hermit: Add hand Shield 2.",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [
+        "fungal_hermit"
+      ],
+      "current": "Gain 1 mastery.\nM10: gain 5 health. Its own mastery gain counts.",
+      "proposed": "Add hand Shield 2. All other fields keep the values in your saved card design.",
+      "reason": "Imported from your saved card design as an edit to the existing card.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "testudo-shield-timing",
+          "text": "The new hand shield can also protect champions under the proposed Testudo rules."
+        }
+      ],
+      "watch": [
+        "Combined impact with the other mastery, opening-market and combat changes."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "fungal-hermit-shield",
+        "source_draft_id": "draft-31845439-e634-4ce5-83fe-9adb988d9c8a",
+        "decision": "change",
+        "comment": "",
+        "explanation": "Imported your saved design. This updates the existing card; it does not add another card identity or copies. The Shield 2 stat has also been added to the rules preview."
+      }
+    },
+    {
+      "id": "corruption-defense",
+      "group": "your-designs",
+      "title": "Ingeminex: Corruption: Defense 10 → 15.",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [
+        "ingeminex_corruption"
+      ],
+      "current": "Attack: every player loses 3 health and 1 mastery.\nReward: recruit an additional relic to your hand.",
+      "proposed": "Defense 10 → 15. All other fields keep the values in your saved card design.",
+      "reason": "Imported from your saved card design as an edit to the existing card.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "crown-draw",
+          "text": "Harder Corruption kills can delay access to additional relic combinations."
+        }
+      ],
+      "watch": [
+        "Combined impact with the other mastery, opening-market and combat changes."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "corruption-defense",
+        "source_draft_id": "draft-13a235f7-9101-4199-9d02-cb131b84a988",
+        "decision": "change",
+        "comment": "",
+        "explanation": "Imported your saved design. This updates the existing card; it does not add another card identity or copies."
+      }
+    },
+    {
+      "id": "omnius-mastery",
+      "group": "your-designs",
+      "title": "Omnius, The All-Knowing: Dominion mastery 5 → 3.",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [
+        "omnius"
+      ],
+      "current": "Draw two cards.\nDominion: gain 5 mastery.",
+      "proposed": "Dominion mastery 5 → 3. All other fields keep the values in your saved card design.",
+      "reason": "Imported from your saved card design as an edit to the existing card.",
+      "evidence": [],
+      "interactions": [],
+      "watch": [
+        "Combined impact with the other mastery, opening-market and combat changes."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "omnius-mastery",
+        "source_draft_id": "draft-11b110c0-ec8c-4102-86a1-ac271058234e",
+        "decision": "change",
+        "comment": "",
+        "explanation": "Imported your saved design. This updates the existing card; it does not add another card identity or copies."
+      }
+    },
+    {
+      "id": "systema-price",
+      "group": "your-designs",
+      "title": "Systema A.I.: Cost 3 → 4.",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [
+        "systema_ai"
+      ],
+      "current": "Exhaust: gain 1 mastery.\nM20: also draw two cards.",
+      "proposed": "Cost 3 → 4. All other fields keep the values in your saved card design.",
+      "reason": "Imported from your saved card design as an edit to the existing card.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "champion-combat",
+          "text": "Systema’s changed price combines with the new timing of champion removal."
+        }
+      ],
+      "watch": [
+        "Combined impact with the other mastery, opening-market and combat changes."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "systema-price",
+        "source_draft_id": "draft-a021adab-dbeb-42c9-ad2a-5e483ed64651",
+        "decision": "change",
+        "comment": "",
+        "explanation": "Imported your saved design. This updates the existing card; it does not add another card identity or copies."
+      }
+    },
+    {
+      "id": "horizon-seeker",
+      "group": "new-designs",
+      "title": "New card · Horizon Seeker",
+      "kind": "recommended",
+      "confidence": "New proposed exact values; the mastery-only faction roles are your instruction. No simulations yet.",
+      "card_ids": [
+        "horizon_seeker"
+      ],
+      "current": "New card; no current version.",
+      "proposed": "Order ally · cost 2 · 2 copies. Draw 1; if behind in mastery, gain 1 mastery. Check the strict mastery comparison when the conditional effect resolves; ties grant no bonus.",
+      "reason": "Comparable to the reviewed Shard Seer: a cost-2 cantrip with a conditional 1 mastery.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "shard-seer-mastery",
+          "text": "Same cost and draw baseline, with a different condition for the 1 mastery."
+        }
+      ],
+      "watch": [
+        "Availability and fast-play frequency while behind versus ahead in mastery.",
+        "Copy, free-play and faction-combination interactions across the whole package."
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "general-review",
+        "decision": "change",
+        "comment": "rework the catchup cards and make one for every faction. Instead of different \"if you have less X than your opponent\", only use \"if you have less mastery than your opponent\". mastery check only. Then the bonuses can vary:\norder: if less mastery, gain mastery\nwraethe: if less mastery, banish a card\nundergrowth: if less mastery, heal\nhomodeus: if less mastery, gain cristals\naion: if less mastery, warp",
+        "explanation": "The five-faction, mastery-only structure follows your review. The displayed names, costs and amounts are proposed values for this new version."
+      }
+    },
+    {
+      "id": "riftbreaker",
+      "group": "new-designs",
+      "title": "New card · Riftbreaker",
+      "kind": "recommended",
+      "confidence": "New proposed exact values; the mastery-only faction roles are your instruction. No simulations yet.",
+      "card_ids": [
+        "riftbreaker"
+      ],
+      "current": "New card; no current version.",
+      "proposed": "Wraethe mercenary · cost 2 · 2 copies. Gain 3 power; if behind in mastery, you may banish 1 from hand or discard. Check the strict mastery comparison when the conditional effect resolves; ties grant no bonus.",
+      "reason": "Trades unconditional trimming for a little more power; compare cost-2 Shadow Apostle and Nil Assassin. This replaces the rejected champion-count design.",
+      "evidence": [],
+      "interactions": [],
+      "watch": [
+        "Availability and fast-play frequency while behind versus ahead in mastery.",
+        "Copy, free-play and faction-combination interactions across the whole package."
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "general-review",
+        "decision": "change",
+        "comment": "rework the catchup cards and make one for every faction. Instead of different \"if you have less X than your opponent\", only use \"if you have less mastery than your opponent\". mastery check only. Then the bonuses can vary:\norder: if less mastery, gain mastery\nwraethe: if less mastery, banish a card\nundergrowth: if less mastery, heal\nhomodeus: if less mastery, gain cristals\naion: if less mastery, warp",
+        "explanation": "The five-faction, mastery-only structure follows your review. The displayed names, costs and amounts are proposed values for this new version."
+      }
+    },
+    {
+      "id": "relief-courier",
+      "group": "new-designs",
+      "title": "New card · Relief Courier",
+      "kind": "recommended",
+      "confidence": "New proposed exact values; the mastery-only faction roles are your instruction. No simulations yet.",
+      "card_ids": [
+        "relief_courier"
+      ],
+      "current": "New card; no current version.",
+      "proposed": "Undergrowth ally · cost 3 · 2 copies. Gain 2 gems; if behind in mastery, gain 4 health. Check the strict mastery comparison when the conditional effect resolves; ties grant no bonus.",
+      "reason": "Retains the previous cost and output but replaces the rejected health comparison with mastery only.",
+      "evidence": [],
+      "interactions": [],
+      "watch": [
+        "Availability and fast-play frequency while behind versus ahead in mastery.",
+        "Copy, free-play and faction-combination interactions across the whole package."
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "general-review",
+        "decision": "change",
+        "comment": "rework the catchup cards and make one for every faction. Instead of different \"if you have less X than your opponent\", only use \"if you have less mastery than your opponent\". mastery check only. Then the bonuses can vary:\norder: if less mastery, gain mastery\nwraethe: if less mastery, banish a card\nundergrowth: if less mastery, heal\nhomodeus: if less mastery, gain cristals\naion: if less mastery, warp",
+        "explanation": "The five-faction, mastery-only structure follows your review. The displayed names, costs and amounts are proposed values for this new version."
+      }
+    },
+    {
+      "id": "catchup-card",
+      "group": "new-designs",
+      "title": "New card · Aegis Surveyor",
+      "kind": "recommended",
+      "confidence": "New proposed exact values; the mastery-only faction roles are your instruction. No simulations yet.",
+      "card_ids": [
+        "aegis_surveyor"
+      ],
+      "current": "New card; no current version.",
+      "proposed": "Homodeus mercenary · cost 1 · 2 copies. Shield 2; gain 2 power; if behind in mastery, gain 1 gem. Check the strict mastery comparison when the conditional effect resolves; ties grant no bonus.",
+      "reason": "Keeps the accepted cost, power and hand shield; changes the bonus from mastery to gems to match your faction instructions.",
+      "evidence": [],
+      "interactions": [],
+      "watch": [
+        "Availability and fast-play frequency while behind versus ahead in mastery.",
+        "Copy, free-play and faction-combination interactions across the whole package."
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "general-review",
+        "decision": "change",
+        "comment": "rework the catchup cards and make one for every faction. Instead of different \"if you have less X than your opponent\", only use \"if you have less mastery than your opponent\". mastery check only. Then the bonuses can vary:\norder: if less mastery, gain mastery\nwraethe: if less mastery, banish a card\nundergrowth: if less mastery, heal\nhomodeus: if less mastery, gain cristals\naion: if less mastery, warp",
+        "explanation": "The five-faction, mastery-only structure follows your review. The displayed names, costs and amounts are proposed values for this new version."
+      }
+    },
+    {
+      "id": "rift-scout",
+      "group": "new-designs",
+      "title": "New card · Rift Scout",
+      "kind": "recommended",
+      "confidence": "New proposed exact values; the mastery-only faction roles are your instruction. No simulations yet.",
+      "card_ids": [
+        "rift_scout"
+      ],
+      "current": "New card; no current version.",
+      "proposed": "Aion ally · cost 2 · 2 copies. Gain 3 power; if behind in mastery, Warp 1. Check the strict mastery comparison when the conditional effect resolves; ties grant no bonus.",
+      "reason": "Warp 1 cannot target another Rift Scout. This gives Aion a modest mastery catch-up effect without a self-targeting Warp chain.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "catchup-card",
+          "text": "Warp 1 can fast-play Aegis and gain its mastery-conditional gem."
+        },
+        {
+          "id": "order-initiate-mastery",
+          "text": "Warp 1 can also reach the revised Order Initiate."
+        }
+      ],
+      "watch": [
+        "Availability and fast-play frequency while behind versus ahead in mastery.",
+        "Copy, free-play and faction-combination interactions across the whole package."
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "general-review",
+        "decision": "change",
+        "comment": "rework the catchup cards and make one for every faction. Instead of different \"if you have less X than your opponent\", only use \"if you have less mastery than your opponent\". mastery check only. Then the bonuses can vary:\norder: if less mastery, gain mastery\nwraethe: if less mastery, banish a card\nundergrowth: if less mastery, heal\nhomodeus: if less mastery, gain cristals\naion: if less mastery, warp",
+        "explanation": "The five-faction, mastery-only structure follows your review. The displayed names, costs and amounts are proposed values for this new version."
+      }
+    },
+    {
+      "id": "opening-shop",
+      "group": "rules",
+      "title": "Opening shop: printed cost 5 or less",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [],
+      "current": "The initial six shop slots can contain cards of any cost.",
+      "proposed": "Exclude cards with printed cost 6 or more from the initial six shop slots. Use printed cost, before discounts. Once setup is complete, refills from purchases, fast-plays, card effects or rerolls may reveal any cost, including during turn one. This applies to the initial shared shop, not each player’s first turn.",
+      "reason": "Your requested opening-shop restriction, narrowed to the initial six slots by your clarification. It removes immediately offered cost-6+ openings without changing later market progression.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "omnius-mastery",
+          "text": "Omnius is excluded from the initial shop by its printed cost 6."
+        },
+        {
+          "id": "breaker-warp",
+          "text": "Breaker is likewise excluded only at setup."
+        }
+      ],
+      "watch": [
+        "Every initial shop slot is legal across seeded setups; discounts do not bypass the check.",
+        "High-cost cards remain in the center deck with the same quantities and can appear on the very first refill.",
+        "Ingeminex follow their separate setup/reveal rules and never occupy shop slots.",
+        "No extra information about skipped cards is exposed to players or either AI."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "chat-opening-shop",
+        "decision": "change",
+        "comment": "Initial six slots only",
+        "explanation": "Uses your explicit clarification; this is not a first-turn purchase or refill ban."
+      },
+      "implementation_notes": [
+        "During setup only, set aside disallowed cards while filling the six slots. Shuffle those cards uniformly back into the unrevealed remaining center deck before any player action. Do not put them all on top or bottom, and do not banish them.",
+        "Complete the setup shuffle before any hero draft or effect can inspect or remember the center deck. Use seeded game randomness; keep Ingeminex setup handling separate."
+      ]
+    },
+    {
+      "id": "champion-combat",
+      "group": "rules",
+      "title": "Champion attacks: choose their timing and order",
+      "kind": "recommended",
+      "confidence": "Requested or accepted in your review; combined balance impact remains untested.",
+      "card_ids": [],
+      "current": "Power attacks against champions are assigned together at the end of the turn.\nTestudo shield reactions are also deferred.",
+      "proposed": "Spend power on a champion attack during your turn, between playing cards, recruiting and using abilities. Commit the target and power, resolve any permitted shields, damage and destruction immediately, then choose your next action. Zetta must actually leave play before its owner or other protected champions become legal targets. Remaining power attacks players together at turn end. There is no second unordered champion split at the end.",
+      "reason": "This restores the official attack timing and makes removal order meaningful. Testudo, shield budgets and aura-damage timing require explicit local rules; those recommendations are shown below and in Testudo’s separate proposal.",
+      "evidence": [
+        "The publisher’s Saga rulebook, page 13, permits champion attacks during the turn and places player damage at turn end. It normally excludes shields from champion defense.",
+        "Zetta’s printed protection concerns attacks. Treating direct destruction as separate follows that wording, the official Li Hin/Thorn Zealot distinction and the current local engine; no Zetta-specific destruction FAQ was found."
+      ],
+      "interactions": [
+        {
+          "id": "testudo-shield-timing",
+          "text": "Review the proposed per-champion shield allowance and its Zetta interaction."
+        }
+      ],
+      "watch": [
+        "Zetta plus Testudo: if Zetta survives shield prevention, the other targets remain protected; if it dies, recalculate legal targets immediately.",
+        "Attacks spend committed power even if prevented. Overkill does not spill into player damage, and shield reveals do not permit undoing the attack.",
+        "Recheck Li Hin, Raidian, Drakonarius and all other attack restrictions after every action.",
+        "After aura removal, recompute effective defense and remove champions with lethal marked damage, repeating until stable. Prevention already applied is never undone.",
+        "Both Auld Haïai and Nyou Haïai, training legal actions, snapshots, saves and reconnects must understand the new attack and shield state before new games are evaluated."
+      ],
+      "response": {
+        "status": "requested",
+        "source_id": "chat-champion-combat",
+        "decision": "change",
+        "comment": "We can kill champions during the turn and in the order we want.",
+        "explanation": "Your requested timing is included. The local interaction details remain recommendations for your review."
+      },
+      "sources": [
+        {
+          "title": "Official Saga rulebook · attacks and shields, page 13",
+          "url": "https://cdn.shopify.com/s/files/1/0691/8805/9412/files/SOI_Saga-Rules-Web.pdf?v=1735833106#page=13"
+        },
+        {
+          "title": "Official Saga rulebook · Zetta, page 6",
+          "url": "https://cdn.shopify.com/s/files/1/0691/8805/9412/files/SOI_Saga-Rules-Web.pdf?v=1735833106#page=6"
+        }
+      ],
+      "design_notes": [
+        "Recommended declaration rule: assign at least the champion’s remaining effective defense before shields; extra power may be committed to overcome protection. If shields prevent a kill, damage persists until this turn ends and a later attack may finish it. The official book does not explicitly settle arbitrary partial declarations; this minimum is a proposed clarification, not a claimed official FAQ ruling.",
+        "Zetta plus Testudo: attack Zetta first and finish its shield decision. If Zetta survives, no other protected target is unlocked. Direct destroy effects can remove Testudo first because they are not attacks.",
+        "When a defense aura leaves play, recompute live defense and destroy already-lethal champions until stable. Resolve simultaneous removals as a batch so collection order cannot decide survival.",
+        "If a future card permits several Zettas, a possible explicit house rule is that guards protect non-guards and their owner but not one another. Do not silently add that rule or alter Zetta now; the current deck has only one.",
+        "Offer an Attack for N button based on public remaining defense, plus a power amount for shield overpayment. Only publicly revealed shields inform hints. Resolve one defense prompt at a time and return control after all consequences.",
+        "At end turn, allocate remaining power to players only. If all opposing players are protected by Zetta, blocked power expires; never force an impossible assignment."
+      ]
+    },
+    {
+      "id": "testudo-shield-timing",
+      "group": "combat-designs",
+      "title": "Testudo Vanguard: shields across ordered attacks",
+      "kind": "recommended",
+      "confidence": "Custom champion timing recommendation; not an official Testudo rule and not yet approved or tested.",
+      "card_ids": [
+        "testudo_vanguard"
+      ],
+      "current": "Your shields are also applied to each of your champions individually.\nExhaust: gain 2 gems.",
+      "proposed": "Keep cost 4, defense 4 and Exhaust: gain 2 gems. While Testudo is in play, each of your champions, including Testudo, has its own allowance from each shield source for the current opponent’s turn. Repeated attacks consume that champion’s remaining allowance; they never refresh it. The player keeps a separate allowance for the final player attack. If the last Testudo dies, later champion attacks receive no shield protection.",
+      "reason": "Preserves Testudo’s existing protection for each champion without granting unlimited prevention from repeated attacks. Spending one pool across the whole army would instead be a substantial additional nerf, so separate allowances are recommended.",
+      "evidence": [],
+      "interactions": [
+        {
+          "id": "champion-combat",
+          "text": "Zetta protection and live aura changes resolve between these attacks."
+        },
+        {
+          "id": "fungal-hermit-shield",
+          "text": "Hermit gains a new Shield 2 source for this interaction."
+        }
+      ],
+      "watch": [
+        "A 4-power hit on defense-4 Testudo against Shield 3 leaves 1 damage. A later 3-power hit kills it unless another unused shield is revealed; the same Shield 3 cannot recharge.",
+        "Destroying Testudo disables subsequent champion protection but does not undo earlier prevention or consume the player’s separate shield allowance.",
+        "Two copies of a shield each contribute. Two Testudos do not multiply or reset the protection.",
+        "Ru Bo Vai ignores shields for later attacks only; it does not undo previously prevented damage."
+      ],
+      "response": {
+        "status": "new",
+        "source_id": "chat-champion-combat",
+        "decision": "unreviewed",
+        "comment": "Suggest good ways to handle those special champions.",
+        "explanation": "This is the recommended adaptation of the custom Testudo ability to your requested combat timing. Review these rules before gameplay implementation."
+      },
+      "design_notes": [
+        "The attacker commits power before the defender decides whether to reveal eligible hand shields. Revealed cards stay in hand; each physical card establishes its own reveal-time allowance per protected champion and separately for the player. Use actual prevented damage to consume allowance, carrying unused prevention through this opponent’s turn.",
+        "Previously revealed allowances apply automatically. The defender can reveal additional unused hand shields on a later attack, but cannot undo damage already dealt. Revealing the same instance again never resets its usage.",
+        "A hand shield’s revealed allowance lasts for the rest of that attacking turn even if that card later leaves hand. This is an explicit proposed duration for the custom mechanic. Champion use still requires a live Testudo.",
+        "Passive shields, including Praetorian-02 in play and eligible Datic Robes in discard, are accounted for per physical source and per target. Unused passive protection requires its source and condition to remain active. Source removal or zone cycling never restores already spent prevention.",
+        "For predictable handling without another prompt, consume active passive shields before revealed hand shields, in stable source order. Changes to passive shield strength affect future availability only. Champion damage and shield-use records reset after this attacking turn.",
+        "When the last Testudo dies, its permission to shield champions ends immediately after that attack. A later Testudo cannot replenish already-used allowances. Player shield protection remains separate.",
+        "An alternative shared army-wide shield pool is simpler to track but nerfs the current card substantially; fully refreshing shield amounts on every hit creates excessive repeat-hit prevention. The recommended separate allowances avoid both changes."
+      ],
+      "sources": [
+        {
+          "title": "Official rulebook baseline: shields normally protect players; Testudo is a custom exception",
+          "url": "https://cdn.shopify.com/s/files/1/0691/8805/9412/files/SOI_Saga-Rules-Web.pdf?v=1735833106#page=13"
+        }
+      ]
+    }
+  ],
+  "previous_review": {
+    "proposal_version": "2026-10-08-v2",
+    "revision": 120,
+    "submitted_at": "2026-10-08T14:57:00.339559Z",
+    "general_comment": "rework the catchup cards and make one for every faction. Instead of different \"if you have less X than your opponent\", only use \"if you have less mastery than your opponent\". mastery check only. Then the bonuses can vary:\norder: if less mastery, gain mastery\nwraethe: if less mastery, banish a card\nundergrowth: if less mastery, heal\nhomodeus: if less mastery, gain cristals\naion: if less mastery, warp",
+    "source_sha256": "50d9a23498109ba45bca5aa2e5b5fc7a8bf1bd40b247d7f65cbb8f9f3ec7faf7"
+  },
+  "card_design_source": {
+    "revision": 5,
+    "updated_at": "2026-10-08T14:53:52.551997Z",
+    "draft_ids": [
+      "draft-a98eccfc-881e-427a-98b9-a493bc6323bd",
+      "draft-31845439-e634-4ce5-83fe-9adb988d9c8a",
+      "draft-13a235f7-9101-4199-9d02-cb131b84a988",
+      "draft-11b110c0-ec8c-4102-86a1-ac271058234e",
+      "draft-a021adab-dbeb-42c9-ad2a-5e483ed64651"
+    ]
+  },
+  "clarifications": {
+    "opening_shop": "Only the six initial shop slots exclude printed cost 6+. Subsequent refills can reveal those cards, including during the first turn.",
+    "crown_order": "Resolve mastery, healing and draw before the M20 Unify check."
+  },
+  "patch_notes": {
+    "title": "Updated patch notes",
+    "status": "Draft v3 · incorporates your v2 review and saved designs · not implemented",
+    "changes": [
+      {
+        "id": "giga-mastery",
+        "title": "Giga, Source Adept",
+        "detail": "Dominion mastery 3 → 2. Cost remains 2; defense and draw unchanged."
+      },
+      {
+        "id": "deadly-recruits-cost",
+        "title": "Deadly Recruits",
+        "detail": "Activation now costs 1 gem. Both modes and the cost-2 / M20 cost-4 limits remain."
+      },
+      {
+        "id": "brain-power",
+        "title": "Multitask Brain",
+        "detail": "Below M20: power per faction 2 → 1. Draw per faction and the M20 tier remain."
+      },
+      {
+        "id": "crown-draw",
+        "title": "Panconscious Crown",
+        "detail": "Add Draw 1 to the base-effect line; draw before checking M20 Unify."
+      },
+      {
+        "id": "conscription-reliability",
+        "title": "Unconditional Conscription",
+        "detail": "Power 4 → 5. Keep the existing two-card condition and eligibility."
+      },
+      {
+        "id": "soul-syphon-reliability",
+        "title": "Soul Syphon",
+        "detail": "Requires 2 faction-bearing cards spanning 2 factions, instead of 3/3; healing 7 → 5."
+      },
+      {
+        "id": "furrowing-price",
+        "title": "Furrowing Elemental",
+        "detail": "Cost 5 → 4. Existing effects and 2 copies remain."
+      },
+      {
+        "id": "j-chord-hold",
+        "title": "J-Chord",
+        "detail": "Cost 3 → 4. Defense 3, Warp 3 and M15 Warp 6 remain."
+      },
+      {
+        "id": "abstractor-hold",
+        "title": "Shard Abstractor",
+        "detail": "Cost 3 → 2. Gain 1 mastery; at M10 gain 2 instead. Simplify the printed text."
+      },
+      {
+        "id": "hero-powers-hold",
+        "title": "Volos — First Aid",
+        "detail": "Pay 1 gem: gain 3 power instead of 2."
+      },
+      {
+        "id": "order-initiate-mastery",
+        "title": "Order Initiate",
+        "detail": "Dominion mastery 2 → 1."
+      },
+      {
+        "id": "shard-seer-mastery",
+        "title": "Shard Seer",
+        "detail": "Infinity Shard reveal grants 1 mastery instead of 2."
+      },
+      {
+        "id": "fabricator-price",
+        "title": "Duplication Fabricator",
+        "detail": "Cost 3 → 4."
+      },
+      {
+        "id": "breaker-warp",
+        "title": "Breaker",
+        "detail": "Warp is limited to allies costing 6 or less."
+      },
+      {
+        "id": "fungal-hermit-shield",
+        "title": "Fungal Hermit",
+        "detail": "Add hand Shield 2."
+      },
+      {
+        "id": "corruption-defense",
+        "title": "Ingeminex: Corruption",
+        "detail": "Defense 10 → 15."
+      },
+      {
+        "id": "omnius-mastery",
+        "title": "Omnius, The All-Knowing",
+        "detail": "Dominion mastery 5 → 3."
+      },
+      {
+        "id": "systema-price",
+        "title": "Systema A.I.",
+        "detail": "Cost 3 → 4."
+      }
+    ],
+    "new_designs": [
+      {
+        "id": "horizon-seeker",
+        "title": "Horizon Seeker",
+        "detail": "Order ally, cost 2, 2 copies. Draw 1; if behind in mastery, gain 1 mastery."
+      },
+      {
+        "id": "riftbreaker",
+        "title": "Riftbreaker",
+        "detail": "Wraethe mercenary, cost 2, 2 copies. Gain 3 power; if behind in mastery, you may banish 1 from hand or discard."
+      },
+      {
+        "id": "relief-courier",
+        "title": "Relief Courier",
+        "detail": "Undergrowth ally, cost 3, 2 copies. Gain 2 gems; if behind in mastery, gain 4 health."
+      },
+      {
+        "id": "catchup-card",
+        "title": "Aegis Surveyor",
+        "detail": "Homodeus mercenary, cost 1, 2 copies. Shield 2; gain 2 power; if behind in mastery, gain 1 gem."
+      },
+      {
+        "id": "rift-scout",
+        "title": "Rift Scout",
+        "detail": "Aion ally, cost 2, 2 copies. Gain 3 power; if behind in mastery, Warp 1."
+      }
+    ],
+    "rules": [
+      {
+        "id": "opening-shop",
+        "title": "Opening shop",
+        "detail": "Initial six slots: printed cost 5 or less. All later refills are unrestricted."
+      },
+      {
+        "id": "champion-combat",
+        "title": "Champion combat",
+        "detail": "Resolve champion attacks during the turn in your chosen order; player damage remains at turn end."
+      }
+    ],
+    "combat_designs": [
+      {
+        "id": "testudo-shield-timing",
+        "title": "Testudo Vanguard",
+        "detail": "Proposed: separate shield allowance per champion per enemy turn; no refresh between hits; losing the last Testudo ends further champion protection."
+      }
+    ],
+    "package_notes": [
+      "Mastery changes affect Giga, Order Initiate, Shard Seer, Omnius and Shard Abstractor together; measure M10/M20/M30 timing and every hero matchup after adaptation.",
+      "All five catch-up cards compare only mastery, strictly. Equal mastery gives no bonus; evaluate again at each effect resolution. They add two copies per faction, ten cards total.",
+      "Aegis can refund its 1-gem paid fast-play while behind. Rift Scout’s Warp 1 can reach Aegis and existing cost-1 allies, but cannot chain into another Scout.",
+      "Crown draws before its M20 Unify check, so its drawn card may supply a matching hand reveal. Its own mastery gain can reach M20.",
+      "Initial-shop filtering is setup-only. First-turn purchase and reroll refills can still reveal cards costing 6 or more.",
+      "Sequential champion removal changes live defense auras and shield sources; legality and costs must be recalculated after each resolved action.",
+      "The old statistics describe the pre-patch rules. The combined package needs new engine checks and adapted-policy evaluation before drawing balance conclusions."
+    ]
+  }
+}

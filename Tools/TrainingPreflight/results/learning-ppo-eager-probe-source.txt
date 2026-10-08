@@ -1,0 +1,30 @@
+import json,sys,time
+from pathlib import Path
+sys.path.insert(0,str(Path.cwd()/'Tools/TrainingPreflight'))
+import torch
+from learning_model import LearningPolicy,PPOLearner,PPOConfig
+from test_learning_model import fixture,behavior_batch
+torch.set_num_threads(1)
+torch.backends.fp32_precision='ieee'
+torch.backends.cuda.matmul.fp32_precision='tf32'
+torch.manual_seed(411)
+policy=LearningPolicy().cuda()
+learner=PPOLearner(policy,PPOConfig())
+data=fixture(2048,'cuda')
+latencies=[]
+for i in range(10):
+ batch=behavior_batch(policy,data)
+ torch.cuda.synchronize()
+ start=time.perf_counter()
+ result=learner.step(*batch)
+ elapsed=time.perf_counter()-start
+ assert result['accepted'], result
+ if i>=2:latencies.append(elapsed)
+batch=behavior_batch(policy,data)
+with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU,torch.profiler.ProfilerActivity.CUDA]) as prof:
+ result=learner.step(*batch)
+ torch.cuda.synchronize()
+summary={'kind':'synthetic_targets_only_no_game_training','batch':2048,'width':128,'seconds_per_step':latencies,'median_ms':sorted(latencies)[len(latencies)//2]*1000,'updates':learner.updates,'last_metrics':result}
+Path('Tools/TrainingPreflight/results/learning-ppo-eager-probe.json').write_text(json.dumps(summary,indent=2))
+Path('Tools/TrainingPreflight/results/learning-ppo-eager-profile.txt').write_text(prof.key_averages().table(sort_by='self_cpu_time_total',row_limit=30)+'\n'+prof.key_averages().table(sort_by='self_cuda_time_total',row_limit=30))
+print(json.dumps(summary))

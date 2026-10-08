@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><LangVersion>9.0</LangVersion><Nullable>disable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks><DefineConstants>$(DefineConstants);SHARDS_NATIVE_STATS</DefineConstants><UseSharedCompilation>false</UseSharedCompilation></PropertyGroup>
+<ItemGroup>
+<Compile Include="../../Assets/Scripts/Core/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/Engine/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/Content/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/AI/**/*.cs" />
+<Compile Include="../PolicyVerify/HeroTactics.cs" />
+<Compile Include="../PolicyVerify/RezAudit.cs" />
+<Compile Include="../PolicyVerify/SearchDiagnostics.cs" />
+<Compile Include="../FinalEvaluationHost/TrainingStatistics.cs" />
+<Compile Include="../FinalEvaluationHost/StrategyTrace.cs" />
+<Compile Include="../FinalEvaluationHost/VictoryEvidence.cs" />
+<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+</ItemGroup></Project>

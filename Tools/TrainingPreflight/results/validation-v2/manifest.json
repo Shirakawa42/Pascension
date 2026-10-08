@@ -1,0 +1,90 @@
+{
+  "stage": "validation",
+  "source_sha256": "a4ec4d334028af3770ac690bd42598d2b2b05365453a38a28e107da5581a8a83",
+  "campaign_training_started": false,
+  "jobs": [
+    {
+      "name": "learner-health",
+      "command": [
+        "/home/lva/.venvs/shards-preflight/bin/python",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/check_learner_health.py",
+        "--output",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/results/validation-v2/learner-health.json"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 2.345142775999193
+    },
+    {
+      "name": "ring-correctness",
+      "command": [
+        "/home/lva/.venvs/shards-preflight/bin/python",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/pipeline_rollout_check.py",
+        "--with-learner",
+        "--output",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/results/validation-v2/ring-correctness.json"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 6.309434505999889
+    },
+    {
+      "name": "soak-learner",
+      "command": [
+        "/home/lva/.venvs/shards-preflight/bin/python",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/soak_bench.py",
+        "--seconds",
+        "60.0",
+        "--batch",
+        "256",
+        "--workers",
+        "4",
+        "--split-branches",
+        "8",
+        "--learner-every",
+        "8",
+        "--learner-steps",
+        "3",
+        "--memory-after-gc",
+        "--output",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/results/validation-v2/soak-learner.json"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 66.1501765310004
+    },
+    {
+      "name": "soak-ring-learner",
+      "command": [
+        "/home/lva/.venvs/shards-preflight/bin/python",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/soak_bench.py",
+        "--seconds",
+        "60.0",
+        "--batch",
+        "256",
+        "--workers",
+        "4",
+        "--split-branches",
+        "8",
+        "--learner-every",
+        "8",
+        "--learner-steps",
+        "3",
+        "--memory-after-gc",
+        "--rollout-rows",
+        "16384",
+        "--output",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/results/validation-v2/soak-ring-learner.json"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 66.60800952400132
+    }
+  ],
+  "elapsed_seconds": 141.47471414200118,
+  "requested_jobs": 4
+}

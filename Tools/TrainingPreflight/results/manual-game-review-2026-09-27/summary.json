@@ -1,0 +1,24 @@
+{
+  "reviewed_games": 8,
+  "reviewed_decisions": 2592,
+  "coverage_games": [
+    1283,
+    1313,
+    1338,
+    1402,
+    1418
+  ],
+  "targeted_concession_games": [
+    298,
+    377,
+    1104
+  ],
+  "verified_useful_play_omissions": 8,
+  "search_induced_premature_endings": 5,
+  "depth64_corrected_premature_endings": 5,
+  "policy_sampling_margin_cases": 3,
+  "concessions_in_full_cohort": 14,
+  "remaining_policy_unchanged": true,
+  "statistics_games": 1400,
+  "replay_outcomes_rounds_decision_counts_override_counts_match": true
+}

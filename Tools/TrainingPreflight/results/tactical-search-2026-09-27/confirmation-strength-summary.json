@@ -1,0 +1,50 @@
+{
+  "games": 160,
+  "paired_seeds": 80,
+  "wins": 89,
+  "losses": 71,
+  "draws": 0,
+  "score": 0.55625,
+  "paired_bootstrap_95": [
+    0.525,
+    0.59375
+  ],
+  "improved_pairs": 9,
+  "worse_pairs": 0,
+  "neutral_pairs": 71,
+  "paired_sign_p_two_sided": 0.00390625,
+  "by_seat": {
+    "0": {
+      "games": 80,
+      "score": 0.6625
+    },
+    "1": {
+      "games": 80,
+      "score": 0.45
+    }
+  },
+  "by_hero": {
+    "decima": {
+      "games": 32,
+      "score": 0.3125
+    },
+    "kosynwu": {
+      "games": 32,
+      "score": 0.59375
+    },
+    "rez": {
+      "games": 32,
+      "score": 0.625
+    },
+    "tetra": {
+      "games": 32,
+      "score": 0.71875
+    },
+    "volos": {
+      "games": 32,
+      "score": 0.53125
+    }
+  },
+  "sampling": "Same engine seed and hero seats per pair; search treatment alternates seats; fixed separate action RNG streams per seat",
+  "uncertainty": "Resample complete seed pairs, not individual dependent games; this estimates this benchmark distribution"
+}

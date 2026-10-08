@@ -1,0 +1,35 @@
+{
+  "profile": "public-policy-rollout-v2",
+  "archive": "/home/lva/.local/share/shards-training/2026-09-26/all-turn-search-20260927",
+  "training_updates": 0,
+  "unity_tests": false,
+  "policy_sha256": "f15c9d40644f6ef7e84ebf44d325ec4d6f3bae771e3f6ac7f7904a52baf4a177",
+  "installed_ai_sha256": "d6f0ec29fa74e3eaf4d5844198e8497c49cf22fe92d04e86bbbd77a9ed6535d9",
+  "source_sha256": {
+    "Adapter.cs": "eaf3605bbf4450b02f9c7d3933221fd1c8a50da7d7357303e455dfd1c34591a4",
+    "CenterKnowledge.cs": "fccf67ba6ccebad370804f1d76e123e9e412f9a8ff7c5aca8e54220241f27505",
+    "Encoder.cs": "167c435853583a03d34a3746cc27ca20dcf9d1f378f70bdec86c60335ae584eb",
+    "FactionCounter.cs": "4e583464ca30c2e87f3abdf77a573c04ba29c0902df54365c95f894c21090aea",
+    "FrozenPolicy.cs": "3d872787daf185684a843e8fd4b780c4c29debcd726ea8007105a23ec672682a",
+    "HeroDraftPolicy.cs": "e37c6f0d416eb4ac170b8985447aa430d37a74e75a642f9e26f2ba1b55c83a09",
+    "HeroFeatures.cs": "07ca4765d3fb8be9ac60524158d67164043fd22bde6525edef13068a1670a37d",
+    "Knowledge.cs": "64f327e2e28861798d94877591fcf76846dbafd60a2fce2f1ffcc602faefe988",
+    "PolicyEngine.cs": "18540d50a288f617b591355f1c7ef2acc0781770eeebd5cacecfe71bb673084e",
+    "PolicyLookahead.cs": "6faa8ed8a21e7d5a164e17848ad28cf2e665ed8f6b5f59f4e8cee03d57d91046",
+    "PolicySearchSettings.cs": "37b7f4754f22649f4572914785d7e063c4f9a603959cecd83e2c38be2b564701",
+    "TacticalSearch.cs": "7bc434fe5e5979fe36b0926b0d91116992cb4d6b5366708cad8501e70d1b1ff0"
+  },
+  "engine_tests_passed": 258,
+  "tactical_attempts": 4608,
+  "tactical_successes": 4602,
+  "families_passed": 32,
+  "independent_previous_profile_comparison": {
+    "games": 160,
+    "wins": 109,
+    "losses": 51
+  },
+  "recommended_headless_workers": 16,
+  "server_gc": true,
+  "network_only_games_per_second": 361.77570775827786,
+  "both_search_games_per_second": 0.6323646261355753
+}

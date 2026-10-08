@@ -1,0 +1,127 @@
+{
+  "games": 14,
+  "original_replay_fields_match": true,
+  "counts": {
+    "decisions": 3324,
+    "end_turns": 243,
+    "soivolos:1": 5,
+    "soivolos:0": 11,
+    "soivolos:2": 6,
+    "soivolos:3": 1
+  },
+  "end_turn_flags": 13,
+  "verified_public_worlds_per_position": 16,
+  "search_positions": 7,
+  "search_variants": [
+    "default",
+    "depth64",
+    "no-prior",
+    "worlds8"
+  ],
+  "all_default_probes_match_selected_actions": true,
+  "ko_cancel_cycles": [
+    {
+      "game": 40,
+      "step": 259,
+      "round": 9,
+      "hp": 42
+    },
+    {
+      "game": 40,
+      "step": 263,
+      "round": 9,
+      "hp": 47
+    },
+    {
+      "game": 87,
+      "step": 149,
+      "round": 7,
+      "hp": 25
+    },
+    {
+      "game": 87,
+      "step": 153,
+      "round": 7,
+      "hp": 25
+    },
+    {
+      "game": 87,
+      "step": 156,
+      "round": 7,
+      "hp": 25
+    },
+    {
+      "game": 64,
+      "step": 157,
+      "round": 7,
+      "hp": 17
+    },
+    {
+      "game": 64,
+      "step": 161,
+      "round": 7,
+      "hp": 17
+    },
+    {
+      "game": 147,
+      "step": 165,
+      "round": 7,
+      "hp": 11
+    },
+    {
+      "game": 147,
+      "step": 168,
+      "round": 7,
+      "hp": 11
+    },
+    {
+      "game": 147,
+      "step": 173,
+      "round": 7,
+      "hp": 11
+    },
+    {
+      "game": 147,
+      "step": 207,
+      "round": 8,
+      "hp": 6
+    },
+    {
+      "game": 147,
+      "step": 214,
+      "round": 8,
+      "hp": 6
+    },
+    {
+      "game": 147,
+      "step": 217,
+      "round": 8,
+      "hp": 6
+    },
+    {
+      "game": 147,
+      "step": 220,
+      "round": 8,
+      "hp": 6
+    },
+    {
+      "game": 142,
+      "step": 179,
+      "round": 8,
+      "hp": 29
+    },
+    {
+      "game": 142,
+      "step": 183,
+      "round": 8,
+      "hp": 29
+    }
+  ],
+  "dashboard_unchanged": true,
+  "snapshot_id": "39c5f2e31bab5d13",
+  "no_training": true,
+  "no_installed_policy_change": true,
+  "review_directory": "/home/lva/.local/share/shards-training/2026-09-28/hybrid-review-batch160",
+  "diagnostic_directory": "/home/lva/.local/share/shards-training/2026-09-28/hybrid-review-search-diagnosis",
+  "small_batch_control": "Review enabled/disabled produced identical 14-game records; smaller-batch outcomes differed from original cohort and were excluded from reported original-game findings."
+}

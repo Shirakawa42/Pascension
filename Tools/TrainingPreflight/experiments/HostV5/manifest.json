@@ -1,0 +1,73 @@
+{
+  "schema": "shards-host-v5-hero-curriculum-v1",
+  "host_v4_sha256": "cdda3e733d416f5e32b7af93b232ef2de898be7adcfdc0a09e34a9e447ca6315",
+  "base_v4_training_source_sha256": "3b8cf5b37bc032081d46c944b570ec64c3e231240f2e57ec82d8f3b43aad862c",
+  "host_v5_sha256": "0b00ef87c842c320f368367be73349076902b74fd49355dcfd3824eccdfee797",
+  "observation_schema": "shards-observation-v3",
+  "catalog_bytes_unchanged": true,
+  "rules_unchanged": true,
+  "default_setup_mode": "natural",
+  "training_setup_mode": "curriculum-75-25",
+  "hero_setup_descriptor": {
+    "schema": "shards-hero-curriculum-75-25-v1",
+    "defaultMode": "natural",
+    "trainingMode": "curriculum-75-25",
+    "forcedProbability": 0.75,
+    "orderedPairCount": 20,
+    "heroOrder": [
+      "decima",
+      "tetra",
+      "volos",
+      "kosynwu",
+      "rez"
+    ],
+    "selection": "separate-seed-derived-splitmix64-rejection-v1",
+    "setupPolicyActions": false,
+    "adapterCapCountersIncludeSetup": true
+  },
+  "source_sha256": {
+    "Tools/TrainingPreflight/experiments/HostV5/CurriculumStatistics.cs": "64155ddc91ec64d26a1fd7f96c43930dcf5040440eb74ec1c5759061dd70ad20",
+    "Tools/TrainingPreflight/experiments/HostV5/HeroCurriculum.cs": "7c141926eb7251eae974ff9d67dbdcc54187f51ed82b9055fdc311d72a92df4a",
+    "Tools/TrainingPreflight/experiments/HostV5/HeroRoutingSelfTest.cs": "95f40982b08538b46b7ab1c1bde2b215b2f324cd1538c85a40762389f6bf6ee8",
+    "Tools/TrainingPreflight/experiments/HostV5/HeroSetupRouting.cs": "de122251e0421df17a0031ce2169f636c47413debee6b0e89ffd28efa4b3cdf5",
+    "Tools/TrainingPreflight/experiments/HostV5/HeroSetupSelfTest.cs": "3c31228654c98596b5fe9862255bf87cf4efa3445e7eee1236170010c5bacd87",
+    "Tools/TrainingPreflight/experiments/HostV5/Program.cs": "4a6ac9f37d53c54742b3344e9a2c9bed570b10aa8a98444ae0446decff7a39b0",
+    "Tools/TrainingPreflight/experiments/HostV5/TrainingStatistics.cs": "07ddff00d52d2b3314d411337cbaf670b8eb8ab98669e08a0cd79b63cdce2f96",
+    "Tools/TrainingPreflight/experiments/HostV5/TrainingHostV5.csproj": "fe4244adf8d1935fb959bc79f6276a3122fff674a6b8225234cf0f34a132f89c"
+  },
+  "linked_frozen_source_manifest": "Tools/TrainingPreflight/experiments/HostV4/manifest.json",
+  "linked_frozen_sources": [
+    "Tools/TrainingPreflight/experiments/HostV4/Encoder.cs",
+    "Tools/TrainingPreflight/experiments/HostV4/FactionCounter.cs",
+    "Tools/TrainingPreflight/experiments/HostV4/StatisticsSelfTest.cs",
+    "Tools/TrainingPreflight/experiments/HostV3/V3SelfTest.cs",
+    "Tools/TrainingPreflight/Host/Adapter.cs",
+    "Tools/TrainingPreflight/Host/MappedBody.cs",
+    "Tools/TrainingPreflight/Host/SelfTest.cs"
+  ],
+  "frozen_v4_sources_verified_unchanged": true,
+  "statistics": {
+    "schema": "shards-training-pool-stats-v1",
+    "cohort_field": "hero_setup.cohort",
+    "directories": [
+      "natural-draft",
+      "forced-random"
+    ],
+    "pooled_parent_snapshot": false,
+    "publish_every_completed_per_cohort": 10000,
+    "history_retention_snapshots_per_cohort": 512
+  },
+  "replay": {
+    "schema": "shards-hero-setup-replay-v1",
+    "sidecar_directory": "hero-setup-replay",
+    "policy_trace_contains_setup": false,
+    "adapter_cap_counters_include_setup": true,
+    "wire_policy_counters_include_setup": false
+  },
+  "checks": [
+    "hero-selftest.json",
+    "wire-prefix-check.json"
+  ],
+  "execution_scope": "CPU prefix/lifecycle fixtures only; no full policy matches, CUDA, model updates or ledger changes",
+  "status": "isolated candidate; pending Python strict runtime/migration and exclusive GPU readiness"
+}

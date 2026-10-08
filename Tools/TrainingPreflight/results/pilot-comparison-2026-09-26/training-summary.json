@@ -1,0 +1,100 @@
+[
+  {
+    "run": "pilot128-ready",
+    "width": 128,
+    "generations": 65,
+    "completed_games": 16640,
+    "learning_decisions": 6647204,
+    "fresh_rows_per_second": 24998.495061661488,
+    "censored_games": 0,
+    "rejected_minibatches": 0,
+    "median_generation_seconds": 4.0927988199996435,
+    "phase_seconds": {
+      "collection_seconds": 237.1582120660005,
+      "actor_seconds": 90.08788929299908,
+      "host_seconds": 79.7743971681025,
+      "storage_seconds": 46.87985708300175,
+      "verification_seconds": 4.818273549999503,
+      "learning_seconds": 21.945102690999647
+    },
+    "source_identity": {
+      "schema": "shards-real-selfplay-v2",
+      "observation_schema": "shards-observation-v2",
+      "rules_sha256": "85d8b59299818c19d226f4143812d324343f4808184717f141ae8b891043df9c",
+      "host_binary_sha256": "7a5039afacccfd6e9aad4f56a2705a3a5523a6c1df62e72af3754cf4bad00ef1",
+      "catalog_sha256": "1ba95713484e8f9104a0317997d4b57931a0ea2ae2a2ed25c423fe6457cca72d",
+      "training_source_sha256": "03454a86354ccd5c320604511df055e3043a9c56f298c2c2087fc3972070cd42",
+      "configuration": {
+        "width": 128,
+        "batch": 256,
+        "workers": 8,
+        "capacity": 524288,
+        "minibatch": 2048,
+        "epochs": 3,
+        "learner_mode": "captured_backward",
+        "adaptive_actors": true,
+        "censor_truncated": true,
+        "censor_limit": 4,
+        "learning_rate": 0.0003,
+        "entropy": 0.01,
+        "archive_fraction": 0.25,
+        "archive_every": 8,
+        "archive_limit": 16,
+        "checkpoint_seconds": 60.0,
+        "eval_seconds": 600.0,
+        "eval_games": 256,
+        "seed": 60926,
+        "engine_seed": 1152921504606846976
+      }
+    }
+  },
+  {
+    "run": "pilot256-ready",
+    "width": 256,
+    "generations": 60,
+    "completed_games": 15360,
+    "learning_decisions": 6180298,
+    "fresh_rows_per_second": 23178.848483472135,
+    "censored_games": 0,
+    "rejected_minibatches": 0,
+    "median_generation_seconds": 4.219498930999862,
+    "phase_seconds": {
+      "collection_seconds": 239.10208915099975,
+      "actor_seconds": 89.33674011702715,
+      "host_seconds": 81.7358140139645,
+      "storage_seconds": 47.421148349988925,
+      "verification_seconds": 4.601259716999721,
+      "learning_seconds": 21.183047370996974
+    },
+    "source_identity": {
+      "schema": "shards-real-selfplay-v2",
+      "observation_schema": "shards-observation-v2",
+      "rules_sha256": "85d8b59299818c19d226f4143812d324343f4808184717f141ae8b891043df9c",
+      "host_binary_sha256": "7a5039afacccfd6e9aad4f56a2705a3a5523a6c1df62e72af3754cf4bad00ef1",
+      "catalog_sha256": "1ba95713484e8f9104a0317997d4b57931a0ea2ae2a2ed25c423fe6457cca72d",
+      "training_source_sha256": "03454a86354ccd5c320604511df055e3043a9c56f298c2c2087fc3972070cd42",
+      "configuration": {
+        "width": 256,
+        "batch": 256,
+        "workers": 8,
+        "capacity": 524288,
+        "minibatch": 2048,
+        "epochs": 3,
+        "learner_mode": "captured_backward",
+        "adaptive_actors": true,
+        "censor_truncated": true,
+        "censor_limit": 4,
+        "learning_rate": 0.0003,
+        "entropy": 0.01,
+        "archive_fraction": 0.25,
+        "archive_every": 8,
+        "archive_limit": 16,
+        "checkpoint_seconds": 60.0,
+        "eval_seconds": 600.0,
+        "eval_games": 256,
+        "seed": 60926,
+        "engine_seed": 1152921504606846976
+      }
+    }
+  }
+]

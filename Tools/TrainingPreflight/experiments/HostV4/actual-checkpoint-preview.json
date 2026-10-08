@@ -1,0 +1,27 @@
+{
+  "schema": "shards-v3-v4-runtime-migration-v1",
+  "prepared_wall": 1790435615.5713553,
+  "source_file_sha256": "6616c525b6734525b948fdeee6d5fcfd4e79bf5492b021c2de48d88333859646",
+  "source_payload_sha256": "88574ee2ab4eb122db714e14415a7bee2d1ab532acf85dd245938cfcbea51817",
+  "source_identity_sha256": "d0e3675581e039a1ece617723c9714cac1c026978a47eec1021c243c91b52d74",
+  "target_identity_sha256": "a03bb9a2da3b25c924cdd79ce6c4aafb30ce0aef3c9eb922efff0775eb26df85",
+  "source_runtime_sha256": "4d7b826d5d11b7ab825faf170115e4bbc75adf115250706244dcdb6ecb9f72f6",
+  "helper_sha256": "975add92aa2e23e32b1d9822dd8916d8d93f42e4a588a720343c8789c36186f0",
+  "changed_identity_fields": [
+    "base_v3_training_source_sha256",
+    "host_binary_sha256",
+    "schema",
+    "training_source_sha256"
+  ],
+  "protected_payload_sha256": "cafb5a52ff2e702bc0ba5f84f0f0ceb301f98e6d58f048516c2c362727307964",
+  "preserved_state_sha256": "ab858f3a12b21d29984d8c97e1fa607e060a8b3b8559052cca5651a9df09e437",
+  "preserved_rng_sha256": "d476a6cd5cee3e4350f18d6ee2c855f43e08bfc14005ad9680b2787810c62349",
+  "preserved_budget_sha256": "c7be4bd29523b132d3ddcf22b6b79665d7b4384e4b1bc3e5354fee4ef255a2fd",
+  "generation": 2895,
+  "state_mutation": "none",
+  "observation_schema_unchanged": true,
+  "training_started": false,
+  "budget_scope": "No new allocation; future continuation requires the original shared ledger",
+  "scope": "Read-only actual-checkpoint preview while trainer remains active; no ledger lock, checkpoint publication, runtime install or GPU.",
+  "cuda_initialized": false
+}

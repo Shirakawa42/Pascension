@@ -1,0 +1,130 @@
+{
+  "scope": "contention-screened confirmation, not exclusive-machine proof",
+  "arguments": {
+    "cases": "pipe,span,split8,batch512,workers8,servergc,half-upload,overlap",
+    "repeats": 2,
+    "seconds": 6.0,
+    "max_seconds": 600.0,
+    "max_attempts": 48,
+    "output_dir": "Tools/TrainingPreflight/results/confirmation"
+  },
+  "quiet_criteria": "before memory<8GiB,util<=25%,power<180W; during memory<8GiB,power<180W",
+  "valid_counts": {
+    "pipe": 0,
+    "span": 0,
+    "split8": 0,
+    "batch512": 0,
+    "workers8": 0,
+    "servergc": 0,
+    "half-upload": 0,
+    "overlap": 0
+  },
+  "attempts": [
+    {
+      "name": "servergc",
+      "command": [
+        "/home/lva/.venvs/shards-preflight/bin/python",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/pipeline_bench.py",
+        "--batch",
+        "256",
+        "--workers",
+        "4",
+        "--transport",
+        "shared",
+        "--mode",
+        "graph",
+        "--precision",
+        "tf32",
+        "--action-source",
+        "exercise",
+        "--seconds",
+        "6.0",
+        "--server-gc",
+        "--split-branches",
+        "8",
+        "--output",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/results/confirmation/servergc-attempt01.json"
+      ],
+      "gpu_before": {
+        "memory_mib": 4892.0,
+        "utilization_percent": 17.0,
+        "power_w": 108.11,
+        "temperature_c": 56.0
+      },
+      "quiet": false,
+      "status": "ok",
+      "wrapper_per_second": 44582.461886634774
+    },
+    {
+      "name": "servergc",
+      "command": [
+        "/home/lva/.venvs/shards-preflight/bin/python",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/pipeline_bench.py",
+        "--batch",
+        "256",
+        "--workers",
+        "4",
+        "--transport",
+        "shared",
+        "--mode",
+        "graph",
+        "--precision",
+        "tf32",
+        "--action-source",
+        "exercise",
+        "--seconds",
+        "6.0",
+        "--server-gc",
+        "--split-branches",
+        "8",
+        "--output",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/results/confirmation/servergc-attempt02.json"
+      ],
+      "gpu_before": {
+        "memory_mib": 7026.0,
+        "utilization_percent": 18.0,
+        "power_w": 149.46,
+        "temperature_c": 61.0
+      },
+      "quiet": false,
+      "status": "ok",
+      "wrapper_per_second": 44278.805048575734
+    },
+    {
+      "name": "pipe",
+      "command": [
+        "/home/lva/.venvs/shards-preflight/bin/python",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/pipeline_bench.py",
+        "--batch",
+        "256",
+        "--workers",
+        "4",
+        "--transport",
+        "shared",
+        "--mode",
+        "graph",
+        "--precision",
+        "tf32",
+        "--action-source",
+        "exercise",
+        "--seconds",
+        "6.0",
+        "--transport",
+        "pipe",
+        "--output",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/results/confirmation/pipe-attempt03.json"
+      ],
+      "gpu_before": {
+        "memory_mib": 4758.0,
+        "utilization_percent": 12.0,
+        "power_w": 81.58,
+        "temperature_c": 55.0
+      },
+      "quiet": false,
+      "status": "ok",
+      "wrapper_per_second": 29182.807965627442
+    }
+  ],
+  "elapsed_seconds": 600.4227213489994,
+  "all_requested_quiet_repeats_collected": false
+}

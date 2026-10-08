@@ -1,0 +1,23 @@
+test_constructor_context_resets_after_failure (test_runtime_v5.RoutingTests.test_constructor_context_resets_after_failure) ... ok
+test_factory_defaults_natural_and_explicit_training_has_curriculum_and_statistics (test_runtime_v5.RoutingTests.test_factory_defaults_natural_and_explicit_training_has_curriculum_and_statistics) ... ok
+test_real_prefix_replay_and_five_cpu_policy_steps_no_setup_rows (test_runtime_v5.RoutingTests.test_real_prefix_replay_and_five_cpu_policy_steps_no_setup_rows) ... ok
+test_active_or_locked_ledger_rejected (test_runtime_v5.RuntimeMigrationTests.test_active_or_locked_ledger_rejected) ... ok
+test_cross_campaign_and_charge_ahead_rejected (test_runtime_v5.RuntimeMigrationTests.test_cross_campaign_and_charge_ahead_rejected) ... ok
+test_exact_identity_catalog_and_all_payload_preservation (test_runtime_v5.RuntimeMigrationTests.test_exact_identity_catalog_and_all_payload_preservation) ... ok
+test_identity_drift_or_installed_runtime_rejected (test_runtime_v5.RuntimeMigrationTests.test_identity_drift_or_installed_runtime_rejected) ... ok
+test_real_cross_variant_loader_preserves_roles_and_exact_catalog (test_runtime_v5.RuntimeMigrationTests.test_real_cross_variant_loader_preserves_roles_and_exact_catalog) ... ok
+test_source_configuration_and_partial_boundary_rejected (test_runtime_v5.RuntimeMigrationTests.test_source_configuration_and_partial_boundary_rejected) ... ok
+test_temporary_publication_strict_reload_no_overwrite (test_runtime_v5.RuntimeMigrationTests.test_temporary_publication_strict_reload_no_overwrite) ... ok
+test_all_balanced_prefixes_use_original_legal_slots (test_evaluate_variants.EvaluationTests.test_all_balanced_prefixes_use_original_legal_slots) ... ok
+test_balanced_cuda_adapter_allocation_and_censors_with_fake_evaluator (test_evaluate_variants.EvaluationTests.test_balanced_cuda_adapter_allocation_and_censors_with_fake_evaluator) ... ok
+test_censored_replay_directory_records_forced_prefix_and_is_forwarded (test_evaluate_variants.EvaluationTests.test_censored_replay_directory_records_forced_prefix_and_is_forwarded) ... ok
+test_import_does_not_load_cpu_shadow_or_initialize_cuda (test_evaluate_variants.EvaluationTests.test_import_does_not_load_cpu_shadow_or_initialize_cuda) ... ok
+test_incomplete_cell_is_not_reported_as_complete (test_evaluate_variants.EvaluationTests.test_incomplete_cell_is_not_reported_as_complete) ... ok
+test_loader_selects_only_exact_v4_or_v5_resolver_and_restores_global (test_evaluate_variants.EvaluationTests.test_loader_selects_only_exact_v4_or_v5_resolver_and_restores_global) ... ok
+test_pinned_plan_matches_shared_cpu_plan_exactly (test_evaluate_variants.EvaluationTests.test_pinned_plan_matches_shared_cpu_plan_exactly) ... ok
+test_prefix_failure_closes_host_and_restores_evaluation_factory (test_evaluate_variants.EvaluationTests.test_prefix_failure_closes_host_and_restores_evaluation_factory) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 24.713s
+
+OK

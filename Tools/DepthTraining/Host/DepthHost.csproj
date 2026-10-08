@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><DefineConstants>$(DefineConstants);SHARDS_ZERO_DEPTH_STATS</DefineConstants><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><LangVersion>9.0</LangVersion><Nullable>disable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks><StartupObject>Shards.ZeroDepth.DepthProgram</StartupObject><UseSharedCompilation>false</UseSharedCompilation></PropertyGroup>
+<ItemGroup>
+<Compile Include="../../ZeroDepthTraining/Host/*.cs" LinkBase="FullInformationHost" />
+<Compile Include="../../../Assets/Scripts/Core/**/*.cs" LinkBase="Core" />
+<Compile Include="../../../Assets/Scripts/Shards/Engine/**/*.cs" LinkBase="Engine" />
+<Compile Include="../../../Assets/Scripts/Shards/Content/**/*.cs" LinkBase="Content" />
+<Compile Include="../../../Assets/Scripts/Shards/AI/**/*.cs" Exclude="../../../Assets/Scripts/Shards/AI/FrozenPolicy.cs" LinkBase="Incumbent" />
+<Compile Include="../../MatchupOptimizedHost/FrozenPolicy.cs" Link="FrozenPolicy.cs" />
+<Compile Include="../../BalancePatchHost/EffectDescriptors.cs" Link="EffectDescriptors.cs" />
+<Compile Include="../../FinalEvaluationHost/VictoryEvidence.cs" Link="VictoryEvidence.cs" />
+<Compile Include="../../FinalEvaluationHost/TrainingStatistics.cs" Link="TrainingStatistics.cs" />
+<Compile Include="../../FinalEvaluationHost/StrategyTrace.cs" Link="StrategyTrace.cs" />
+<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+</ItemGroup></Project>

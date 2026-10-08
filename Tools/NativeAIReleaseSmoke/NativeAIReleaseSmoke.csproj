@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><LangVersion>9.0</LangVersion><UseSharedCompilation>false</UseSharedCompilation></PropertyGroup>
+<ItemGroup>
+<ProjectReference Include="../NativeAIRelease/NativeAIRelease.csproj" />
+<Reference Include="Pascension.Core"><HintPath>../../Builds/WindowsTacticalAI/pascension_Data/Managed/Pascension.Core.dll</HintPath></Reference>
+<ProjectReference Include="../NativeShardsEngineRelease/NativeShardsEngineRelease.csproj" />
+<ProjectReference Include="../NativeShardsContentRelease/NativeShardsContentRelease.csproj" />
+<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+</ItemGroup></Project>

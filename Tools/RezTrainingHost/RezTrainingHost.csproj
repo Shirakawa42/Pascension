@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion><Nullable>disable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseSharedCompilation>false</UseSharedCompilation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../TrainingPreflight/experiments/HostV10/**/*.cs" Exclude="../TrainingPreflight/experiments/HostV10/bin/**;../TrainingPreflight/experiments/HostV10/obj/**;../TrainingPreflight/experiments/HostV10/Engine/ShardsEngine.cs;../TrainingPreflight/experiments/HostV10/EffectDescriptors.cs;../TrainingPreflight/experiments/HostV10/Encoder.cs;../TrainingPreflight/experiments/HostV10/Program.cs" />
+    <Compile Include="../TrainingPreflight/experiments/HostV5/*.cs" Exclude="../TrainingPreflight/experiments/HostV5/Program.cs;../TrainingPreflight/experiments/HostV5/HeroSetupRouting.cs;../TrainingPreflight/experiments/HostV5/TrainingStatistics.cs" LinkBase="FrozenHostV5" />
+    <Compile Include="../TrainingPreflight/experiments/HostV4/FactionCounter.cs" Link="FrozenHostV4/FactionCounter.cs" />
+    <Compile Include="../TrainingPreflight/experiments/HostV4/StatisticsSelfTest.cs" Link="FrozenHostV4/StatisticsSelfTest.cs" />
+    <Compile Include="../TrainingPreflight/experiments/HostV3/V3SelfTest.cs" Link="FrozenHostV3/V3SelfTest.cs" />
+    <Compile Include="../TrainingPreflight/Host/MappedBody.cs" Link="SharedHost/MappedBody.cs" />
+    <Compile Include="../../Assets/Scripts/Core/**/*.cs" LinkBase="Core" />
+    <Compile Include="../../Assets/Scripts/Shards/Engine/**/*.cs" LinkBase="Engine" />
+    <Compile Include="../../Assets/Scripts/Shards/Content/**/*.cs" LinkBase="Content" />
+    <Compile Include="../FinalEvaluationHost/TrainingStatistics.cs" Link="TrainingStatistics.cs" />
+    <Compile Include="../FinalEvaluationHost/StrategyTrace.cs" Link="StrategyTrace.cs" />
+    <Compile Include="../FinalEvaluationHost/VictoryEvidence.cs" Link="VictoryEvidence.cs" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

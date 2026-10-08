@@ -1,0 +1,36 @@
+{
+  "schema": "shards-faction-count-probe-v1",
+  "passed": true,
+  "utc": "2026-09-26T14:25:06.1102861Z",
+  "hostSha256": "472f94ef69e265b1ab03249413275ccc088063dfa5f0fc2d9b57e806025a8520",
+  "referencedAssembly": "/mnt/f/unity/projects/pascension/Tools/TrainingPreflight/experiments/faction_count_probe/bin/Release/net8.0/TrainingHostV3.dll",
+  "originalHost": "/mnt/f/unity/projects/pascension/Tools/TrainingPreflight/experiments/HostV3/bin/Release/net8.0/TrainingHostV3.dll",
+  "processId": 39479,
+  "logicalProcessorsVisible": 1,
+  "workers": 1,
+  "serverGc": false,
+  "timingContext": "Single-worker CPU microbench while another campaign may run; not quiet, end-to-end, or training-throughput measurements.",
+  "timingFixture": "Constructed mixed owned-zone collections; owned size includes temporary cards. Not seed-reachability or population-distribution evidence.",
+  "tests": {
+    "catalogDefinitions": 189,
+    "membershipChecks": 2646,
+    "zoneFixtures": 3780,
+    "mixedCollectionFixtures": 100,
+    "specialExpectedCounts": [
+      0,
+      1,
+      2,
+      1,
+      2,
+      1,
+      0
+    ],
+    "replayRows": 1177,
+    "hiddenOpponentPerturbationSeats": 2,
+    "outputsBitExact": true,
+    "noRulesMutation": true,
+    "scope": "All-definition unit fixtures plus bounded seeded legal replay and full-encoding hidden-zone differential; candidate not installed in a serving Host."
+  },
+  "timings": [],
+  "consumed": 0
+}

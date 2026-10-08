@@ -1,0 +1,86 @@
+{
+  "patch": "2026-10-08-v5",
+  "source": "Original art generated locally with ComfyUI and Anima",
+  "workflow": "Assets/Scripts/Editor/ArtPipeline/anima_card_workflow_api.json",
+  "workflow_sha256": "e7e5a260bcf929f044e78a6e268f7ddfeebd34bb796af31adc130743efa4ca55",
+  "width": 880,
+  "height": 1232,
+  "steps": 35,
+  "prefix": "masterpiece, best quality, score_7, safe, year 2025, newest, highres, painterly, fantasy, detailed illustration, dramatic lighting, trading card game art",
+  "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, text, signature, artist name",
+  "cards": {
+    "horizon_seeker": {
+      "subject": "a lone mystic pilgrim in white and gold ceremonial armor standing on a high ruined observatory, blue cloak flowing in the wind, gazing toward a luminous golden horizon over an otherworldly city, a small radiant crystal hovering above an open palm, hopeful expansive composition",
+      "seed": 3093134154,
+      "salt": 0,
+      "path": "Assets/Art/Shards/Cards/horizon_seeker.png",
+      "status": "complete",
+      "prompt_id": "222a6d15-36b5-4036-9a4a-a96ca2edadf1",
+      "submitted_at_unix": 1791487201.9181938,
+      "sha256": "ca92169ee17b932f8ee564f4db9d27712d2502db1e7fdf12ea0faffd46055a25",
+      "completed_at_unix": 1791487226.008322,
+      "comfy_output": {
+        "filename": "horizon_seeker_00001_.png",
+        "subfolder": "pascension_balance_2026_10_08",
+        "type": "output"
+      },
+      "elapsed_seconds": 24.09
+    },
+    "riftbreaker": {
+      "subject": "a spectral mercenary in jagged black armor smashing a dimensional barrier with a heavy violet energy blade, luminous purple cracks and glasslike reality fragments bursting outward, smoky wraith tendrils, aggressive dynamic pose, ruined science fantasy battlefield",
+      "seed": 4040523470,
+      "salt": 0,
+      "path": "Assets/Art/Shards/Cards/riftbreaker.png",
+      "status": "complete",
+      "prompt_id": "e1141156-43ef-4125-a04d-374581644ac0",
+      "submitted_at_unix": 1791487226.0125427,
+      "sha256": "df260b5d70d1f2c406c98652ea8209c66c673483ffa2acb859906746704cc48b",
+      "completed_at_unix": 1791487236.0319111,
+      "comfy_output": {
+        "filename": "riftbreaker_00001_.png",
+        "subfolder": "pascension_balance_2026_10_08",
+        "type": "output"
+      },
+      "elapsed_seconds": 10.02
+    },
+    "rift_scout": {
+      "subject": "an agile masked scout in sleek silver and turquoise armor leaping through a curling temporal fissure, cyan clockwork energy arcs and translucent afterimages trailing behind, short curved blade in hand, floating ancient ruins, dynamic diagonal composition",
+      "seed": 3424724987,
+      "salt": 0,
+      "path": "Assets/Art/Shards/Cards/rift_scout.png",
+      "status": "complete",
+      "prompt_id": "797f5db7-3d85-46f4-9a1f-39587db78618",
+      "submitted_at_unix": 1791487236.0354235,
+      "sha256": "f29f65f9115f8ca442920e9b4f0e0d47276c036784350de392da49932852096b",
+      "completed_at_unix": 1791487246.0548685,
+      "comfy_output": {
+        "filename": "rift_scout_00001_.png",
+        "subfolder": "pascension_balance_2026_10_08",
+        "type": "output"
+      },
+      "elapsed_seconds": 10.02
+    },
+    "dna": {
+      "subject": "a luminous iridescent double helix suspended inside an ancient futuristic crystal chamber, the spiral branching into two identical floating crystalline relics, flowing cyan violet and gold energy, intricate organic geometry, mysterious destiny and magical duplication, centered vertical composition",
+      "seed": 3429552818,
+      "salt": 0,
+      "path": "Assets/Art/Shards/Cards/dna.png",
+      "status": "complete",
+      "prompt_id": "9095d5c9-ecc7-4738-af0b-f5f921f21c7a",
+      "submitted_at_unix": 1791487246.0573823,
+      "sha256": "bd00b15238f5becfa4f1574056459cdaab6d9a2e8c726a46194de9b1416bc209",
+      "completed_at_unix": 1791487256.075451,
+      "comfy_output": {
+        "filename": "dna_00001_.png",
+        "subfolder": "pascension_balance_2026_10_08",
+        "type": "output"
+      },
+      "elapsed_seconds": 10.02
+    }
+  },
+  "queue_at_start": {
+    "queue_running": 0,
+    "queue_pending": 0
+  },
+  "status": "complete"
+}

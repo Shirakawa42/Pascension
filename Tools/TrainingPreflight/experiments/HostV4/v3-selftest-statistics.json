@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "observationSchema": "shards-observation-v3",
+  "cardDefinitions": 189,
+  "featureSlots": [
+    317,
+    318,
+    319,
+    509,
+    510,
+    511,
+    701
+  ],
+  "normalization": 20,
+  "fullFloatsCompared": 4160,
+  "aliasDistinguishedAt": [
+    319,
+    509
+  ],
+  "mainframeMasteryAfter": [
+    9,
+    8
+  ],
+  "opponentHiddenPerturbationSeats": 2,
+  "prismAndYggdrasil": true,
+  "catalogOverflowRejected": true,
+  "fixtureScope": "Constructed card-conserving starting positions followed by five advertised legal actions; not a full seed reachability proof"
+}

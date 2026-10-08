@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+Host/bin/
+Host/obj/
+results/
+*.soicp

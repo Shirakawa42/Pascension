@@ -1,0 +1,327 @@
+{
+  "schema": "shards-host-v4-statistics-request-benchmark-v1",
+  "passed": true,
+  "host_v3_sha256": "472f94ef69e265b1ab03249413275ccc088063dfa5f0fc2d9b57e806025a8520",
+  "host_v4_sha256": "cdda3e733d416f5e32b7af93b232ef2de898be7adcfdc0a09e34a9e447ca6315",
+  "scope": "Contended one-worker CPU request comparison; no GPU, learner, ledger or live runtime edits. Publication case uses actual concessions after an acquisition prefix, not a trained-policy population.",
+  "cases": [
+    {
+      "active_lanes": 256,
+      "batch": 256,
+      "workers": 1,
+      "repeat": 0,
+      "publication_workload": false,
+      "warmup_requests": 64,
+      "measured_requests": 192,
+      "fixed_jit": true,
+      "modes": [
+        "v3",
+        "v4_statistics_off",
+        "v4_statistics_on"
+      ],
+      "request_seconds": [
+        1.240771776,
+        1.12238592,
+        1.102827835
+      ],
+      "step_seconds": [
+        0.4450982,
+        0.427654,
+        0.4192324
+      ],
+      "encode_seconds": [
+        0.5453271,
+        0.4436533,
+        0.4422183
+      ],
+      "median_request_ms": [
+        5.803554500000001,
+        5.3333955,
+        5.334221
+      ],
+      "v4_on_vs_v3_request_speedup": 1.125082026969332,
+      "statistics_increment_over_v4_off_fraction": -0.01742545469565393,
+      "completed_games": 444,
+      "all_response_bytes_equal": true,
+      "action_stream_sha256": "890d589a9c3755047dcc9b7fd4ce5c134d3aafd60f8ac55e1b059dcdc71d5293",
+      "statistics_rows": 265,
+      "hero_choice_rows": 898,
+      "latest_bytes": 439371,
+      "history_snapshots": 2,
+      "nonfinal_completed_counts_seen": []
+    },
+    {
+      "active_lanes": 256,
+      "batch": 256,
+      "workers": 1,
+      "repeat": 1,
+      "publication_workload": false,
+      "warmup_requests": 64,
+      "measured_requests": 192,
+      "fixed_jit": true,
+      "modes": [
+        "v3",
+        "v4_statistics_off",
+        "v4_statistics_on"
+      ],
+      "request_seconds": [
+        1.158231066,
+        1.058791169,
+        1.132747925
+      ],
+      "step_seconds": [
+        0.4043059,
+        0.3973284,
+        0.4254378
+      ],
+      "encode_seconds": [
+        0.5152401,
+        0.4273135,
+        0.4579935
+      ],
+      "median_request_ms": [
+        5.5229625,
+        4.8638794999999995,
+        5.260292
+      ],
+      "v4_on_vs_v3_request_speedup": 1.022496744807544,
+      "statistics_increment_over_v4_off_fraction": 0.06985018213728611,
+      "completed_games": 444,
+      "all_response_bytes_equal": true,
+      "action_stream_sha256": "890d589a9c3755047dcc9b7fd4ce5c134d3aafd60f8ac55e1b059dcdc71d5293",
+      "statistics_rows": 265,
+      "hero_choice_rows": 898,
+      "latest_bytes": 439371,
+      "history_snapshots": 2,
+      "nonfinal_completed_counts_seen": []
+    },
+    {
+      "active_lanes": 256,
+      "batch": 256,
+      "workers": 1,
+      "repeat": 2,
+      "publication_workload": false,
+      "warmup_requests": 64,
+      "measured_requests": 192,
+      "fixed_jit": true,
+      "modes": [
+        "v3",
+        "v4_statistics_off",
+        "v4_statistics_on"
+      ],
+      "request_seconds": [
+        1.273180149,
+        1.167381328,
+        1.173551238
+      ],
+      "step_seconds": [
+        0.42111740000000003,
+        0.4310071,
+        0.4440415
+      ],
+      "encode_seconds": [
+        0.574742,
+        0.4663165,
+        0.4615853
+      ],
+      "median_request_ms": [
+        6.2305375000000005,
+        5.422038000000001,
+        5.372675
+      ],
+      "v4_on_vs_v3_request_speedup": 1.0848952374416907,
+      "statistics_increment_over_v4_off_fraction": 0.005285256712620479,
+      "completed_games": 444,
+      "all_response_bytes_equal": true,
+      "action_stream_sha256": "890d589a9c3755047dcc9b7fd4ce5c134d3aafd60f8ac55e1b059dcdc71d5293",
+      "statistics_rows": 265,
+      "hero_choice_rows": 898,
+      "latest_bytes": 439371,
+      "history_snapshots": 2,
+      "nonfinal_completed_counts_seen": []
+    },
+    {
+      "active_lanes": 8,
+      "batch": 256,
+      "workers": 1,
+      "repeat": 0,
+      "publication_workload": false,
+      "warmup_requests": 64,
+      "measured_requests": 192,
+      "fixed_jit": true,
+      "modes": [
+        "v3",
+        "v4_statistics_off",
+        "v4_statistics_on"
+      ],
+      "request_seconds": [
+        0.41861986,
+        0.414016715,
+        0.416052817
+      ],
+      "step_seconds": [
+        0.0996187,
+        0.0935047,
+        0.1061285
+      ],
+      "encode_seconds": [
+        0.0217001,
+        0.0193594,
+        0.017477
+      ],
+      "median_request_ms": [
+        1.9111580000000001,
+        1.909004,
+        1.8600995000000002
+      ],
+      "v4_on_vs_v3_request_speedup": 1.0061699930756627,
+      "statistics_increment_over_v4_off_fraction": 0.0049179222148072466,
+      "completed_games": 13,
+      "all_response_bytes_equal": true,
+      "action_stream_sha256": "1313dc21f26452b55a56b09e04a7d5c8fccbb6a8e80bb6ac80c0882adcece06f",
+      "statistics_rows": 102,
+      "hero_choice_rows": 171,
+      "latest_bytes": 103912,
+      "history_snapshots": 2,
+      "nonfinal_completed_counts_seen": []
+    },
+    {
+      "active_lanes": 8,
+      "batch": 256,
+      "workers": 1,
+      "repeat": 1,
+      "publication_workload": false,
+      "warmup_requests": 64,
+      "measured_requests": 192,
+      "fixed_jit": true,
+      "modes": [
+        "v3",
+        "v4_statistics_off",
+        "v4_statistics_on"
+      ],
+      "request_seconds": [
+        0.369724852,
+        0.359958121,
+        0.371813301
+      ],
+      "step_seconds": [
+        0.0884286,
+        0.0876186,
+        0.0972743
+      ],
+      "encode_seconds": [
+        0.0205456,
+        0.0172568,
+        0.0165206
+      ],
+      "median_request_ms": [
+        1.7328205,
+        1.6801125,
+        1.6028375
+      ],
+      "v4_on_vs_v3_request_speedup": 0.994383070765938,
+      "statistics_increment_over_v4_off_fraction": 0.03293488688924451,
+      "completed_games": 13,
+      "all_response_bytes_equal": true,
+      "action_stream_sha256": "1313dc21f26452b55a56b09e04a7d5c8fccbb6a8e80bb6ac80c0882adcece06f",
+      "statistics_rows": 102,
+      "hero_choice_rows": 171,
+      "latest_bytes": 103912,
+      "history_snapshots": 2,
+      "nonfinal_completed_counts_seen": []
+    },
+    {
+      "active_lanes": 8,
+      "batch": 256,
+      "workers": 1,
+      "repeat": 2,
+      "publication_workload": false,
+      "warmup_requests": 64,
+      "measured_requests": 192,
+      "fixed_jit": true,
+      "modes": [
+        "v3",
+        "v4_statistics_off",
+        "v4_statistics_on"
+      ],
+      "request_seconds": [
+        0.397725813,
+        0.383491626,
+        0.379855835
+      ],
+      "step_seconds": [
+        0.0886258,
+        0.0904855,
+        0.0971557
+      ],
+      "encode_seconds": [
+        0.0204742,
+        0.018837800000000002,
+        0.0167716
+      ],
+      "median_request_ms": [
+        1.914,
+        1.7318120000000001,
+        1.765775
+      ],
+      "v4_on_vs_v3_request_speedup": 1.047044105561785,
+      "statistics_increment_over_v4_off_fraction": -0.00948075721476116,
+      "completed_games": 13,
+      "all_response_bytes_equal": true,
+      "action_stream_sha256": "1313dc21f26452b55a56b09e04a7d5c8fccbb6a8e80bb6ac80c0882adcece06f",
+      "statistics_rows": 102,
+      "hero_choice_rows": 171,
+      "latest_bytes": 103912,
+      "history_snapshots": 2,
+      "nonfinal_completed_counts_seen": []
+    },
+    {
+      "active_lanes": 256,
+      "batch": 256,
+      "workers": 1,
+      "repeat": 0,
+      "publication_workload": true,
+      "warmup_requests": 64,
+      "measured_requests": 246,
+      "fixed_jit": true,
+      "modes": [
+        "v3",
+        "v4_statistics_off",
+        "v4_statistics_on"
+      ],
+      "request_seconds": [
+        1.876705432,
+        1.73171552,
+        1.829351161
+      ],
+      "step_seconds": [
+        0.9502775,
+        0.937496,
+        1.0032611
+      ],
+      "encode_seconds": [
+        0.5850987,
+        0.4681592,
+        0.4906049
+      ],
+      "median_request_ms": [
+        6.221782999999999,
+        5.5512415,
+        5.7124835
+      ],
+      "v4_on_vs_v3_request_speedup": 1.0258858288170951,
+      "statistics_increment_over_v4_off_fraction": 0.05638087773215772,
+      "completed_games": 10438,
+      "all_response_bytes_equal": true,
+      "action_stream_sha256": "bf4525298df2be8a1eaf2ba50343c52d96ec1887b42b69ec31b83dbc5db2c3e0",
+      "statistics_rows": 251,
+      "hero_choice_rows": 825,
+      "latest_bytes": 406212,
+      "history_snapshots": 3,
+      "nonfinal_completed_counts_seen": [
+        0,
+        10182
+      ]
+    }
+  ]
+}

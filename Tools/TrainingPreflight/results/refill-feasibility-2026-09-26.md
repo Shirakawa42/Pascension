@@ -1,0 +1,57 @@
+# Complete-episode lane refill: worthwhile bounded V6 experiment, not a drop-in
+
+**Recommendation:** investigate **512 admitted attempts on 256 resident lanes first**, then consider 1,024. Refill can amortize the terminal drain without changing the host binary, observations, legal actions, terminal credit, or learner math. It does change collection/update and league cadence, so it needs a new explicit Python runtime identity and an equal-budget quality check. Do not implement “keep the first 1,024 completions and discard the rest.” No implementation, compilation, GPU work, complete games, or live changes were performed for this audit.
+
+## Evidence and likely benefit
+
+The last twenty recorded main-V4 generations, **3349–3368**, at **15:34:28–15:35:35 UTC**, average 77,901 learner rows and 347.49 wrapper decisions/game. Mean occupancy is 0.527; the longest episode in this sample is 1,003 decisions. Of 59.524 measured generation seconds, actor/host/storage/learner/verification account for **37.16% / 34.87% / 7.90% / 9.49% / 2.15%**. This is descriptive data from [the actual metrics file](/home/lva/.local/share/shards-training/2026-09-26/main-v4/metrics.jsonl), not a quiet comparative benchmark. V5's broader hero population may have a different length distribution.
+
+For N lanes, a barrier cohort's occupancy is `sum(lengths)/(N*max(lengths))`. Several cohorts pay several separate maxima. A queue of a fixed admitted set pays one final drain. For an ideal work-conserving queue with fixed episode lengths, its scheduling time is bounded loosely by `total_work/N + longest_episode`; this is a scheduling argument, not a prediction for the actual actor/host pipeline.
+
+Only some time scales with the number of batched requests. The host already skips held-lane encoding, while every response still carries the fixed payload; adaptive actors already reduce batches to 32/64/128/256. Consequently 0.5→0.8 occupancy does **not** imply 1.6× throughput. Illustratively, if fraction F of total time were truly request-count-bound, the speed factor would be `1/(1-F*(1-0.5/0.8))`: 1.068× for F=0.17, versus 1.34× for the optimistic F=0.68. Neither F is measured here. [Host skip/publication code](../experiments/HostV5/Program.cs#L189), [adaptive bucketing](../adaptive_actor.py#L68).
+
+## Existing support and the minimal seam
+
+The host already auto-resets each terminal/capped lane and returns the old reward/done alongside the new initial observation. Its next game seed is `base + lane + ordinal*N`, with ordinal incremented after **both** terminal and administrative cap. It also reapplies the V5 setup and partitions telemetry on every reset. Refill therefore requires no engine, wire, or binary change. [HostV5 Program](../experiments/HostV5/Program.cs#L151).
+
+The current collector deliberately sets `active[ended]=False`, and conflates lane index with episode identity. Introduce a separate new module, for example `collect_refilled.py`, whose metadata maps:
+
+| Identity | Lifetime / use |
+| --- | --- |
+| physical lane | Host slot and source observation index, 0..255 |
+| logical episode ID | Unique within the admitted group, indexes outcomes/credit/assignments |
+| lane ordinal + actual seed | Deterministic host replay and seed reservation |
+| behavior/opponent version | Frozen throughout that episode and recorded in provenance |
+
+Use `lane_episode_id[learning_lanes]` as the store's episode IDs. With adaptive actors, pass `source_rows=arange(number_learning)`; with nonadaptive actors, pass the actual physical learning lanes explicitly. Otherwise IDs above255 become invalid source-row indices. The existing store and contiguous append path already accept arbitrary episode IDs, and credit uses those IDs plus the actual pre-action deciding seat. No GPU storage-layout change is required. [Collector append](../learning_rollout.py#L229), [store](../learning_rollout.py#L86), [contiguous path](../experiments/rollout_fastpath.py#L59), [terminal credit](../learning_rollout.py#L43).
+
+After a host reply, resolve the **old** episode's reward/cap before assigning its reset observation a new ID. Admit replacements until the fixed attempted-episode quota is exhausted, then hold finished lanes and drain every admitted episode. Capped episodes count toward attempted quota, remain unknown outcomes, and lose exactly their own rows. A later cap on a reused lane must not delete that lane's earlier completed episodes. Keep the learner and selected archive opponent weights frozen for the entire group.
+
+**A collector override alone is insufficient.** The current driver always increments `next_seed` by `config.batch`, and its partial-discard count also assumes one episode per lane. An isolated new orchestration module must consume returned `next_engine_seed`, actual admitted/discarded counts, and explicit collection configuration. Do not disguise the logical quota as `config.batch` or remap seeds invisibly inside the host. [Driver](../train_campaign.py#L224).
+
+Track the highest admitted lane ordinal and use an aligned successor such as `base + N*(1+max_admitted_ordinal)` after a finished/discarded group. This skips unused holes but never repeats an actually played seed. Auto-created reset observations that never received a policy action are not admitted episodes. Preflight uint64 overflow against the entire possible lease: with A fixed attempts, a single lane can receive at most `A-N+1` games. Checkpoint and partial-stop accounting must preserve the same successor. Returning `base+A` is **not safe** for the host's strided per-lane allocation.
+
+Use a reusable per-lane int16 action-history buffer and reset its cursor on admission. The existing history slices would otherwise concatenate several games, and its `max_steps=30000` is currently a **cohort-global** loop bound. A refill group needs separate per-episode and scheduler bounds, with cap traces recording the logical ID, actual seed, current episode suffix, opponent assignment, and V5 setup. [Current history/cap trace](../learning_rollout.py#L209), [global bound](../learning_rollout.py#L308).
+
+## Capacity and sampling constraints
+
+At the observed mean, 512 attempts project to about **155,803 rows** and 1,024 to **311,605**, versus capacity524,288. These are extrapolations, not safety bounds. The 1,024 quota permits only512 stored learner decisions/attempt on average, including unresolved and capped rows until compaction. Current storage costs16,464 GPU bytes/row before returns/advantages: about8.039 GiB at capacity. Censor compaction additionally gathers an entire field, potentially a4 GiB temporary. [Allocation/compaction](../learning_rollout.py#L60).
+
+No observed-mean/p95 admission reserve can guarantee draining256 active games. Even a hypothetical30,000-decision per-episode bound greatly exceeds available capacity; the host itself permits100,000 wrapper actions. This limitation already exists in the single-episode collector, but larger groups increase exposure. **First experiment:** stop admissions at a documented conservative row-watermark and drain the smaller admitted set; retain the existing hard fail-closed capacity guard. This reduces normal risk, not worst-case risk. On exhaustion, stop before overwrite/optimizer mutation and explicitly account/discard the unfinished collection; do not quietly censor slow episodes to recover throughput. A fully guaranteed design needs owned spill/growth or a much smaller admitted concurrency, which is a larger data-path project. [Bounds](../Host/Adapter.cs#L53), [capacity guard](../learning_rollout.py#L94).
+
+Predeclare archive/self-play and learner-seat assignment **per logical episode**, independently of which lane becomes free. Reusing fixed lane assignments would overrepresent faster matchup/seat classes. Keep the chosen opponent model frozen, but recognize that one1,024-episode group samples one archive version where four old groups sampled four versions. Global learner-row sampling already gives long games more decision weight; that existing property is distinct from newly discarding long unfinished games. [Current league assignment](../train_campaign.py#L218).
+
+## Learning tradeoff and decisive gates
+
+Refill under one frozen behavior version remains synchronous data collection followed by PPO optimization; it creates no concurrent actor/learner policy lag. PPO's sampling/optimization separation and multiple minibatch epochs support this structure, but do not establish equivalence of different batch sizes. [Original PPO paper](https://arxiv.org/abs/1707.06347). With four times the rows, the same minibatch/epochs imply roughly four times as many optimizer steps before refreshing behavior, a different advantage-normalization population, and potentially earlier KL rejection. Do not loosen likelihood, ratio, KL, or finite-state gates. Archive snapshots every8 generations would also move from about2,048 to8,192 attempted games; cadence should be explicitly measured/rescaled by games/rows if comparability is intended. [Normalization](../learning_rollout.py#L143), [updates/archive cadence](../train_campaign.py#L263).
+
+Proceed only through these gates:
+
+1. **CPU lifecycle proof:** mixed short/long episodes, consecutive same-seat/defending decisions, several resets on one lane, and a cap after prior successes; exact unique-ID credit, archive-row exclusion, per-episode histories and counter conservation. Scripted episodes should replay identically regardless of lane scheduling.
+2. **Seed/restart proof:** no played-seed reuse across success, cap, early admission cutoff and interruption; same checkpoint produces the same admission/assignment plan. Reject overflow before launching. Setup actions never become policy rows.
+3. **Ownership/memory proof:** actor inputs/packets copied before replay; compaction preserves active episodes if used before final drain; stress capacity boundaries and interruption with zero partial targets, no overwrite, no fake draws, and documented peak VRAM.
+4. **Unchanged safety/accounting:** all completed/censored/admitted counters reconcile; held results clear; finalized collection counts are persisted before any update; the existing four-cap campaign guard remains at least as strict. Per-episode IDs must replace every lane-indexed aggregate.
+5. **Frozen-policy throughput gate:** compare256 versus512 admitted attempts first, identical physical lanes/precision/model/league distribution, several paired repetitions, reporting retained rows/s, request count, occupancy, phase times, true attempts, peak rows/VRAM, and tail fraction. Different actor batch scheduling changes RNG consumption, so identical global RNG seeds alone do not promise identical action streams. Keep performance and trajectory-equality tests separate.
+6. **Equal-budget quality gate:** only if full-pipeline gain is material (suggest at least5% beyond variability), compare an explicitly identified continuation against the current collector from the same checkpoint. Preserve optimizer state and budget; inspect accepted reuse/KL/league diversity and reserved frozen strength. Do not infer playing strength from utilization.
+
+The practical conclusion is **“worth a512-attempt prototype after the current hero experiment,” not “enable1,024 now.”** The host support and unchanged store format make it plausible. Seed accounting, finite-memory drain behavior, and changed learning cadence are the real work; a superficial lane-refill loop would be incorrect.

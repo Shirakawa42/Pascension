@@ -1,0 +1,36 @@
+{
+  "generations": 87,
+  "start_generation": 8454,
+  "end_generation": 8541,
+  "completed_games": 22272,
+  "censored_games": 0,
+  "accepted_optimizer_steps": 11333,
+  "rejected_minibatches": 4,
+  "max_behavior_logp_error": 7.700920104980469e-05,
+  "max_behavior_value_error": 2.0116567611694336e-06,
+  "pilot_medians": {
+    "seconds": 2.995779869997932,
+    "collection_seconds": 2.5495209000000614,
+    "actor_seconds": 1.057085009997536,
+    "host_seconds": 1.0332878401459311,
+    "storage_seconds": 0.23103863999131136,
+    "learning_seconds": 0.3411888300033752,
+    "verification_seconds": 0.07322706000559265,
+    "learning_rows": 89322
+  },
+  "preceding_v7_medians": {
+    "seconds": 2.5712397000024794,
+    "collection_seconds": 2.190469410001242,
+    "actor_seconds": 0.9048127499991097,
+    "host_seconds": 0.8518738501006737,
+    "storage_seconds": 0.21578273993509356,
+    "learning_seconds": 0.2922571800008882,
+    "verification_seconds": 0.05135166000400204,
+    "learning_rows": 85063
+  },
+  "performance_scope": "Descriptive adjacent-run windows, not controlled identical trajectories; includes differing episode lengths and CPUprobe load",
+  "all_finite": true,
+  "generation_time_ratio": 1.1651110824070752,
+  "pilot_rows_per_second": 29223.6430516465,
+  "v7_rows_per_second": 32769.775860982045
+}

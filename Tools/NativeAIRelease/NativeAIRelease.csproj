@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+<TargetFramework>netstandard2.1</TargetFramework><LangVersion>9.0</LangVersion><Nullable>disable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+<AssemblyName>Shards.AI</AssemblyName><RootNamespace>Shards.AI</RootNamespace>
+<AssemblyVersion>0.0.0.0</AssemblyVersion><FileVersion>0.0.0.0</FileVersion><UseSharedCompilation>false</UseSharedCompilation>
+</PropertyGroup>
+<ItemGroup>
+<Compile Include="../../Assets/Scripts/Shards/AI/**/*.cs" />
+<Reference Include="Pascension.Core"><HintPath>../../Builds/WindowsTacticalAI/pascension_Data/Managed/Pascension.Core.dll</HintPath><Private>false</Private></Reference>
+<ProjectReference Include="../NativeShardsEngineRelease/NativeShardsEngineRelease.csproj" />
+<ProjectReference Include="../NativeShardsContentRelease/NativeShardsContentRelease.csproj" />
+</ItemGroup>
+</Project>

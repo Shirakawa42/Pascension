@@ -1,0 +1,537 @@
+{
+  "stage": "cpu",
+  "source_sha256": "5e95aadc48fd31b61679d3872feedd8d6827033c9b1dc45be2a0a99aecc67888",
+  "campaign_training_started": false,
+  "jobs": [
+    {
+      "name": "cpu-engine-w1-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "1",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.6415524789999836
+    },
+    {
+      "name": "cpu-encode-w1-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "1",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 9.052725837000253
+    },
+    {
+      "name": "cpu-engine-w4-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "4",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 2.1553970929999196
+    },
+    {
+      "name": "cpu-encode-w4-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "4",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 4.005334376999599
+    },
+    {
+      "name": "cpu-engine-w8-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "8",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 1.8702192660002765
+    },
+    {
+      "name": "cpu-encode-w8-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "8",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.3337793690006947
+    },
+    {
+      "name": "cpu-engine-w12-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "12",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 1.962902968999515
+    },
+    {
+      "name": "cpu-encode-w12-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "12",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.329921393999939
+    },
+    {
+      "name": "snapshot-comparison-engine-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 0.41483592100030364
+    },
+    {
+      "name": "snapshot-comparison-encode-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 0.8889586309996957
+    },
+    {
+      "name": "snapshot-comparison-snapshot-r0",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "snapshot",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 9.090720111000337
+    },
+    {
+      "name": "cpu-engine-w1-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "1",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.5442151329998524
+    },
+    {
+      "name": "cpu-encode-w1-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "1",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 8.628786866000155
+    },
+    {
+      "name": "cpu-engine-w4-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "4",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 2.135468944999957
+    },
+    {
+      "name": "cpu-encode-w4-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "4",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.808276904000195
+    },
+    {
+      "name": "cpu-engine-w8-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "8",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 1.9058594469997843
+    },
+    {
+      "name": "cpu-encode-w8-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "8",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.3790902909995566
+    },
+    {
+      "name": "cpu-engine-w12-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "12",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 1.8530043589998968
+    },
+    {
+      "name": "cpu-encode-w12-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "12",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.223648291000245
+    },
+    {
+      "name": "snapshot-comparison-engine-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 0.4252041539994025
+    },
+    {
+      "name": "snapshot-comparison-encode-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 0.8935581890000321
+    },
+    {
+      "name": "snapshot-comparison-snapshot-r1",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "snapshot",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 10.41702487800012
+    },
+    {
+      "name": "cpu-engine-w1-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "1",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 4.21525928400024
+    },
+    {
+      "name": "cpu-encode-w1-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "1",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 10.783954976999667
+    },
+    {
+      "name": "cpu-engine-w4-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "4",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 2.3661388419996
+    },
+    {
+      "name": "cpu-encode-w4-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "4",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 4.201196150999749
+    },
+    {
+      "name": "cpu-engine-w8-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "8",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 2.0867559980006263
+    },
+    {
+      "name": "cpu-encode-w8-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "8",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.4224520139996457
+    },
+    {
+      "name": "cpu-engine-w12-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "12",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 1.8581891169997107
+    },
+    {
+      "name": "cpu-encode-w12-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "5000",
+        "12",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 3.4244254149998596
+    },
+    {
+      "name": "snapshot-comparison-engine-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "engine",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 0.4448996529999931
+    },
+    {
+      "name": "snapshot-comparison-encode-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "encode",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 0.9573610279994682
+    },
+    {
+      "name": "snapshot-comparison-snapshot-r2",
+      "command": [
+        "/home/lva/.dotnet/dotnet",
+        "/mnt/f/Unity/projects/pascension/Tools/TrainingPreflight/Host/bin/Release/net8.0/TrainingHost.dll",
+        "benchmark",
+        "300",
+        "4",
+        "snapshot",
+        "17000"
+      ],
+      "environment_overrides": {},
+      "returncode": 0,
+      "status": "ok",
+      "elapsed_seconds": 9.534050339000714
+    }
+  ],
+  "elapsed_seconds": 123.50696605200028,
+  "requested_jobs": 33
+}

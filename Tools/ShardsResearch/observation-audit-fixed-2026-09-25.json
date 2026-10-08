@@ -1,0 +1,17 @@
+{
+  "fixture": "synthetic-observation-boundaries-v2-fixed",
+  "note": "Direct state fixtures for boundary isolation, not a natural-play frequency estimate",
+  "opponentHandMasked": true,
+  "identicalPublicSnapshots": true,
+  "ownerStillSeesConditionGlow": true,
+  "opponentChampionGlowWithCrystalHand": false,
+  "opponentChampionGlowWithThreeFactionHand": false,
+  "fastPlayedWraetheAllegianceCount": 1,
+  "fastPlayedLoanInOwnFullDeck": false,
+  "cometKeepDisabled": true,
+  "cometKeepRejected": true,
+  "cometRecruitedByShardDefiant": false,
+  "cometBanishedByDefault": true,
+  "shardDefiantActivationGemsSpent": 2,
+  "cometPrintedCost": 13
+}

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><LangVersion>9.0</LangVersion><Nullable>disable</Nullable></PropertyGroup>
+<ItemGroup>
+<Compile Include="../../Assets/Scripts/Core/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/Engine/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/Content/**/*.cs" />
+<Compile Include="../../Assets/Scripts/Shards/AI/**/*.cs" />
+<Compile Include="../TrainingPreflight/experiments/HostV10/Adapter.cs" />
+<Compile Include="../BalancePatchHost/Encoder.cs" />
+<Compile Include="../RezTrainingHost/EffectDescriptors.cs" />
+<Compile Include="../TrainingPreflight/experiments/HostV10/CenterKnowledge.cs" />
+<Compile Include="../TrainingPreflight/experiments/HostV10/Knowledge.cs" />
+<Compile Include="../TrainingPreflight/experiments/HostV10/HeroFeatures.cs" />
+<Compile Include="../TrainingPreflight/experiments/HostV10/ReactorCleanupV10SelfTest.cs" />
+<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+</ItemGroup></Project>

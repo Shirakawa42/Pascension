@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion><Nullable>disable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseSharedCompilation>false</UseSharedCompilation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../HostV4/Encoder.cs" Link="FrozenHostV4/Encoder.cs" />
+    <Compile Include="../HostV4/FactionCounter.cs" Link="FrozenHostV4/FactionCounter.cs" />
+    <Compile Include="../HostV4/StatisticsSelfTest.cs" Link="FrozenHostV4/StatisticsSelfTest.cs" />
+    <Compile Include="../HostV3/V3SelfTest.cs" Link="FrozenHostV3/V3SelfTest.cs" />
+    <Compile Include="../../Host/Adapter.cs" Link="SharedHost/Adapter.cs" />
+    <Compile Include="../../Host/MappedBody.cs" Link="SharedHost/MappedBody.cs" />
+    <Compile Include="../../Host/SelfTest.cs" Link="SharedHost/SelfTest.cs" />
+    <Compile Include="../../../../Assets/Scripts/Core/**/*.cs" LinkBase="Core" />
+    <Compile Include="../../../../Assets/Scripts/Shards/Engine/**/*.cs" LinkBase="Engine" />
+    <Compile Include="../../../../Assets/Scripts/Shards/Content/**/*.cs" LinkBase="Content" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

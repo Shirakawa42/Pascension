@@ -1,0 +1,24 @@
+import copy,json,statistics,sys,time
+from pathlib import Path
+sys.path.insert(0,str(Path.cwd()/'Tools/TrainingPreflight'))
+import torch
+from learning_model import LearningPolicy,PolicyConfig,PPOLearner,PPOConfig
+from test_learning_model import fixture,behavior_batch
+torch.set_num_threads(1)
+torch.backends.fp32_precision='ieee';torch.backends.cuda.matmul.fp32_precision='tf32'
+torch.manual_seed(441)
+width=int(sys.argv[1]) if len(sys.argv)>1 else 128
+base=LearningPolicy(PolicyConfig(width=width)).cuda()
+learners={mode:PPOLearner(copy.deepcopy(base),PPOConfig(),mode=mode,batch=2048) for mode in ('eager','captured_backward')}
+data=fixture(2048,'cuda');latencies={mode:[] for mode in learners};cold={}
+for repeat in range(12):
+ for mode in (list(learners) if repeat%2==0 else list(learners)[::-1]):
+  learner=learners[mode]
+  batch=list(behavior_batch(learner.policy,data));batch[-1]=torch.linspace(-1,1,2048,device='cuda')
+  torch.cuda.synchronize();start=time.perf_counter();result=learner.step(*batch);elapsed=time.perf_counter()-start
+  assert result['accepted'],result
+  if repeat==0:cold[mode]=elapsed
+  if repeat>=2:latencies[mode].append(elapsed)
+result={'kind':'synthetic_targets_only_no_game_training','batch':2048,'width':width,'interleaved':True,'cold_seconds':cold,'latencies_seconds':latencies,'median_ms':{m:statistics.median(v)*1000 for m,v in latencies.items()},'command':sys.argv,'source_sha256':__import__('hashlib').sha256(Path('Tools/TrainingPreflight/learning_model.py').read_bytes()).hexdigest()}
+result['median_speedup']=result['median_ms']['eager']/result['median_ms']['captured_backward']
+Path(f'Tools/TrainingPreflight/results/learning-ppo-capture-comparison-h{width}.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))

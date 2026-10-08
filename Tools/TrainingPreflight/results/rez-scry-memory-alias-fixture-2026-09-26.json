@@ -1,0 +1,26 @@
+{
+  "schema": "shards-rez-scry-memory-alias-fixture-v1",
+  "scope": "Constructed same-seed card-conserving fixture with Rez at Mastery 5; different center-deck top-two order, then actual legal ability, keep-all Scry, and identical free reroll through the frozen V5 Adapter. Not a full seed-to-position reachability proof.",
+  "liveAssemblyReadOnly": true,
+  "hostSha256": "0b00ef87c842c320f368367be73349076902b74fd49355dcfd3824eccdfee797",
+  "initialEncodedInputsExactlyEqual": true,
+  "scryRevealsA": [
+    "shard_abstractor",
+    "fungal_hermit"
+  ],
+  "scryRevealsB": [
+    "fungal_hermit",
+    "shard_abstractor"
+  ],
+  "duringScryDifferenceCount": 4,
+  "floatsCompared": 4160,
+  "postScryObservationCandidatesAndMaskExactlyEqual": true,
+  "postScryDifferenceIndices": [],
+  "sameRerollCandidateIndex": true,
+  "rerollSlot": 0,
+  "rerollPrice": 0,
+  "replacedCard": "duplication_fabricator_duel",
+  "rerollRevealedA": "shard_abstractor",
+  "rerollRevealedB": "fungal_hermit",
+  "retainedKnownTopChangesRerollResult": true
+}
