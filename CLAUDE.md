@@ -1,8 +1,8 @@
 # Pascension — two games, one core
 
 Unity 6000.3.7f1 repo (URP 2D, uGUI+TMP) holding TWO games:
-- **Pascension** — competitive deck-building race game, MTG-like stack engine (APNAP priority, instants, triggers). 2-4 players; solo vs bots or NGO host-mode online (Unity Relay join codes as game IDs). Buy cards Ascension-style, race a 50-step board, level a hero 1→10, burst the boss (The Gatekeeper, 20 HP) on step 50.
-- **Shards of Infinity** — personal fan re-implementation with its OWN engine (no stack; depends only on `Pascension.Core`). `PUBLIC_RELEASE` builds strip it.
+- **Pascension** — competitive deck-building race game, MTG-like stack engine (APNAP priority, instants, triggers). 2-4 players; NGO host-mode online (Unity Relay join codes as game IDs). Buy cards Ascension-style, race a 50-step board, level a hero 1→10, burst the boss (The Gatekeeper, 20 HP) on step 50.
+- **Shards of Infinity** — personal fan re-implementation with its OWN engine (no stack; depends only on `Pascension.Core`), online play and local Duel against packaged C# AI opponents. `PUBLIC_RELEASE` builds strip it.
 
 Shared: `Pascension.Core` (RNG/events/decisions/wire), `Pascension.Net` (game-agnostic host/sessions), the `Pascension.Game` presentation stack, the art pipeline, CI + self-updater.
 Rules sources of truth: Pascension — `Assets/GDD.txt` + the decisions log in the **pascension-engine** skill · SoI — `Tools/ShardsData/rules-notes.md`.
@@ -14,7 +14,6 @@ Rules sources of truth: Pascension — `Assets/GDD.txt` + the decisions log in t
 | `project-map` | session start · "where does X live" · choosing an assembly · how to run/verify anything |
 | `pascension-engine` | Assets/Scripts/Engine · card effects · Pascension rules questions (holds the decisions log) |
 | `pascension-cards` | ⚠ MANDATORY registry — any Pascension card/hero/boss add, change, or lookup |
-| `pascension-balance` | GameRules tuning · headless sims · HeuristicBot/Ollama bot work |
 | `shards-engine` | Assets/Scripts/Shards · SoI flow/rules debugging · the pump gotchas |
 | `shards-cards` | ⚠ MANDATORY registry — any SoI card/character/relic/destiny/Ingeminex change |
 | `art-pipeline` | generating any art · writing ArtPrompts · ComfyUI · CardArtIndex |
@@ -25,7 +24,7 @@ Rules sources of truth: Pascension — `Assets/GDD.txt` + the decisions log in t
 
 ## Non-negotiables
 
-1. **No UnityEngine types** in Core/Engine/Content/Bots/Shards.* — everything rules-side compiles and runs headless.
+1. **No UnityEngine types** in Core/Engine/Content/Shards.* — everything rules-side compiles and runs headless.
 2. **Exactly ONE pending input** at a time (both engines); all mutation flows through `Submit(PlayerAction)`.
 3. **Effects are iterators**; pause with `EngineStep.AwaitDecision` — never block, never recurse into Submit.
 4. **Determinism**: randomness only via `GameState.Rng` (seeded); never iterate Dictionary/HashSet where order matters; no wall clock in rules. Replays must reproduce `ComputeHash()`.
@@ -39,7 +38,7 @@ Rules sources of truth: Pascension — `Assets/GDD.txt` + the decisions log in t
 - Fastest (no Unity): `cd Tools/EngineVerify && dotnet test --nologo` — full NUnit suite headless (mirrors the Unity asmdefs). Keep it green.
 - Unity: Test Runner via MCP, or `Unity.exe -batchmode -runTests -testPlatform EditMode -projectPath .` (editor closed).
 - UI: Unity MCP play mode + screenshots — HTTP server on **:8090** (details in project-map). Scenes are code-built: `Pascension/Setup/Build All Scenes` (+ `Build Lobby Scene`).
-- Exports: `dotnet test --filter Balance` (sims) · `--filter ExportShardsCardTable` (SoI table) · `--filter ExportArtManifest` (art manifest).
+- Exports: `--filter ExportShardsCardTable` (SoI table) · `--filter ExportArtManifest` (art manifest).
 
 ## Conventions
 

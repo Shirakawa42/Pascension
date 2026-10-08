@@ -3,7 +3,7 @@ GDD board game ascension-like game:
 The game is a competitive deck building game.
 
 Game:
-- solo or online game with up to 4 players (2-4 players), host based multiplayer (no server), but the game must be playable with bots to play solo, with different bot behaviors, an algorithm based bot, and if ollama is available, a LLM based bot. configurable in settings (llm from installed llms, with thinking or not). We can add as many bots as we want, if any type, no need for a difficulty setting for now.
+- Online game with 2-4 human players, using host-based multiplayer.
 - start with a default deck of 10 cards
 - each player incarn a unique hero with different abilities unlocked with levels
 - 10 levels, everyone start at level 1

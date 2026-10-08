@@ -12,25 +12,25 @@
 
 ## Overview
 
-Pascension is a 2-4 player competitive deck-builder: buy cards Ascension-style from a shared market, race up a 50-step board, level your hero from 1 to 10, and burst down the boss when you reach step 50. Play solo against bots or online with a join code. Under the hood is a full MTG-like rules engine — a stack, APNAP priority, instant-speed responses, and triggered abilities.
+Pascension is a 2-4 player competitive deck-builder: buy cards Ascension-style from a shared market, race up a 50-step board, level your hero from 1 to 10, and burst down the boss when you reach step 50. Play online with a join code. Under the hood is a full MTG-like rules engine — a stack, APNAP priority, instant-speed responses, and triggered abilities.
 
 Why this repo might interest you:
 
 - A **game-agnostic deterministic core** with an MTG-grade rules engine on top — proven by hosting a second, completely different game on the same substrate → [Architecture](#architecture)
-- **129 engine tests that run without Unity** — `dotnet test` is the whole inner loop → [Determinism & testing](#determinism--testing)
+- **Engine tests that run without Unity** — `dotnet test` is the whole inner loop → [Determinism & testing](#determinism--testing)
 - Built end-to-end with **AI-assisted development** — plan-first workflow, living skill files, MCP-driven live verification, deterministic AI art → [AI-assisted development](#ai-assisted-development)
 
 ## The games
 
 ### Pascension
 
-The original game. 2-4 players buy from a shared card market (three tiers gated by hero level), race a 50-step board with inn checkpoints, and win by killing The Gatekeeper on the final step. Every play is respondable: instants, counterspells, and damage-denial effects resolve on a real stack with Arena-style auto-pass priority. Online play is host-based over Unity Relay — share a join code, no port forwarding, no dedicated server — with pause-on-disconnect, mid-game rejoin, and host-controlled bot takeover.
+The original game. 2-4 players buy from a shared card market (three tiers gated by hero level), race a 50-step board with inn checkpoints, and win by killing The Gatekeeper on the final step. Every play is respondable: instants, counterspells, and damage-denial effects resolve on a real stack with Arena-style auto-pass priority. Online play is host-based over Unity Relay — share a join code, no port forwarding, no dedicated server — with pause-on-disconnect, mid-game rejoin.
 
 <!-- <p align="center"><img src="docs/media/pascension-table.png" width="800" alt="Pascension table"></p> -->
 
 ### Shards of Infinity (fan re-implementation)
 
-A second, complete game built on the same `Pascension.Core` substrate — which is the point: it proves the core is genuinely game-agnostic. It has its own engine (no stack — a single-pending-input decision pump), its own card database, bots, and table UI built on the shared presentation stack.
+A second, complete game built on the same `Pascension.Core` substrate — which is the point: it proves the core is genuinely game-agnostic. It has its own engine (no stack — a single-pending-input decision pump), card database, native AI and table UI built on the shared presentation stack. Play online or choose Auld Haïai or Nyou Haïai for a local Duel match; both use packaged policies running in C#.
 
 <!-- <p align="center"><img src="docs/media/shards-table.png" width="800" alt="Shards of Infinity table"></p> -->
 
@@ -44,37 +44,35 @@ A second, complete game built on the same `Pascension.Core` substrate — which 
 
 - Full rules engine: stack, APNAP priority, instant-speed responses, triggered/activated/continuous abilities
 - Deterministic simulation core: seeded PCG32 RNG, append-only event log with per-player redaction, single-pending-input model, whitelisted JSON wire format
-- Online play: Unity Relay join codes, host mode, pause-on-disconnect, mid-game rejoin, kick-to-bot, version gate on connect
+- Online play: Unity Relay join codes, host mode, pause-on-disconnect, mid-game rejoin, version gate on connect
 - Speculative fast-play: queue plays as fast as you like; effects apply and reveal only once validated, with automatic rollback if an opponent responds
-- Bots: heuristic AI opponents, plus an experimental LLM-driven bot (local Ollama)
 - Self-updating desktop builds (Windows + macOS) with sha256-verified downloads
 - French display localization (official IELLO terminology for the Shards of Infinity content)
-- 129 headless NUnit tests runnable with nothing but the .NET 8 SDK
+- Headless NUnit tests runnable with nothing but the .NET 8 SDK
 
 ## Architecture
 
-Strict layering with a Unity-free bottom half: everything below the Unity line compiles and runs under `dotnet test` on net8.0 (a hand-authored project mirrors the Unity asmdefs). The same `Pascension.Core` substrate hosts two complete games, and the networking layer (`GameHost` / `IEngineAdapter`) is game-agnostic — it talks to the core contracts, not to either game. Roughly ~200 C# files / ~32k lines of game code.
+Strict layering with a Unity-free bottom half: everything below the Unity line compiles and runs under `dotnet test` on net8.0 (a hand-authored project mirrors the Unity asmdefs). The same `Pascension.Core` substrate hosts two complete games, and the networking layer (`GameHost` / `IEngineAdapter`) is game-agnostic — it talks to the core contracts, not to either game.
 
 ```mermaid
 flowchart TD
     Game["Pascension.Game<br/>Unity presentation — uGUI, TMP"]
     Net["Pascension.Net<br/>game-agnostic GameHost / IEngineAdapter<br/>Relay join codes · rejoin · version gate"]
-    Bots["Pascension.Bots<br/>heuristic + experimental LLM (Ollama)"]
     Content["Pascension.Content<br/>cards · heroes · boss"]
     Engine["Pascension.Engine<br/>MTG-like rules engine:<br/>stack · APNAP priority · triggers"]
     Core["Pascension.Core<br/>pure C#, no UnityEngine<br/>PCG32 determinism · event log w/ redaction<br/>pending-input model · wire JSON"]
-    SBots["Shards.Bots"]
     SContent["Shards.Content"]
+    SAI["Shards.AI<br/>packaged policies + search"]
     SEngine["Shards.Engine<br/>own engine — no stack,<br/>decision pump"]
 
     Game --> Net
-    Game --> Bots
+    Game --> SAI
     Net --> Core
-    Bots --> Content
     Content --> Engine
     Engine --> Core
-    SBots --> SEngine
     SContent --> SEngine
+    SAI --> SContent
+    SAI --> SEngine
     SEngine --> Core
 ```
 
@@ -84,7 +82,7 @@ Everything except `Game` and `Net` is Unity-free (`noEngineReferences` asmdefs) 
 
 The core is deterministic by construction: a seeded PCG32 RNG, an append-only event log that fully describes a game (redacted per player for hidden information), and a single-pending-input model — so any game can be re-simulated headlessly and the same seed plus the same action sequence always reproduces the same state hash.
 
-The engine suite lives in [`Tools/EngineVerify`](Tools/EngineVerify) as a net8.0 project that mirrors the Unity asmdefs: `dotnet test` runs all **129 tests in about a second, with no Unity installed** — and that is exactly what CI runs. The suite includes golden wire-format fixtures (serialization can't drift silently), pinned FAQ-ruling tests for card edge cases, and bot-vs-bot simulation soaks that play entire games and assert termination and card-conservation invariants. The identical tests also run inside the Unity Test Runner.
+The engine suite lives in [`Tools/EngineVerify`](Tools/EngineVerify) as a net8.0 project that mirrors the Unity asmdefs: `dotnet test` runs the suite **with no Unity installed** — and that is exactly what CI runs. The suite includes golden wire-format fixtures (serialization can't drift silently), pinned FAQ-ruling tests for card edge cases and card-conservation checks. The identical tests also run inside the Unity Test Runner.
 
 ## CI/CD & self-update
 
@@ -101,11 +99,10 @@ This project is a deliberate experiment in running a non-trivial game project wi
 
 - **Plan-first workflow.** Features start as written plan files that get reviewed before any code changes. Claude Code executes against the plan; the plan is the contract.
 - **Skills as living documentation.** [`.claude/skills/`](.claude/skills) holds project-specific skill files — the rules-engine internals, the card registries, networking gotchas, the art pipeline, the playtesting harness — split cleanly per game plus shared infrastructure. The card registries are *mandatory-update*: any card change must update its registry entry in the same commit, so the machine-readable project knowledge can't rot.
-- **Headless verification loop.** Because the engine runs without Unity, every change is verified by running the full 129-test suite with plain `dotnet test` — no editor round-trip in the inner loop.
-- **Live UI verification over MCP.** A Unity MCP server ([CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp)) lets the agent drive the *actual running game* — click through real menus, submit real plays, take mid-animation screenshots. Multiplayer was battery-tested over real Unity Relay using a purpose-built auto-joining client build (join by code, kill-process disconnects, rejoin, kick-to-bot).
+- **Headless verification loop.** Because the engine runs without Unity, every change is verified by running the full test suite with plain `dotnet test` — no editor round-trip in the inner loop.
+- **Live UI verification over MCP.** A Unity MCP server ([CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp)) lets the agent drive the *actual running game* — click through real menus, submit real plays, take mid-animation screenshots.
 - **Deterministic AI art pipeline.** Every card image is generated locally with ComfyUI + the Anima model. Each card definition carries an `ArtPrompt`, and the generation seed is a hash of the card id — art is reproducible, and regenerating a card yields the same image unless its prompt changed.
 - **Codebase knowledge graph.** The C# codebase is indexed into a queryable knowledge graph (graphify), so agent sessions answer "where/what" questions from the graph instead of re-reading files — cutting token cost and onboarding time.
-- **Experiments.** One bot delegates its in-game decisions to a local LLM via Ollama (experimental, fallback-guarded so it can never stall a game).
 
 ## Getting started
 
@@ -125,11 +122,11 @@ cd Tools/EngineVerify
 dotnet test
 ```
 
-129 tests: rules-engine behavior, FAQ-ruling pins, golden wire-format fixtures, bot-vs-bot simulation soaks.
+The suite covers rules-engine behavior, FAQ-ruling pins, golden wire-format fixtures and card conservation.
 
 ### Open in Unity
 
-Unity **6000.3.7f1** (URP 2D). Open the project, load `Assets/Scenes/MainMenu.unity`, press Play. Solo vs bots works out of the box; online host mode requires linking the project to a Unity Services account with Relay enabled.
+Unity **6000.3.7f1** (URP 2D). Open the project, load `Assets/Scenes/MainMenu.unity`, press Play. PLAY SHARDS VS AI opens the local opponent selection in builds containing Shards. Online host mode requires linking the project to a Unity Services account with Relay enabled.
 
 ## Project structure
 
@@ -139,10 +136,9 @@ Assets/
     Core/      # Pascension.Core — pure C# deterministic sim substrate (incl. updater logic)
     Engine/    # Pascension.Engine — rules engine (stack, priority, effects, triggers)
     Content/   # Card/hero definitions + per-card ArtPrompts
-    Bots/      # Heuristic bots + experimental Ollama LLM bot
     Net/       # NGO 2.x + Relay: GameHost, IEngineAdapter, rejoin, version gate
     Game/      # Unity presentation (uGUI, TextMeshPro, runtime-built UI — no prefabs)
-    Shards/    # Shards.Engine / .Content / .Bots — fan project, same Core
+    Shards/    # Shards.Engine / .Content / .AI / .Stats — fan project, same Core
     Editor/    # Editor tooling (art pipeline, CI build entry, scene builders)
   Art/         # Generated original art (cards, heroes, board)
   Scenes/      # MainMenu, Lobby, Game, GameShards
@@ -163,14 +159,13 @@ Tools/
 | Input | Unity Input System |
 | Networking | Netcode for GameObjects 2.13, Unity Relay + Authentication (join codes, host mode) |
 | Serialization | Newtonsoft Json.NET (whitelisted polymorphic wire format) |
-| Testing | NUnit — 129 headless tests on .NET 8 (`Tools/EngineVerify`), Unity Test Runner, Multiplayer Play Mode |
+| Testing | NUnit — headless tests on .NET 8 (`Tools/EngineVerify`), Unity Test Runner, Multiplayer Play Mode |
 | CI/CD | GitHub Actions, GameCI unity-builder, rcodesign (macOS ad-hoc signing), self-updating releases |
-| AI tooling | Claude Code + project skills, [unity-mcp](https://github.com/CoplayDev/unity-mcp), ComfyUI + Anima (art), Ollama (experimental bot), graphify (code knowledge graph) |
+| AI tooling | Claude Code + project skills, [unity-mcp](https://github.com/CoplayDev/unity-mcp), ComfyUI + Anima (art), graphify (code knowledge graph) |
 
 ## Roadmap
 
 - Shards of Infinity online: run the Relay multiplayer battery against the SoI table
-- Balance: large-scale bot-vs-bot simulation sweeps (XP curve, card costs, boss HP)
 - Audio: music + SFX pass
 
 ## Status & contributing
