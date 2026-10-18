@@ -195,6 +195,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: c2b793e1aa3aca348ae51fa03bb81876, type: 3}
   - id: entropic_talons
     sprite: {fileID: 21300000, guid: 92f5d6c282a2dd244b985105c962deec, type: 3}
+  - id: equilibrium_envoy
+    sprite: {fileID: 21300000, guid: 81190a612d9c95443a598134c2c0d9b3, type: 3}
   - id: evokatus
     sprite: {fileID: 21300000, guid: a4408b337a427b9419d29c6d22544b18, type: 3}
   - id: fao_cutul
@@ -249,6 +251,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: fae5b48213791e545aa5fdadbaf7ee46, type: 3}
   - id: legion_carrier
     sprite: {fileID: 21300000, guid: 7f9fd3a585d532b46b43c80d5e89169c, type: 3}
+  - id: legion_reclaimer
+    sprite: {fileID: 21300000, guid: 9c80123303324384b9fd2cba76fdde23, type: 3}
   - id: leshai_knight
     sprite: {fileID: 21300000, guid: e09d3b37f6ecd2a4bad649a259bf08f1, type: 3}
   - id: lifebloom_ritual

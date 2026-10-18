@@ -596,14 +596,14 @@ namespace Pascension.Engine.Tests
             var game = Game();
             var player = game.State.Players[0];
             var dna = Give(game, 0, "dna", ShardsZone.SetAside);
-            player.Gems = 3;
+            player.Gems = 2;
             Assert.That(game.Submit(new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = dna.InstanceId }).Accepted, Is.False);
             Assert.That(dna.Exhausted, Is.False);
             player.Gems = 20;
             player.Mastery = 20;
             Give(game, 0, "unknown_god", ShardsZone.Champions);
             Submit(game, new ShardsExhaustAction { PlayerIndex = 0, CardInstanceId = dna.InstanceId });
-            Assert.That(player.Gems, Is.EqualTo(16), "Unknown God's copied effect does not repay the activation cost");
+            Assert.That(player.Gems, Is.EqualTo(17), "Unknown God's copied effect does not repay the activation cost");
             Assert.That(player.PendingRecruitCopies, Is.EqualTo(2));
             var original = Row(game, "breaker_duel");
             int nextId = game.State.NextInstanceId;

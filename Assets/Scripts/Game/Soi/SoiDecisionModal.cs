@@ -305,8 +305,10 @@ namespace Pascension.Game.Soi
         {
             const int columns = 7;
             const float gap = 16f;
+            bool showModeLabels = request.Kind == DecisionKind.ChooseMode;
+            float actionHeight = showModeLabels ? 56f : 0f;
             float cellW = CardView.Width * CardScale + 8f;
-            float cellH = CardView.Height * CardScale + 10f;
+            float cellH = CardView.Height * CardScale + 10f + actionHeight;
 
             var content = ScrollContent(out _);
 
@@ -366,6 +368,26 @@ namespace Pascension.Game.Soi
                         card.Bind(new CardSnap { DefId = defId, InstanceId = option.CardInstanceId, EffectiveCost = -1 });
                         if (option.Disabled) VeilCard(card);
                         _optionCards.Add((card, id));
+                        // A mode may use the SAME card for different actions. Keep
+                        // the preview, but expose its action and retain the option ID.
+                        if (showModeLabels)
+                        {
+                            card.Rect.anchoredPosition = new Vector2(0f, actionHeight / 2f);
+                            string label = CardModeLabel(defId,
+                                optionLabel != null ? optionLabel(id) : option.Label);
+                            var action = UiFactory.CreateButton(_theme, "Action_" + id, cell,
+                                label, ButtonFontSize);
+                            UiFactory.Place((RectTransform)action.transform, new Vector2(0.5f, 0f),
+                                new Vector2(0f, 5f), new Vector2(cellW - 8f, actionHeight - 10f));
+                            var actionLabel = UiFactory.ButtonLabel(action);
+                            actionLabel.enableAutoSizing = true;
+                            actionLabel.fontSizeMin = 14f;
+                            actionLabel.fontSizeMax = ButtonFontSize;
+                            action.interactable = !option.Disabled;
+                            if (!option.Disabled)
+                                action.onClick.AddListener(() => TogglePick(id));
+                            _optionButtons.Add((action, action.GetComponent<Image>(), id));
+                        }
                     }
                     else
                     {
@@ -379,6 +401,18 @@ namespace Pascension.Game.Soi
                     }
                 }
             }
+        }
+
+        private static string CardModeLabel(string defId, string label)
+        {
+            // The preview already names the card. Shorten these complete action
+            // templates only; preserve any different mode's qualifiers and wording.
+            if (ShardsCardDatabase.TryGet(defId, out var def))
+            {
+                if (label == "Fast-play " + def.Name) label = "Fast-play";
+                else if (label == "Recruit " + def.Name + " for free") label = "Recruit";
+            }
+            return UI.Loc.OptionLabel(label)?.ToUpperInvariant();
         }
 
         /// <summary>Reveal mode ("soi.defiant"): the revealed card itself, big and

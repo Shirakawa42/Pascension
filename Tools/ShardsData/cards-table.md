@@ -228,12 +228,12 @@ If you played an Aion card this turn, you may repeat this once. |
 | war_bound | War Bound | into_the_horizon | None | Destiny | 0 | 1 | – | – | Exhaust: if you control 2+ champions, gain 4 power. |
 | whatever_it_takes | Whatever it Takes | into_the_horizon | None | Destiny | 0 | 1 | – | – | Pay 6 gems, Exhaust: gain 9 power. |
 | century_forge | Century Forge | duel | Homodeus | Ally | 5 | 2 | – | 3 | Shield 3. Gain 3 gems.
-Inspire: the next champion you recruit this turn enters play directly. |
+The next champion you recruit this turn enters play directly. |
 | korvus_legionnaire_duel | Korvus Legionnaire | duel | Homodeus | Ally | 3 | 3 | – | 2 | Shield 2. Gain 3 power.
 Return a champion from your discard pile to your hand. |
 | legion_carrier_duel | Legion Carrier | duel | Homodeus | Ally | 2 | 2 | – | – | Gain 2 gems.
 Reveal your deck's top 5 cards: up to one revealed champion to your hand, the rest to your discard pile. |
-| reactor_drone_duel | Reactor Drone | duel | Homodeus | Ally | 3 | 3 | – | 2 | Choose one:
+| reactor_drone_duel | Reactor Drone | duel | Homodeus | Ally | 2 | 3 | – | 2 | Choose one:
 — Gain 2 gems.
 — Gain 3 gems, then banish this card at the end of your turn. |
 | furrowing_elemental_duel | Furrowing Elemental | duel | Undergrowth | Ally | 4 | 2 | – | – | Gain 4 health and draw a card.
@@ -303,6 +303,9 @@ M10: your damage ignores shields this turn. |
 M15: Warp 6 instead. |
 | swyft_duel | Swyft | duel | Aion | Champion | 5 | 2 | 5 | – | Exhaust: gain 2 gems and 2 power.
 M10: you may keep cards you fast-play — they join your discard. |
+| legion_reclaimer | Legion Reclaimer | duel | Homodeus | Mercenary | 7 | 2 | – | 5 | Shield 5.
+Return a champion from your discard pile to your hand.
+Costs 1 less per champion in your full deck. |
 | riposte_doctrine | Riposte Doctrine | duel | Homodeus | Mercenary | 2 | 2 | – | – | Gain 3 power.
 If you played or reveal a shield card from your hand, gain 6 power instead. |
 | fungal_hermit_duel | Fungal Hermit | duel | Undergrowth | Mercenary | 3 | 2 | – | 2 | Shield 2.
@@ -318,6 +321,8 @@ Unify: gain 8 power. |
 Unify: gain 6 health instead. |
 | the_rotten_duel | The Rotten | duel | Undergrowth | Mercenary | 3 | 3 | – | – | Gain 4 power and 1 mastery. |
 | data_heretic_duel | Data Heretic | duel | Order | Mercenary | 4 | 3 | – | – | Draw two cards. |
+| equilibrium_envoy | Equilibrium Envoy | duel | Order | Mercenary | 3 | 2 | – | – | Draw a card.
+Choose an opponent with more mastery than you. They lose 1 mastery. |
 | omnius_duel | Omnius, The All-Knowing | duel | Order | Mercenary | 6 | 1 | – | – | Draw two cards.
 Dominion: gain 3 mastery. |
 | shard_abstractor_duel | Shard Abstractor | duel | Order | Mercenary | 2 | 3 | – | – | Gain 1 mastery.
@@ -375,7 +380,7 @@ Gain 3 gems and 3 power for each card you banished this turn. |
 | datic_secrets_duel | Datic Secrets | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played 2+ Order allies this turn, gain 1 gem and 1 mastery. |
 | deadly_recruits_duel | Deadly Recruits | duel | None | Destiny | 0 | 1 | – | – | Pay 1 gem, Exhaust: choose an ally costing 2 or less from the row. Fast-play it OR recruit it.
 M20: cost 4 or less. |
-| dna | DNA | duel | None | Destiny | 0 | 1 | – | – | Pay 4 gems, Exhaust: get an additional copy of the next card you recruit this turn. Put the copy into your discard pile. |
+| dna | DNA | duel | None | Destiny | 0 | 1 | – | – | Pay 3 gems, Exhaust: get an additional copy of the next card you recruit this turn. Put the copy into your discard pile. |
 | healing_hands_duel | Healing Hands | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played a champion this turn, gain 5 health. |
 | paradigm_shift_duel | Paradigm Shift | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played an Order card and a Wraethe card this turn, gain 1 gem and 1 mastery. |
 | soul_syphon_duel | Soul Syphon | duel | None | Destiny | 0 | 1 | – | – | Exhaust: if you played cards of 2+ different factions this turn, gain 5 health. |

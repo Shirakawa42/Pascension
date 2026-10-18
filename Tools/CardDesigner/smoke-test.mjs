@@ -23,7 +23,7 @@ const baseKwMap = new Map(B.keywords.map(k => [k.id, k]));
 const freshState = () => ({ cards: B.cards.map(Core.clone), keywords: B.keywords.map(Core.clone), sessionName: 't', notes: 'n' });
 
 test('baseline shape', () => {
-  assert(B.cards.length === 212, 'expected 212 cards (202 defs + 5 characters + 5 abilities), got ' + B.cards.length);
+  assert(B.cards.length === 214, 'expected 214 cards (204 defs + 5 characters + 5 abilities), got ' + B.cards.length);
   assert(B.keywords.length === 12, 'expected 12 keywords');
   assert(B.cards.every(c => c.id && c.name && c.set && c.faction && Array.isArray(c.types) && c.types.length), 'every card has identity fields incl. a types array');
 });
@@ -106,12 +106,12 @@ test('status detection', () => {
 
 test('keyword detection matches the census', () => {
   const kws = Object.fromEntries(B.keywords.map(k => [k.id, k]));
-  // The designer retains all 202 card printings, including original/replacement
+  // The designer retains all 204 card printings, including original/replacement
   // pairs. Count those definitions once each; hero and ability faces are separate.
   const cards = B.cards.filter(c => !c.types.includes('Character') && !c.types.includes('Hero Ability'));
   const expected = {
-    exhaust: 74, unify: 13, dominion: 8, allegiance: 4, inspire: 4, echo: 5,
-    warp: 8, 'mastery-threshold': 54, shield: 28, mercenary: 40,
+    exhaust: 74, unify: 13, dominion: 8, allegiance: 4, inspire: 3, echo: 5,
+    warp: 8, 'mastery-threshold': 54, shield: 29, mercenary: 42,
     'ingeminex-attack': 6, 'ingeminex-reward': 6
   };
   eq(Object.keys(expected).sort(), Object.keys(kws).sort(), 'every keyword has a census expectation');

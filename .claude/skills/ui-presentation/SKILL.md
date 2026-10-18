@@ -14,6 +14,7 @@ Everything renders `ClientGameView`/snapshots + filtered `GameEvent`s; every int
 - TMP essentials import is two-step: first Build All Scenes run imports the package and asks you to run the menu item again.
 - Glyph budget: ASCII plus `·` and `—` (present in the default LiberationSans SDF atlas). No emoji.
 - Decision options referring to hidden cards render as label buttons (`DecisionOption.Label` trusted); options referencing visible cards must carry DefId/InstanceId and render the CARD (rule pinned in shards-cards).
+- Card-backed `ChooseMode` options retain a localized action button below each preview (for example FAST-PLAY / RECRUIT), so identical card art still distinguishes the choices. Use the original option IDs for selection; labels never become wire IDs. Ordinary `ChooseCards` grids remain card-only.
 - `StackItemSnap` order is bottom→top (matches `GameStack.Items`); the stack panel renders reversed.
 
 ## Layout

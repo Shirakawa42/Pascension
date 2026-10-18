@@ -71,6 +71,16 @@ namespace Pascension.Game.UI
 
         public static readonly IReadOnlyList<Entry> Shards = new[]
         {
+            new Entry("2026-10-18",
+                "· Deadly Recruits now labels its two card choices FAST-PLAY and RECRUIT.\n" +
+                "· DNA costs 3 gems to activate. Century Forge always puts your next recruited champion into play. Reactor Drone costs 2.\n" +
+                "· New Order mercenary: Equilibrium Envoy, cost 3 — draw a card, then an opponent ahead of you in mastery loses 1 mastery.\n" +
+                "· New Homodeus mercenary: Legion Reclaimer, cost 7, Shield 5 — return a champion from discard to hand. Costs 1 less per champion in your full deck. Two copies of each new card.",
+                "· Dangereuses Recrues distingue désormais ses deux choix de carte : ENRÔLER et RECRUTER.\n" +
+                "· ADN coûte 3 cristaux à activer. Forge de la Centurie met toujours votre prochain champion recruté en jeu. Drone Réacteur coûte 2.\n" +
+                "· Nouveau mercenaire Ordre : Émissaire de l’Équilibre, coût 3 — piochez une carte, puis un adversaire ayant plus de maîtrise que vous perd 1 maîtrise.\n" +
+                "· Nouveau mercenaire Homodeus : Récupérateur de la Légion, coût 7, Bouclier 5 — renvoyez un champion de la défausse dans votre main. Coûte 1 de moins par champion dans votre deck complet. Deux exemplaires de chaque nouvelle carte.",
+                Soi.SoiBalanceHistory.October18_2026),
             new Entry("2026-10-08",
                 "· END TURN skips the champion window when no champion can be defeated; multiplayer still asks how to split power between eligible opponents.\n" +
                 "· Champion HP is bright green above printed defense, white at its printed value and red below it, on a dark badge.\n" +

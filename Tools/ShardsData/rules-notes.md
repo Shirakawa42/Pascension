@@ -66,8 +66,8 @@ Unspent Gems and Power evaporate at end of turn. Damage marked on any champion e
 - **Banish**: banished cards go to a shared removed-from-game pile. "Banish from hand/discard"
   effects may only take cards actually in that zone.
 - **Health gain**: capped at 50.
-- **Gaining Mastery**: never spent, never lost, capped at 30. Sources: Focus (1/turn) + card
-  effects.
+- **Mastery**: not spent as a resource; gains are capped at 30. Sources: Focus
+  (1/turn) and card effects. Explicit mastery-loss effects can reduce it, with a floor of 0.
 
 ### 1.4 Mercenaries (fast-play)
 - A mercenary in the center row can be either **recruited** normally (→ your discard, part of
@@ -452,3 +452,41 @@ catch-up designs have no replacements. DNA is one new destiny.
 These are implemented rules and local interaction choices, not measured post-patch
 balance results. Existing frozen AIs need compatibility projections for new cards;
 no new training is implied by this patch.
+
+## 2026-10-18 — Duel balance update
+
+These rules supersede overlapping October 8 values. Other Duel behavior and all
+original non-Duel printings remain unchanged.
+
+- **DNA:** activation costs 3 gems instead of 4. The next-recruit copy, destinations
+  and cleanup timing remain as described above.
+- **Century Forge:** Shield 3 and gain 3 gems remain. Its next-champion recruitment
+  redirect always applies, even with no champion in play; Inspire is removed.
+  The next champion recruited this turn enters play directly, regardless of faction.
+  The pending redirect expires at cleanup. Returning an owned champion to hand does
+  not consume it, and DNA's extra copy still goes directly to discard.
+- **Reactor Drone:** the Duel printing costs 2. Its Shield 2, three copies and both
+  modes remain; the original printing stays cost 3.
+- **Deadly Recruits:** the mode screen identifies Fast-play and Recruit on the
+  otherwise identical card previews. The modes remain exclusive; fast-play resolves
+  the card now as a temporary loan, while recruitment adds it to discard without
+  resolving its play effect. No additional purchase payment is required.
+- **Equilibrium Envoy** (`equilibrium_envoy`): Order mercenary, cost 3, two copies.
+  Draw one card, then a living opponent with strictly more mastery loses one mastery.
+  Choose one if several opponents qualify; resolve automatically for a sole target.
+  A tied or eliminated opponent is ineligible. The condition is checked anew on
+  each resolution, after drawing; mastery loss uses the normal floor of zero.
+- **Legion Reclaimer** (`legion_reclaimer`): Homodeus mercenary, printed cost 7,
+  Shield 5, two copies. Return one champion from discard to hand. Return is mandatory
+  when possible: select one among several, automatically return a sole match, or do
+  nothing if none exist. This is not recruitment and does not put the champion in play.
+  Its paid recruitment and fast-play price is reduced by one per champion in the
+  owner's full deck: draw pile, hand, discard, play zone and champions in play.
+  Count each owned champion, including relic champions; exclude banished cards,
+  fast-play loans and unclaimed relics. Moving an owned champion among those zones
+  does not alter the count. Apply Decima's discount too, then floor the price at zero.
+  Printed cost remains 7, so the opening six slots still exclude it and free-recruit
+  or free-fast-play effects with printed-cost caps still compare against 7.
+
+The two additions have original ComfyUI artwork. Their generation inputs and hashes
+are recorded in `Tools/BalanceReview/balance-patch-art-2026-10-18.json`.

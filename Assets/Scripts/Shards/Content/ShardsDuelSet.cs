@@ -91,8 +91,8 @@ namespace Shards.Content
 
             SoiCard.New("century_forge", "Century Forge").InSet(SET).Faction(H)
                 .Type(ShardsCardType.Ally).Cost(5).Qty(2).Shield(3)
-                .Plays(E.Seq(E.Gems(3), If.Inspire(new Do(ctx => ctx.Controller.NextChampionsIntoPlay++))))
-                .Text("Shield 3. Gain 3 gems.\nInspire: the next champion you recruit this turn enters play directly.")
+                .Plays(E.Seq(E.Gems(3), Do.RecruitRouting(ctx => ctx.Controller.NextChampionsIntoPlay++)))
+                .Text("Shield 3. Gain 3 gems.\nThe next champion you recruit this turn enters play directly.")
                 .Art("a forge-hall stamping out armored soldiers on a conveyor of sparks").Register();
 
             SoiCard.New("riposte_doctrine", "Riposte Doctrine").InSet(SET).Faction(H)
@@ -185,7 +185,7 @@ namespace Shards.Content
                 .Art("a red-cloaked gambler flipping the top card of an endless deck").Register();
         }
 
-        // October 2026: only the three approved catch-up cards, plus the user's destiny.
+        // October 2026: approved market additions and the user's destiny.
         private static void RegisterOctoberCards()
         {
             SoiCard.New("horizon_seeker", "Horizon Seeker").InSet(SET).Faction(O)
@@ -207,10 +207,39 @@ namespace Shards.Content
                 .Art("an agile masked scout in sleek silver and turquoise armor leaping through a curling temporal fissure, cyan clockwork energy arcs and translucent afterimages trailing behind, short curved blade in hand, floating ancient ruins, dynamic diagonal composition").Register();
 
             SoiCard.New("dna", "DNA").InSet(SET).Type(ShardsCardType.Destiny).Qty(1)
-                .ExhaustCosts(4)
+                .ExhaustCosts(3)
                 .Exhausts(new Do(ctx => ctx.Engine.ArmRecruitCopy(ctx.ControllerIndex)))
-                .Text("Pay 4 gems, Exhaust: get an additional copy of the next card you recruit this turn. Put the copy into your discard pile.")
+                .Text("Pay 3 gems, Exhaust: get an additional copy of the next card you recruit this turn. Put the copy into your discard pile.")
                 .Art("a luminous iridescent double helix suspended inside an ancient futuristic crystal chamber, the spiral branching into two identical floating crystalline relics, flowing cyan violet and gold energy, intricate organic geometry, mysterious destiny and magical duplication, centered vertical composition").Register();
+
+            SoiCard.New("equilibrium_envoy", "Equilibrium Envoy").InSet(SET).Faction(O)
+                .Type(ShardsCardType.Mercenary).Cost(3).Qty(2)
+                .Plays(E.Seq(E.Draw(1), If.Visible(BehindInMastery, new OpponentLosesMastery(1, onlyIfAhead: true))))
+                .Text("Draw a card.\nChoose an opponent with more mastery than you. They lose 1 mastery.")
+                .Art("a serene diplomatic mystic in white and gold armor standing between two unequal floating crystal scales, drawing a bright golden shard of knowledge away from the taller scale, flowing azure robes, luminous geometric halos, ruined celestial observatory, poised vertical composition").Register();
+
+            var reclaimer = SoiCard.New("legion_reclaimer", "Legion Reclaimer").InSet(SET).Faction(H)
+                .Type(ShardsCardType.Mercenary).Cost(7).Qty(2).Shield(5)
+                .Plays(new ReturnFromDiscard(d => d.IsChampion, "champion"))
+                .Text("Shield 5.\nReturn a champion from your discard pile to your hand.\nCosts 1 less per champion in your full deck.")
+                .Art("a massive bronze and cobalt armored recovery automaton lifting a fallen legion champion from a field of broken machines, five radiant interlocking shield plates orbiting its shoulders, mechanical restoration arms and blue repair energy, ancient futuristic forge ruins, heroic vertical composition");
+            reclaimer.Def.CostModifier = owner => -OwnedChampionCount(owner);
+            reclaimer.Register();
+        }
+
+        private static int OwnedChampionCount(ShardsPlayer owner)
+        {
+            return CountOwnedChampions(owner, owner.Deck) + CountOwnedChampions(owner, owner.Hand) +
+                CountOwnedChampions(owner, owner.Discard) + CountOwnedChampions(owner, owner.PlayZone) +
+                CountOwnedChampions(owner, owner.Champions);
+        }
+
+        private static int CountOwnedChampions(ShardsPlayer owner, List<ShardsCard> cards)
+        {
+            int count = 0;
+            foreach (var card in cards)
+                if (card.Owner == owner.Index && !card.FastPlayed && card.Def.IsChampion) count++;
+            return count;
         }
 
         private static bool BehindInMastery(ShardsContext ctx)
@@ -476,7 +505,7 @@ namespace Shards.Content
         private static void RegisterBespokeErrata()
         {
             SoiCard.New("reactor_drone_duel", "Reactor Drone").InSet(SET).Faction(H)
-                .Type(ShardsCardType.Ally).Cost(3).Qty(3).Shield(2)
+                .Type(ShardsCardType.Ally).Cost(2).Qty(3).Shield(2)
                 .Plays(new Custom(ReactorChoice))
                 .Text("Choose one:\n— Gain 2 gems.\n— Gain 3 gems, then banish this card at the end of your turn.")
                 .Replaces("reactor_drone").Register();

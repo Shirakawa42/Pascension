@@ -71,6 +71,8 @@ namespace Shards.AI
             ["riftbreaker"] = "shadow_apostle",     // Wraethe power + banish
             ["rift_scout"] = "brute",               // Aion power + Warp
             ["dna"] = "deadly_recruits_duel",        // Paid recruit destiny, no inherited faction gate
+            ["equilibrium_envoy"] = "shard_seer",  // Order draw + mastery interaction
+            ["legion_reclaimer"] = "korvus_legionnaire_duel", // Homodeus shield + champion return
         };
         internal static Dictionary<string, int> CreateIndex()
         {

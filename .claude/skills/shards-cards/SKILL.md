@@ -18,7 +18,7 @@ pump gotchas, glow hints): see the shards-engine skill.
 - **Definitions**: `Assets/Scripts/Shards/Content/` — one builder file per set:
   `ShardsBaseSet.cs` (10 starters + 88 center), `ShardsRelicsSet.cs` (24 center + 8 relics),
   `ShardsShadowSet.cs` (12 center + Rez's 2 relics), `ShardsHorizonSet.cs` (25 center +
-  5 Ingeminex + 30 destinies), `ShardsDuelSet.cs` (**Duel of Doom** — 21 new defs + ~44
+  5 Ingeminex + 30 destinies), `ShardsDuelSet.cs` (**Duel of Doom** — new cards and
   errata replacement defs). `ShardsContentRegistry.EnsureRegistered()` registers all.
 
 ### Controller-visible effect predicates
@@ -40,14 +40,42 @@ ending a turn without executing an unknown callback. The effect, rules text and
 amounts are unchanged. Never use this annotation for health costs, draws, events,
 or mutations beyond the controller's turn-local recruit routing counters.
 
-## Current Duel balance — 2026-10-08
+## Current Duel balance — 2026-10-18
 
-This section supersedes older Duel values and Testudo/combat rulings below.
+These changes supersede the corresponding October 8 values below. Other Duel
+rules and non-Duel printings retain their behavior.
+
+| Card | Current Duel behavior |
+|---|---|
+| DNA (`dna`) | Pay **3** gems and exhaust; its next-recruit copy behavior is unchanged. |
+| Century Forge (`century_forge`) | Shield 3; gain 3 gems and always arm the next recruited **champion of any faction** to enter play this turn. No Inspire or existing champion is required. |
+| Reactor Drone (`reactor_drone_duel`) | Cost **2**; Shield 2, quantity 3 and both modes are unchanged. The non-Duel printing stays cost 3. |
+| Deadly Recruits | Its two mode previews explicitly identify **Fast-play** and **Recruit**. Target selection, activation payment and exclusive outcomes are unchanged. |
+
+Two new center-deck mercenaries, **two copies each**:
+- `equilibrium_envoy` / Equilibrium Envoy: Order, cost 3. Draw 1, then one living
+  opponent with strictly more mastery loses 1 mastery. If several qualify, choose
+  exactly one; one target resolves automatically, and ties or eliminated opponents
+  never qualify. Reevaluate after each play or copied resolution.
+- `legion_reclaimer` / Legion Reclaimer: Homodeus, printed cost 7, Shield 5. Return
+  one champion from your discard to hand (mandatory if possible; choose among
+  several, auto-return a sole match). Costs 1 less per owned champion across deck,
+  hand, discard, play zone and champions in play, including owned relic champions.
+  Banished cards, temporary fast-play loans and unclaimed relics are excluded.
+  `EffectiveCost` combines this discount with Decima's first-buy discount and floors
+  the price at zero, for both recruitment and fast-play. Printed cost remains 7:
+  opening-shop exclusion and printed-cost limits on free recruits/fast-plays still
+  use 7. Returning a champion is not a recruitment and does not consume DNA/Forge.
+
+## Reviewed Duel balance — 2026-10-08
+
+This section supersedes older Duel values and Testudo/combat rulings below;
+the October 18 changes above take precedence where they overlap.
 The reviewed source is `Tools/BalanceReview/balance_proposals.json`, version
 `2026-10-08-v5`. Existing base/expansion definitions keep their non-Duel behavior;
 nine new `_duel` replacements carry changes that previously had no Duel printing.
 
-| Card / ability | Current Duel change |
+| Card / ability | October 8 Duel change |
 |---|---|
 | Giga, Source Adept | Dominion exhaust gains 2 mastery; still cost 2, defense 4, draw on play. |
 | Deadly Recruits | Pay 1 gem as activation cost, then choose fast-play OR recruit. Target cost 2, M20 cost 4. No additional purchase payment. |
@@ -77,7 +105,8 @@ Three new market definitions, **two copies each**:
 - `rift_scout`: Aion **mercenary**, cost 2; 3 power and conditional Warp 2 while
   strictly behind. Its own acquisition/fast-play removes it from the row first.
 
-`dna`: neutral destiny, quantity 1, **ExhaustGemCost = 4**. Activating arms a copy of
+`dna`: introduced as a neutral destiny, quantity 1, **ExhaustGemCost = 4**
+(reduced to 3 on October 18). Activating arms a copy of
 this turn's next recruitment. Fresh extra instances enter discard, bypass routing
 and play effects, and do not recursively recruit. Real free recruits and relic
 recruits qualify; fast-play, Warp and returning owned cards do not. Multiple pending

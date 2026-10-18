@@ -33,12 +33,12 @@ for (let i = 2; i < lines.length; i++) {
   });
 }
 // Tripwire against a silently-shifted table. If the real pool count legitimately changed,
-// bump this number AND the '212 cards' + keyword-census expectations in smoke-test.mjs.
-// 202 = all registered printings, including the October Duel replacements and four new cards.
-const EXPECTED_DEFS = 202;
+// bump this number AND the entry-count + keyword-census expectations in smoke-test.mjs.
+// 204 = all registered printings, including both October Duel balance updates.
+const EXPECTED_DEFS = 204;
 if (cards.length !== EXPECTED_DEFS)
   throw new Error(`expected ${EXPECTED_DEFS} card defs, parsed ${cards.length}. If the pool genuinely changed, ` +
-    `update EXPECTED_DEFS here and the '212 cards' + keyword-census asserts in Tools/CardDesigner/smoke-test.mjs.`);
+    `update EXPECTED_DEFS here and the entry-count + keyword-census asserts in Tools/CardDesigner/smoke-test.mjs.`);
 // Header sanity: guard against a reordered/renamed column silently corrupting positional parsing.
 const header = lines[0].split('|').map(s => s.trim());
 const EXPECTED_COLS = ['', 'Id', 'Name', 'Set', 'Faction', 'Type', 'Cost', 'Qty', 'Def', 'Shield', 'Rules (functional paraphrase)', ''];

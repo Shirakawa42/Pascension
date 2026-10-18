@@ -487,6 +487,7 @@ namespace Pascension.Game.UI
         public static readonly Dictionary<string, string> OptionLabels = new()
         {
             ["Reveal"] = "Révéler",
+            ["Fast-play"] = "Enrôler",
             ["Recruit"] = "Recruter",
             ["Keep"] = "Garder",
             ["Banish"] = "Bannir",
@@ -515,6 +516,10 @@ namespace Pascension.Game.UI
         /// patterns ("Return a …") before the general ones ("Return …").</summary>
         public static readonly List<(Regex, string)> DecisionTitles = new()
         {
+            (new Regex(@"^Deadly Recruits: fast-play or recruit\?$"),
+                "Deadly Recruits : enrôler ou recruter ?"),
+            (new Regex(@"^Choose an ally costing (\d+) or less to fast-play or recruit for free$"),
+                "Choisissez un allié coûtant $1 ou moins à enrôler ou recruter gratuitement"),
             (new Regex(@"^Return up to two mercenaries from your discard or draw pile to your hand$"),
                 "Renvoyez jusqu’à deux mercenaires de votre défausse ou de votre pioche dans votre main"),
             (new Regex(@"^Volos: choose an ability$"), "Volos : choisissez une capacité"),

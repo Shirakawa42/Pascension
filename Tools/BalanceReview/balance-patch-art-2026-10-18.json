@@ -1,0 +1,56 @@
+{
+  "patch": "2026-10-18",
+  "source": "Original art generated locally with ComfyUI and Anima",
+  "workflow": "Assets/Scripts/Editor/ArtPipeline/anima_card_workflow_api.json",
+  "workflow_sha256": "e7e5a260bcf929f044e78a6e268f7ddfeebd34bb796af31adc130743efa4ca55",
+  "width": 880,
+  "height": 1232,
+  "steps": 35,
+  "prefix": "masterpiece, best quality, score_7, safe, year 2025, newest, highres, painterly, fantasy, detailed illustration, dramatic lighting, trading card game art",
+  "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, text, signature, artist name",
+  "cards": {
+    "equilibrium_envoy": {
+      "subject": "a serene diplomatic mystic in white and gold armor standing between two unequal floating crystal scales, drawing a bright golden shard of knowledge away from the taller scale, flowing azure robes, luminous geometric halos, ruined celestial observatory, poised vertical composition",
+      "seed": 2304212947,
+      "salt": 0,
+      "positive_prompt_sha256": "f77903febc49bc834bd5fd799dc951193eec3d88fddbfc40b52798ed7959e72c",
+      "path": "Assets/Art/Shards/Cards/equilibrium_envoy.png",
+      "status": "complete",
+      "graph_sha256": "c9e8469c4b9ac088768d969c4bf4da85d04a61e10fc7dee66cdef756fd0bad4b",
+      "prompt_id": "5a3f9fa2-c3e4-4789-8fcc-cad13b43ec4b",
+      "submitted_at_unix": 1792348904.7067804,
+      "sha256": "f55787ef5f31e0fba8794fde8b2afeb930d37bc52a3d88c4db9903a68099dd35",
+      "completed_at_unix": 1792348945.205664,
+      "comfy_output": {
+        "filename": "equilibrium_envoy_00001_.png",
+        "subfolder": "pascension_balance_2026_10_18",
+        "type": "output"
+      },
+      "elapsed_seconds": 40.5
+    },
+    "legion_reclaimer": {
+      "subject": "a massive bronze and cobalt armored recovery automaton lifting a fallen legion champion from a field of broken machines, five radiant interlocking shield plates orbiting its shoulders, mechanical restoration arms and blue repair energy, ancient futuristic forge ruins, heroic vertical composition",
+      "seed": 3568900804,
+      "salt": 0,
+      "positive_prompt_sha256": "b3382fba3974be68e52fd09f4b1031b79650c493a9edfe2fafc2da03f3bcf8be",
+      "path": "Assets/Art/Shards/Cards/legion_reclaimer.png",
+      "status": "complete",
+      "graph_sha256": "14ca26b2b91f03c80e3882e8535896492bb14c6544c3d0d7674d58bb0c22930f",
+      "prompt_id": "c6fc8e5d-0c1c-4dd1-b636-2e84acca14ef",
+      "submitted_at_unix": 1792348945.2117636,
+      "sha256": "abd10c7aa6b29900a64e590cb6718ca7428ec67d50be3786174e90faf4d6a429",
+      "completed_at_unix": 1792348955.9272578,
+      "comfy_output": {
+        "filename": "legion_reclaimer_00001_.png",
+        "subfolder": "pascension_balance_2026_10_18",
+        "type": "output"
+      },
+      "elapsed_seconds": 10.72
+    }
+  },
+  "queue_at_start": {
+    "queue_running": 0,
+    "queue_pending": 0
+  },
+  "status": "complete"
+}

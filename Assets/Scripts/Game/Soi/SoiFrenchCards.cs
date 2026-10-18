@@ -32,7 +32,11 @@ namespace Pascension.Game.Soi
 
             ["rift_scout"] = ("Éclaireur des Failles", "Gagnez 3 puissance.\nSi vous avez moins de maîtrise que votre adversaire, Distorsion 2."),
 
-            ["dna"] = ("ADN", "Payez 4 cristaux, Activez : obtenez un exemplaire supplémentaire de la prochaine carte que vous recrutez ce tour-ci. Placez cet exemplaire dans votre défausse."),
+            ["dna"] = ("ADN", "Payez 3 cristaux, Activez : obtenez un exemplaire supplémentaire de la prochaine carte que vous recrutez ce tour-ci. Placez cet exemplaire dans votre défausse."),
+
+            ["equilibrium_envoy"] = ("Émissaire de l’Équilibre", "Piochez une carte.\nChoisissez un adversaire ayant plus de maîtrise que vous : il perd 1 maîtrise."),
+
+            ["legion_reclaimer"] = ("Récupérateur de la Légion", "Bouclier 5.\nRenvoyez un champion de votre défausse dans votre main.\nCoûte 1 cristal de moins par champion dans votre deck complet (pioche, main, défausse et jeu)."),
 
             // ------------------------------------------------------------- starters
             ["crystal"] = ("Cristal", "Gagnez 1 cristal."),
@@ -190,7 +194,7 @@ namespace Pascension.Game.Soi
 
             // ------------------------------------------------------------- Duel of Doom — nouvelles cartes
             ["testudo_vanguard"] = ("Avant-garde Testudo", "Chaque fois que vous jouez une carte avec Bouclier, chaque champion que vous contrôlez à cet instant gagne +1 défense jusqu’au début de votre prochain tour.\nActivez : gagnez 2 cristaux."),
-            ["century_forge"] = ("Forge de la Centurie", "Bouclier 3. Gagnez 3 cristaux.\nInspiration : le prochain champion Homodeus que vous recrutez ce tour-ci entre directement en jeu."),
+            ["century_forge"] = ("Forge de la Centurie", "Bouclier 3. Gagnez 3 cristaux.\nLe prochain champion que vous recrutez ce tour-ci entre directement en jeu."),
             ["riposte_doctrine"] = ("Doctrine de Riposte", "Gagnez 3 puissance.\nSi vous avez joué ou révélez une carte à bouclier de votre main, gagnez 6 puissance à la place."),
             ["index_of_futures"] = ("Index des Futurs", "Bouclier 2. Piochez une carte. Regardez les 3 cartes du dessus de la pioche commune ; remettez-les dans l'ordre de votre choix."),
             ["bulwark_chanter"] = ("Chantre du Rempart", "Bouclier 4. Gagnez 2 cristaux.\nDomination : gagnez 2 maîtrise et piochez une carte."),

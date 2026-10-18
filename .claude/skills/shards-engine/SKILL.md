@@ -58,11 +58,31 @@ Rez at M5 passively reduces every reroll price by 1, without activating Scry 3.
 `NextRerollDiscount` remains a legacy one-use effect token; Rez no longer grants it.
 `soi.return` accepts zero through two cards for Duel World Piercer.
 
-## October 2026 Duel patch
+## 2026-10-18 Duel patch
+
+- DNA's `ExhaustGemCost` is now **3**. Keep payment in `ExhaustCard`; its existing
+  `PendingRecruitCopies` / `NotifyRecruit` routing is unchanged.
+- Century Forge always increments `NextChampionsIntoPlay` through
+  `Do.RecruitRouting`, without Inspire. This is the general, any-faction champion
+  counter, distinct from Numeri Drones' Homodeus-only counter; it expires at cleanup.
+- Equilibrium Envoy draws before `OpponentLosesMastery(1, onlyIfAhead: true)`.
+  The new filter offers only living opponents strictly ahead in mastery, using
+  `soi.target` when several qualify. Existing callers retain their unrestricted
+  target behavior. `LoseMastery` floors at zero and emits the actual public delta.
+- Legion Reclaimer's `CostModifier` counts owned champions in ordinary deck zones,
+  including relic champions, while excluding loans, banished and unclaimed cards.
+  `EffectiveCost` remains authoritative for paid buys and fast-plays, with a zero
+  floor after all discounts. Printed-cost gates keep using `Def.Cost` (7), including
+  the opening row. Its `ReturnFromDiscard` effect is a return, not a recruitment.
+- Registry and full interaction rulings: **shards-cards**, October 18 section;
+  `Tools/ShardsData/rules-notes.md`, October 18 section. Reactor Drone's Duel cost
+  is 2; Deadly Recruits retains its exclusive modes with explicit UI labels.
+
+## 2026-10-08 Duel patch
 
 - Opening six slots: printed cost at most 5 or Comet. Hold other cards privately and shuffle them back before hero draft; later refills are unrestricted.
 - Testudo uses `ChampionDefensePerShieldPlay`: actual plays with a positive live shield value grant current champions +1 per Testudo, until their owner’s next turn. Reveals and copied effects are not plays. Grants persist after Testudo leaves and clear when the recipient leaves play.
-- DNA uses `PendingRecruitCopies` and `NotifyRecruit`: pay 4 and exhaust to copy the next actual recruitment this turn directly to discard. All armed copies apply together. Includes free and relic recruits, and a normally bought Comet; destiny-taking, loans, returns and generated copies do not count as new recruits.
+- DNA introduced `PendingRecruitCopies` and `NotifyRecruit`: pay 4 at introduction (now 3, October 18) and exhaust to copy the next actual recruitment this turn directly to discard. All armed copies apply together. Includes free and relic recruits, and a normally bought Comet; destiny-taking, loans, returns and generated copies do not count as new recruits.
 - `GeneratedCardCounts` records public created instances separately from immutable setup counts, including Doom Gate. AI conservation must use both, with no second flood estimate.
 - Snapshot champion `EffectiveDefense` and `TemporaryDefenseUntilNextTurn`, player pending copies and generated counts are public state. Clone/hash/wire paths must preserve them.
-- Current detailed rulings: `Tools/ShardsData/rules-notes.md`, October section. Focused regressions: `ShardsBalancePatchTests`.
+- Detailed rulings: `Tools/ShardsData/rules-notes.md`, dated October sections. Focused regressions: `ShardsBalancePatchTests`.

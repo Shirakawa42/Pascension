@@ -9,6 +9,38 @@ namespace Pascension.Game.Soi
     /// printed stats and bilingual text from that patch, even after later tuning.</summary>
     public static class SoiBalanceHistory
     {
+        public static readonly System.Collections.Generic.IReadOnlyList<Changelog.CardChange> October18_2026 =
+            System.Array.AsReadOnly(new[]
+        {
+            new Changelog.CardChange(
+                Revision("DNA", "ADN", "Destiny", "Destinée",
+                    "Pay 4 gems, Exhaust: get an additional copy of the next card you recruit this turn. Put the copy into your discard pile.",
+                    "Payez 4 cristaux, Activez : obtenez un exemplaire supplémentaire de la prochaine carte que vous recrutez ce tour-ci. Placez cet exemplaire dans votre défausse.",
+                    "dna", ShardsFaction.None, -1, 0, 0, false),
+                Revision("DNA", "ADN", "Destiny", "Destinée",
+                    "Pay 3 gems, Exhaust: get an additional copy of the next card you recruit this turn. Put the copy into your discard pile.",
+                    "Payez 3 cristaux, Activez : obtenez un exemplaire supplémentaire de la prochaine carte que vous recrutez ce tour-ci. Placez cet exemplaire dans votre défausse.",
+                    "dna", ShardsFaction.None, -1, 0, 0, false)),
+            new Changelog.CardChange(
+                Revision("Century Forge", "Forge de la Centurie", "Homodeus Ally", "Allié Homodeus",
+                    "Shield 3. Gain 3 gems.\nInspire: the next champion you recruit this turn enters play directly.",
+                    "Bouclier 3. Gagnez 3 cristaux.\nInspiration : le prochain champion Homodeus que vous recrutez ce tour-ci entre directement en jeu.",
+                    "century_forge", ShardsFaction.Homodeus, 5, 0, 3, false),
+                Revision("Century Forge", "Forge de la Centurie", "Homodeus Ally", "Allié Homodeus",
+                    "Shield 3. Gain 3 gems.\nThe next champion you recruit this turn enters play directly.",
+                    "Bouclier 3. Gagnez 3 cristaux.\nLe prochain champion que vous recrutez ce tour-ci entre directement en jeu.",
+                    "century_forge", ShardsFaction.Homodeus, 5, 0, 3, false)),
+            new Changelog.CardChange(
+                Revision("Reactor Drone", "Drone Réacteur", "Homodeus Ally", "Allié Homodeus",
+                    "Choose one:\n— Gain 2 gems.\n— Gain 3 gems, then banish this card at the end of your turn.",
+                    "Choisissez l'un :\n— Gagnez 2 cristaux.\n— Gagnez 3 cristaux et bannissez cette carte à la fin de votre tour.",
+                    "reactor_drone", ShardsFaction.Homodeus, 3, 0, 2, false),
+                Revision("Reactor Drone", "Drone Réacteur", "Homodeus Ally", "Allié Homodeus",
+                    "Choose one:\n— Gain 2 gems.\n— Gain 3 gems, then banish this card at the end of your turn.",
+                    "Choisissez l'un :\n— Gagnez 2 cristaux.\n— Gagnez 3 cristaux et bannissez cette carte à la fin de votre tour.",
+                    "reactor_drone", ShardsFaction.Homodeus, 2, 0, 2, false))
+        });
+
         public static readonly System.Collections.Generic.IReadOnlyList<Changelog.CardChange> October2026 =
             System.Array.AsReadOnly(new[]
         {

@@ -601,11 +601,17 @@ namespace Shards.Engine
     {
         private readonly int _amount;
         public int Amount => _amount;
-        public OpponentLosesMastery(int amount) => _amount = amount;
+        public bool OnlyIfAhead { get; }
+        public OpponentLosesMastery(int amount, bool onlyIfAhead = false)
+        {
+            _amount = amount;
+            OnlyIfAhead = onlyIfAhead;
+        }
 
         public IEnumerable<ShardsStep> Resolve(ShardsContext ctx)
         {
             var opponents = new List<ShardsPlayer>(ctx.Engine.State.LivingOpponentsOf(ctx.ControllerIndex));
+            if (OnlyIfAhead) opponents.RemoveAll(p => p.Mastery <= ctx.Controller.Mastery);
             if (opponents.Count == 0) yield break;
             if (opponents.Count == 1)
             {
